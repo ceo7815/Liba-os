@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ליבה OS — פלטפורמת ניהול פנימית
 
-## Getting Started
+מעטפת פנימית לסוכנות ליבה ביטוח ופנסיוני: התחברות, ניהול משתמשים, סיידבר וניווט. סוכני AI יתווספו בהמשך דרך `lib/agents.config.ts`.
 
-First, run the development server:
+## דרישות מקדימות
+
+- Node.js 20+
+- חשבון Supabase (הפרויקט `liba-os` כבר נוצר באזור Frankfurt)
+
+## משתני סביבה
+
+העתיקו את `.env.example` ל-`.env.local` (פיתוח) או ל-`.env` (Docker):
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| משתנה | איפה | הערות |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | דפדפן + שרת | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | דפדפן + שרת | anon / publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | **שרת בלבד** | אסור לחשוף ללקוח. נדרש להזמנות, שינוי תפקיד והשבתה |
+| `VAULT_ENCRYPTION_KEY` | **שרת בלבד** | מפתח AES-256 (base64, 32 בתים) לכספת הסיסמאות |
+| `NEXT_PUBLIC_SITE_URL` | דפדפן + שרת | כתובת האפליקציה, למשל `http://localhost:3000` |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+מפתחות: [Settings → API](https://supabase.com/dashboard/project/cuqaftpkcdxtjogiyqtu/settings/api)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## הגדרות Auth ב-Supabase (חובה)
 
-## Learn More
+1. **כיבוי הרשמה ציבורית** — Authentication → Providers → Email → כבו את "Allow new users to sign up".
+2. **Site URL** — Authentication → URL Configuration → `http://localhost:3000` (ובפרודקשן הדומיין של ה-VPS).
+3. **Redirect URLs** הוסיפו:
+   - `http://localhost:3000/auth/callback`
+   - `http://localhost:3000/set-password`
+   - `http://localhost:3000/**`
 
-To learn more about Next.js, take a look at the following resources:
+## הרצה מקומית
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+האפליקציה: [http://localhost:3000](http://localhost:3000)
 
-## Deploy on Vercel
+המשתמש הראשון שמוזמן הופך אוטומטית ל-admin. הזמינו אותו ממסך המשתמשים אחרי שתדביקו את `SUPABASE_SERVICE_ROLE_KEY`, או צרו משתמש ב-Supabase Dashboard ואז עדכנו:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sql
+update public.profiles set role = 'admin' where email = 'you@example.com';
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Docker על VPS
+
+```bash
+cp .env.example .env
+# מלאו מפתחות. NEXT_PUBLIC_SITE_URL = כתובת השרת הציבורית
+docker compose up -d --build
+```
+
+`NEXT_PUBLIC_*` נדרשים גם בזמן **build** (מועברים כ-build args) וגם בזמן ריצה. `SUPABASE_SERVICE_ROLE_KEY` נדרש רק בזמן ריצה.
+
+## הוספת סוכן AI
+
+1. הוסיפו שורה ב-`lib/agents.config.ts`.
+2. צרו `app/(authenticated)/agents/<slug>/page.tsx`.
+3. הסוכן יופיע בסיידבר וברשימת `/agents`.

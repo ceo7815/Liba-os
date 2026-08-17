@@ -2,26 +2,235 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    /* Brand tokens — Liba: white, black, bright yellow #FFD400 */
+    --brand-white: #ffffff;
+    --brand-black: #111111;
+    --brand-yellow: #ffd400;
+    --brand-muted: #f5f5f3;
+    --brand-muted-fg: #6b6b6b;
+
+    /* Canvas gray used across the product shell */
+    --background: 60 8% 95.5%;
+    --foreground: 0 0% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 0% 7%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 60 8% 93%;
+    --secondary-foreground: 0 0% 7%;
+    --muted: 60 8% 93%;
+    --muted-foreground: 0 0% 42%;
+    --accent: 50 100% 50%;
+    --accent-foreground: 0 0% 7%;
+    --highlight: 50 100% 50%;
+    --highlight-foreground: 0 0% 7%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 50 100% 50%;
+    --chart-1: 50 100% 50%;
+    --chart-2: 0 0% 18%;
+    --chart-3: 0 0% 46%;
+    --chart-4: 50 90% 45%;
+    --chart-5: 0 0% 28%;
+    --radius: 1.15rem;
+    --sidebar: 60 8% 95.5%;
+    --sidebar-foreground: 0 0% 7%;
+    --sidebar-primary: 50 100% 50%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 7%;
+    --sidebar-ring: 50 100% 50%;
+  }
+
+  /* Light-only product UI — dark class maps to the same tokens */
+  .dark {
+    --background: 60 8% 95.5%;
+    --foreground: 0 0% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 0% 7%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 60 8% 93%;
+    --secondary-foreground: 0 0% 7%;
+    --muted: 60 8% 93%;
+    --muted-foreground: 0 0% 42%;
+    --accent: 50 100% 50%;
+    --accent-foreground: 0 0% 7%;
+    --highlight: 50 100% 50%;
+    --highlight-foreground: 0 0% 7%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 50 100% 50%;
+    --sidebar: 60 8% 95.5%;
+    --sidebar-foreground: 0 0% 7%;
+    --sidebar-primary: 50 100% 50%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 7%;
+    --sidebar-ring: 50 100% 50%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply bg-background text-foreground;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-rubik), system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .app-surface {
+    @apply rounded-xl border border-black/[0.06] bg-white shadow-[0_1px_2px_rgba(17,17,17,0.04)];
+  }
+
+  .agent-tool-cube {
+    @apply translate-y-0 opacity-0 shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-[transform,box-shadow,border-color,background-color] duration-300 ease-out;
+    animation: agent-tool-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .agent-tool-cube:hover {
+    @apply -translate-y-1 border-black/[0.12] bg-white shadow-[0_10px_28px_rgba(17,17,17,0.08)];
+  }
+
+  .status-live-dot {
+    position: relative;
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 9999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+    animation: status-live-pulse 1.8s ease-out infinite;
+  }
+
+  .status-live-dot--amber {
+    background: #f59e0b;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55);
+    animation-name: status-live-pulse-amber;
+  }
+
+  .status-run-track,
+  .status-queue-track {
+    position: relative;
+    height: 3px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgba(17, 17, 17, 0.08);
+  }
+
+  .status-run-bar {
+    position: absolute;
+    inset-block: 0;
+    width: 42%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #ffd400, #111111);
+    animation: status-run-slide 1.15s ease-in-out infinite;
+  }
+
+  .status-queue-bar {
+    position: absolute;
+    inset-block: 0;
+    width: 28%;
+    border-radius: inherit;
+    background: rgba(17, 17, 17, 0.35);
+    animation: status-run-slide 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes agent-tool-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes status-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes status-live-pulse-amber {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+@keyframes status-run-slide {
+  0% {
+    transform: translateX(160%);
+  }
+  100% {
+    transform: translateX(-280%);
+  }
+}
+
+.animate-auth-rise {
+  animation: auth-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-auth-rise,
+  .agent-tool-cube,
+  .status-live-dot,
+  .status-run-bar,
+  .status-queue-bar {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .agent-tool-cube:hover {
+    transform: none !important;
   }
 }
