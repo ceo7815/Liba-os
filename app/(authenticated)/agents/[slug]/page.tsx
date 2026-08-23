@@ -22,6 +22,8 @@ import { todayJerusalemDateKey } from "@/lib/social-media/calendar-ui";
 import { getHolidaysForMonth } from "@/lib/social-media/holidays";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: { slug: string };
   searchParams?: { year?: string; month?: string };
@@ -97,7 +99,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
   if (agent.slug === "social-media") {
     const { year, month } = parseMonthYear(searchParams);
     const socialData = await loadSocialDashboard(year, month);
-    const holidays = getHolidaysForMonth(year, month);
+    const holidays = await getHolidaysForMonth(year, month);
     const profile = await getCurrentProfile();
     const isAdmin = profile?.role === "admin";
     const keys = isAdmin

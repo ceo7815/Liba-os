@@ -35,6 +35,11 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# @hebcal/* is imported only on /agents/social-media. Next standalone tracing
+# often omits it (and Next 14 ignored serverExternalPackages), which 500s the page.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@hebcal ./node_modules/@hebcal
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/quick-lru ./node_modules/quick-lru
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/temporal-polyfill ./node_modules/temporal-polyfill
 
 USER nextjs
 EXPOSE 3000

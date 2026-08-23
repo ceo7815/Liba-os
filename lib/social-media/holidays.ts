@@ -1,4 +1,3 @@
-import { HebrewCalendar, flags, Location, Event } from "@hebcal/core";
 import type { HolidayDay } from "@/lib/social-media/types";
 
 export {
@@ -25,7 +24,24 @@ const TOPIC_HINTS: Record<string, string> = {
   tishaBav: "תשעה באב — לא פרסום שיווקי",
 };
 
-function topicForEvent(ev: Event): string {
+type Hebcal = typeof import("@hebcal/core");
+type HebcalEvent = InstanceType<Hebcal["Event"]>;
+
+let hebcalPromise: Promise<Hebcal | null> | null = null;
+
+function loadHebcal(): Promise<Hebcal | null> {
+  if (!hebcalPromise) {
+    hebcalPromise = import("@hebcal/core")
+      .then((mod) => mod)
+      .catch((err) => {
+        console.error("[social-media] @hebcal/core failed to load", err);
+        return null;
+      });
+  }
+  return hebcalPromise;
+}
+
+function topicForEvent(ev: HebcalEvent): string {
   const desc = ev.getDesc();
   if (TOPIC_HINTS[desc]) return TOPIC_HINTS[desc];
   const basename = ev.basename();
@@ -41,7 +57,7 @@ function topicForEvent(ev: Event): string {
   return `יום מיוחד — ${basename}: רעיון לתוכן עדין ומקצועי`;
 }
 
-function holidayKey(ev: Event): string {
+function holidayKey(ev: HebcalEvent): string {
   return ev.getDesc() || ev.basename().replace(/\s+/g, "_");
 }
 
@@ -53,8 +69,15 @@ function toDateKey(d: Date): string {
 }
 
 /** Israeli holidays + national days for a calendar month (Asia/Jerusalem dates). Server-only. */
-export function getHolidaysForMonth(year: number, month: number): HolidayDay[] {
+export async function getHolidaysForMonth(
+  year: number,
+  month: number,
+): Promise<HolidayDay[]> {
   try {
+    const hebcal = await loadHebcal();
+    if (!hebcal) return [];
+
+    const { HebrewCalendar, flags, Location } = hebcal;
     const il = Location.lookup("Jerusalem");
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0);
@@ -94,10 +117,11 @@ export function getHolidaysForMonth(year: number, month: number): HolidayDay[] {
   }
 }
 
-export function getHolidayForDate(
+export async function getHolidayForDate(
   year: number,
   month: number,
   dateStr: string,
-): HolidayDay | null {
-  return getHolidaysForMonth(year, month).find((h) => h.date === dateStr) ?? null;
+): Promise<HolidayDay | null> {
+  const days = await getHolidaysForMonth(year, month);
+  return days.find((h) => h.date === dateStr) ?? null;
 }

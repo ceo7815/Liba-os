@@ -61,6 +61,41 @@ type DbSettings = {
   updated_at: string;
 };
 
+function asClock(value: unknown): string {
+  const raw = String(value ?? DEFAULT_PUBLISH_TIME);
+  return raw.length >= 5 ? raw.slice(0, 5) : DEFAULT_PUBLISH_TIME;
+}
+
+function fallbackSettings(): SocialSettings {
+  return {
+    id: "fallback",
+    brand: { ...DEFAULT_BRAND },
+    tone_guidelines: "",
+    forbidden_phrases: [],
+    default_publish_time: DEFAULT_PUBLISH_TIME,
+    platforms: ["facebook_page", "instagram"],
+    phone: null,
+    phone_secondary: null,
+    email: null,
+    address: null,
+    license_number: null,
+    ctas: DEFAULT_CTAS,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function emptyDashboard(): SocialDashboardPayload {
+  return {
+    settings: fallbackSettings(),
+    posts: [],
+    inbox: [],
+    runs: [],
+    costs: [],
+    monthlyCostUsd: 0,
+    agentId: null,
+  };
+}
+
 function mapSettings(row: DbSettings): SocialSettings {
   const brandRaw = row.brand ?? {};
   return {
@@ -78,7 +113,7 @@ function mapSettings(row: DbSettings): SocialSettings {
     },
     tone_guidelines: row.tone_guidelines ?? "",
     forbidden_phrases: row.forbidden_phrases ?? [],
-    default_publish_time: (row.default_publish_time ?? DEFAULT_PUBLISH_TIME).slice(0, 5),
+    default_publish_time: asClock(row.default_publish_time),
     platforms: (row.platforms ?? ["facebook_page", "instagram"]) as SocialPlatform[],
     phone: row.phone,
     phone_secondary: row.phone_secondary ?? null,
@@ -151,8 +186,14 @@ async function loadSettings(admin: ReturnType<typeof createAdminClient>) {
     .limit(1)
     .maybeSingle<DbSettings>();
 
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("social_settings row missing");
+  if (error) {
+    console.error("[social-media] social_settings query failed", error.message);
+    return fallbackSettings();
+  }
+  if (!data) {
+    console.error("[social-media] social_settings row missing");
+    return fallbackSettings();
+  }
   return mapSettings(data);
 }
 
@@ -161,6 +202,18 @@ export async function loadSocialDashboard(
   month: number,
 ): Promise<SocialDashboardPayload> {
   await requireProfile();
+  try {
+    return await loadSocialDashboardUnsafe(year, month);
+  } catch (err) {
+    console.error("[social-media] loadSocialDashboard failed", err);
+    return emptyDashboard();
+  }
+}
+
+async function loadSocialDashboardUnsafe(
+  year: number,
+  month: number,
+): Promise<SocialDashboardPayload> {
   const admin = createAdminClient();
   const settings = await loadSettings(admin);
   const range = monthRangeIso(year, month);
@@ -205,13 +258,21 @@ export async function loadSocialDashboard(
       : Promise.resolve({ data: [] as never[], error: null }),
   ]);
 
-  if (postsRes.error) throw new Error(postsRes.error.message);
-  if (inboxRes.error) throw new Error(inboxRes.error.message);
-  if (runsRes.error) throw new Error(runsRes.error.message);
-  if (costsRes.error) throw new Error(costsRes.error.message);
+  if (postsRes.error) {
+    console.error("[social-media] social_posts query failed", postsRes.error.message);
+  }
+  if (inboxRes.error) {
+    console.error("[social-media] social_inbox query failed", inboxRes.error.message);
+  }
+  if (runsRes.error) {
+    console.error("[social-media] agent_runs query failed", runsRes.error.message);
+  }
+  if (costsRes.error) {
+    console.error("[social-media] agent_costs query failed", costsRes.error.message);
+  }
 
   const postIds = (postsRes.data ?? []).map((p) => p.id);
-  const assetsByPost = new Map<string, SocialAsset[]>();
+  const assetsByPost: Record<string, SocialAsset[]> = {};
 
   if (postIds.length > 0) {
     const { data: assets } = await admin
@@ -235,19 +296,19 @@ export async function loadSocialDashboard(
         source: row.source as SocialAsset["source"],
         created_at: row.created_at,
       };
-      const list = assetsByPost.get(row.post_id) ?? [];
+      const list = assetsByPost[row.post_id] ?? [];
       list.push(asset);
-      assetsByPost.set(row.post_id, list);
+      assetsByPost[row.post_id] = list;
     }
 
-    for (const [postId, list] of Array.from(assetsByPost.entries())) {
-      assetsByPost.set(postId, await attachSignedUrls(admin, list));
+    for (const postId of Object.keys(assetsByPost)) {
+      assetsByPost[postId] = await attachSignedUrls(admin, assetsByPost[postId]);
     }
   }
 
   const posts = (postsRes.data ?? []).map((row) => {
     const post = mapPost(row as Record<string, unknown>);
-    post.assets = assetsByPost.get(post.id) ?? [];
+    post.assets = assetsByPost[post.id] ?? [];
     return post;
   });
 
@@ -275,7 +336,7 @@ export async function getOrCreatePostForDate(
   const admin = createAdminClient();
   const settings = await loadSettings(admin);
   const [y, m] = date.split("-").map(Number);
-  const holiday = getHolidayForDate(y, m, date);
+  const holiday = await getHolidayForDate(y, m, date);
   const range = monthRangeIso(y, m);
 
   const { data: existing } = await admin
@@ -463,7 +524,7 @@ export async function refreshAiSuggestion(
 
   const date = isoToJerusalemDate(post.scheduled_at);
   const [y, m] = date.split("-").map(Number);
-  const holiday = getHolidayForDate(y, m, date);
+  const holiday = await getHolidayForDate(y, m, date);
 
   const suggestion = await composeSocialCaption({
     date,
