@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Bot, Construction, Link2 } from "lucide-react";
+import { Bot, Link2 } from "lucide-react";
 import {
   agents,
   getAgentBySlug,
@@ -15,10 +15,15 @@ import {
 } from "@/components/agents/agent-dashboard";
 import { AgentInDevelopmentDialog } from "@/components/agents/agent-in-development-dialog";
 import { RequestAnalysisButton } from "@/components/agents/request-analysis-button";
+import { listAgentApiKeys } from "@/app/actions/agents";
+import { SocialMediaDashboard } from "@/components/social-media/social-media-dashboard";
+import { loadSocialDashboard } from "@/app/actions/social-media";
+import { todayJerusalemDateKey } from "@/lib/social-media/holidays";
 import { cn } from "@/lib/utils";
 
 type PageProps = {
   params: { slug: string };
+  searchParams?: { year?: string; month?: string };
 };
 
 export function generateStaticParams() {
@@ -32,7 +37,16 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default async function AgentPage({ params }: PageProps) {
+function parseMonthYear(searchParams?: PageProps["searchParams"]) {
+  const today = todayJerusalemDateKey();
+  const [ty, tm] = today.split("-").map(Number);
+  const year = Number(searchParams?.year) || ty;
+  const month = Number(searchParams?.month) || tm;
+  if (month < 1 || month > 12) return { year: ty, month: tm };
+  return { year, month };
+}
+
+export default async function AgentPage({ params, searchParams }: PageProps) {
   const agent = getAgentBySlug(params.slug);
   if (!agent) {
     notFound();
@@ -73,14 +87,80 @@ export default async function AgentPage({ params }: PageProps) {
         </div>
 
         <div className="app-surface px-5 py-12 text-center sm:px-7">
-          <span className="mx-auto inline-flex size-12 items-center justify-center rounded-2xl bg-highlight/30">
-            <Construction className="size-5" />
-          </span>
-          <p className="mt-4 text-sm font-semibold">הסוכן בפיתוח</p>
-          <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-            המסך מוכן. כשהסוכן יחובר למערכת — יופיעו כאן פעילות, עלויות ותוצרים.
-          </p>
+          <p className="text-sm font-semibold">הסוכן בפיתוח</p>
         </div>
+      </section>
+    );
+  }
+
+  if (agent.slug === "social-media") {
+    const { year, month } = parseMonthYear(searchParams);
+    const socialData = await loadSocialDashboard(year, month);
+    const profile = await getCurrentProfile();
+    const isAdmin = profile?.role === "admin";
+    const keys = isAdmin
+      ? (await listAgentApiKeys("social-media")).keys
+      : [];
+    const supabase = createClient();
+    const { data: dbAgent } = await supabase
+      .from("agents")
+      .select("hermes_status, hermes_last_seen_at")
+      .eq("slug", "social-media")
+      .maybeSingle();
+
+    return (
+      <section className="mx-auto max-w-[72rem] space-y-6">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <Link href="/agents" className="font-medium hover:text-foreground">
+            סוכני AI
+          </Link>
+          <span>/</span>
+          <span className="text-foreground">{agent.name}</span>
+        </div>
+
+        <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-background">
+                <Bot className="h-5 w-5 text-black/60" />
+              </span>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight">
+                  {agent.name}
+                </h1>
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                  {agent.description}
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Link2 className="h-3 w-3" />
+                    Liba OS · תור פרסום דרך ראנר חיצוני
+                  </span>
+                  {dbAgent?.hermes_status ? (
+                    <span>
+                      ראנר:{" "}
+                      {dbAgent.hermes_status === "online" ? "מחובר" : "לא מחובר"}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+            <span className="inline-flex rounded-md bg-highlight/40 px-2.5 py-1 text-[11px] font-medium text-foreground">
+              {getAgentStatusLabel(agent.status)}
+            </span>
+          </div>
+        </div>
+
+        <SocialMediaDashboard
+          agentName={agent.name}
+          initialYear={year}
+          initialMonth={month}
+          data={socialData}
+          isAdmin={Boolean(isAdmin)}
+          keys={keys}
+          hermesStatus={dbAgent?.hermes_status ?? null}
+          hermesLastSeenAt={dbAgent?.hermes_last_seen_at ?? null}
+        />
       </section>
     );
   }
@@ -103,7 +183,6 @@ export default async function AgentPage({ params }: PageProps) {
 
   const agentId = dbAgent?.id ?? null;
 
-  // Slim payload: no transcripts / full findings on first paint (loaded on call select).
   const [toolsRes, runsRes, costsRes, callsRes, activeQueueRes] =
     await Promise.all([
       agentId

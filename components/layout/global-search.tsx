@@ -18,9 +18,13 @@ type SearchItem = {
 
 type GlobalSearchProps = {
   isAdmin: boolean;
+  canAccessFinance?: boolean;
 };
 
-export function GlobalSearch({ isAdmin }: GlobalSearchProps) {
+export function GlobalSearch({
+  isAdmin,
+  canAccessFinance = false,
+}: GlobalSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -85,26 +89,31 @@ export function GlobalSearch({ isAdmin }: GlobalSearchProps) {
       })),
     ];
 
+    if (canAccessFinance) {
+      items.push({
+        id: "finance",
+        label: "חשבונות ליבה",
+        description: "הכנסות, הוצאות, משכורות עובדים ורווח והפסד",
+        href: "/finance",
+        icon: Wallet,
+        keywords: [
+          "חשבונות ליבה",
+          "חשבונות",
+          "פיננסים",
+          "finance",
+          "הכנסות",
+          "הוצאות",
+          "משכורות",
+          "רווח",
+          "הפסד",
+          "עמלות",
+          "בנק",
+        ],
+      });
+    }
+
     if (isAdmin) {
       items.push(
-        {
-          id: "finance",
-          label: "פיננסים",
-          description: "הכנסות, הוצאות, משכורות עובדים ורווח והפסד",
-          href: "/finance",
-          icon: Wallet,
-          keywords: [
-            "פיננסים",
-            "finance",
-            "הכנסות",
-            "הוצאות",
-            "משכורות",
-            "רווח",
-            "הפסד",
-            "עמלות",
-            "בנק",
-          ],
-        },
         {
           id: "employees",
           label: "עובדים",
@@ -133,7 +142,7 @@ export function GlobalSearch({ isAdmin }: GlobalSearchProps) {
     }
 
     return items;
-  }, [isAdmin]);
+  }, [isAdmin, canAccessFinance]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

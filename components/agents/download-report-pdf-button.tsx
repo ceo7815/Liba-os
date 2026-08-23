@@ -32,7 +32,7 @@ export function DownloadReportPdfButton(props: Props) {
       // Must stay synchronous with the click so the browser allows the popup.
       const ok = openCallReportPdf({
         ...props,
-        logoUrl: `${window.location.origin}/logo.png`,
+        logoUrl: `${window.location.origin}/brand/liba-logo.png`,
       });
       if (!ok) {
         toast.error("יש לאפשר חלונות קופצים כדי להוריד את הדוח");

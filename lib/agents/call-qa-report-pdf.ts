@@ -522,7 +522,7 @@ export function buildCallReportPdfHtml(input: CallReportPdfInput): string {
         <h1>דוח בקרת שיחה</h1>
         <p>ליבה ביטוח · סוכן בקרת שיחות</p>
       </div>
-      <img class="logo" src="${esc(input.logoUrl || "/logo.png")}" alt="ליבה" />
+      <img class="logo" src="${esc(input.logoUrl || "/brand/liba-logo.png")}" alt="ליבה" />
     </header>
 
     <section>
@@ -565,8 +565,8 @@ export function openCallReportPdf(input: CallReportPdfInput): boolean {
     logoUrl:
       input.logoUrl ||
       (typeof window !== "undefined"
-        ? `${window.location.origin}/logo.png`
-        : "/logo.png"),
+        ? `${window.location.origin}/brand/liba-logo.png`
+        : "/brand/liba-logo.png"),
   });
 
   // Blob URL avoids about:blank + noopener issues in Edge/Chrome.

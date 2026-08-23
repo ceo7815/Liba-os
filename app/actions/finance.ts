@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { requireFinanceAccess } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   categoriesForKind,
@@ -12,11 +12,17 @@ import {
   isFinancePortalSlug,
   isPayrollMonth,
   isSalaryCategory,
+  isIncomeKind,
   payrollMonthToDate,
   toPayrollMonth,
+  toLedgerAmount,
+  commissionSplitsTotal,
+  COMMISSION_SPLIT_TYPES,
+  parseMoneyInput,
   monthRange,
   plDeltaForEntry,
   type CommissionType,
+  type CommissionSplitType,
   type FinanceAttachment,
   type FinanceBankSnapshot,
   type FinanceEntry,
@@ -43,6 +49,7 @@ function mapEntry(row: {
   description: string | null;
   reference_number: string | null;
   vat_included: boolean;
+  withholding_applied?: boolean;
   notes: string | null;
   employee_id?: string | null;
   supplier_id?: string | null;
@@ -65,6 +72,7 @@ function mapEntry(row: {
     description: row.description,
     reference_number: row.reference_number,
     vat_included: row.vat_included,
+    withholding_applied: Boolean(row.withholding_applied),
     notes: row.notes,
     employee_id: row.employee_id ?? null,
     supplier_id: row.supplier_id ?? null,
@@ -91,8 +99,24 @@ function parseAmount(raw: number | string): number | null {
   return Math.round(n * 100) / 100;
 }
 
+function ledgerAmount(input: {
+  amount: number;
+  kind: FinanceKind;
+  category: string;
+  vat_included?: boolean;
+  withholding_applied?: boolean;
+}): number {
+  return toLedgerAmount({
+    amount: input.amount,
+    kind: input.kind,
+    category: input.category,
+    vatIncluded: Boolean(input.vat_included),
+    withholdingApplied: Boolean(input.withholding_applied),
+  });
+}
+
 const ENTRY_COLS =
-  "id, kind, category, amount, currency, occurred_at, portal_slug, commission_type, description, reference_number, vat_included, notes, employee_id, supplier_id, payroll_month, created_at, updated_at";
+  "id, kind, category, amount, currency, occurred_at, portal_slug, commission_type, description, reference_number, vat_included, withholding_applied, notes, employee_id, supplier_id, payroll_month, created_at, updated_at";
 
 async function resolveSalaryAssignment(
   admin: ReturnType<typeof createAdminClient>,
@@ -176,7 +200,7 @@ export async function listFinanceEntries(options?: {
   portal_slug?: string;
   query?: string;
 }): Promise<{ error: string | null; entries: FinanceEntry[] }> {
-  await requireAdmin();
+  await requireFinanceAccess();
   const admin = createAdminClient();
 
   let q = admin
@@ -218,12 +242,13 @@ export async function createFinanceEntry(input: {
   description?: string;
   reference_number?: string;
   vat_included?: boolean;
+  withholding_applied?: boolean;
   notes?: string;
   employee_id?: string;
   supplier_id?: string;
   payroll_month?: string;
 }): Promise<FinanceMutationResult> {
-  const profile = await requireAdmin();
+  const profile = await requireFinanceAccess();
 
   if (!isFinanceKind(input.kind)) return { error: "סוג תנועה לא תקין" };
   const category = input.category?.trim();
@@ -231,8 +256,8 @@ export async function createFinanceEntry(input: {
   const catErr = validateCategory(input.kind, category);
   if (catErr) return { error: catErr };
 
-  const amount = parseAmount(input.amount);
-  if (amount == null) return { error: "סכום לא תקין" };
+  const parsed = parseAmount(input.amount);
+  if (parsed == null) return { error: "סכום לא תקין" };
 
   let commissionType: CommissionType | null = null;
   if (input.kind === "income" && input.commission_type) {
@@ -269,6 +294,26 @@ export async function createFinanceEntry(input: {
   if (assignment.error) return { error: assignment.error };
   if (!assignment.occurredAt?.trim()) return { error: "חובה למלא תאריך" };
 
+  const isSalary = input.kind === "expense" && isSalaryCategory(category);
+  if (!isSalary && typeof input.vat_included !== "boolean") {
+    return { error: "חובה לבחור אם הסכום כולל מע״מ או לפני מע״מ" };
+  }
+  const incomeKind = isIncomeKind(input.kind);
+  if (incomeKind && typeof input.withholding_applied !== "boolean") {
+    return { error: "חובה לבחור אם נוכה מס במקור 5%" };
+  }
+  const vatIncluded = isSalary ? false : Boolean(input.vat_included);
+  const withholdingApplied = incomeKind
+    ? Boolean(input.withholding_applied)
+    : false;
+  const amount = ledgerAmount({
+    amount: parsed,
+    kind: input.kind,
+    category,
+    vat_included: vatIncluded,
+    withholding_applied: withholdingApplied,
+  });
+
   const { data, error } = await admin
     .from("finance_entries")
     .insert({
@@ -280,7 +325,8 @@ export async function createFinanceEntry(input: {
       commission_type: commissionType,
       description: input.description?.trim() || null,
       reference_number: input.reference_number?.trim() || null,
-      vat_included: input.vat_included ?? true,
+      vat_included: vatIncluded,
+      withholding_applied: withholdingApplied,
       notes: input.notes?.trim() || null,
       employee_id: assignment.employeeId,
       supplier_id: assignment.supplierId,
@@ -299,6 +345,80 @@ export async function createFinanceEntry(input: {
   return { error: null, id: data.id };
 }
 
+export async function createFinanceIncomeSplit(input: {
+  category: string;
+  occurred_at: string;
+  portal_slug?: string;
+  description?: string;
+  reference_number?: string;
+  notes?: string;
+  splits: Partial<Record<CommissionSplitType, number | string>>;
+}): Promise<FinanceMutationResult> {
+  const profile = await requireFinanceAccess();
+
+  const category = input.category?.trim();
+  if (!category) return { error: "חובה לבחור סעיף" };
+  const catErr = validateCategory("income", category);
+  if (catErr) return { error: catErr };
+
+  if (!input.occurred_at?.trim()) return { error: "חובה למלא תאריך" };
+
+  const portalSlug = input.portal_slug?.trim() || null;
+  if (!portalSlug) return { error: "חובה לבחור חברת ביטוח" };
+  if (!isFinancePortalSlug(portalSlug)) {
+    return { error: "חברת ביטוח לא תקינה" };
+  }
+
+  const splitSum = commissionSplitsTotal(input.splits);
+  if (splitSum == null) return { error: "סכומי הסעיפים לא תקינים" };
+  if (splitSum <= 0) {
+    return { error: "חובה למלא נפרעים, מבצעים, היקף או מוצרי צבירה" };
+  }
+
+  const rows = [];
+  for (const type of COMMISSION_SPLIT_TYPES) {
+    const part = parseMoneyInput(input.splits[type] ?? 0);
+    if (part == null) return { error: "סכומי הסעיפים לא תקינים" };
+    if (part === 0) continue;
+    rows.push({
+      kind: "income" as const,
+      category,
+      amount: part,
+      occurred_at: input.occurred_at,
+      portal_slug: portalSlug,
+      commission_type: type,
+      description: input.description?.trim() || null,
+      reference_number: input.reference_number?.trim() || null,
+      vat_included: false,
+      withholding_applied: false,
+      notes: input.notes?.trim() || null,
+      employee_id: null,
+      supplier_id: null,
+      payroll_month: null,
+      created_by: profile.id,
+      updated_by: profile.id,
+    });
+  }
+
+  if (rows.length === 0) {
+    return { error: "חובה לחלק את התשלום לנפרעים, מבצעים, היקף ומוצרי צבירה" };
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("finance_entries")
+    .insert(rows)
+    .select("id");
+
+  if (error || !data?.length) {
+    return { error: error?.message ?? "יצירת התנועה נכשלה" };
+  }
+
+  revalidatePath("/finance");
+  const ids = data.map((row) => row.id);
+  return { error: null, id: ids[0], ids };
+}
+
 export async function updateFinanceEntry(input: {
   id: string;
   kind: string;
@@ -310,12 +430,13 @@ export async function updateFinanceEntry(input: {
   description?: string;
   reference_number?: string;
   vat_included?: boolean;
+  withholding_applied?: boolean;
   notes?: string;
   employee_id?: string;
   supplier_id?: string;
   payroll_month?: string;
 }): Promise<FinanceMutationResult> {
-  const profile = await requireAdmin();
+  const profile = await requireFinanceAccess();
   if (!input.id?.trim()) return { error: "חסר מזהה" };
   if (!isFinanceKind(input.kind)) return { error: "סוג תנועה לא תקין" };
 
@@ -324,8 +445,8 @@ export async function updateFinanceEntry(input: {
   const catErr = validateCategory(input.kind, category);
   if (catErr) return { error: catErr };
 
-  const amount = parseAmount(input.amount);
-  if (amount == null) return { error: "סכום לא תקין" };
+  const parsed = parseAmount(input.amount);
+  if (parsed == null) return { error: "סכום לא תקין" };
 
   let commissionType: CommissionType | null = null;
   if (input.kind === "income" && input.commission_type) {
@@ -362,6 +483,26 @@ export async function updateFinanceEntry(input: {
   if (assignment.error) return { error: assignment.error };
   if (!assignment.occurredAt?.trim()) return { error: "חובה למלא תאריך" };
 
+  const isSalary = input.kind === "expense" && isSalaryCategory(category);
+  if (!isSalary && typeof input.vat_included !== "boolean") {
+    return { error: "חובה לבחור אם הסכום כולל מע״מ או לפני מע״מ" };
+  }
+  const incomeKind = isIncomeKind(input.kind);
+  if (incomeKind && typeof input.withholding_applied !== "boolean") {
+    return { error: "חובה לבחור אם נוכה מס במקור 5%" };
+  }
+  const vatIncluded = isSalary ? false : Boolean(input.vat_included);
+  const withholdingApplied = incomeKind
+    ? Boolean(input.withholding_applied)
+    : false;
+  const amount = ledgerAmount({
+    amount: parsed,
+    kind: input.kind,
+    category,
+    vat_included: vatIncluded,
+    withholding_applied: withholdingApplied,
+  });
+
   const { error } = await admin
     .from("finance_entries")
     .update({
@@ -373,7 +514,8 @@ export async function updateFinanceEntry(input: {
       commission_type: commissionType,
       description: input.description?.trim() || null,
       reference_number: input.reference_number?.trim() || null,
-      vat_included: input.vat_included ?? true,
+      vat_included: vatIncluded,
+      withholding_applied: withholdingApplied,
       notes: input.notes?.trim() || null,
       employee_id: assignment.employeeId,
       supplier_id: assignment.supplierId,
@@ -390,7 +532,7 @@ export async function updateFinanceEntry(input: {
 export async function deleteFinanceEntry(
   id: string,
 ): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireFinanceAccess();
   if (!id?.trim()) return { error: "חסר מזהה" };
 
   const admin = createAdminClient();
@@ -417,7 +559,7 @@ export async function getFinancePlReport(input: {
   from: string;
   to: string;
 }): Promise<{ error: string | null; report: PlReport | null }> {
-  await requireAdmin();
+  await requireFinanceAccess();
   if (!input.from || !input.to) {
     return { error: "חובה לבחור טווח תאריכים", report: null };
   }
@@ -539,7 +681,7 @@ export async function listBankSnapshots(): Promise<{
   error: string | null;
   snapshots: FinanceBankSnapshot[];
 }> {
-  await requireAdmin();
+  await requireFinanceAccess();
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("finance_bank_snapshots")
@@ -567,7 +709,7 @@ export async function upsertBankSnapshot(input: {
   account_label?: string;
   notes?: string;
 }): Promise<FinanceMutationResult> {
-  const profile = await requireAdmin();
+  const profile = await requireFinanceAccess();
   if (!input.snapshot_date?.trim()) return { error: "חובה למלא תאריך" };
   const bal =
     typeof input.balance === "number"
@@ -604,7 +746,7 @@ export async function upsertBankSnapshot(input: {
 export async function deleteBankSnapshot(
   id: string,
 ): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireFinanceAccess();
   if (!id?.trim()) return { error: "חסר מזהה" };
   const admin = createAdminClient();
   const { error } = await admin
@@ -628,7 +770,7 @@ export async function getBankReconciliation(input: {
   expectedClosing: number | null;
   variance: number | null;
 }> {
-  await requireAdmin();
+  await requireFinanceAccess();
   const accountLabel = input.account_label?.trim() || "עו״ש ראשי";
   const admin = createAdminClient();
 
@@ -713,7 +855,7 @@ export async function getBankReconciliation(input: {
 export async function listFinanceAttachments(options?: {
   entry_id?: string | null;
 }): Promise<{ error: string | null; attachments: FinanceAttachment[] }> {
-  await requireAdmin();
+  await requireFinanceAccess();
   const admin = createAdminClient();
   let q = admin
     .from("finance_attachments")
@@ -745,7 +887,7 @@ export async function listFinanceAttachments(options?: {
 export async function uploadFinanceAttachment(formData: FormData): Promise<
   FinanceMutationResult & { attachment?: FinanceAttachment }
 > {
-  const profile = await requireAdmin();
+  const profile = await requireFinanceAccess();
   const file = formData.get("file");
   if (!(file instanceof File)) return { error: "לא נבחר קובץ" };
   if (file.size <= 0) return { error: "קובץ ריק" };
@@ -810,7 +952,7 @@ export async function uploadFinanceAttachment(formData: FormData): Promise<
 export async function getFinanceAttachmentUrl(
   attachmentId: string,
 ): Promise<{ error: string | null; url?: string }> {
-  await requireAdmin();
+  await requireFinanceAccess();
   if (!attachmentId?.trim()) return { error: "חסר מזהה" };
 
   const admin = createAdminClient();
@@ -836,7 +978,7 @@ export async function getFinanceAttachmentUrl(
 export async function deleteFinanceAttachment(
   id: string,
 ): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireFinanceAccess();
   if (!id?.trim()) return { error: "חסר מזהה" };
 
   const admin = createAdminClient();

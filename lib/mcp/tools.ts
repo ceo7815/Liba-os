@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AuthenticatedAgent } from "@/lib/mcp/auth";
+import { executeSocialTool, SOCIAL_MCP_TOOLS } from "@/lib/mcp/social-tools";
 
 export type McpOk = { ok: true; data: unknown };
 export type McpErr = { ok: false; error: string; status?: number };
@@ -81,6 +82,7 @@ export const MCP_TOOL_NAMES = [
   "calls.set_status",
   "calls.save_transcript",
   "calls.save_analysis",
+  ...SOCIAL_MCP_TOOLS,
 ] as const;
 
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
@@ -118,6 +120,9 @@ export async function executeMcpTool(
       case "calls.save_analysis":
         return await saveAnalysis(admin, agent, params);
       default:
+        if (tool.startsWith("social.")) {
+          return await executeSocialTool(admin, agent, tool, params);
+        }
         return { ok: false, error: `Unknown tool: ${tool}`, status: 400 };
     }
   } catch (err) {

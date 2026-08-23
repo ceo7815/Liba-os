@@ -29,7 +29,7 @@ export function LogoBadge({
         )}
       >
         <Image
-          src="/logo-transparent.png"
+          src="/brand/liba-logo.png"
           alt="ליבה"
           width={640}
           height={220}
@@ -51,7 +51,7 @@ export function LogoBadge({
       >
         <span className="flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3">
           <Image
-            src="/logo-transparent.png"
+            src="/brand/liba-logo.png"
             alt="ליבה"
             width={220}
             height={72}
@@ -74,7 +74,7 @@ export function LogoBadge({
       >
         <div className="flex w-full items-center justify-center px-1 py-1">
           <Image
-            src="/logo-transparent.png"
+            src="/brand/liba-logo.png"
             alt="ליבה"
             width={320}
             height={120}
@@ -95,7 +95,7 @@ export function LogoBadge({
       )}
     >
       <Image
-        src="/logo-transparent.png"
+        src="/brand/liba-logo.png"
         alt="ליבה"
         width={compact ? 160 : 200}
         height={compact ? 56 : 64}

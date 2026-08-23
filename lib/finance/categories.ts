@@ -16,10 +16,19 @@ export const FINANCE_KIND_LABELS: Record<FinanceKind, string> = {
   transfer: "העברה בנקאית",
 };
 
+export const COMMISSION_SPLIT_TYPES = [
+  "settled",
+  "campaigns",
+  "volume",
+  "accumulation",
+] as const;
+
+export type CommissionSplitType = (typeof COMMISSION_SPLIT_TYPES)[number];
+
 export const COMMISSION_TYPES = [
+  ...COMMISSION_SPLIT_TYPES,
   "service",
   "target",
-  "volume",
   "office_reimburse",
   "other",
 ] as const;
@@ -27,12 +36,25 @@ export const COMMISSION_TYPES = [
 export type CommissionType = (typeof COMMISSION_TYPES)[number];
 
 export const COMMISSION_TYPE_LABELS: Record<CommissionType, string> = {
-  service: "עמלת שירות",
-  target: "עמלת יעד",
-  volume: "עמלת היקף",
+  settled: "נפרעים",
+  campaigns: "מבצעים",
+  volume: "היקף",
+  accumulation: "מוצרי צבירה",
+  service: "נפרעים",
+  target: "מבצעים",
   office_reimburse: "החזר הוצאות משרד",
   other: "אחר",
 };
+
+export const COMMISSION_SPLIT_FIELDS: {
+  id: CommissionSplitType;
+  label: string;
+}[] = [
+  { id: "settled", label: "נפרעים" },
+  { id: "campaigns", label: "מבצעים" },
+  { id: "volume", label: "היקף" },
+  { id: "accumulation", label: "מוצרי צבירה" },
+];
 
 export type FinanceCategoryDef = {
   id: string;
@@ -290,7 +312,7 @@ export const INCOME_SUMMARY_BUCKETS: FinanceSummaryBucket[] = [
   {
     id: "other_income",
     label: "הכנסות אחרות",
-    hint: "יעד, היקף, אחר",
+    hint: "נפרעים, מבצעים, היקף, צבירה",
     categories: ["commission_other"],
     kinds: ["income"],
     tone: "income",
@@ -402,6 +424,7 @@ export type FinanceEntry = {
   description: string | null;
   reference_number: string | null;
   vat_included: boolean;
+  withholding_applied: boolean;
   notes: string | null;
   employee_id: string | null;
   supplier_id: string | null;
@@ -587,6 +610,113 @@ export function formatIls(amount: number): string {
   }).format(amount);
 }
 
+/** Israeli VAT — all ledger amounts are stored and reported before VAT. */
+export const ISRAEL_VAT_RATE = 0.18;
+
+export function roundMoney(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
+export function amountBeforeVat(amount: number, includesVat: boolean): number {
+  if (!includesVat) return roundMoney(amount);
+  return roundMoney(amount / (1 + ISRAEL_VAT_RATE));
+}
+
+export function vatAmountFromGross(gross: number): number {
+  return roundMoney(gross - amountBeforeVat(gross, true));
+}
+
+/** Israeli withholding tax on insurance commissions — ledger income is stored before 5%. */
+export const ISRAEL_WITHHOLDING_RATE = 0.05;
+
+export function isIncomeKind(
+  kind: string,
+): kind is "income" | "income_adjustment" {
+  return kind === "income" || kind === "income_adjustment";
+}
+
+/** If the typed amount is after 5% מס במקור, restore the full commission. */
+export function amountBeforeWithholding(
+  amount: number,
+  afterWithholding: boolean,
+): number {
+  if (!afterWithholding) return roundMoney(amount);
+  return roundMoney(amount / (1 - ISRAEL_WITHHOLDING_RATE));
+}
+
+export function parseMoneyInput(raw: number | string): number | null {
+  const n =
+    typeof raw === "number"
+      ? raw
+      : Number(String(raw).trim().replace(",", "."));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return roundMoney(n);
+}
+
+export function commissionSplitsTotal(
+  splits: Partial<Record<CommissionSplitType, number | string>> | null | undefined,
+): number | null {
+  if (!splits) return 0;
+  let sum = 0;
+  for (const id of COMMISSION_SPLIT_TYPES) {
+    const parsed = parseMoneyInput(splits[id] ?? 0);
+    if (parsed == null) return null;
+    sum += parsed;
+  }
+  return roundMoney(sum);
+}
+
+/** Forward calc: commission lines → add 18% VAT → deduct 5% withholding → expected payment. */
+export function expectedPaymentFromCommission(input: {
+  commission: number;
+  addVat: boolean;
+  deductWithholding: boolean;
+}): {
+  commission: number;
+  vat: number;
+  gross: number;
+  withholding: number;
+  expectedPayment: number;
+} {
+  const commission = roundMoney(input.commission);
+  const vat = input.addVat ? roundMoney(commission * ISRAEL_VAT_RATE) : 0;
+  const gross = roundMoney(commission + vat);
+  const withholding = input.deductWithholding
+    ? roundMoney(gross * ISRAEL_WITHHOLDING_RATE)
+    : 0;
+  return {
+    commission,
+    vat,
+    gross,
+    withholding,
+    expectedPayment: roundMoney(gross - withholding),
+  };
+}
+
+export function amountsEqual(a: number, b: number): boolean {
+  return Math.abs(roundMoney(a) - roundMoney(b)) < 0.005;
+}
+
+export function withholdingAmountFromNet(net: number): number {
+  return roundMoney(amountBeforeWithholding(net, true) - net);
+}
+
+/** Convert a typed amount into the ledger figure (before VAT, before withholding). */
+export function toLedgerAmount(input: {
+  amount: number;
+  kind: FinanceKind;
+  category: string;
+  vatIncluded: boolean;
+  withholdingApplied: boolean;
+}): number {
+  if (input.kind === "expense" && isSalaryCategory(input.category)) {
+    return roundMoney(input.amount);
+  }
+  const afterVat = amountBeforeVat(input.amount, input.vatIncluded);
+  if (!isIncomeKind(input.kind)) return afterVat;
+  return amountBeforeWithholding(afterVat, input.withholdingApplied);
+}
+
 /** Local calendar month bounds (YYYY-MM-DD). */
 export function monthRange(date = new Date()): { from: string; to: string } {
   const y = date.getFullYear();
@@ -600,7 +730,7 @@ export function monthRange(date = new Date()): { from: string; to: string } {
 }
 
 export type FinanceMutationResult =
-  | { error: null; id: string }
+  | { error: null; id: string; ids?: string[] }
   | { error: string; id?: undefined };
 
 export function isFinanceOk(

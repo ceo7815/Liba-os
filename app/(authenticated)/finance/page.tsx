@@ -8,16 +8,16 @@ import {
   listFinanceEmployees,
   listFinanceSuppliers,
 } from "@/app/actions/finance-people";
-import { requireAdmin } from "@/lib/auth";
+import { requireFinanceAccess } from "@/lib/auth";
 import { formatIls, monthRange } from "@/lib/finance/categories";
 import { FinancePanel } from "@/components/finance/finance-panel";
 
 export const metadata: Metadata = {
-  title: "פיננסים",
+  title: "חשבונות ליבה",
 };
 
 export default async function FinancePage() {
-  await requireAdmin();
+  await requireFinanceAccess();
   const range = monthRange();
 
   const [summary, list, people, vendors] = await Promise.all([
@@ -32,16 +32,18 @@ export default async function FinancePage() {
       <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground">עבודה</p>
+            <p className="text-xs font-medium text-muted-foreground">חשבונות ליבה</p>
             <div className="mt-1 flex items-center gap-2.5">
               <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
                 <Wallet className="size-5" />
               </span>
-              <h1 className="text-2xl font-semibold tracking-tight">פיננסים</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">חשבונות ליבה</h1>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
               רישום ידני של הכנסות מעמלות, הוצאות משרד, משכורות עובדים ודוח
-              רווח והפסד. רשימת העובדים נמצאת בקטגוריה נפרדת.
+              רווח והפסד. בהכנסה רושמים נפרעים, מבצעים, היקף ומוצרי צבירה — אלה
+              נשמרים בדוח לפני מע״מ. המערכת מוסיפה מע״מ 18% ומנכה מס במקור 5%
+              כדי להראות כמה צריך להתקבל מהחברה. משכורות ללא מע״מ וללא ניכוי.
             </p>
           </div>
           <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">

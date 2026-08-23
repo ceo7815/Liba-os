@@ -27,7 +27,7 @@ export default async function EmployeesPage() {
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
               ספר העובדים של הסוכנות — שמות, מחלקות, חיוג וטלפונים. משכורות
-              מוזנות בנפרד תחת פיננסים.
+              מוזנות בנפרד תחת חשבונות ליבה.
             </p>
           </div>
           <div className="shrink-0 rounded-2xl border border-black/[0.05] bg-background/80 px-4 py-3 text-center">

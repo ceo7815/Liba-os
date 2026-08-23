@@ -26,28 +26,33 @@ const DEFAULT_KEY_LABEL = "סוכן בקרת שיחות";
 type Props = {
   slug: string;
   initialKeys: AgentKeyMeta[];
+  defaultLabel?: string;
 };
 
-function friendlyKeyLabel(label: string | null) {
+function friendlyKeyLabel(label: string | null, fallback: string) {
   const raw = (label ?? "").trim();
-  if (!raw) return DEFAULT_KEY_LABEL;
+  if (!raw) return fallback;
   const lower = raw.toLowerCase();
   if (lower === "hermes" || lower === "demo-handoff" || lower === "default") {
-    return DEFAULT_KEY_LABEL;
+    return fallback;
   }
   return raw;
 }
 
-export function AgentApiKeyPanel({ slug, initialKeys }: Props) {
+export function AgentApiKeyPanel({
+  slug,
+  initialKeys,
+  defaultLabel = DEFAULT_KEY_LABEL,
+}: Props) {
   const [keys, setKeys] = useState(initialKeys);
-  const [label, setLabel] = useState(DEFAULT_KEY_LABEL);
+  const [label, setLabel] = useState(defaultLabel);
   const [freshKey, setFreshKey] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(true);
   const [pending, startTransition] = useTransition();
 
   function onCreate() {
     startTransition(async () => {
-      const nextLabel = label.trim() || DEFAULT_KEY_LABEL;
+      const nextLabel = label.trim() || defaultLabel;
       const result = await createAgentApiKey(slug, nextLabel);
       if (result.error || !result.apiKey) {
         toast.error(result.error ?? "יצירת מפתח נכשלה");
@@ -148,7 +153,7 @@ export function AgentApiKeyPanel({ slug, initialKeys }: Props) {
             id="key-label"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder={DEFAULT_KEY_LABEL}
+            placeholder={defaultLabel}
             disabled={pending}
             className="rounded-xl"
           />
@@ -197,7 +202,7 @@ export function AgentApiKeyPanel({ slug, initialKeys }: Props) {
                 return (
                   <TableRow key={key.id} className="hover:bg-black/[0.02]">
                     <TableCell className="py-3.5 font-medium">
-                      {friendlyKeyLabel(key.label)}
+                      {friendlyKeyLabel(key.label, defaultLabel)}
                     </TableCell>
                     <TableCell className="py-3.5 text-xs tabular-nums text-muted-foreground">
                       {new Date(key.created_at).toLocaleString("he-IL")}

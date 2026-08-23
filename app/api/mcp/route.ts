@@ -65,6 +65,15 @@ export async function GET() {
         recommendations: "up to 5 (§25.10)",
         summary: "short manager text (§25.11)",
       },
+      social_publish: {
+        agent_slug: "social-media",
+        hermes_profile: "social-media",
+        poll: "social.poll_due claims queue row + returns post and signed asset URLs",
+        complete: "social.complete({ queue_id, post_id, meta_ids, run_id })",
+        fail: "social.fail({ queue_id, post_id, error_message })",
+        analytics: "social.list_published + social.save_analytics + social.inbox_upsert (display only, never reply)",
+        no_meta_from_os: "Liba OS never calls Meta Graph API directly",
+      },
     },
   });
 }

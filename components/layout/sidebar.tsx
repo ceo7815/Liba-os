@@ -18,6 +18,7 @@ import { agents } from "@/lib/agents.config";
 import { portals } from "@/lib/portals.config";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
+import { canAccessFinance } from "@/lib/finance/access";
 
 type SidebarProps = {
   profile: Profile;
@@ -35,6 +36,7 @@ function sectionFromPath(pathname: string): OpenSection {
 export function Sidebar({ profile, className }: SidebarProps) {
   const pathname = usePathname();
   const isAdmin = profile.role === "admin";
+  const showFinance = canAccessFinance(profile);
 
   const agentsActive = pathname === "/agents" || pathname.startsWith("/agents/");
   const portalsActive = pathname === "/portals" || pathname.startsWith("/portals/");
@@ -139,15 +141,18 @@ export function Sidebar({ profile, className }: SidebarProps) {
             icon={KeyRound}
             active={vaultActive}
           />
-          {isAdmin ? (
+        </NavSection>
+
+        {showFinance ? (
+          <NavSection title="חשבונות ליבה">
             <NavItem
               href="/finance"
-              label="פיננסים"
+              label="חשבונות ליבה"
               icon={Wallet}
               active={financeActive}
             />
-          ) : null}
-        </NavSection>
+          </NavSection>
+        ) : null}
 
         {isAdmin ? (
           <NavSection title="עובדים">

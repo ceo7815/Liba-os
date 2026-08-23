@@ -5,6 +5,7 @@ import { LiveClock } from "@/components/layout/live-clock";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { canAccessFinance } from "@/lib/finance/access";
 import type { Profile } from "@/lib/types";
 
 type TopbarProps = {
@@ -15,6 +16,7 @@ export function Topbar({ profile }: TopbarProps) {
   const displayName = profile.full_name || profile.email;
   const roleLabel = profile.role === "admin" ? "מנהל" : "עובד";
   const isAdmin = profile.role === "admin";
+  const showFinance = canAccessFinance(profile);
   const initials = getInitials(displayName);
 
   return (
@@ -42,7 +44,7 @@ export function Topbar({ profile }: TopbarProps) {
         </Sheet>
 
         <div className="min-w-0 flex-1">
-          <GlobalSearch isAdmin={isAdmin} />
+          <GlobalSearch isAdmin={isAdmin} canAccessFinance={showFinance} />
         </div>
 
         <div className="hidden h-6 w-px bg-black/[0.08] md:block" />

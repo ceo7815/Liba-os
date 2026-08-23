@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   createFinanceEntry,
+  createFinanceIncomeSplit,
   deleteFinanceEntry,
   getFinancePlReport,
   listFinanceEntries,
@@ -14,16 +15,25 @@ import {
   uploadFinanceAttachment,
 } from "@/app/actions/finance";
 import {
-  COMMISSION_TYPES,
   COMMISSION_TYPE_LABELS,
+  COMMISSION_SPLIT_FIELDS,
+  COMMISSION_SPLIT_TYPES,
   FINANCE_KIND_LABELS,
   FINANCE_PORTAL_OPTIONS,
   categoriesForKind,
+  amountBeforeVat,
+  vatAmountFromGross,
+  withholdingAmountFromNet,
+  expectedPaymentFromCommission,
+  toLedgerAmount,
+  commissionSplitsTotal,
+  parseMoneyInput,
   formatIls,
   formatPayrollMonthHe,
   getFinanceCategoryLabel,
   getPortalFinanceLabel,
   isFinanceOk,
+  isIncomeKind,
   isPayrollMonth,
   isSalaryCategory,
   currentPayrollMonth,
@@ -34,6 +44,7 @@ import {
   entryMatchesBucket,
   sumBucket,
   type CommissionType,
+  type CommissionSplitType,
   type FinanceEmployee,
   type FinanceEntry,
   type FinanceKind,
@@ -82,11 +93,13 @@ type FormState = {
   commission_type: CommissionType | "";
   description: string;
   reference_number: string;
-  vat_included: boolean;
+  vat_mode: "" | "included" | "excluded";
+  withholding_mode: "" | "before" | "after";
   notes: string;
   employee_id: string;
   supplier_id: string;
   payroll_month: string;
+  splits: Record<CommissionSplitType, string>;
 };
 
 const INCOME_KINDS: FinanceKind[] = ["income", "income_adjustment"];
@@ -94,6 +107,10 @@ const EXPENSE_KINDS: FinanceKind[] = ["expense"];
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function emptySplits(): Record<CommissionSplitType, string> {
+  return { settled: "", campaigns: "", volume: "", accumulation: "" };
 }
 
 function emptyForm(
@@ -116,14 +133,26 @@ function emptyForm(
     amount: "",
     occurred_at: todayIso(),
     portal_slug: "",
-    commission_type: defaultKind === "income" ? "service" : "",
+    commission_type: "",
     description: "",
     reference_number: "",
-    vat_included: true,
+    vat_mode:
+      salaryOnly
+        ? "excluded"
+        : defaultKind === "income"
+          ? "included"
+          : "",
+    withholding_mode:
+      defaultKind === "income"
+        ? "after"
+        : isIncomeKind(defaultKind)
+          ? ""
+          : "before",
     notes: "",
     employee_id: "",
     supplier_id: "",
     payroll_month: currentPayrollMonth(),
+    splits: emptySplits(),
   };
 }
 
@@ -137,12 +166,15 @@ function formFromEntry(entry: FinanceEntry): FormState {
     commission_type: entry.commission_type ?? "",
     description: entry.description ?? "",
     reference_number: entry.reference_number ?? "",
-    vat_included: entry.vat_included,
+    // Amounts in the ledger are always before VAT. Editing must not strip 18% again.
+    vat_mode: "excluded",
+    withholding_mode: "before",
     notes: entry.notes ?? "",
     employee_id: entry.employee_id ?? "",
     supplier_id: entry.supplier_id ?? "",
     payroll_month:
       entry.payroll_month ?? toPayrollMonth(entry.occurred_at),
+    splits: emptySplits(),
   };
 }
 
@@ -371,10 +403,11 @@ export function FinancePanel({
                 ]);
               }}
               onSaved={(entry) => {
-                setEntries((prev) => [
-                  entry,
-                  ...prev.filter((e) => e.id !== entry.id),
-                ]);
+                const rows = Array.isArray(entry) ? entry : [entry];
+                setEntries((prev) => {
+                  const ids = new Set(rows.map((row) => row.id));
+                  return [...rows, ...prev.filter((e) => !ids.has(e.id))];
+                });
                 router.refresh();
               }}
             />
@@ -1062,6 +1095,11 @@ function EntryCard({
                 {getPortalFinanceLabel(entry.portal_slug)}
               </span>
             ) : null}
+            {entry.commission_type ? (
+              <span className="rounded-md bg-background px-2 py-0.5 text-[11px]">
+                {COMMISSION_TYPE_LABELS[entry.commission_type]}
+              </span>
+            ) : null}
             {employeeName ? (
               <span className="rounded-md bg-background px-2 py-0.5 text-[11px]">
                 {employeeName}
@@ -1101,7 +1139,10 @@ function EntryCard({
             suppliers={suppliers}
             disabled={pending}
             onEmployeeCreated={onEmployeeCreated}
-            onSaved={onUpdated}
+            onSaved={(entry) => {
+              const row = Array.isArray(entry) ? entry[0] : entry;
+              if (row) onUpdated(row);
+            }}
           />
           <Button
             type="button"
@@ -1141,7 +1182,7 @@ function EntryDialog({
   suppliers: FinanceSupplier[];
   disabled?: boolean;
   onEmployeeCreated?: (row: FinanceEmployee) => void;
-  onSaved: (entry: FinanceEntry) => void;
+  onSaved: (entry: FinanceEntry | FinanceEntry[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -1156,6 +1197,45 @@ function EntryDialog({
   });
   const salaryMode =
     form.kind === "expense" && isSalaryCategory(form.category);
+  const incomeMode = isIncomeKind(form.kind);
+  const paymentSplitMode = form.kind === "income" && mode === "create";
+  const splits = form.splits ?? emptySplits();
+  const typedAmount = Number(form.amount.replace(",", "."));
+  const hasAmount = Number.isFinite(typedAmount) && typedAmount > 0;
+  const vatIncludedPreview = !salaryMode && form.vat_mode === "included";
+  const withholdingAfter =
+    incomeMode && form.withholding_mode === "after";
+  const afterVat = hasAmount
+    ? amountBeforeVat(typedAmount, vatIncludedPreview)
+    : null;
+  const vatPreview =
+    hasAmount && vatIncludedPreview ? vatAmountFromGross(typedAmount) : null;
+  const withholdingPreview =
+    afterVat != null && withholdingAfter
+      ? withholdingAmountFromNet(afterVat)
+      : null;
+  const ledgerPreview =
+    !paymentSplitMode &&
+    hasAmount &&
+    form.vat_mode &&
+    (!incomeMode || form.withholding_mode)
+      ? toLedgerAmount({
+          amount: typedAmount,
+          kind: form.kind,
+          category: form.category,
+          vatIncluded: vatIncludedPreview,
+          withholdingApplied: withholdingAfter,
+        })
+      : null;
+  const splitSum = paymentSplitMode ? commissionSplitsTotal(splits) : null;
+  const expectedPayment =
+    paymentSplitMode && splitSum != null && splitSum > 0
+      ? expectedPaymentFromCommission({
+          commission: splitSum,
+          addVat: form.vat_mode !== "excluded",
+          deductWithholding: form.withholding_mode !== "before",
+        })
+      : null;
 
   function resetForOpen(next: boolean) {
     setOpen(next);
@@ -1166,22 +1246,55 @@ function EntryDialog({
   }
 
   function onKindChange(kind: FinanceKind) {
-    const cats = categoriesForKind(kind);
+    const cats = categoriesForKind(kind).filter((c) => {
+      if (kind !== "expense") return true;
+      return salaryOnly ? isSalaryCategory(c.id) : !isSalaryCategory(c.id);
+    });
+    const nextCategory = cats[0]?.id ?? form.category;
     setForm((f) => ({
       ...f,
       kind,
-      category: cats[0]?.id ?? f.category,
-      commission_type: kind === "income" ? f.commission_type || "service" : "",
+      category: nextCategory,
+      commission_type: kind === "income" ? f.commission_type : "",
       portal_slug:
         kind === "income" || kind === "income_adjustment" ? f.portal_slug : "",
       payroll_month: f.payroll_month || currentPayrollMonth(),
+      vat_mode: isSalaryCategory(nextCategory)
+        ? "excluded"
+        : salaryOnly
+          ? "excluded"
+          : kind === "income"
+            ? "included"
+            : "",
+      withholding_mode:
+        kind === "income" ? "after" : isIncomeKind(kind) ? "" : "before",
+      splits: kind === "income" ? f.splits ?? emptySplits() : emptySplits(),
     }));
   }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    const isSalary = form.kind === "expense" && isSalaryCategory(form.category);
+    if (!paymentSplitMode && !isSalary && !form.vat_mode) {
+      toast.error("חובה לבחור אם הסכום כולל מע״מ או לפני מע״מ");
+      return;
+    }
+    if (!paymentSplitMode && isIncomeKind(form.kind) && !form.withholding_mode) {
+      toast.error("חובה לבחור אם נוכה מס במקור 5%");
+      return;
+    }
+    if (form.kind === "income" && mode === "edit" && !form.commission_type) {
+      toast.error("חובה לבחור סוג עמלה");
+      return;
+    }
+    if (paymentSplitMode) {
+      const allocated = commissionSplitsTotal(form.splits ?? emptySplits());
+      if (allocated == null || allocated <= 0) {
+        toast.error("חובה למלא נפרעים, מבצעים, היקף או מוצרי צבירה");
+        return;
+      }
+    }
     startTransition(async () => {
-      const isSalary = form.kind === "expense" && isSalaryCategory(form.category);
       if (isSalary) {
         if (!form.employee_id) {
           toast.error("חובה לשייך את המשכורת לעובד");
@@ -1197,6 +1310,18 @@ function EntryDialog({
         ? payrollMonthToDate(form.payroll_month)
         : form.occurred_at;
 
+      const vatIncluded = !isSalary && form.vat_mode === "included";
+      const withholdingApplied =
+        isIncomeKind(form.kind) && form.withholding_mode === "after";
+      const typedAmount = Number(form.amount.replace(",", "."));
+      const netAmount = toLedgerAmount({
+        amount: typedAmount,
+        kind: form.kind,
+        category: form.category,
+        vatIncluded,
+        withholdingApplied,
+      });
+
       const payload = {
         kind: form.kind,
         category: form.category,
@@ -1206,7 +1331,8 @@ function EntryDialog({
         commission_type: form.commission_type || undefined,
         description: form.description,
         reference_number: form.reference_number,
-        vat_included: form.vat_included,
+        vat_included: vatIncluded,
+        withholding_applied: withholdingApplied,
         notes: form.notes,
         employee_id: isSalary ? form.employee_id : undefined,
         supplier_id: isSalary ? undefined : form.supplier_id || undefined,
@@ -1222,6 +1348,64 @@ function EntryDialog({
       }
 
       if (mode === "create") {
+        if (form.kind === "income") {
+          const result = await createFinanceIncomeSplit({
+            category: form.category,
+            occurred_at: occurredAt,
+            portal_slug: form.portal_slug || undefined,
+            description: form.description,
+            reference_number: form.reference_number,
+            notes: form.notes,
+            splits: form.splits ?? emptySplits(),
+          });
+          if (!isFinanceOk(result)) {
+            toast.error(result.error);
+            return;
+          }
+          const ids = result.ids?.length ? result.ids : [result.id];
+          if (file) {
+            const fd = new FormData();
+            fd.set("file", file);
+            fd.set("entry_id", ids[0]);
+            const up = await uploadFinanceAttachment(fd);
+            if (up.error) toast.error(up.error);
+          }
+          const now = new Date().toISOString();
+          const saved: FinanceEntry[] = [];
+          let index = 0;
+          for (const type of COMMISSION_SPLIT_TYPES) {
+            const part = parseMoneyInput((form.splits ?? emptySplits())[type] ?? 0) ?? 0;
+            if (part <= 0) continue;
+            const id = ids[index];
+            index += 1;
+            if (!id) continue;
+            saved.push({
+              id,
+              kind: "income",
+              category: form.category,
+              amount: part,
+              currency: "ILS",
+              occurred_at: occurredAt,
+              portal_slug: form.portal_slug || null,
+              commission_type: type,
+              description: form.description.trim() || null,
+              reference_number: form.reference_number.trim() || null,
+              vat_included: false,
+              withholding_applied: false,
+              notes: form.notes.trim() || null,
+              employee_id: null,
+              supplier_id: null,
+              payroll_month: null,
+              created_at: now,
+              updated_at: now,
+            });
+          }
+          toast.success("נשמר");
+          onSaved(saved);
+          setOpen(false);
+          return;
+        }
+
         const result = await createFinanceEntry(payload);
         if (!isFinanceOk(result)) {
           toast.error(result.error);
@@ -1240,7 +1424,7 @@ function EntryDialog({
           id: newId,
           kind: form.kind,
           category: form.category,
-          amount: Number(form.amount),
+          amount: netAmount,
           currency: "ILS",
           occurred_at: occurredAt,
           portal_slug: form.portal_slug || null,
@@ -1250,7 +1434,8 @@ function EntryDialog({
               : null,
           description: form.description.trim() || null,
           reference_number: form.reference_number.trim() || null,
-          vat_included: form.vat_included,
+          vat_included: vatIncluded,
+          withholding_applied: withholdingApplied,
           notes: form.notes.trim() || null,
           employee_id: isSalary ? form.employee_id : form.employee_id || null,
           supplier_id: isSalary ? null : form.supplier_id || null,
@@ -1279,7 +1464,7 @@ function EntryDialog({
         ...entry!,
         kind: form.kind,
         category: form.category,
-        amount: Number(form.amount),
+        amount: netAmount,
         occurred_at: occurredAt,
         portal_slug: form.portal_slug || null,
         commission_type:
@@ -1288,7 +1473,8 @@ function EntryDialog({
             : null,
         description: form.description.trim() || null,
         reference_number: form.reference_number.trim() || null,
-        vat_included: form.vat_included,
+        vat_included: vatIncluded,
+        withholding_applied: withholdingApplied,
         notes: form.notes.trim() || null,
         employee_id: isSalary ? form.employee_id : form.employee_id || null,
         supplier_id: isSalary ? null : form.supplier_id || null,
@@ -1400,6 +1586,7 @@ function EntryDialog({
                 />
               </div>
             )}
+            {paymentSplitMode ? null : (
             <div className="space-y-1.5">
               <Label className="block text-start">סכום (₪)</Label>
               <Input
@@ -1413,7 +1600,228 @@ function EntryDialog({
                 placeholder="0.00"
               />
             </div>
+            )}
           </div>
+
+          {paymentSplitMode ? (
+            <div className="space-y-2 rounded-2xl border border-black/[0.08] bg-background/70 px-3 py-3">
+              <div>
+                <Label className="block text-start">סעיפי עמלה (לפני מע״מ)</Label>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  רושמים את הסכומים מדוח החברה. המערכת תוסיף מע״מ 18% ותנכה מס
+                  במקור 5%, ותציג כמה צריך להתקבל. אפשר להשאיר סעיף על 0.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {COMMISSION_SPLIT_FIELDS.map((field) => (
+                  <div key={field.id} className="space-y-1.5">
+                    <Label className="block text-start">{field.label}</Label>
+                    <Input
+                      inputMode="decimal"
+                      value={splits[field.id]}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          splits: {
+                            ...(f.splits ?? emptySplits()),
+                            [field.id]: e.target.value,
+                          },
+                        }))
+                      }
+                      className="rounded-xl text-start"
+                      placeholder="0.00"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {salaryMode ? null : (
+            <div className="space-y-3">
+              {paymentSplitMode ? (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="block text-start">
+                      להוסיף מע״מ 18% לחישוב התשלום?
+                    </Label>
+                    <Select
+                      value={form.vat_mode || "included"}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          vat_mode: v as "included" | "excluded",
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="rounded-xl text-start" dir="rtl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        <SelectItem value="included">כן — הוסף מע״מ 18%</SelectItem>
+                        <SelectItem value="excluded">לא — בלי מע״מ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="block text-start">
+                      לנכות מס במקור 5% מהתשלום?
+                    </Label>
+                    <Select
+                      value={form.withholding_mode || "after"}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          withholding_mode: v as "before" | "after",
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="rounded-xl text-start" dir="rtl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        <SelectItem value="after">
+                          כן — נכה 5% אחרי מע״מ
+                        </SelectItem>
+                        <SelectItem value="before">לא — בלי ניכוי</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {expectedPayment ? (
+                    <div className="space-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-950">
+                      <p>
+                        יישמר בדוח (לפני מע״מ):{" "}
+                        <span className="font-semibold tabular-nums">
+                          {formatIls(expectedPayment.commission)}
+                        </span>
+                      </p>
+                      {expectedPayment.vat > 0 ? (
+                        <p>
+                          מע״מ 18%:{" "}
+                          <span className="font-semibold tabular-nums">
+                            {formatIls(expectedPayment.vat)}
+                          </span>
+                          {" · "}
+                          כולל מע״מ:{" "}
+                          <span className="font-semibold tabular-nums">
+                            {formatIls(expectedPayment.gross)}
+                          </span>
+                        </p>
+                      ) : null}
+                      {expectedPayment.withholding > 0 ? (
+                        <p>
+                          ניכוי מס במקור 5%:{" "}
+                          <span className="font-semibold tabular-nums">
+                            {formatIls(expectedPayment.withholding)}
+                          </span>
+                        </p>
+                      ) : null}
+                      <p className="pt-1 text-sm font-semibold">
+                        סכום שצריך להתקבל:{" "}
+                        <span className="tabular-nums">
+                          {formatIls(expectedPayment.expectedPayment)}
+                        </span>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      מלאו לפחות סעיף אחד כדי לראות את סכום התשלום.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+              <div className="space-y-1.5">
+                <Label className="block text-start">הסכום כולל מע״מ?</Label>
+                <Select
+                  value={form.vat_mode || undefined}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      vat_mode: v as "included" | "excluded",
+                    }))
+                  }
+                >
+                  <SelectTrigger className="rounded-xl text-start" dir="rtl">
+                    <SelectValue placeholder="חובה לבחור — לפני מע״מ או כולל מע״מ" />
+                  </SelectTrigger>
+                  <SelectContent dir="rtl">
+                    <SelectItem value="excluded">לפני מע״מ</SelectItem>
+                    <SelectItem value="included">כולל מע״מ (18%)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {mode === "edit" ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    הסכום השמור בדוח הוא לפני מע״מ. בחרו «כולל מע״מ» רק אם הזנתם
+                    עכשיו סכום שכולל מע״מ.
+                  </p>
+                ) : null}
+              </div>
+
+              {incomeMode ? (
+                <div className="space-y-1.5">
+                  <Label className="block text-start">נוכה מס במקור 5%?</Label>
+                  <Select
+                    value={form.withholding_mode || undefined}
+                    onValueChange={(v) =>
+                      setForm((f) => ({
+                        ...f,
+                        withholding_mode: v as "before" | "after",
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="rounded-xl text-start" dir="rtl">
+                      <SelectValue placeholder="חובה לבחור — לפני ניכוי או אחרי ניכוי" />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl">
+                      <SelectItem value="before">
+                        לא — הסכום לפני ניכוי מס במקור
+                      </SelectItem>
+                      <SelectItem value="after">
+                        כן — הסכום אחרי ניכוי מס במקור (5%)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {mode === "edit" ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      הסכום השמור בדוח הוא לפני ניכוי. בחרו «אחרי ניכוי» רק אם
+                      הזנתם עכשיו סכום שכבר נוכה ממנו 5%.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {ledgerPreview != null ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-950">
+                  {vatPreview != null ? (
+                    <>
+                      מע״מ 18% שיוסר:{" "}
+                      <span className="font-semibold tabular-nums">
+                        {formatIls(vatPreview)}
+                      </span>
+                      .{" "}
+                    </>
+                  ) : null}
+                  {withholdingPreview != null ? (
+                    <>
+                      ניכוי מס במקור 5%:{" "}
+                      <span className="font-semibold tabular-nums">
+                        {formatIls(withholdingPreview)}
+                      </span>
+                      .{" "}
+                    </>
+                  ) : null}
+                  יישמר בדוח:{" "}
+                  <span className="font-semibold tabular-nums">
+                    {formatIls(ledgerPreview)}
+                  </span>
+                  .
+                </p>
+              ) : null}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label className="block text-start">סעיף</Label>
@@ -1423,6 +1831,11 @@ function EntryDialog({
                 setForm((f) => ({
                   ...f,
                   category: v,
+                  vat_mode: isSalaryCategory(v)
+                    ? "excluded"
+                    : isSalaryCategory(f.category)
+                      ? ""
+                      : f.vat_mode,
                   payroll_month:
                     isSalaryCategory(v) && !f.payroll_month
                       ? currentPayrollMonth()
@@ -1442,17 +1855,6 @@ function EntryDialog({
               </SelectContent>
             </Select>
           </div>
-
-          <label className="flex items-center justify-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.vat_included}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, vat_included: e.target.checked }))
-              }
-            />
-            כולל מע״מ
-          </label>
 
           {salaryMode ? (
             <div className="space-y-2">
@@ -1546,11 +1948,11 @@ function EntryDialog({
                   </SelectContent>
                 </Select>
               </div>
-              {form.kind === "income" ? (
+              {form.kind === "income" && mode === "edit" ? (
                 <div className="space-y-1.5">
                   <Label className="block text-start">סוג עמלה</Label>
                   <Select
-                    value={form.commission_type || "service"}
+                    value={form.commission_type || undefined}
                     onValueChange={(v) =>
                       setForm((f) => ({
                         ...f,
@@ -1559,14 +1961,22 @@ function EntryDialog({
                     }
                   >
                     <SelectTrigger className="rounded-xl text-start" dir="rtl">
-                      <SelectValue />
+                      <SelectValue placeholder="בחרו סוג עמלה" />
                     </SelectTrigger>
                     <SelectContent dir="rtl">
-                      {COMMISSION_TYPES.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {COMMISSION_TYPE_LABELS[c]}
+                      {COMMISSION_SPLIT_FIELDS.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.label}
                         </SelectItem>
                       ))}
+                      {form.commission_type &&
+                      !(COMMISSION_SPLIT_TYPES as readonly string[]).includes(
+                        form.commission_type,
+                      ) ? (
+                        <SelectItem value={form.commission_type}>
+                          {COMMISSION_TYPE_LABELS[form.commission_type]}
+                        </SelectItem>
+                      ) : null}
                     </SelectContent>
                   </Select>
                 </div>

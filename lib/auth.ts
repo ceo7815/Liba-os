@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile } from "@/lib/types";
+import { canAccessFinance } from "@/lib/finance/access";
 
 const PROFILE_SELECT = "id, email, full_name, role, is_active, created_at";
 
@@ -52,3 +53,14 @@ export async function requireAdmin(): Promise<Profile> {
   }
   return profile;
 }
+
+/** Finance ledger — CEO + Asaf only (not every admin). */
+export async function requireFinanceAccess(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!canAccessFinance(profile)) {
+    redirect("/dashboard");
+  }
+  return profile;
+}
+
+export { canAccessFinance };

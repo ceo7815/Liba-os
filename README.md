@@ -60,7 +60,30 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-`NEXT_PUBLIC_*` נדרשים גם בזמן **build** (מועברים כ-build args) וגם בזמן ריצה. `SUPABASE_SERVICE_ROLE_KEY` נדרש רק בזמן ריצה.
+`NEXT_PUBLIC_*` נדרשים גם בזמן **build** (מועברים כ-build args) וגם בזמן ריצה. `SUPABASE_SERVICE_ROLE_KEY` ו-`VAULT_ENCRYPTION_KEY` נדרשים בזמן ריצה.
+
+## פריסה ב-xCloud (Docker + Nginx)
+
+השרת **Liba Insurance** כבר על סטאק Docker + Nginx. הפריסה היא מ-Git, לא מהעלאת קבצים.
+
+1. ב-xCloud חברו GitHub של **ceo7815** (לא titatu-agents / Hub).
+2. New Site → Deploy via Git / Docker Compose From Git.
+3. ריפו: `ceo7815/Liba-os`, ענף: `main`.
+4. Composer File Name: `docker-compose.yml`.
+5. Auto-Detect Ports → Primary Service Port: **3000**.
+6. Environment File — הדביקו ערכים אמיתיים (לא מהדוגמה):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://cuqaftpkcdxtjogiyqtu.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=https://YOUR_DOMAIN
+SUPABASE_SERVICE_ROLE_KEY=
+VAULT_ENCRYPTION_KEY=
+```
+
+`NEXT_PUBLIC_SITE_URL` חייב להיות הכתובת הציבורית המדויקת (דומיין xCloud או דומיין שלכם), כולל `https://`.
+
+ב-Supabase → Authentication → URL Configuration הוסיפו את אותה כתובת ל-Site URL ול-Redirect URLs (`/auth/callback`, `/set-password`, `/**`).
 
 ## הוספת סוכן AI
 

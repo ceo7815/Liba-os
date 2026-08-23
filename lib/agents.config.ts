@@ -49,9 +49,9 @@ export const agents: AgentDefinition[] = [
     slug: "social-media",
     name: "סוכן רשתות חברתיות",
     description:
-      "ניהול ותפעול רשתות חברתיות — תוכן, מעקב ותגובות. הסוכן בפיתוח ויופיע כאן כשיהיה מוכן.",
+      "יומן תוכן חודשי לפייסבוק ואינסטגרם — תזמון, אישור, תור פרסום ותיבת תגובות. Liba OS הוא מקור האמת; הפרסום בפועל דרך ראנר חיצוני.",
     href: "/agents/social-media",
-    status: "planned",
+    status: "ready",
     externalBaseUrl: "",
     modules: ["activity", "costs", "history", "summaries", "recommendations"],
   },

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireFinanceAccess } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   resolveSupplierCategory,
@@ -161,7 +161,7 @@ export async function listFinanceSuppliers(): Promise<{
   error: string | null;
   suppliers: FinanceSupplier[];
 }> {
-  await requireAdmin();
+  await requireFinanceAccess();
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("finance_suppliers")
@@ -183,7 +183,7 @@ export async function createFinanceSupplier(input: {
   contact_name?: string;
   notes?: string;
 }): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireFinanceAccess();
   const name = input.name?.trim();
   if (!name) return { error: "חובה למלא שם ספק" };
   const resolved = resolveSupplierCategory({
@@ -221,7 +221,7 @@ export async function updateFinanceSupplier(input: {
   notes?: string;
   is_active?: boolean;
 }): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireFinanceAccess();
   if (!input.id?.trim()) return { error: "חסר מזהה" };
   const name = input.name?.trim();
   if (!name) return { error: "חובה למלא שם ספק" };
@@ -253,7 +253,7 @@ export async function updateFinanceSupplier(input: {
 export async function deleteFinanceSupplier(
   id: string,
 ): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireFinanceAccess();
   if (!id?.trim()) return { error: "חסר מזהה" };
   const admin = createAdminClient();
   const { error } = await admin.from("finance_suppliers").delete().eq("id", id);
