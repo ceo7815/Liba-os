@@ -332,11 +332,30 @@ async function loadSocialDashboardUnsafe(
 export async function getOrCreatePostForDate(
   date: string,
 ): Promise<{ ok: true; post: SocialPost } | { ok: false; error: string }> {
+  try {
+    return await getOrCreatePostForDateUnsafe(date);
+  } catch (err) {
+    console.error("[social-media] getOrCreatePostForDate failed", err);
+    return { ok: false, error: "לא הצלחנו לפתוח את היום. נסו שוב." };
+  }
+}
+
+async function getOrCreatePostForDateUnsafe(
+  date: string,
+): Promise<{ ok: true; post: SocialPost } | { ok: false; error: string }> {
   const profile = await requireProfile();
   const admin = createAdminClient();
   const settings = await loadSettings(admin);
   const [y, m] = date.split("-").map(Number);
-  const holiday = await getHolidayForDate(y, m, date);
+  let holiday: Awaited<ReturnType<typeof getHolidayForDate>> = null;
+  try {
+    holiday = await Promise.race([
+      getHolidayForDate(y, m, date),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+    ]);
+  } catch (err) {
+    console.error("[social-media] holiday lookup skipped", err);
+  }
   const range = monthRangeIso(y, m);
 
   const { data: existing } = await admin

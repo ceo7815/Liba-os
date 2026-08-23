@@ -122,6 +122,7 @@ export function PostDaySheet({
 
     const existing = existingPosts[0];
     if (existing) {
+      setLoading(false);
       const same = hydratedPostId.current === existing.id;
       hydratedPostId.current = existing.id;
       setPost(existing);
@@ -139,27 +140,38 @@ export function PostDaySheet({
       return;
     }
 
+    let cancelled = false;
     hydratedPostId.current = null;
     setLoading(true);
-    getOrCreatePostForDate(date).then((res) => {
-      setLoading(false);
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      hydratedPostId.current = res.post.id;
-      setPost(res.post);
-      setCaption(res.post.caption);
-      setAiEdit(res.post.ai_suggestion || "");
-      setUseAiText(true);
-      setUserNotes(res.post.user_notes ?? "");
-      setPublishTime(isoToJerusalemTime(res.post.scheduled_at));
-      setFormats(res.post.formats.length ? res.post.formats : ["feed"]);
-      setPlatforms(res.post.platforms.length ? res.post.platforms : settings.platforms);
-      setIncludeHashtags(false);
-      onSaved();
-    });
-  }, [open, date, existingPosts, settings.platforms, onSaved]);
+    getOrCreatePostForDate(date)
+      .then((res) => {
+        if (cancelled) return;
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        hydratedPostId.current = res.post.id;
+        setPost(res.post);
+        setCaption(res.post.caption);
+        setAiEdit(res.post.ai_suggestion || "");
+        setUseAiText(true);
+        setUserNotes(res.post.user_notes ?? "");
+        setPublishTime(isoToJerusalemTime(res.post.scheduled_at));
+        setFormats(res.post.formats.length ? res.post.formats : ["feed"]);
+        setPlatforms(res.post.platforms.length ? res.post.platforms : settings.platforms);
+        setIncludeHashtags(false);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("לא הצלחנו לטעון את היום. נסו שוב.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, date, existingPosts, settings.platforms]);
 
   function toggleFormat(fmt: SocialFormat) {
     setFormats((prev) =>

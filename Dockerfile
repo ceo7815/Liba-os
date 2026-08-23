@@ -29,8 +29,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs \
+RUN apk add --no-cache tzdata wget \
+  && addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
+ENV TZ=UTC
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
