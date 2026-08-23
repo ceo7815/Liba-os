@@ -1,6 +1,14 @@
 import { HebrewCalendar, flags, Location, Event } from "@hebcal/core";
 import type { HolidayDay } from "@/lib/social-media/types";
 
+export {
+  HEBREW_MONTH_NAMES,
+  HEBREW_WEEKDAYS,
+  daysInMonth,
+  firstWeekdayOffset,
+  todayJerusalemDateKey,
+} from "@/lib/social-media/calendar-ui";
+
 const TOPIC_HINTS: Record<string, string> = {
   roshHashana: "תחילת שנה — סדר בתיק, בדיקה לפני מוצר חדש",
   yomKippur: "יום כיפור — לא פרסום; אם מכינים מראש: מסר ערכי ומכבד, בלי מכירה",
@@ -44,41 +52,46 @@ function toDateKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Israeli holidays + national days for a calendar month (Asia/Jerusalem dates). */
+/** Israeli holidays + national days for a calendar month (Asia/Jerusalem dates). Server-only. */
 export function getHolidaysForMonth(year: number, month: number): HolidayDay[] {
-  const il = Location.lookup("Jerusalem");
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 0);
+  try {
+    const il = Location.lookup("Jerusalem");
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
 
-  const events = HebrewCalendar.calendar({
-    start,
-    end,
-    location: il ?? undefined,
-    il: true,
-    sedrot: false,
-    candlelighting: false,
-    isHebrewYear: false,
-  });
-
-  const out: HolidayDay[] = [];
-  for (const ev of events) {
-    const cats = ev.getCategories();
-    const isHoliday =
-      cats.includes("holiday") ||
-      cats.includes("modern") ||
-      (ev.getFlags() & flags.CHAG) !== 0;
-    if (!isHoliday) continue;
-
-    const date = ev.getDate().greg();
-    out.push({
-      date: toDateKey(date),
-      key: holidayKey(ev),
-      label: ev.render("he"),
-      topicHint: topicForEvent(ev),
+    const events = HebrewCalendar.calendar({
+      start,
+      end,
+      location: il ?? undefined,
+      il: true,
+      sedrot: false,
+      candlelighting: false,
+      isHebrewYear: false,
     });
-  }
 
-  return out;
+    const out: HolidayDay[] = [];
+    for (const ev of events) {
+      const cats = ev.getCategories();
+      const isHoliday =
+        cats.includes("holiday") ||
+        cats.includes("modern") ||
+        (ev.getFlags() & flags.CHAG) !== 0;
+      if (!isHoliday) continue;
+
+      const date = ev.getDate().greg();
+      out.push({
+        date: toDateKey(date),
+        key: holidayKey(ev),
+        label: ev.render("he"),
+        topicHint: topicForEvent(ev),
+      });
+    }
+
+    return out;
+  } catch (err) {
+    console.error("[social-media] getHolidaysForMonth failed", err);
+    return [];
+  }
 }
 
 export function getHolidayForDate(
@@ -87,39 +100,4 @@ export function getHolidayForDate(
   dateStr: string,
 ): HolidayDay | null {
   return getHolidaysForMonth(year, month).find((h) => h.date === dateStr) ?? null;
-}
-
-export const HEBREW_MONTH_NAMES = [
-  "ינואר",
-  "פברואר",
-  "מרץ",
-  "אפריל",
-  "מאי",
-  "יוני",
-  "יולי",
-  "אוגוסט",
-  "ספטמבר",
-  "אוקטובר",
-  "נובמבר",
-  "דצמבר",
-];
-
-export const HEBREW_WEEKDAYS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
-
-/** Sunday-first grid offset for a month (Israel). */
-export function firstWeekdayOffset(year: number, month: number): number {
-  return new Date(year, month - 1, 1).getDay();
-}
-
-export function daysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
-}
-
-export function todayJerusalemDateKey(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jerusalem",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
 }

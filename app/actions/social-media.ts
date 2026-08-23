@@ -193,7 +193,7 @@ export async function loadSocialDashboard(
           .eq("agent_id", agentId)
           .order("started_at", { ascending: false })
           .limit(20)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as never[], error: null }),
     agentId
       ? admin
           .from("agent_costs")
@@ -202,8 +202,13 @@ export async function loadSocialDashboard(
           .gte("occurred_at", monthStart.toISOString())
           .order("occurred_at", { ascending: false })
           .limit(40)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as never[], error: null }),
   ]);
+
+  if (postsRes.error) throw new Error(postsRes.error.message);
+  if (inboxRes.error) throw new Error(inboxRes.error.message);
+  if (runsRes.error) throw new Error(runsRes.error.message);
+  if (costsRes.error) throw new Error(costsRes.error.message);
 
   const postIds = (postsRes.data ?? []).map((p) => p.id);
   const assetsByPost = new Map<string, SocialAsset[]>();

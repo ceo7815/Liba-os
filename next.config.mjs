@@ -2,6 +2,7 @@
 const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  serverExternalPackages: ["@hebcal/core", "@hebcal/hdate"],
   experimental: {
     serverActions: {
       bodySizeLimit: "12mb",

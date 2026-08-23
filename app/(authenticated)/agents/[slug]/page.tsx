@@ -18,7 +18,8 @@ import { RequestAnalysisButton } from "@/components/agents/request-analysis-butt
 import { listAgentApiKeys } from "@/app/actions/agents";
 import { SocialMediaDashboard } from "@/components/social-media/social-media-dashboard";
 import { loadSocialDashboard } from "@/app/actions/social-media";
-import { todayJerusalemDateKey } from "@/lib/social-media/holidays";
+import { todayJerusalemDateKey } from "@/lib/social-media/calendar-ui";
+import { getHolidaysForMonth } from "@/lib/social-media/holidays";
 import { cn } from "@/lib/utils";
 
 type PageProps = {
@@ -96,6 +97,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
   if (agent.slug === "social-media") {
     const { year, month } = parseMonthYear(searchParams);
     const socialData = await loadSocialDashboard(year, month);
+    const holidays = getHolidaysForMonth(year, month);
     const profile = await getCurrentProfile();
     const isAdmin = profile?.role === "admin";
     const keys = isAdmin
@@ -156,6 +158,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
           initialYear={year}
           initialMonth={month}
           data={socialData}
+          holidays={holidays}
           isAdmin={Boolean(isAdmin)}
           keys={keys}
           hermesStatus={dbAgent?.hermes_status ?? null}

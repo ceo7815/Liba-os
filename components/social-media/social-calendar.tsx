@@ -6,7 +6,7 @@ import {
   daysInMonth,
   firstWeekdayOffset,
   HEBREW_WEEKDAYS,
-} from "@/lib/social-media/holidays";
+} from "@/lib/social-media/calendar-ui";
 import { STATUS_BADGE_CLASS, STATUS_DOT_CLASS, STATUS_LABELS } from "@/lib/social-media/constants";
 import { isoToJerusalemTime } from "@/lib/social-media/scheduling";
 import type {

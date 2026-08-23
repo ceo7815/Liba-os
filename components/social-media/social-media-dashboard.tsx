@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  getHolidaysForMonth,
   HEBREW_MONTH_NAMES,
   todayJerusalemDateKey,
-} from "@/lib/social-media/holidays";
+} from "@/lib/social-media/calendar-ui";
 import type { HolidayDay, SocialPost } from "@/lib/social-media/types";
 import type { SocialDashboardPayload } from "@/lib/social-media/types";
 import type { AgentKeyMeta } from "@/app/actions/agents";
@@ -37,6 +36,7 @@ type Props = {
   initialYear: number;
   initialMonth: number;
   data: SocialDashboardPayload;
+  holidays: HolidayDay[];
   isAdmin?: boolean;
   keys?: AgentKeyMeta[];
   hermesStatus?: string | null;
@@ -48,6 +48,7 @@ export function SocialMediaDashboard({
   initialYear,
   initialMonth,
   data,
+  holidays,
   isAdmin = false,
   keys = [],
   hermesStatus = null,
@@ -65,11 +66,6 @@ export function SocialMediaDashboard({
     setYear(initialYear);
     setMonth(initialMonth);
   }, [initialYear, initialMonth]);
-
-  const holidays = useMemo(
-    () => getHolidaysForMonth(year, month),
-    [year, month],
-  );
 
   const holidayByDate = useMemo(() => {
     const map = new Map<string, HolidayDay>();
