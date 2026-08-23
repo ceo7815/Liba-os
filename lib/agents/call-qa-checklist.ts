@@ -53,7 +53,7 @@ export const SCORE_WEIGHTS = {
 
 export type CallIdentification = {
   customer_name?: string | null;
-  rep_name?: string | None;
+  rep_name?: string | null;
   agency_name?: string | null;
   insurer?: string | null; // מגדל / הראל / איילון / הפניקס / אחרת / יותר מחברה / לא ניתן לזהות
   call_type?: string | null;

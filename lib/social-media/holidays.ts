@@ -51,10 +51,10 @@ export function getHolidaysForMonth(year: number, month: number): HolidayDay[] {
   const end = new Date(year, month, 0);
 
   const events = HebrewCalendar.calendar({
-    startDate: start,
-    endDate: end,
-    location: il,
-    ilonly: true,
+    start,
+    end,
+    location: il ?? undefined,
+    il: true,
     sedrot: false,
     candlelighting: false,
     isHebrewYear: false,

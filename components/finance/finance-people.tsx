@@ -708,10 +708,11 @@ function SupplierDialog({
       category: form.category,
       customCategory: form.customCategory,
     });
-    if (resolved.error) {
+    if (resolved.error !== null) {
       toast.error(resolved.error);
       return;
     }
+    const supplierCategory = resolved.category;
     const payload = {
       name: form.name,
       category: form.category,
@@ -732,7 +733,7 @@ function SupplierDialog({
         onSaved({
           id: result.id,
           name: form.name.trim(),
-          category: resolved.category,
+          category: supplierCategory,
           phone: form.phone.trim() || null,
           email: form.email.trim() || null,
           contact_name: form.contact_name.trim() || null,
@@ -755,7 +756,7 @@ function SupplierDialog({
       onSaved({
         ...supplier!,
         name: form.name.trim(),
-        category: resolved.category,
+        category: supplierCategory,
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
         contact_name: form.contact_name.trim() || null,

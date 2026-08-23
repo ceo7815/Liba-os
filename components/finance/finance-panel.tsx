@@ -1428,10 +1428,7 @@ function EntryDialog({
           currency: "ILS",
           occurred_at: occurredAt,
           portal_slug: form.portal_slug || null,
-          commission_type:
-            form.kind === "income" && form.commission_type
-              ? form.commission_type
-              : null,
+          commission_type: null,
           description: form.description.trim() || null,
           reference_number: form.reference_number.trim() || null,
           vat_included: vatIncluded,

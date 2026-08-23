@@ -52,7 +52,7 @@ export function RequestAnalysisButton({ slug, activeStatus }: Props) {
   function onClick() {
     startTransition(async () => {
       const result = await requestCallAnalysis(slug);
-      if (result.error) {
+      if (result.error !== null) {
         toast.error(result.error);
         return;
       }

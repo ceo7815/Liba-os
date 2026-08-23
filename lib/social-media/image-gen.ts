@@ -197,7 +197,7 @@ export async function generateSocialImages(input: {
   const wanted = (input.formats ?? ["feed"]).filter(
     (f): f is "feed" | "story" => f === "feed" || f === "story",
   );
-  const formats = wanted.length ? wanted : (["feed"] as const);
+  const formats: Array<"feed" | "story"> = wanted.length ? wanted : ["feed"];
 
   const styleHint = input.referenceBuffer
     ? "\n\nA user reference photo was provided for mood/composition only — keep Liba design language (daylight, cream, human, navy+coral accent). Do not copy foreign logos. Official Liba mark remains the attached PNG only, small in a corner."

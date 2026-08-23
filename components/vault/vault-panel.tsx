@@ -502,8 +502,12 @@ function VaultEntryDialog({
           system_type: form.system_type,
           login_url: form.login_url,
         });
-        if (result.error || !result.id) {
-          toast.error(result.error ?? "שמירה נכשלה");
+        if (result.error !== null) {
+          toast.error(result.error);
+          return;
+        }
+        if (!result.id) {
+          toast.error("שמירה נכשלה");
           return;
         }
         toast.success("הרשומה נוספה לכספת");

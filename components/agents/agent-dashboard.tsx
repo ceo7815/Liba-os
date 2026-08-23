@@ -478,7 +478,7 @@ export function AgentDashboard({
     for (const row of data.costs) {
       map.set(row.service, (map.get(row.service) ?? 0) + Number(row.cost_usd));
     }
-    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [data.costs]);
 
   const selectedCall = calls.find((c) => c.id === selectedCallId) ?? null;
