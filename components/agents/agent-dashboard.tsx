@@ -10,14 +10,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { AgentApiKeyPanel } from "@/components/agents/api-key-panel";
 import { AgentGuidelinesPanel } from "@/components/agents/agent-guidelines-panel";
 import { CallQaReport } from "@/components/agents/call-qa-report";
@@ -1149,15 +1141,5 @@ function Metric({
         </div>
       ) : null}
     </div>
-  );
-}
-
-function EmptyRow({ cols, text }: { cols: number; text: string }) {
-  return (
-    <TableRow>
-      <TableCell colSpan={cols} className="py-10 text-center text-muted-foreground">
-        {text}
-      </TableCell>
-    </TableRow>
   );
 }

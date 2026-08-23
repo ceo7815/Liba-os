@@ -171,7 +171,6 @@ export function AuthAtmosphere() {
       if (obstacle) {
         for (const ball of balls) {
           const cx = (obstacle.left + obstacle.right) / 2;
-          const cy = (obstacle.top + obstacle.bottom) / 2;
           if (
             ball.x + ball.r > obstacle.left &&
             ball.x - ball.r < obstacle.right &&

@@ -772,7 +772,7 @@ async function saveAnalysis(
     findings = f;
   }
 
-  let rubricScores = params.rubric_scores ?? null;
+  const rubricScores = params.rubric_scores ?? null;
   let overallScore = optNum(params.overall_score);
   if (
     overallScore == null &&
