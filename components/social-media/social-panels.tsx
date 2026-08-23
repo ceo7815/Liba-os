@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { AgentKeyMeta } from "@/app/actions/agents";
@@ -229,9 +230,11 @@ export function SocialSettingsPanel({ settings }: { settings: SocialSettings }) 
       <div className="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
         <div className="rounded-xl border border-black/[0.06] bg-white p-3">
           <p className="mb-2 text-[11px] font-medium text-muted-foreground">לוגו</p>
-          <img
+          <Image
             src={settings.brand.logoPath ?? "/brand/liba-logo.png"}
             alt="לוגו ליבה"
+            width={128}
+            height={64}
             className="h-16 w-auto object-contain"
           />
         </div>

@@ -23,7 +23,6 @@ import {
 } from "@/lib/social-media/image-gen";
 import {
   isoToJerusalemDate,
-  isoToJerusalemTime,
   jerusalemDateTimeToIso,
   monthRangeIso,
 } from "@/lib/social-media/scheduling";
@@ -207,7 +206,7 @@ export async function loadSocialDashboard(
   ]);
 
   const postIds = (postsRes.data ?? []).map((p) => p.id);
-  let assetsByPost = new Map<string, SocialAsset[]>();
+  const assetsByPost = new Map<string, SocialAsset[]>();
 
   if (postIds.length > 0) {
     const { data: assets } = await admin
