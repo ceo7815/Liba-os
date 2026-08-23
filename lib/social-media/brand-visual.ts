@@ -30,7 +30,7 @@ export const DEFAULT_VISUAL_LANGUAGE = `שפת עיצוב ליבה (אתר liba-
 - רקע בהיר: קרם / אוף-וויט / חם (#F7F4EE), לא שחור, לא ניאון
 - צבעי אתר: נייבי עמוק, קרם, אדום-קורל לנקודת דגש קטנה בלבד — לא שליטה על כל הפריים
 - אווירה רגועה, שקופה, מקצועית; הרבה אוויר; קומפוזיציה נקייה
-- אם יש טקסט על התמונה: עברית, Rubik, קצר, חד
+- אם יש טקסט על התמונה: עברית RTL, Rubik, כותרת קצרה + כמה מילים בלבד — לא פסקה. לפעמים יישור ימין, לפעמים ממורכז (לא שמאל כמו אנגלית)
 
 לא (זה נראה כמו «AI פיננסים» ולא כמו ליבה):
 - סצנה קולנועית חשוכה, קונטרסט דרמטי, זוהר אדום
@@ -42,7 +42,7 @@ export const DEFAULT_VISUAL_LANGUAGE = `שפת עיצוב ליבה (אתר liba-
 /** English hard rules sent to the image model (logo ≠ visual language). */
 export const IMAGE_PROMPT_VISUAL_EN = `
 DESIGN LANGUAGE (this is NOT the logo — it is how the photo looks):
-Israeli professional-family brand like liba-fs.co.il. Bright natural daylight. Cream / off-white / warm interiors. Calm documentary photography of real people. Navy and warm neutrals. Coral-red only as a tiny accent. Lots of negative space. Quiet, human, trustworthy. Rubik-like clean Hebrew if any type.
+Israeli professional-family brand like liba-fs.co.il. Bright natural daylight. Cream / off-white / warm interiors. Calm documentary photography of real people. Navy and warm neutrals. Coral-red only as a tiny accent. Lots of negative space. Quiet, human, trustworthy. If type: Hebrew RTL, Rubik-like, headline + a few words only — never a paragraph. Alternate right-aligned RTL and centered RTL. Never English left-align.
 
 LOGO (separate from design language — attached PNG only):
 Use the attached official Liba PNG as a small flat 2D wordmark in a quiet corner. Copy it exactly. Do not extrude it. Do not integrate the shield into the scene. Do not make anyone hold a shield. Do not invent icons from the logo.

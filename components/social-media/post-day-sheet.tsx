@@ -665,7 +665,7 @@ export function PostDaySheet({
                             setIncludeImageText(e.target.checked)
                           }
                         />
-                        עם טקסט על התמונה (ברירת מחדל: בלי)
+                        עם טקסט על התמונה — כותרת + כמה מילים בלבד, יישור ימין או מרכז (עברית)
                       </label>
                       <Input
                         placeholder="תיקון ג׳נרוט: יותר נקי, לוגו קטן יותר…"

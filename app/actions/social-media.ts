@@ -820,6 +820,7 @@ export async function generateSocialPostImage(
     revisionNotes: post.image_revision_notes,
     brand: settings.brand,
     phone: settings.phone,
+    seed: String(post.scheduled_at ?? post.id),
   });
 
   let runId: string | null = null;
