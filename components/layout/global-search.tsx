@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Contact, KeyRound, Layers3, LayoutDashboard, Search, Users, Wallet, X } from "lucide-react";
+import { Bot, Contact, KeyRound, Layers3, LayoutDashboard, Search, TrendingUp, Users, Wallet, X } from "lucide-react";
 import { agents } from "@/lib/agents.config";
 import { portals } from "@/lib/portals.config";
 import { cn } from "@/lib/utils";
@@ -19,11 +19,13 @@ type SearchItem = {
 type GlobalSearchProps = {
   isAdmin: boolean;
   canAccessFinance?: boolean;
+  canAccessSalesDashboard?: boolean;
 };
 
 export function GlobalSearch({
   isAdmin,
   canAccessFinance = false,
+  canAccessSalesDashboard = false,
 }: GlobalSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -89,6 +91,26 @@ export function GlobalSearch({
       })),
     ];
 
+    if (canAccessSalesDashboard) {
+      items.push({
+        id: "sales-dashboard",
+        label: "דשבורד מכירות",
+        description: "מסך מכירות חי מאקסל OneDrive",
+        href: "/sales-dashboard",
+        icon: TrendingUp,
+        keywords: [
+          "מכירות",
+          "דשבורד",
+          "sales",
+          "excel",
+          "onedrive",
+          "פרמיה",
+          "פוליסות",
+          "tv",
+        ],
+      });
+    }
+
     if (canAccessFinance) {
       items.push({
         id: "finance",
@@ -142,7 +164,7 @@ export function GlobalSearch({
     }
 
     return items;
-  }, [isAdmin, canAccessFinance]);
+  }, [isAdmin, canAccessFinance, canAccessSalesDashboard]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

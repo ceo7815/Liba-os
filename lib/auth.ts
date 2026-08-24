@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile } from "@/lib/types";
 import { canAccessFinance } from "@/lib/finance/access";
+import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
 
 const PROFILE_SELECT = "id, email, full_name, role, is_active, created_at";
 
@@ -63,4 +64,13 @@ export async function requireFinanceAccess(): Promise<Profile> {
   return profile;
 }
 
-export { canAccessFinance };
+/** Sales TV dashboard preview — admins only. The office screen uses a kiosk token. */
+export async function requireSalesDashboardAccess(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!canAccessSalesDashboard(profile)) {
+    redirect("/dashboard");
+  }
+  return profile;
+}
+
+export { canAccessFinance, canAccessSalesDashboard };

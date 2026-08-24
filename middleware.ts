@@ -19,5 +19,7 @@ export const config = {
     "/vault/:path*",
     "/finance/:path*",
     "/employees/:path*",
+    "/sales-dashboard/:path*",
+    "/sales-tv",
   ],
 };

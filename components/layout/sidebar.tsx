@@ -10,6 +10,7 @@ import {
   KeyRound,
   Layers3,
   LayoutDashboard,
+  TrendingUp,
   Users,
   Wallet,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { portals } from "@/lib/portals.config";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 import { canAccessFinance } from "@/lib/finance/access";
+import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
 
 type SidebarProps = {
   profile: Profile;
@@ -37,6 +39,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
   const pathname = usePathname();
   const isAdmin = profile.role === "admin";
   const showFinance = canAccessFinance(profile);
+  const showSalesDashboard = canAccessSalesDashboard(profile);
 
   const agentsActive = pathname === "/agents" || pathname.startsWith("/agents/");
   const portalsActive = pathname === "/portals" || pathname.startsWith("/portals/");
@@ -45,6 +48,8 @@ export function Sidebar({ profile, className }: SidebarProps) {
     pathname === "/finance" || pathname.startsWith("/finance/");
   const employeesActive =
     pathname === "/employees" || pathname.startsWith("/employees/");
+  const salesDashboardActive =
+    pathname === "/sales-dashboard" || pathname.startsWith("/sales-dashboard/");
 
   const [openSection, setOpenSection] = useState<OpenSection>(() =>
     sectionFromPath(pathname),
@@ -142,6 +147,17 @@ export function Sidebar({ profile, className }: SidebarProps) {
             active={vaultActive}
           />
         </NavSection>
+
+        {showSalesDashboard ? (
+          <NavSection title="דשבורד מכירות">
+            <NavItem
+              href="/sales-dashboard"
+              label="דשבורד מכירות"
+              icon={TrendingUp}
+              active={salesDashboardActive}
+            />
+          </NavSection>
+        ) : null}
 
         {showFinance ? (
           <NavSection title="חשבונות ליבה">

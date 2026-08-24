@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { canAccessFinance } from "@/lib/finance/access";
+import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
 import type { Profile } from "@/lib/types";
 
 type TopbarProps = {
@@ -17,6 +18,7 @@ export function Topbar({ profile }: TopbarProps) {
   const roleLabel = profile.role === "admin" ? "מנהל" : "עובד";
   const isAdmin = profile.role === "admin";
   const showFinance = canAccessFinance(profile);
+  const showSalesDashboard = canAccessSalesDashboard(profile);
   const initials = getInitials(displayName);
 
   return (
@@ -44,7 +46,11 @@ export function Topbar({ profile }: TopbarProps) {
         </Sheet>
 
         <div className="min-w-0 flex-1">
-          <GlobalSearch isAdmin={isAdmin} canAccessFinance={showFinance} />
+          <GlobalSearch
+            isAdmin={isAdmin}
+            canAccessFinance={showFinance}
+            canAccessSalesDashboard={showSalesDashboard}
+          />
         </div>
 
         <div className="hidden h-6 w-px bg-black/[0.08] md:block" />

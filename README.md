@@ -25,6 +25,9 @@ SUPABASE_SERVICE_ROLE_KEY=
 | `SUPABASE_SERVICE_ROLE_KEY` | **שרת בלבד** | אסור לחשוף ללקוח. נדרש להזמנות, שינוי תפקיד והשבתה |
 | `VAULT_ENCRYPTION_KEY` | **שרת בלבד** | מפתח AES-256 (base64, 32 בתים) לכספת הסיסמאות |
 | `NEXT_PUBLIC_SITE_URL` | דפדפן + שרת | כתובת האפליקציה, למשל `http://localhost:3000` |
+| `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` | **שרת בלבד** | אפליקציית Graph לדשבורד המכירות |
+| `SALES_EXCEL_DRIVE_ID` + `SALES_EXCEL_ITEM_ID` | **שרת בלבד** | קובץ האקסל ב-OneDrive/SharePoint |
+| `SALES_TV_KIOSK_TOKEN` | **שרת בלבד** | טוקן לכתובת הטלוויזיה `/sales-tv?token=` |
 
 מפתחות: [Settings → API](https://supabase.com/dashboard/project/cuqaftpkcdxtjogiyqtu/settings/api)
 
@@ -79,6 +82,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_SITE_URL=https://YOUR_DOMAIN
 SUPABASE_SERVICE_ROLE_KEY=
 VAULT_ENCRYPTION_KEY=
+AZURE_TENANT_ID=
+AZURE_CLIENT_ID=
+AZURE_CLIENT_SECRET=
+SALES_EXCEL_DRIVE_ID=
+SALES_EXCEL_ITEM_ID=
+SALES_TV_KIOSK_TOKEN=
 ```
 
 `NEXT_PUBLIC_SITE_URL` חייב להיות הכתובת הציבורית המדויקת (דומיין xCloud או דומיין שלכם), כולל `https://`.
@@ -90,3 +99,15 @@ VAULT_ENCRYPTION_KEY=
 1. הוסיפו שורה ב-`lib/agents.config.ts`.
 2. צרו `app/(authenticated)/agents/<slug>/page.tsx`.
 3. הסוכן יופיע בסיידבר וברשימת `/agents`.
+
+## דשבורד מכירות (TV + OneDrive)
+
+מסך מלא ב-`/sales-tv?token=...` (קיוסק למשרד) ותצוגה מקדימה למנהלים ב-`/sales-dashboard`.
+
+1. הרשימו אפליקציה ב-Azure AD של טננט הסוכנות (client credentials).
+2. הרשאה: `Sites.Selected` (מומלץ) או `Files.Read.All`, עם הסכמת אדמין.
+3. מלאו ב-env: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `SALES_EXCEL_DRIVE_ID`, ו-`SALES_EXCEL_ITEM_ID` או `SALES_EXCEL_FILE_PATH`.
+4. צרו `SALES_TV_KIOSK_TOKEN` ארוך ואקראי. בטלוויזיה פתחו Chrome/Edge ל-`https://YOUR_DOMAIN/sales-tv?token=...`.
+5. בלי Graph מוגדר המסך מציג נתוני הדגמה. העובדת חייבת לשמור את האקסל; הרענון הוא כ-30 שניות.
+
+כותרות חובה בגיליון הראשון: `סטאטוס פוליסה`, `פרמיה`, `סוג תהליך`, `תאריך העברה ליצרן`, `תאריך תחילת ביטוח`, `שם לקוח`, `משווק`, `סוג המוצר`, `חברת הביטוח`, `מקור הפנייה`.

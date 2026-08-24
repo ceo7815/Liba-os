@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpLeft, Bot, CheckCircle2, Circle, LayoutDashboard, Users } from "lucide-react";
+import { ArrowUpLeft, Bot, CheckCircle2, Circle, LayoutDashboard, TrendingUp, Users } from "lucide-react";
 import { WeeklyChart } from "@/components/dashboard/weekly-chart";
-import { requireProfile } from "@/lib/auth";
+import { canAccessSalesDashboard, requireProfile } from "@/lib/auth";
 import { agents } from "@/lib/agents.config";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   const profile = await requireProfile();
   const isAdmin = profile.role === "admin";
+  const showSalesDashboard = canAccessSalesDashboard(profile);
   const firstName = profile.full_name?.split(/\s+/)[0] || profile.email;
   const initials = getInitials(profile.full_name || profile.email);
 
@@ -32,7 +33,7 @@ export default async function DashboardPage() {
   const usersTotal = userCount ?? 1;
   const usersActive = activeCount ?? 1;
   const agentsTotal = agents.length;
-  const modulesReady = 2 + (isAdmin ? 1 : 0);
+  const modulesReady = 2 + (isAdmin ? 1 : 0) + (showSalesDashboard ? 1 : 0);
 
   const today = new Intl.DateTimeFormat("he-IL", {
     weekday: "long",
@@ -146,6 +147,15 @@ export default async function DashboardPage() {
           icon={Bot}
           meta={agentsTotal === 0 ? "אין סוכנים מחוברים" : `${agentsTotal} פעילים`}
         />
+        {showSalesDashboard && (
+          <ModuleCard
+            href="/sales-dashboard"
+            title="דשבורד מכירות"
+            description="מסך חי מאקסל OneDrive — פוליסות, פרמיה ולידרבורד"
+            icon={TrendingUp}
+            meta="תצוגה מקדימה"
+          />
+        )}
         {isAdmin && (
           <ModuleCard
             href="/dashboard/users"
