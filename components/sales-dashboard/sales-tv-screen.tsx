@@ -277,7 +277,10 @@ export function SalesTvScreen({ token, embedded = false }: SalesTvScreenProps) {
     return () => window.clearTimeout(id);
   }, [presenting, deckPage]);
 
-  const monthAgents = data.monthAgents ?? [];
+  const monthAgents = useMemo(
+    () => data.monthAgents ?? [],
+    [data.monthAgents],
+  );
   const maxAgent = Math.max(...data.agents.map((a) => a.sum), 1);
   const maxMonthAgent = Math.max(...monthAgents.map((a) => a.sum), 1);
   const activationPct = data.currentMonth.totalCount

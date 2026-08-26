@@ -217,8 +217,6 @@ type SalesCelebrationProps = {
 export function SalesCelebration({ alert, onClose }: SalesCelebrationProps) {
   const fwRef = useRef<HTMLCanvasElement>(null);
   const confRef = useRef<HTMLCanvasElement>(null);
-  const [premiumText, setPremiumText] = useState("0₪");
-  const [countdown, setCountdown] = useState(10);
 
   const stopFx = useCallback(() => {
     const fw = fwRef.current;
@@ -239,13 +237,9 @@ export function SalesCelebration({ alert, onClose }: SalesCelebrationProps) {
       return;
     }
 
-    setPremiumText("0₪");
-    setCountdown(10);
-
     let winTimer = 0;
     let voiceTimer = 0;
     let fwInterval = 0;
-    let raf = 0;
     let fwRunning = false;
     const resize = () => {
       const fwCanvas = fwRef.current;
@@ -257,16 +251,9 @@ export function SalesCelebration({ alert, onClose }: SalesCelebrationProps) {
       confCanvas.height = window.innerHeight;
     };
 
-    const countInterval = window.setInterval(() => {
-      setCountdown((secs) => {
-        if (secs <= 1) {
-          window.clearInterval(countInterval);
-          onClose();
-          return 0;
-        }
-        return secs - 1;
-      });
-    }, 1000);
+    const closeTimer = window.setTimeout(() => {
+      onClose();
+    }, 10_000);
 
     try {
       playChaChingSound();
@@ -443,15 +430,6 @@ export function SalesCelebration({ alert, onClose }: SalesCelebrationProps) {
         animConf();
       }
 
-      const target = alert.premium;
-      const t0 = performance.now();
-      const step = (now: number) => {
-        const p = Math.min((now - t0) / 1800, 1);
-        const ease = 1 - Math.pow(1 - p, 3);
-        setPremiumText(`${Math.round(target * ease).toLocaleString("he-IL")}₪`);
-        if (p < 1) raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
     } catch {
       /* overlay remains visible even if FX fail */
     }
@@ -461,8 +439,7 @@ export function SalesCelebration({ alert, onClose }: SalesCelebrationProps) {
       window.clearTimeout(winTimer);
       window.clearTimeout(voiceTimer);
       window.clearInterval(fwInterval);
-      window.clearInterval(countInterval);
-      cancelAnimationFrame(raf);
+      window.clearTimeout(closeTimer);
       window.removeEventListener("resize", resize);
       stopFx();
     };
