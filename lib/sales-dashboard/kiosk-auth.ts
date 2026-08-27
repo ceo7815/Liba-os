@@ -22,6 +22,20 @@ export function kioskTokenMatches(provided: string | null | undefined): boolean 
   return timingSafeEqual(a, b);
 }
 
+export function salesUploadTokenMatches(
+  provided: string | null | undefined,
+): boolean {
+  const expected =
+    process.env.SALES_EXCEL_UPLOAD_TOKEN?.trim() ||
+    process.env.SALES_TV_KIOSK_TOKEN?.trim();
+  const value = provided?.trim();
+  if (!expected || !value) return false;
+  const a = Buffer.from(value);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
 export function isDevKioskOpen(): boolean {
   return process.env.NODE_ENV !== "production" && !kioskTokenConfigured();
 }

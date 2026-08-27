@@ -1,5 +1,6 @@
 import { getDemoDashboard } from "@/lib/sales-dashboard/demo";
 import { downloadSalesExcel, isGraphConfigured } from "@/lib/sales-dashboard/graph";
+import { loadIngestedWorkbook } from "@/lib/sales-dashboard/ingest-store";
 import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
 import { assertSampleWorkbookParses } from "@/lib/sales-dashboard/sample-workbook";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
@@ -13,6 +14,10 @@ let cache: {
 } | null = null;
 
 let inflight: Promise<DashboardData> | null = null;
+
+export function replaceSalesDashboardSnapshot(data: DashboardData) {
+  cache = { data, fetchedAt: Date.now(), etag: null };
+}
 
 export async function getSalesDashboardSnapshot(): Promise<DashboardData> {
   if (cache && Date.now() - cache.fetchedAt < TTL_MS) {
@@ -34,16 +39,23 @@ async function refreshSnapshot(): Promise<DashboardData> {
     selfTested = true;
   }
 
-  if (!isGraphConfigured()) {
+  try {
+    const ingested = await loadIngestedWorkbook();
+    if (ingested) {
+      const data = parseSalesWorkbook(ingested.buffer, ingested.fileName);
+      cache = { data, fetchedAt: Date.now(), etag: ingested.lastModified };
+      return data;
+    }
+
+    if (isGraphConfigured()) {
+      const file = await downloadSalesExcel();
+      const data = parseSalesWorkbook(file.buffer, file.fileName);
+      cache = { data, fetchedAt: Date.now(), etag: file.etag };
+      return data;
+    }
+
     const data = getDemoDashboard();
     cache = { data, fetchedAt: Date.now(), etag: null };
-    return data;
-  }
-
-  try {
-    const file = await downloadSalesExcel();
-    const data = parseSalesWorkbook(file.buffer, file.fileName);
-    cache = { data, fetchedAt: Date.now(), etag: file.etag };
     return data;
   } catch (error) {
     const message =
