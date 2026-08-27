@@ -21,8 +21,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   PLATFORM_LABELS,
-  STATUS_DOT_CLASS,
-  STATUS_LABELS,
+  postDotClass,
+  postShowsScheduleClock,
+  postStatusLabel,
 } from "@/lib/social-media/constants";
 import type {
   SocialInboxItem,
@@ -55,24 +56,25 @@ export function SocialQueuePanel({
       {sorted.map((post) => {
         const date = isoToJerusalemDate(post.scheduled_at);
         const time = isoToJerusalemTime(post.scheduled_at);
+        const when = postShowsScheduleClock(post)
+          ? `${date} · ${time}`
+          : date;
         return (
           <article
             key={post.id}
             className="app-surface flex flex-wrap items-center justify-between gap-3 p-4"
           >
             <div>
-              <p className="text-sm font-semibold tabular-nums">
-                {date} · {time}
-              </p>
+              <p className="text-sm font-semibold tabular-nums">{when}</p>
               <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                 {post.caption || post.ai_suggestion || "—"}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <span
-                className={`h-2 w-2 rounded-full ${STATUS_DOT_CLASS[post.status]}`}
+                className={`h-2 w-2 rounded-full ${postDotClass(post)}`}
               />
-              <span className="text-xs">{STATUS_LABELS[post.status]}</span>
+              <span className="text-xs">{postStatusLabel(post)}</span>
               <Button type="button" size="sm" variant="outline" onClick={() => onOpenDate(date)}>
                 פתיחה
               </Button>

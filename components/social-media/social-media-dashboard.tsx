@@ -213,6 +213,7 @@ export function SocialMediaDashboard({
         settings={data.settings}
         existingPosts={sheetPosts}
         mode={sheetMode}
+        hermesStatus={hermesStatus}
         onSaved={() => {
           startTransition(() => router.refresh());
         }}

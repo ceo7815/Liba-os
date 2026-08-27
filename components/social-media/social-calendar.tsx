@@ -7,12 +7,19 @@ import {
   firstWeekdayOffset,
   HEBREW_WEEKDAYS,
 } from "@/lib/social-media/calendar-ui";
-import { STATUS_BADGE_CLASS, STATUS_DOT_CLASS, STATUS_LABELS } from "@/lib/social-media/constants";
+import {
+  postBadgeClass,
+  postCellStatusLabel,
+  postDotClass,
+  postShowsScheduleClock,
+  postStatusLabel,
+  STATUS_DOT_CLASS,
+  STATUS_LABELS,
+} from "@/lib/social-media/constants";
 import { isoToJerusalemTime } from "@/lib/social-media/scheduling";
 import type {
   HolidayDay,
   SocialPost,
-  SocialPostStatus,
 } from "@/lib/social-media/types";
 import { Button } from "@/components/ui/button";
 
@@ -30,16 +37,16 @@ type Props = {
   onImmediatePublish: () => void;
 };
 
-/** Compact Hebrew status for calendar cells */
-const CELL_STATUS_LABELS: Record<SocialPostStatus, string> = {
-  draft: "טיוטה",
-  pending_review: "ממתין",
-  scheduled: "אושרה",
-  publishing: "בפרסום",
-  published: "פורסמה",
-  failed: "נכשלה",
-  skipped: "דולג",
-};
+const CALENDAR_LEGEND: Array<{ label: string; dot: string }> = [
+  { label: STATUS_LABELS.draft, dot: STATUS_DOT_CLASS.draft },
+  { label: STATUS_LABELS.pending_review, dot: STATUS_DOT_CLASS.pending_review },
+  { label: STATUS_LABELS.scheduled, dot: STATUS_DOT_CLASS.scheduled },
+  { label: "בתור לפרסום מיידי", dot: STATUS_DOT_CLASS.publishing },
+  { label: STATUS_LABELS.publishing, dot: STATUS_DOT_CLASS.publishing },
+  { label: STATUS_LABELS.published, dot: STATUS_DOT_CLASS.published },
+  { label: STATUS_LABELS.failed, dot: STATUS_DOT_CLASS.failed },
+  { label: STATUS_LABELS.skipped, dot: STATUS_DOT_CLASS.skipped },
+];
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -137,9 +144,9 @@ export function SocialCalendar({
                     <span
                       className={cn(
                         "mt-0.5 h-2 w-2 shrink-0 rounded-full",
-                        STATUS_DOT_CLASS[primary.status],
+                        postDotClass(primary),
                       )}
-                      title={STATUS_LABELS[primary.status]}
+                      title={postStatusLabel(primary)}
                     />
                   )}
                 </div>
@@ -157,15 +164,17 @@ export function SocialCalendar({
                         key={p.id}
                         className={cn(
                           "rounded-md px-1.5 py-1 text-start",
-                          STATUS_BADGE_CLASS[p.status],
+                          postBadgeClass(p),
                         )}
                       >
                         <p className="text-[11px] font-semibold leading-tight">
-                          {CELL_STATUS_LABELS[p.status]}
+                          {postCellStatusLabel(p)}
                         </p>
-                        <p className="mt-0.5 text-[10px] tabular-nums opacity-80">
-                          {isoToJerusalemTime(p.scheduled_at)}
-                        </p>
+                        {postShowsScheduleClock(p) ? (
+                          <p className="mt-0.5 text-[10px] tabular-nums opacity-80">
+                            {isoToJerusalemTime(p.scheduled_at)}
+                          </p>
+                        ) : null}
                       </div>
                     ))}
                     {posts.length > 2 && (
@@ -182,15 +191,10 @@ export function SocialCalendar({
       </div>
 
       <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-        {Object.entries(STATUS_LABELS).map(([status, label]) => (
-          <span key={status} className="inline-flex items-center gap-1.5">
-            <span
-              className={cn(
-                "h-2 w-2 rounded-full",
-                STATUS_DOT_CLASS[status as keyof typeof STATUS_DOT_CLASS],
-              )}
-            />
-            {label}
+        {CALENDAR_LEGEND.map((item) => (
+          <span key={item.label} className="inline-flex items-center gap-1.5">
+            <span className={cn("h-2 w-2 rounded-full", item.dot)} />
+            {item.label}
           </span>
         ))}
       </div>

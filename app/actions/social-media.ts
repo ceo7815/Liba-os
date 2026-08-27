@@ -153,7 +153,50 @@ function mapPost(row: Record<string, unknown>): SocialPost {
     error: row.error ? String(row.error) : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
+    queue_trigger: null,
+    queue_status: null,
+    queue_error: null,
   };
+}
+
+async function attachLatestQueue(
+  admin: ReturnType<typeof createAdminClient>,
+  posts: SocialPost[],
+): Promise<SocialPost[]> {
+  if (posts.length === 0) return posts;
+  const { data } = await admin
+    .from("social_publish_queue")
+    .select("post_id, status, trigger, error_message")
+    .in(
+      "post_id",
+      posts.map((p) => p.id),
+    )
+    .order("created_at", { ascending: false });
+
+  const latest = new Map<
+    string,
+    { status: string; trigger: string; error_message: string | null }
+  >();
+  for (const row of data ?? []) {
+    if (!latest.has(row.post_id)) {
+      latest.set(row.post_id, {
+        status: String(row.status),
+        trigger: String(row.trigger ?? "scheduled"),
+        error_message: row.error_message ? String(row.error_message) : null,
+      });
+    }
+  }
+
+  return posts.map((post) => {
+    const q = latest.get(post.id);
+    if (!q) return post;
+    return {
+      ...post,
+      queue_status: q.status,
+      queue_trigger: q.trigger === "immediate" ? "immediate" : "scheduled",
+      queue_error: q.error_message,
+    };
+  });
 }
 
 async function getAgentId(admin: ReturnType<typeof createAdminClient>) {
@@ -306,11 +349,14 @@ async function loadSocialDashboardUnsafe(
     }
   }
 
-  const posts = (postsRes.data ?? []).map((row) => {
-    const post = mapPost(row as Record<string, unknown>);
-    post.assets = assetsByPost[post.id] ?? [];
-    return post;
-  });
+  const posts = await attachLatestQueue(
+    admin,
+    (postsRes.data ?? []).map((row) => {
+      const post = mapPost(row as Record<string, unknown>);
+      post.assets = assetsByPost[post.id] ?? [];
+      return post;
+    }),
+  );
 
   const costs = (costsRes.data ?? []).map((c) => ({
     ...c,
@@ -399,7 +445,8 @@ async function getOrCreatePostForDateUnsafe(
         created_at: a.created_at,
       })),
     );
-    return { ok: true, post };
+    const [withQueue] = await attachLatestQueue(admin, [post]);
+    return { ok: true, post: withQueue };
   }
 
   const aiSuggestion = finalizeCaption({
@@ -619,6 +666,7 @@ export async function approveSocialPost(
   }
 
   const now = new Date().toISOString();
+  // Immediate: due immediately (UTC now). Scheduled: keep Jerusalem wall-clock instant.
   const scheduledAt = options?.immediate ? now : post.scheduled_at;
 
   const { error: updErr } = await admin

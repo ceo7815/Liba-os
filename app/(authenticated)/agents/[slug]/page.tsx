@@ -140,12 +140,14 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
                     <Link2 className="h-3 w-3" />
                     Liba OS · תור פרסום דרך ראנר חיצוני
                   </span>
-                  {dbAgent?.hermes_status ? (
-                    <span>
-                      ראנר:{" "}
-                      {dbAgent.hermes_status === "online" ? "מחובר" : "לא מחובר"}
-                    </span>
-                  ) : null}
+                  <span>
+                    ראנר:{" "}
+                    {dbAgent?.hermes_status === "online"
+                      ? "מחובר"
+                      : dbAgent?.hermes_status === "offline"
+                        ? "לא מחובר"
+                        : "ממתין ל-heartbeat"}
+                  </span>
                 </div>
               </div>
             </div>

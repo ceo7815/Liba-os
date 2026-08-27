@@ -29,7 +29,7 @@ import { PlatformPreviewDialog } from "@/components/social-media/platform-previe
 import {
   FORMAT_LABELS,
   PLATFORM_LABELS,
-  STATUS_LABELS,
+  postStatusLabel,
 } from "@/lib/social-media/constants";
 import { finalizeCaption } from "@/lib/social-media/caption-format";
 import type {
@@ -50,6 +50,7 @@ type Props = {
   existingPosts: SocialPost[];
   onSaved: () => void;
   mode?: "scheduled" | "immediate";
+  hermesStatus?: string | null;
 };
 
 export function PostDaySheet({
@@ -61,6 +62,7 @@ export function PostDaySheet({
   existingPosts,
   onSaved,
   mode = "scheduled",
+  hermesStatus = null,
 }: Props) {
   const [post, setPost] = useState<SocialPost | null>(null);
   const [loading, setLoading] = useState(false);
@@ -220,8 +222,9 @@ export function PostDaySheet({
       userNotes,
       formats,
       platforms,
-      publishDate: date,
-      publishTime,
+      ...(mode === "immediate"
+        ? {}
+        : { publishDate: date, publishTime }),
       includeImageText,
       imageRevisionNotes: revisionNotes,
       status: "draft",
@@ -255,11 +258,14 @@ export function PostDaySheet({
       });
       if (!res.ok) toast.error(res.error);
       else {
-        toast.success(
-          mode === "immediate"
-            ? "הפוסט נכנס לתור פרסום מיידי"
-            : "אושר ונשמר לתאריך — ממתין לחיבור Meta",
-        );
+        if (mode === "immediate") {
+          toast.success("הפוסט נכנס לתור לפרסום מיידי");
+          if (hermesStatus !== "online") {
+            toast.message("ממתין שהראנר ימשוך את התור");
+          }
+        } else {
+          toast.success("אושר ונשמר לתאריך — לפי שעון ישראל");
+        }
         onSaved();
         onOpenChange(false);
       }
@@ -385,7 +391,7 @@ export function PostDaySheet({
             </span>
             {post && (
               <span className="inline-flex rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
-                {STATUS_LABELS[post.status]}
+                {postStatusLabel(post)}
               </span>
             )}
           </DialogDescription>
@@ -585,16 +591,22 @@ export function PostDaySheet({
                     </section>
 
                     <section className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <Label htmlFor="publishTime">שעת פרסום</Label>
-                        <Input
-                          id="publishTime"
-                          type="time"
-                          value={publishTime}
-                          onChange={(e) => setPublishTime(e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
+                      {mode !== "immediate" ? (
+                        <div>
+                          <Label htmlFor="publishTime">שעת פרסום (ישראל)</Label>
+                          <Input
+                            id="publishTime"
+                            type="time"
+                            value={publishTime}
+                            onChange={(e) => setPublishTime(e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-highlight/40 bg-highlight/10 px-3 py-2 text-sm">
+                          פרסום מיידי — בלי שעת תזמון. אחרי אישור הפוסט עולה לתור עכשיו.
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <Label>פורמטים</Label>
                         {(["feed", "story"] as SocialFormat[]).map((fmt) => (
@@ -702,8 +714,10 @@ export function PostDaySheet({
                   <div>
                     <h3 className="text-sm font-semibold">תצוגה מקדימה</h3>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      {platforms.map((p) => PLATFORM_LABELS[p]).join(" · ")} ·{" "}
-                      {publishTime}
+                      {platforms.map((p) => PLATFORM_LABELS[p]).join(" · ")}
+                      {mode === "immediate"
+                        ? " · פרסום מיידי"
+                        : ` · ${publishTime}`}
                     </p>
                   </div>
                   <Button
@@ -853,7 +867,7 @@ export function PostDaySheet({
         caption={displayCaption}
         platforms={platforms}
         formats={formats}
-        publishTime={publishTime}
+        publishTime={mode === "immediate" ? "" : publishTime}
         feedImageUrl={feedAsset?.signed_url}
         storyImageUrl={storyAsset?.signed_url}
         settings={settings}

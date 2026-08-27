@@ -1,5 +1,5 @@
 import { DEFAULT_VISUAL_LANGUAGE } from "@/lib/social-media/brand-visual";
-import type { SocialPostStatus } from "@/lib/social-media/types";
+import type { SocialPost, SocialPostStatus } from "@/lib/social-media/types";
 
 export const JERUSALEM_TZ = "Asia/Jerusalem";
 export const DEFAULT_PUBLISH_TIME = "10:00";
@@ -9,9 +9,19 @@ export const STATUS_LABELS: Record<SocialPostStatus, string> = {
   draft: "טיוטה",
   pending_review: "ממתין לאישור",
   scheduled: "מאושר / מתוזמן",
-  publishing: "בפרסום",
+  publishing: "מפרסם",
   published: "פורסם",
   failed: "נכשל",
+  skipped: "דולג",
+};
+
+export const CELL_STATUS_LABELS: Record<SocialPostStatus, string> = {
+  draft: "טיוטה",
+  pending_review: "ממתין",
+  scheduled: "אושרה",
+  publishing: "מפרסם",
+  published: "פורסמה",
+  failed: "נכשלה",
   skipped: "דולג",
 };
 
@@ -35,6 +45,63 @@ export const STATUS_BADGE_CLASS: Record<SocialPostStatus, string> = {
   failed: "bg-red-100 text-red-900 ring-1 ring-red-200/80",
   skipped: "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200/80",
 };
+
+export function isImmediatePost(post: Pick<SocialPost, "queue_trigger">) {
+  return post.queue_trigger === "immediate";
+}
+
+export function postShowsScheduleClock(post: Pick<SocialPost, "queue_trigger">) {
+  return post.queue_trigger !== "immediate";
+}
+
+export function postStatusLabel(post: SocialPost): string {
+  if (post.status === "published") return STATUS_LABELS.published;
+  if (isImmediatePost(post)) {
+    if (post.status === "publishing" || post.queue_status === "claimed") {
+      return "מפרסם";
+    }
+    if (post.status === "failed" || post.queue_status === "failed") {
+      return STATUS_LABELS.failed;
+    }
+    if (post.status === "scheduled" || post.queue_status === "pending") {
+      return "בתור לפרסום מיידי";
+    }
+  }
+  return STATUS_LABELS[post.status];
+}
+
+export function postCellStatusLabel(post: SocialPost): string {
+  if (post.status === "published") return CELL_STATUS_LABELS.published;
+  if (isImmediatePost(post)) {
+    if (post.status === "publishing" || post.queue_status === "claimed") {
+      return "מפרסם";
+    }
+    if (post.status === "failed" || post.queue_status === "failed") {
+      return CELL_STATUS_LABELS.failed;
+    }
+    if (post.status === "scheduled" || post.queue_status === "pending") {
+      return "בתור מיידי";
+    }
+  }
+  return CELL_STATUS_LABELS[post.status];
+}
+
+export function postBadgeClass(post: SocialPost): string {
+  if (
+    isImmediatePost(post) &&
+    (post.status === "scheduled" || post.status === "publishing")
+  ) {
+    return STATUS_BADGE_CLASS.publishing;
+  }
+  return STATUS_BADGE_CLASS[post.status];
+}
+
+export function postDotClass(post: SocialPost): string {
+  if (isImmediatePost(post) && post.status === "scheduled") {
+    return STATUS_DOT_CLASS.publishing;
+  }
+  return STATUS_DOT_CLASS[post.status];
+}
 
 export const PLATFORM_LABELS = {
   facebook_page: "פייסבוק (עמוד)",

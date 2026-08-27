@@ -100,6 +100,10 @@ export type SocialPost = {
   created_at: string;
   updated_at: string;
   assets?: SocialAsset[];
+  /** Latest publish-queue row, if any. */
+  queue_trigger?: "scheduled" | "immediate" | null;
+  queue_status?: string | null;
+  queue_error?: string | null;
 };
 
 export type SocialInboxItem = {
