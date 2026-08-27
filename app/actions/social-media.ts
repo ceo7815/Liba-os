@@ -5,6 +5,7 @@ import { getCurrentProfile, requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildAiCaptionSuggestion, buildImagePrompt } from "@/lib/social-media/ai-suggest";
 import { composeSocialCaption } from "@/lib/social-media/caption-gen";
+import { planSocialImage } from "@/lib/social-media/image-plan";
 import { finalizeCaption } from "@/lib/social-media/caption-format";
 import {
   DEFAULT_BRAND,
@@ -476,6 +477,7 @@ async function getOrCreatePostForDateUnsafe(
       holiday_key: holiday?.key ?? null,
       platforms: settings.platforms,
       formats: ["feed"],
+      include_image_text: true,
       created_by: profile.id,
       updated_by: profile.id,
     })
@@ -872,6 +874,14 @@ export async function generateSocialPostImage(
     post.ai_suggestion?.trim() ||
     "";
 
+  const plan = await planSocialImage({
+    caption,
+    userNotes: post.user_notes,
+    includeImageText: post.include_image_text,
+    revisionNotes: post.image_revision_notes,
+    seed: String(post.scheduled_at ?? post.id),
+  });
+
   const prompt = buildImagePrompt({
     caption,
     includeImageText: post.include_image_text,
@@ -879,6 +889,7 @@ export async function generateSocialPostImage(
     brand: settings.brand,
     phone: settings.phone,
     seed: String(post.scheduled_at ?? post.id),
+    plan,
   });
 
   let runId: string | null = null;

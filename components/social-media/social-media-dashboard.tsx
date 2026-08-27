@@ -12,6 +12,8 @@ import type { SocialDashboardPayload } from "@/lib/social-media/types";
 import type { AgentKeyMeta } from "@/app/actions/agents";
 import { SocialCalendar } from "@/components/social-media/social-calendar";
 import { PostDaySheet } from "@/components/social-media/post-day-sheet";
+import { ImageGenDock, type DockedPostSheet } from "@/components/social-media/image-gen-dock";
+import { useImageGenJobs } from "@/components/social-media/use-image-gen-jobs";
 import {
   SocialAnalyticsPanel,
   SocialInboxPanel,
@@ -63,7 +65,11 @@ export function SocialMediaDashboard({
   const [sheetMode, setSheetMode] = useState<"scheduled" | "immediate">(
     "scheduled",
   );
+  const [docked, setDocked] = useState<DockedPostSheet[]>([]);
   const [, startTransition] = useTransition();
+  const { jobs, enqueue, dismiss } = useImageGenJobs(() => {
+    startTransition(() => router.refresh());
+  });
 
   useEffect(() => {
     setYear(initialYear);
@@ -110,14 +116,33 @@ export function SocialMediaDashboard({
   }
 
   function openDay(date: string) {
+    setDocked((prev) =>
+      prev.filter((item) => !(item.date === date && item.mode === "scheduled")),
+    );
     setSheetMode("scheduled");
     setSelectedDate(date);
     setSheetOpen(true);
   }
 
   function openImmediate() {
+    setDocked((prev) => prev.filter((item) => item.mode !== "immediate"));
     setSheetMode("immediate");
     setSelectedDate(todayJerusalemDateKey());
+    setSheetOpen(true);
+  }
+
+  function restoreSheet(item: {
+    date: string;
+    mode: "scheduled" | "immediate";
+  }) {
+    setDocked((prev) =>
+      prev.filter(
+        (dockedItem) =>
+          !(dockedItem.date === item.date && dockedItem.mode === item.mode),
+      ),
+    );
+    setSheetMode(item.mode);
+    setSelectedDate(item.date);
     setSheetOpen(true);
   }
 
@@ -214,9 +239,42 @@ export function SocialMediaDashboard({
         existingPosts={sheetPosts}
         mode={sheetMode}
         hermesStatus={hermesStatus}
+        imageJobs={jobs}
+        onStartImageGen={enqueue}
+        onMinimize={(snapshot) => {
+          setDocked((prev) => [
+            ...prev.filter(
+              (item) =>
+                !(item.date === snapshot.date && item.mode === snapshot.mode),
+            ),
+            snapshot,
+          ]);
+          setSheetOpen(false);
+        }}
         onSaved={() => {
           startTransition(() => router.refresh());
         }}
+      />
+
+      <ImageGenDock
+        jobs={jobs}
+        docked={docked}
+        openDate={selectedDate}
+        openMode={sheetMode}
+        sheetOpen={sheetOpen}
+        onRestore={restoreSheet}
+        onDismissJob={dismiss}
+        onDismissDocked={(item) =>
+          setDocked((prev) =>
+            prev.filter(
+              (dockedItem) =>
+                !(
+                  dockedItem.date === item.date &&
+                  dockedItem.mode === item.mode
+                ),
+            ),
+          )
+        }
       />
     </div>
   );

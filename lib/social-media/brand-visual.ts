@@ -30,7 +30,7 @@ export const DEFAULT_VISUAL_LANGUAGE = `שפת עיצוב ליבה (אתר liba-
 - רקע בהיר: קרם / אוף-וויט / חם (#F7F4EE), לא שחור, לא ניאון
 - צבעי אתר: נייבי עמוק, קרם, אדום-קורל לנקודת דגש קטנה בלבד — לא שליטה על כל הפריים
 - אווירה רגועה, שקופה, מקצועית; צילום מלא עד קצוות הפריים, בלי מסגרת ובלי שוליים ריקים
-- אם יש טקסט על התמונה: עברית RTL, Rubik, כותרת קצרה + כמה מילים בלבד — לא פסקה. לפעמים יישור ימין, לפעמים ממורכז (לא שמאל כמו אנגלית)
+- אם יש טקסט על התמונה: עברית RTL, גופן Rubik (גיאומטרי ישראלי), כותרת שלמה + שורת משנה שלמה — מילים לא נחתכות, מרווח בטוח מהקצוות. יישור ימין או מרכז, אף פעם לא שמאל כמו אנגלית
 
 לא (זה נראה כמו «AI פיננסים» ולא כמו ליבה):
 - סצנה קולנועית חשוכה, קונטרסט דרמטי, זוהר אדום
@@ -42,11 +42,24 @@ export const DEFAULT_VISUAL_LANGUAGE = `שפת עיצוב ליבה (אתר liba-
 /** English hard rules sent to the image model (logo ≠ visual language). */
 export const IMAGE_PROMPT_VISUAL_EN = `
 DESIGN LANGUAGE (this is NOT the logo — it is how the photo looks):
-Israeli professional-family brand like liba-fs.co.il. Bright natural daylight. Cream / off-white / warm interiors. Calm documentary photography of real people. Navy and warm neutrals. Coral-red only as a tiny accent. Full-bleed: subject and scenery reach all four edges. No letterbox, no frame, no padded poster. Quiet, human, trustworthy. If type: Hebrew RTL, Rubik-like, headline + a few words only — never a paragraph. Alternate right-aligned RTL and centered RTL. Never English left-align.
+Israeli professional-family brand like liba-fs.co.il. Bright natural daylight. Cream / off-white / warm interiors. Calm documentary photography of real people. Navy and warm neutrals. Coral-red only as a tiny accent. Full-bleed: subject and scenery reach all four edges. No letterbox, no frame, no padded poster. Quiet, human, trustworthy. The photograph must illustrate the specific post idea, not a generic smiling family. If type: Hebrew RTL, Rubik (geometric Israeli sans), complete headline + optional complete subline — never a paragraph, never a cut word. Alternate right-aligned RTL and centered RTL. Never English left-align.
 
 LOGO (separate from design language — attached PNG only):
 Use the attached official Liba PNG as a small flat 2D wordmark in a quiet corner. Copy it exactly. Do not extrude it. Do not integrate the shield into the scene. Do not make anyone hold a shield. Do not invent icons from the logo.
 
 FORBIDDEN LOOK:
 Dark cinematic lighting, glowing 3D shield, neon charts, floating line-art icons, sci-fi HUD, stock "AI finance" aesthetic, yellow Liba OS chrome, giant logo stamp.
+`.trim();
+
+/** Typography rules for on-image copy (Israeli feed, Rubik). */
+export const IMAGE_PROMPT_TYPE_EN = `
+HEBREW TYPE — designed, not dumped:
+- Font: Rubik, geometric Israeli sans. Headline bold, subline medium. Generous letter-spacing. RTL.
+- Paint ONLY the quoted strings, character for character. Same spelling, same order, complete words.
+- Never hyphenate, never crop a letter at the edge, never drop a final-form letter (ך ם ן ף ץ), never reverse glyphs.
+- If a word will not fit fully inside the safe area, omit the whole word — never clip it.
+- Safe area: at least 8% margin on all four sides. Instagram UI covers the bottom; keep type in the upper half / upper third.
+- High contrast: navy #1B2A4A or cream #F7F4EE. Sit type on a soft cream or navy translucent band so it stays readable on the photo.
+- Two lines max for the headline, one line for the subline. Designed layout, not a wall of caption text.
+- No English, no Latin filler, no lorem, no misshapen letters, no extra Hebrew you were not given.
 `.trim();

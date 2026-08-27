@@ -1,8 +1,16 @@
 import type { HolidayDay, SocialBrand, SocialCta } from "@/lib/social-media/types";
 import {
+  IMAGE_PROMPT_TYPE_EN,
   IMAGE_PROMPT_VISUAL_EN,
   LIBA_LOGO_SPEC,
 } from "@/lib/social-media/brand-visual";
+import {
+  fallbackImagePlan,
+  overlayCopyFromCaption,
+  type SocialImagePlan,
+} from "@/lib/social-media/image-plan";
+
+export { overlayCopyFromCaption };
 
 const OPENERS = [
   "שאלתם את עצמכם לאחרונה",
@@ -61,37 +69,6 @@ export function buildAiCaptionSuggestion(input: {
   return `💛 ${opener}?\n\n📌 ${insight}\n${brandName}: בדיקה לפני מוצר. שפה פשוטה, בלי דחיפות.\n\n👉 ${cta}\nהמידע כללי ואינו המלצה פרטנית.`;
 }
 
-function overlayWords(text: string): string[] {
-  return text
-    .replace(/[💛📌👉❤️🏡💼✨]/g, " ")
-    .replace(/המידע כללי[^\n]*/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
-/** Headline + few words for the canvas — never the full social caption. */
-export function overlayCopyFromCaption(caption: string): {
-  headline: string;
-  subline: string;
-} {
-  const lines = caption
-    .split(/\n+/)
-    .map((line) => line.replace(/^[💛📌👉•\-\s]+/, "").trim())
-    .filter((line) => line.length > 1 && !line.startsWith("http"));
-  const headline = overlayWords(lines[0] ?? "").slice(0, 8).join(" ");
-  const subline = overlayWords(lines.slice(1).join(" ")).slice(0, 5).join(" ");
-  return {
-    headline: headline || "סדר בתיק. שקט בלב.",
-    subline,
-  };
-}
-
-function overlayAlignment(seed: string): "right" | "center" {
-  let n = 0;
-  for (let i = 0; i < seed.length; i++) n += seed.charCodeAt(i);
-  return n % 2 === 0 ? "right" : "center";
-}
-
 export function buildImagePrompt(input: {
   caption: string;
   includeImageText: boolean;
@@ -99,32 +76,40 @@ export function buildImagePrompt(input: {
   brand?: SocialBrand;
   phone?: string | null;
   seed?: string | null;
+  plan?: SocialImagePlan | null;
 }): string {
   const settingsVisual = input.brand?.visualLanguage?.trim();
-  const overlay = overlayCopyFromCaption(input.caption);
-  const align = overlayAlignment(input.seed || input.caption || overlay.headline);
+  const plan =
+    input.plan ??
+    fallbackImagePlan({
+      caption: input.caption,
+      seed: input.seed,
+    });
   const alignRule =
-    align === "right"
+    plan.textAlign === "right"
       ? "Hebrew RTL, right-aligned (start-aligned) block in the upper-right third. Ragged left. Never left-align like English."
       : "Hebrew RTL, centered block in the upper third. Still RTL letter order. Never left-align like English.";
   const textNote = input.includeImageText
     ? [
-        "ON-IMAGE TYPE — sparse. Israeli RTL audience.",
-        "Paint ONLY this copy, nothing else from the caption:",
-        `Headline (max 8 words): ${overlay.headline}`,
-        overlay.subline ? `Subline (max 5 words): ${overlay.subline}` : "No subline.",
+        "ON-IMAGE TYPE — designed Israeli social creative, first generate must already look finished.",
+        IMAGE_PROMPT_TYPE_EN,
         alignRule,
-        "Hard limit: headline + optional subline + existing red CTA chip (2–4 words) + tiny phone. No paragraphs, no bullets, no 📌 body, no disclaimer, no full caption burned into the photo.",
-        "Large type filling the frame with the photo. No empty border around the composition. Rubik-like Hebrew. High contrast.",
+        `HEADLINE TO PAINT EXACTLY (quote, character for character): «${plan.headline}»`,
+        plan.subline
+          ? `SUBLINE TO PAINT EXACTLY: «${plan.subline}»`
+          : "No subline.",
+        plan.ctaChip
+          ? `Optional coral-red CTA chip, 2–4 words exactly: «${plan.ctaChip}»`
+          : "No extra CTA chip unless a tiny phone is requested below.",
+        "Do not paint any other Hebrew from the caption. No paragraphs, no bullets, no disclaimer, no hashtags, no 📌 body.",
       ].join("\n")
     : "No headline and no paragraph on the image. Photography only. Optional tiny phone.";
   const phoneNote = input.phone
     ? `Contact overlay if any: phone ${input.phone} small, same corner family as the logo. No email.`
     : "No phone or email on the image.";
-  const theme = overlayWords(input.caption).slice(0, 12).join(" ");
 
   return [
-    "Create a social feed photograph for Israeli insurance brand Liba (ליבה ביטוח ופיננסים).",
+    "Create a finished Israeli social photograph for Liba (ליבה ביטוח ופיננסים). This is the first generate — it must already match the post. Do not produce a generic stock family.",
     "Keep LOGO rules and DESIGN LANGUAGE rules separate. Do not merge them.",
     IMAGE_PROMPT_VISUAL_EN,
     settingsVisual
@@ -133,9 +118,10 @@ export function buildImagePrompt(input: {
     `LOGO FILE: ${LIBA_LOGO_SPEC.file}`,
     `LOGO RULES: ${LIBA_LOGO_SPEC.mark} ${LIBA_LOGO_SPEC.placement} ${LIBA_LOGO_SPEC.never}`,
     "The attached PNG is the only allowed logo source. Reproduce that exact 2D mark small in a corner. Do not redesign it. Do not place a 3D shield in the scene.",
+    `POST MEANING (illustrate this with photography — never paint this paragraph as text):\n${plan.meaning}`,
+    `PHOTO SCENE (mandatory — this is what the camera sees):\n${plan.scene}`,
     textNote,
     phoneNote,
-    `Photography mood keywords only (do not paint this as text): ${theme}`,
     input.revisionNotes?.trim()
       ? `User revision: ${input.revisionNotes.trim()}`
       : "",

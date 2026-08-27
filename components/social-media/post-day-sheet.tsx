@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Expand, Loader2, Sparkles, Upload } from "lucide-react";
+import { Expand, Loader2, Minimize2, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   approveSocialPost,
@@ -40,6 +40,7 @@ import type {
   SocialSettings,
 } from "@/lib/social-media/types";
 import { cn } from "@/lib/utils";
+import type { ImageGenJob } from "@/components/social-media/use-image-gen-jobs";
 
 type Props = {
   open: boolean;
@@ -51,6 +52,17 @@ type Props = {
   onSaved: () => void;
   mode?: "scheduled" | "immediate";
   hermesStatus?: string | null;
+  imageJobs?: ImageGenJob[];
+  onStartImageGen?: (job: {
+    postId: string;
+    date: string;
+    mode: "scheduled" | "immediate";
+  }) => void;
+  onMinimize?: (snapshot: {
+    date: string;
+    mode: "scheduled" | "immediate";
+    postId: string | null;
+  }) => void;
 };
 
 export function PostDaySheet({
@@ -63,6 +75,9 @@ export function PostDaySheet({
   onSaved,
   mode = "scheduled",
   hermesStatus = null,
+  imageJobs = [],
+  onStartImageGen,
+  onMinimize,
 }: Props) {
   const [post, setPost] = useState<SocialPost | null>(null);
   const [loading, setLoading] = useState(false);
@@ -72,7 +87,7 @@ export function PostDaySheet({
   const [publishTime, setPublishTime] = useState(settings.default_publish_time);
   const [formats, setFormats] = useState<SocialFormat[]>(["feed"]);
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(settings.platforms);
-  const [includeImageText, setIncludeImageText] = useState(false);
+  const [includeImageText, setIncludeImageText] = useState(true);
   const [revisionNotes, setRevisionNotes] = useState("");
   const [includeHashtags, setIncludeHashtags] = useState(false);
   const [aiEdit, setAiEdit] = useState("");
@@ -123,6 +138,11 @@ export function PostDaySheet({
 
   const feedAsset = post?.assets?.find((a) => a.kind === "feed" || a.kind === "original");
   const storyAsset = post?.assets?.find((a) => a.kind === "story");
+  const imageJob = post
+    ? imageJobs.find((job) => job.postId === post.id)
+    : undefined;
+  const imageBusy =
+    imageJob?.status === "queued" || imageJob?.status === "running";
 
   useEffect(() => {
     if (!open || !date) {
@@ -148,7 +168,9 @@ export function PostDaySheet({
       );
       setFormats(existing.formats.length ? existing.formats : ["feed"]);
       setPlatforms(existing.platforms.length ? existing.platforms : settings.platforms);
-      setIncludeImageText(existing.include_image_text);
+      setIncludeImageText(
+        existing.include_image_text || existing.media_mode !== "ai_generated",
+      );
       setRevisionNotes(existing.image_revision_notes ?? "");
       setIncludeHashtags(/#[\u0590-\u05FFa-zA-Z]/.test(existing.ai_suggestion ?? existing.caption ?? ""));
       return;
@@ -311,40 +333,36 @@ export function PostDaySheet({
     });
   }
 
+  async function minimizeToDock() {
+    if (date) {
+      onMinimize?.({ date, mode, postId: post?.id ?? null });
+    } else {
+      onOpenChange(false);
+    }
+    if (post && !locked) {
+      await persistDraft();
+      onSaved();
+    }
+  }
+
+  function handleDialogOpenChange(next: boolean) {
+    if (next) {
+      onOpenChange(true);
+      return;
+    }
+    if (imageBusy) {
+      void minimizeToDock();
+      return;
+    }
+    onOpenChange(false);
+  }
+
   function handleGenerateImage() {
-    if (!post) return;
+    if (!post || !date || !onStartImageGen) return;
     startTransition(async () => {
       const saved = await persistDraft();
       if (!saved) return;
-
-      const toastId = toast.loading(
-        formats.includes("story") && formats.includes("feed")
-          ? "יוצרים פיד ואז סטורי — עד כשתי דקות…"
-          : "יוצרים תמונה — עד דקה…",
-      );
-
-      try {
-        const res = await fetch("/api/social-media/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ postId: post.id }),
-        });
-        const json = (await res.json().catch(() => null)) as
-          | { ok?: boolean; error?: string }
-          | null;
-        toast.dismiss(toastId);
-        if (!res.ok || !json?.ok) {
-          toast.error(json?.error ?? "ג׳נרוט תמונה נכשל");
-          return;
-        }
-        toast.success("התמונה נוצרה");
-        onSaved();
-      } catch {
-        toast.dismiss(toastId);
-        toast.error(
-          "החיבור נקטע באמצע ג׳נרוט. המתינו שיסתיים ונסו שוב — זה לוקח עד דקה.",
-        );
-      }
+      onStartImageGen({ postId: post.id, date, mode });
     });
   }
 
@@ -366,14 +384,23 @@ export function PostDaySheet({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogContent
           className={cn(
-            "flex max-h-[92vh] w-[min(96vw,72rem)] max-w-[72rem] flex-col gap-0 overflow-hidden rounded-2xl border-black/[0.08] p-0 shadow-2xl",
+            "relative flex max-h-[92vh] w-[min(96vw,72rem)] max-w-[72rem] flex-col gap-0 overflow-hidden rounded-2xl border-black/[0.08] p-0 shadow-2xl",
             "data-[state=open]:zoom-in-100",
           )}
         >
-        <DialogHeader className="shrink-0 border-b border-black/[0.06] px-6 py-5 pe-12 text-start sm:px-8">
+        <DialogHeader className="shrink-0 border-b border-black/[0.06] px-6 py-5 pe-20 text-start sm:px-8">
+          <button
+            type="button"
+            onClick={() => void minimizeToDock()}
+            className="absolute end-12 top-4 rounded-sm p-1 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            title="מזער — להמשיך לעבוד ביומן"
+          >
+            <Minimize2 className="h-4 w-4" />
+            <span className="sr-only">מזער</span>
+          </button>
           <DialogTitle className="text-xl tracking-tight">
             {mode === "immediate"
               ? "פרסום מיידי"
@@ -414,6 +441,32 @@ export function PostDaySheet({
             {publishProblems ? (
               <div className="shrink-0 whitespace-pre-wrap border-b border-red-200 bg-red-50 px-6 py-3 text-start text-sm text-red-800 sm:px-8">
                 {publishProblems}
+              </div>
+            ) : null}
+            {imageBusy ? (
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-highlight/40 bg-highlight/20 px-6 py-2.5 text-start text-sm sm:px-8">
+                <span>
+                  {imageJob?.status === "queued"
+                    ? "התמונה בתור — אפשר למזער ולעבור ליום אחר."
+                    : "יוצרים תמונה ברקע. אפשר למזער ולעבוד על תאריך אחר."}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => void minimizeToDock()}
+                >
+                  <Minimize2 className="ml-1 h-3.5 w-3.5" />
+                  מזער
+                </Button>
+              </div>
+            ) : imageJob?.status === "success" ? (
+              <div className="shrink-0 border-b border-emerald-200 bg-emerald-50 px-6 py-2.5 text-start text-sm text-emerald-800 sm:px-8">
+                התמונה מוכנה.
+              </div>
+            ) : imageJob?.status === "error" ? (
+              <div className="shrink-0 border-b border-red-200 bg-red-50 px-6 py-2.5 text-start text-sm text-red-800 sm:px-8">
+                {imageJob.error ?? "ג׳נרוט התמונה נכשל"}
               </div>
             ) : null}
             <div className="grid min-h-0 flex-1 gap-0 overflow-hidden lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
@@ -689,15 +742,19 @@ export function PostDaySheet({
                           type="button"
                           size="sm"
                           variant="secondary"
-                          disabled={pending || post.media_mode === "user_upload"}
+                          disabled={pending || imageBusy || post.media_mode === "user_upload"}
                           onClick={handleGenerateImage}
                         >
-                          {pending ? (
+                          {pending || imageBusy ? (
                             <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <Sparkles className="ml-1 h-3.5 w-3.5" />
                           )}
-                          צור תמונה
+                          {imageJob?.status === "queued"
+                            ? "בתור…"
+                            : imageBusy
+                              ? "יוצרים…"
+                              : "צור תמונה"}
                         </Button>
                       </div>
                       <label className="flex items-center gap-2 text-sm">
@@ -708,7 +765,7 @@ export function PostDaySheet({
                             setIncludeImageText(e.target.checked)
                           }
                         />
-                        עם טקסט על התמונה — כותרת + כמה מילים בלבד, יישור ימין או מרכז (עברית)
+                        עם כותרת מעוצבת על התמונה — עברית Rubik, מילים שלמות לפי תוכן הפוסט
                       </label>
                       <Input
                         placeholder="תיקון ג׳נרוט: יותר נקי, לוגו קטן יותר…"

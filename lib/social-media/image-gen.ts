@@ -215,7 +215,7 @@ Background scenery continues to all four edges. Crop tight. Do not add padding.`
   // Sequential — two parallel gpt-image calls routinely abort Next server actions.
   if (formats.includes("feed")) {
     const raw = await requestWithFallback(
-      `${enrichedPrompt}\n\nSquare 1:1 feed. Fill the whole square. No borders.`,
+      `${enrichedPrompt}\n\nSquare 1:1 feed. Fill the whole square. No borders. Keep on-image Hebrew fully inside the square with 8% margin; do not crop letters.`,
       "1024x1024",
       logo,
     );
@@ -231,7 +231,7 @@ Background scenery continues to all four edges. Crop tight. Do not add padding.`
 
   if (formats.includes("story")) {
     const raw = await requestWithFallback(
-      `${enrichedPrompt}\n\nVertical 9:16 story (full phone screen). Fill the whole 9:16 frame edge-to-edge. Not 4:5, not 2:3 with bars. Logo stays a small flat 2D corner mark on top of the photo, not on empty padding.`,
+      `${enrichedPrompt}\n\nVertical 9:16 story (full phone screen). Fill the whole 9:16 frame edge-to-edge. Not 4:5, not 2:3 with bars. Keep Hebrew type in the upper third, away from Instagram username and bottom CTA. Logo stays a small flat 2D corner mark on top of the photo, not on empty padding.`,
       "1024x1536",
       logo,
     );
