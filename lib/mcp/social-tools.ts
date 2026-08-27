@@ -174,12 +174,17 @@ async function completePublish(
   const runId = optStr(params.run_id);
   const now = new Date().toISOString();
 
+  const partial = Array.isArray(metaIds.partial_errors)
+    ? metaIds.partial_errors.map((e) => String(e))
+    : [];
+  const partialNote = partial.length ? partial.join("\n") : null;
+
   const { error: qErr } = await admin
     .from("social_publish_queue")
     .update({
       status: "completed",
       completed_at: now,
-      error_message: null,
+      error_message: partialNote,
       agent_run_id: runId,
     })
     .eq("id", queueId);
@@ -192,7 +197,7 @@ async function completePublish(
       status: "published",
       published_at: now,
       meta_ids: metaIds,
-      error: null,
+      error: partialNote,
     })
     .eq("id", postId);
 

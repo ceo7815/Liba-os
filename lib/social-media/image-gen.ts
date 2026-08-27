@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { FORMAT_DIMENSIONS } from "@/lib/social-media/constants";
+import { fitSocialCanvas } from "@/lib/social-media/image-fit";
 import type { SocialFormat } from "@/lib/social-media/types";
 
 const OPENAI_IMAGES_URL = "https://api.openai.com/v1/images/generations";
@@ -202,32 +203,45 @@ export async function generateSocialImages(input: {
   const styleHint = input.referenceBuffer
     ? "\n\nA user reference photo was provided for mood/composition only — keep Liba design language (daylight, cream, human, navy+coral accent). Do not copy foreign logos. Official Liba mark remains the attached PNG only, small in a corner."
     : "";
-  const enrichedPrompt = `${input.prompt}${styleHint}`;
+  const frameRule = `
+FULL-BLEED FRAME (mandatory):
+The photograph, people, and any on-image type must fill the entire canvas edge-to-edge.
+No letterbox, no pillarbox, no Polaroid/card/frame, no fake phone bezel, no poster sitting on a larger background, no empty margin around a smaller composition.
+Background scenery continues to all four edges. Crop tight. Do not add padding.`;
+  const enrichedPrompt = `${input.prompt}${styleHint}${frameRule}`;
 
   const out: Partial<Record<"feed" | "story", GeneratedImage>> = {};
 
   // Sequential — two parallel gpt-image calls routinely abort Next server actions.
   if (formats.includes("feed")) {
-    const feedBuf = await requestWithFallback(enrichedPrompt, "1024x1024", logo);
+    const raw = await requestWithFallback(
+      `${enrichedPrompt}\n\nSquare 1:1 feed. Fill the whole square. No borders.`,
+      "1024x1024",
+      logo,
+    );
+    const w = FORMAT_DIMENSIONS.feed.width;
+    const h = FORMAT_DIMENSIONS.feed.height;
     out.feed = {
-      buffer: feedBuf,
+      buffer: await fitSocialCanvas(raw, w, h),
       mimeType: "image/png",
-      width: FORMAT_DIMENSIONS.feed.width,
-      height: FORMAT_DIMENSIONS.feed.height,
+      width: w,
+      height: h,
     };
   }
 
   if (formats.includes("story")) {
-    const storyBuf = await requestWithFallback(
-      `${enrichedPrompt}\n\nVertical story format, mobile-first composition, same design language. Logo stays a small flat 2D corner mark.`,
+    const raw = await requestWithFallback(
+      `${enrichedPrompt}\n\nVertical 9:16 story (full phone screen). Fill the whole 9:16 frame edge-to-edge. Not 4:5, not 2:3 with bars. Logo stays a small flat 2D corner mark on top of the photo, not on empty padding.`,
       "1024x1536",
       logo,
     );
+    const w = FORMAT_DIMENSIONS.story.width;
+    const h = FORMAT_DIMENSIONS.story.height;
     out.story = {
-      buffer: storyBuf,
+      buffer: await fitSocialCanvas(raw, w, h),
       mimeType: "image/png",
-      width: FORMAT_DIMENSIONS.story.width,
-      height: FORMAT_DIMENSIONS.story.height,
+      width: w,
+      height: h,
     };
   }
 

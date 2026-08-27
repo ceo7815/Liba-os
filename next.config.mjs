@@ -16,6 +16,7 @@ const nextConfig = {
         "./node_modules/quick-lru/**/*",
         "./node_modules/temporal-polyfill/**/*",
         "./node_modules/xlsx/**/*",
+        "./node_modules/pngjs/**/*",
       ],
     },
     serverActions: {

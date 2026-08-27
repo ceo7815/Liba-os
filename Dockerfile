@@ -42,6 +42,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@hebcal ./node_modules/@hebcal
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/quick-lru ./node_modules/quick-lru
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/temporal-polyfill ./node_modules/temporal-polyfill
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pngjs ./node_modules/pngjs
 
 USER nextjs
 EXPOSE 3000

@@ -115,7 +115,7 @@ export function buildImagePrompt(input: {
         overlay.subline ? `Subline (max 5 words): ${overlay.subline}` : "No subline.",
         alignRule,
         "Hard limit: headline + optional subline + existing red CTA chip (2–4 words) + tiny phone. No paragraphs, no bullets, no 📌 body, no disclaimer, no full caption burned into the photo.",
-        "Large type, lots of empty cream space. Rubik-like Hebrew. High contrast.",
+        "Large type filling the frame with the photo. No empty border around the composition. Rubik-like Hebrew. High contrast.",
       ].join("\n")
     : "No headline and no paragraph on the image. Photography only. Optional tiny phone.";
   const phoneNote = input.phone

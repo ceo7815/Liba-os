@@ -84,6 +84,12 @@ export function PostDaySheet({
     ? ["scheduled", "publishing", "published"].includes(post.status)
     : false;
 
+  const publishProblems =
+    post?.error ||
+    (Array.isArray(post?.meta_ids?.partial_errors)
+      ? post.meta_ids.partial_errors.map(String).join("\n")
+      : "");
+
   const displayCaption = useMemo(() => {
     const raw = post?.caption_locked
       ? post.caption
@@ -405,6 +411,11 @@ export function PostDaySheet({
 
         {!loading && post && (
           <>
+            {publishProblems ? (
+              <div className="shrink-0 whitespace-pre-wrap border-b border-red-200 bg-red-50 px-6 py-3 text-start text-sm text-red-800 sm:px-8">
+                {publishProblems}
+              </div>
+            ) : null}
             <div className="grid min-h-0 flex-1 gap-0 overflow-hidden lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
               <div className="min-h-0 space-y-5 overflow-y-auto px-6 py-5 sm:px-8">
                 <section className="space-y-2 rounded-xl border border-black/[0.06] bg-muted/40 p-4">

@@ -54,8 +54,17 @@ export function postShowsScheduleClock(post: Pick<SocialPost, "queue_trigger">) 
   return post.queue_trigger !== "immediate";
 }
 
+export function hasPartialPublish(post: SocialPost): boolean {
+  if (post.status !== "published") return false;
+  if (post.error?.trim()) return true;
+  const partial = post.meta_ids?.partial_errors;
+  return Array.isArray(partial) && partial.length > 0;
+}
+
 export function postStatusLabel(post: SocialPost): string {
-  if (post.status === "published") return STATUS_LABELS.published;
+  if (post.status === "published") {
+    return hasPartialPublish(post) ? "פורסם חלקית" : STATUS_LABELS.published;
+  }
   if (isImmediatePost(post)) {
     if (post.status === "publishing" || post.queue_status === "claimed") {
       return "מפרסם";
@@ -71,7 +80,9 @@ export function postStatusLabel(post: SocialPost): string {
 }
 
 export function postCellStatusLabel(post: SocialPost): string {
-  if (post.status === "published") return CELL_STATUS_LABELS.published;
+  if (post.status === "published") {
+    return hasPartialPublish(post) ? "חלקית" : CELL_STATUS_LABELS.published;
+  }
   if (isImmediatePost(post)) {
     if (post.status === "publishing" || post.queue_status === "claimed") {
       return "מפרסם";
