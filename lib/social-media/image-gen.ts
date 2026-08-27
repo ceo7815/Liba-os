@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { FORMAT_DIMENSIONS } from "@/lib/social-media/constants";
+import { IMAGE_PROMPT_STORY_EN } from "@/lib/social-media/brand-visual";
 import { fitSocialCanvas } from "@/lib/social-media/image-fit";
 import type { SocialFormat } from "@/lib/social-media/types";
 
@@ -204,10 +205,8 @@ export async function generateSocialImages(input: {
     ? "\n\nA user reference photo was provided for mood/composition only — keep Liba design language (daylight, cream, human, navy+coral accent). Do not copy foreign logos. Official Liba mark remains the attached PNG only, small in a corner."
     : "";
   const frameRule = `
-FULL-BLEED FRAME (mandatory):
-The photograph, people, and any on-image type must fill the entire canvas edge-to-edge.
-No letterbox, no pillarbox, no Polaroid/card/frame, no fake phone bezel, no poster sitting on a larger background, no empty margin around a smaller composition.
-Background scenery continues to all four edges. Crop tight. Do not add padding.`;
+FULL-BLEED FRAME:
+The photograph reaches the edges. No Polaroid, no fake phone bezel, no poster sitting on a larger background.`;
   const enrichedPrompt = `${input.prompt}${styleHint}${frameRule}`;
 
   const out: Partial<Record<"feed" | "story", GeneratedImage>> = {};
@@ -222,7 +221,7 @@ Background scenery continues to all four edges. Crop tight. Do not add padding.`
     const w = FORMAT_DIMENSIONS.feed.width;
     const h = FORMAT_DIMENSIONS.feed.height;
     out.feed = {
-      buffer: await fitSocialCanvas(raw, w, h),
+      buffer: await fitSocialCanvas(raw, w, h, "cover"),
       mimeType: "image/png",
       width: w,
       height: h,
@@ -231,14 +230,20 @@ Background scenery continues to all four edges. Crop tight. Do not add padding.`
 
   if (formats.includes("story")) {
     const raw = await requestWithFallback(
-      `${enrichedPrompt}\n\nVertical 9:16 story (full phone screen). Fill the whole 9:16 frame edge-to-edge. Not 4:5, not 2:3 with bars. Keep Hebrew type in the upper third, away from Instagram username and bottom CTA. Logo stays a small flat 2D corner mark on top of the photo, not on empty padding.`,
+      `${enrichedPrompt}
+
+${IMAGE_PROMPT_STORY_EN}
+
+Dedicated Instagram story 9:16 — generate this frame from scratch as a vertical photo.
+Do not reuse or crop a 1:1 feed composition. Same concept, new portrait camera.
+Fill the tall frame. Keep Hebrew, CTA, phone, and the full logo inside the inner column with 12% side margin and 18% bottom margin. Never clip a letter or the mark.`,
       "1024x1536",
       logo,
     );
     const w = FORMAT_DIMENSIONS.story.width;
     const h = FORMAT_DIMENSIONS.story.height;
     out.story = {
-      buffer: await fitSocialCanvas(raw, w, h),
+      buffer: await fitSocialCanvas(raw, w, h, "contain"),
       mimeType: "image/png",
       width: w,
       height: h,

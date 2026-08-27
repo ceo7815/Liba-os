@@ -152,16 +152,45 @@ async function scaleNearest(png: PNG, dw: number, dh: number): Promise<PNG> {
   return out;
 }
 
+async function placeContainExtend(png: PNG, dw: number, dh: number): Promise<PNG> {
+  const scale = Math.min(dw / png.width, dh / png.height);
+  const sw = Math.max(1, Math.round(png.width * scale));
+  const sh = Math.max(1, Math.round(png.height * scale));
+  const scaled = await scaleNearest(png, sw, sh);
+  if (sw === dw && sh === dh) return scaled;
+
+  const out = new PNG({ width: dw, height: dh });
+  const ox = Math.floor((dw - sw) / 2);
+  const oy = Math.floor((dh - sh) / 2);
+  for (let y = 0; y < dh; y++) {
+    const sy = Math.min(sh - 1, Math.max(0, y - oy));
+    for (let x = 0; x < dw; x++) {
+      const sx = Math.min(sw - 1, Math.max(0, x - ox));
+      const si = (sy * sw + sx) * 4;
+      const di = (y * dw + x) * 4;
+      out.data[di] = scaled.data[si];
+      out.data[di + 1] = scaled.data[si + 1];
+      out.data[di + 2] = scaled.data[si + 2];
+      out.data[di + 3] = scaled.data[si + 3];
+    }
+    if (y % 48 === 0) await yieldEventLoop();
+  }
+  return out;
+}
+
 export async function fitSocialCanvas(
   buffer: Buffer,
   width: number,
   height: number,
+  mode: "cover" | "contain" = "cover",
 ): Promise<Buffer> {
   try {
     const decoded = PNG.sync.read(buffer);
     const trimmed = trimLetterbox(decoded);
-    const cropped = cropToAspect(trimmed, width, height);
-    const fitted = await scaleNearest(cropped, width, height);
+    const fitted =
+      mode === "contain"
+        ? await placeContainExtend(trimmed, width, height)
+        : await scaleNearest(cropToAspect(trimmed, width, height), width, height);
     return PNG.sync.write(fitted);
   } catch {
     return buffer;

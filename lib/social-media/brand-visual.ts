@@ -17,7 +17,7 @@ export const LIBA_LOGO_SPEC = {
   mark:
     "Official 2D Liba wordmark from the attached PNG only: red shield with two white hands holding a heart, Hebrew ליבה, subtitle ביטוח ופיננסים in charcoal. Flat graphic sticker, not a 3D object.",
   placement:
-    "Small, quiet, lower corner (prefer lower-start in RTL), overlaid on the photograph itself — never on an empty padded margin. Do not crop, recolor, glow, extrude, or invent a new mark.",
+    "Small, quiet, inset mark — at least 10% from every edge. Prefer lower-start in RTL, overlaid on the photograph itself. Never flush to a crop edge. Do not crop, recolor, glow, extrude, or invent a new mark.",
   never:
     "Never integrate the shield into the scene as a prop. Never a giant glowing shield. Never a 3D badge people hold. Never a second invented logo. Never rebuild the mark from memory — only the attached file.",
 } as const;
@@ -58,8 +58,19 @@ HEBREW TYPE — designed, not dumped:
 - Paint ONLY the quoted strings, character for character. Same spelling, same order, complete words.
 - Never hyphenate, never crop a letter at the edge, never drop a final-form letter (ך ם ן ף ץ), never reverse glyphs.
 - If a word will not fit fully inside the safe area, omit the whole word — never clip it.
-- Safe area: at least 8% margin on all four sides. Instagram UI covers the bottom; keep type in the upper half / upper third.
+- Safe area: at least 10% margin on all four sides. Never paint type or the logo flush to an edge.
+- Story: wrap the headline on 2 short centered lines in the upper third. Keep type and logo inside the inner 70% width. Instagram UI covers the top 14% and bottom 20% — leave those empty of type and logo.
 - High contrast: navy #1B2A4A or cream #F7F4EE. Sit type on a soft cream or navy translucent band so it stays readable on the photo.
 - Two lines max for the headline, one line for the subline. Designed layout, not a wall of caption text.
 - No English, no Latin filler, no lorem, no misshapen letters, no extra Hebrew you were not given.
+`.trim();
+
+/** Extra composition rules when generating the dedicated 9:16 story (not a crop of the feed). */
+export const IMAGE_PROMPT_STORY_EN = `
+INSTAGRAM STORY — generate a dedicated vertical photograph, do not crop a square.
+Camera is portrait 9:16: people stacked in the frame, more headroom and ground, not a widescreen scene squeezed sideways.
+Compose for a phone held upright. Same story/concept as the feed, new camera angle made for 9:16.
+Headline: two short centered RTL lines, each a few words, fully inside the inner column.
+Logo: complete mark, inset from the lower-start corner — never clipped.
+Never let Hebrew letters, the CTA chip, or the logo touch or leave the frame.
 `.trim();
