@@ -331,9 +331,10 @@ async function loadSocialDashboardUnsafe(
 
 export async function getOrCreatePostForDate(
   date: string,
+  options?: { immediate?: boolean },
 ): Promise<{ ok: true; post: SocialPost } | { ok: false; error: string }> {
   try {
-    return await getOrCreatePostForDateUnsafe(date);
+    return await getOrCreatePostForDateUnsafe(date, options);
   } catch (err) {
     console.error("[social-media] getOrCreatePostForDate failed", err);
     return { ok: false, error: "לא הצלחנו לפתוח את היום. נסו שוב." };
@@ -342,6 +343,7 @@ export async function getOrCreatePostForDate(
 
 async function getOrCreatePostForDateUnsafe(
   date: string,
+  options?: { immediate?: boolean },
 ): Promise<{ ok: true; post: SocialPost } | { ok: false; error: string }> {
   const profile = await requireProfile();
   const admin = createAdminClient();
@@ -364,9 +366,14 @@ async function getOrCreatePostForDateUnsafe(
     .gte("scheduled_at", range.start)
     .lte("scheduled_at", range.end);
 
-  const match = (existing ?? []).find(
-    (p) => isoToJerusalemDate(String(p.scheduled_at)) === date,
-  );
+  const approvedStatuses = new Set(["scheduled", "publishing", "published"]);
+  const match = (existing ?? []).find((p) => {
+    if (isoToJerusalemDate(String(p.scheduled_at)) !== date) return false;
+    if (options?.immediate && approvedStatuses.has(String(p.status))) {
+      return false;
+    }
+    return true;
+  });
 
   if (match) {
     const post = mapPost(match as Record<string, unknown>);
@@ -408,10 +415,9 @@ async function getOrCreatePostForDateUnsafe(
     includeHashtags: false,
   });
 
-  const scheduledAt = jerusalemDateTimeToIso(
-    date,
-    settings.default_publish_time,
-  );
+  const scheduledAt = options?.immediate
+    ? new Date().toISOString()
+    : jerusalemDateTimeToIso(date, settings.default_publish_time);
 
   const { data, error } = await admin
     .from("social_posts")
@@ -580,6 +586,7 @@ export async function refreshAiSuggestion(
 
 export async function approveSocialPost(
   postId: string,
+  options?: { immediate?: boolean },
 ): Promise<SocialMutationResult> {
   const profile = await requireProfile();
   const admin = createAdminClient();
@@ -612,12 +619,14 @@ export async function approveSocialPost(
   }
 
   const now = new Date().toISOString();
+  const scheduledAt = options?.immediate ? now : post.scheduled_at;
 
   const { error: updErr } = await admin
     .from("social_posts")
     .update({
       status: "scheduled",
       caption,
+      scheduled_at: scheduledAt,
       approved_at: now,
       approved_by: profile.id,
       updated_by: profile.id,
@@ -635,7 +644,8 @@ export async function approveSocialPost(
   const { error: qErr } = await admin.from("social_publish_queue").insert({
     post_id: postId,
     status: "pending",
-    scheduled_for: post.scheduled_at,
+    scheduled_for: scheduledAt,
+    trigger: options?.immediate ? "immediate" : "scheduled",
   });
 
   if (qErr) return { ok: false, error: qErr.message };

@@ -49,6 +49,7 @@ type Props = {
   settings: SocialSettings;
   existingPosts: SocialPost[];
   onSaved: () => void;
+  mode?: "scheduled" | "immediate";
 };
 
 export function PostDaySheet({
@@ -59,6 +60,7 @@ export function PostDaySheet({
   settings,
   existingPosts,
   onSaved,
+  mode = "scheduled",
 }: Props) {
   const [post, setPost] = useState<SocialPost | null>(null);
   const [loading, setLoading] = useState(false);
@@ -131,7 +133,11 @@ export function PostDaySheet({
       setAiEdit(existing.ai_suggestion || existing.caption || "");
       setUseAiText(!existing.caption_locked && !existing.caption.trim());
       setUserNotes(existing.user_notes ?? "");
-      setPublishTime(isoToJerusalemTime(existing.scheduled_at));
+      setPublishTime(
+        mode === "immediate"
+          ? isoToJerusalemTime(new Date().toISOString())
+          : isoToJerusalemTime(existing.scheduled_at),
+      );
       setFormats(existing.formats.length ? existing.formats : ["feed"]);
       setPlatforms(existing.platforms.length ? existing.platforms : settings.platforms);
       setIncludeImageText(existing.include_image_text);
@@ -143,7 +149,7 @@ export function PostDaySheet({
     let cancelled = false;
     hydratedPostId.current = null;
     setLoading(true);
-    getOrCreatePostForDate(date)
+    getOrCreatePostForDate(date, { immediate: mode === "immediate" })
       .then((res) => {
         if (cancelled) return;
         if (!res.ok) {
@@ -156,7 +162,11 @@ export function PostDaySheet({
         setAiEdit(res.post.ai_suggestion || "");
         setUseAiText(true);
         setUserNotes(res.post.user_notes ?? "");
-        setPublishTime(isoToJerusalemTime(res.post.scheduled_at));
+        setPublishTime(
+          mode === "immediate"
+            ? isoToJerusalemTime(new Date().toISOString())
+            : isoToJerusalemTime(res.post.scheduled_at),
+        );
         setFormats(res.post.formats.length ? res.post.formats : ["feed"]);
         setPlatforms(res.post.platforms.length ? res.post.platforms : settings.platforms);
         setIncludeHashtags(false);
@@ -171,7 +181,7 @@ export function PostDaySheet({
     return () => {
       cancelled = true;
     };
-  }, [open, date, existingPosts, settings.platforms]);
+  }, [open, date, existingPosts, settings.platforms, mode]);
 
   function toggleFormat(fmt: SocialFormat) {
     setFormats((prev) =>
@@ -240,10 +250,16 @@ export function PostDaySheet({
     startTransition(async () => {
       const saved = await persistDraft();
       if (!saved) return;
-      const res = await approveSocialPost(post.id);
+      const res = await approveSocialPost(post.id, {
+        immediate: mode === "immediate",
+      });
       if (!res.ok) toast.error(res.error);
       else {
-        toast.success("אושר ונשמר לתאריך — ממתין לחיבור Meta");
+        toast.success(
+          mode === "immediate"
+            ? "הפוסט נכנס לתור פרסום מיידי"
+            : "אושר ונשמר לתאריך — ממתין לחיבור Meta",
+        );
         onSaved();
         onOpenChange(false);
       }
@@ -347,21 +363,25 @@ export function PostDaySheet({
         >
         <DialogHeader className="shrink-0 border-b border-black/[0.06] px-6 py-5 pe-12 text-start sm:px-8">
           <DialogTitle className="text-xl tracking-tight">
-            {date
-              ? new Date(`${date}T12:00:00`).toLocaleDateString("he-IL", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                  timeZone: "Asia/Jerusalem",
-                })
-              : "יום"}
+            {mode === "immediate"
+              ? "פרסום מיידי"
+              : date
+                ? new Date(`${date}T12:00:00`).toLocaleDateString("he-IL", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "Asia/Jerusalem",
+                  })
+                : "יום"}
           </DialogTitle>
           <DialogDescription className="flex flex-wrap items-center gap-2 pt-1">
             <span>
-              {holiday
-                ? `${holiday.label} · ${holiday.topicHint}`
-                : "תכנון תוכן ליום זה"}
+              {mode === "immediate"
+                ? "אותו תהליך יצירה — אחרי אישור הפוסט ייכנס לתור פרסום עכשיו"
+                : holiday
+                  ? `${holiday.label} · ${holiday.topicHint}`
+                  : "תכנון תוכן ליום זה"}
             </span>
             {post && (
               <span className="inline-flex rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
@@ -784,10 +804,16 @@ export function PostDaySheet({
                     <Button
                       type="button"
                       disabled={pending}
-                      className="bg-[#C41E3A] text-white hover:bg-[#a01830]"
+                      className={
+                        mode === "immediate"
+                          ? "bg-highlight text-highlight-foreground hover:bg-highlight/80"
+                          : "bg-[#C41E3A] text-white hover:bg-[#a01830]"
+                      }
                       onClick={handleApprove}
                     >
-                      אישור ושמירה לתאריך
+                      {mode === "immediate"
+                        ? "אישור ופרסום מיידי"
+                        : "אישור ושמירה לתאריך"}
                     </Button>
                   </div>
                   {(post.status === "draft" ||

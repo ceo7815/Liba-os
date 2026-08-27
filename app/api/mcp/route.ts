@@ -68,7 +68,7 @@ export async function GET() {
       social_publish: {
         agent_slug: "social-media",
         hermes_profile: "social-media",
-        poll: "social.poll_due claims queue row + returns post and signed asset URLs",
+        poll: "social.poll_due claims queue row + returns post, signed asset URLs, and trigger (scheduled|immediate)",
         complete: "social.complete({ queue_id, post_id, meta_ids, run_id })",
         fail: "social.fail({ queue_id, post_id, error_message })",
         analytics: "social.list_published + social.save_analytics + social.inbox_upsert (display only, never reply)",

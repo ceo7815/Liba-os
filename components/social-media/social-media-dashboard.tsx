@@ -60,6 +60,9 @@ export function SocialMediaDashboard({
   const [month, setMonth] = useState(initialMonth);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<"scheduled" | "immediate">(
+    "scheduled",
+  );
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -107,11 +110,32 @@ export function SocialMediaDashboard({
   }
 
   function openDay(date: string) {
+    setSheetMode("scheduled");
     setSelectedDate(date);
     setSheetOpen(true);
   }
 
+  function openImmediate() {
+    setSheetMode("immediate");
+    setSelectedDate(todayJerusalemDateKey());
+    setSheetOpen(true);
+  }
+
   const today = todayJerusalemDateKey();
+  const editableStatuses = new Set([
+    "draft",
+    "pending_review",
+    "failed",
+    "skipped",
+  ]);
+  const sheetPosts =
+    selectedDate == null
+      ? []
+      : sheetMode === "immediate"
+        ? (postsByDate.get(selectedDate) ?? []).filter((p) =>
+            editableStatuses.has(p.status),
+          )
+        : (postsByDate.get(selectedDate) ?? []);
 
   return (
     <div className="space-y-4">
@@ -148,6 +172,7 @@ export function SocialMediaDashboard({
           onPrev={() => shiftMonth(-1)}
           onNext={() => shiftMonth(1)}
           onSelectDay={openDay}
+          onImmediatePublish={openImmediate}
         />
       )}
 
@@ -179,11 +204,15 @@ export function SocialMediaDashboard({
 
       <PostDaySheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChange={(open) => {
+          setSheetOpen(open);
+          if (!open) setSheetMode("scheduled");
+        }}
         date={selectedDate}
         holiday={selectedDate ? holidayByDate.get(selectedDate) ?? null : null}
         settings={data.settings}
-        existingPosts={selectedDate ? postsByDate.get(selectedDate) ?? [] : []}
+        existingPosts={sheetPosts}
+        mode={sheetMode}
         onSaved={() => {
           startTransition(() => router.refresh());
         }}

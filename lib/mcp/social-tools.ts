@@ -155,6 +155,7 @@ async function pollDue(
       has_work: true,
       queue_id: queueId,
       scheduled_for: row.scheduled_for,
+      trigger: (row.trigger as string | undefined) || "scheduled",
       agent_slug: agent.agentSlug,
       post,
       assets: signed,

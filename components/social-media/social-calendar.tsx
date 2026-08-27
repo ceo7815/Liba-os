@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   daysInMonth,
@@ -27,6 +27,7 @@ type Props = {
   onPrev: () => void;
   onNext: () => void;
   onSelectDay: (date: string) => void;
+  onImmediatePublish: () => void;
 };
 
 /** Compact Hebrew status for calendar cells */
@@ -54,6 +55,7 @@ export function SocialCalendar({
   onPrev,
   onNext,
   onSelectDay,
+  onImmediatePublish,
 }: Props) {
   const totalDays = daysInMonth(year, month);
   const offset = firstWeekdayOffset(year, month);
@@ -73,7 +75,15 @@ export function SocialCalendar({
             Asia/Jerusalem · לחיצה על יום לעריכת תוכן
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            onClick={onImmediatePublish}
+            className="rounded-lg bg-highlight px-4 text-highlight-foreground hover:bg-highlight/80"
+          >
+            <Zap className="h-4 w-4" />
+            פרסום מיידי
+          </Button>
           <Button type="button" variant="outline" size="icon" onClick={onPrev}>
             <ChevronRight className="h-4 w-4" />
           </Button>

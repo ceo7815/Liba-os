@@ -360,6 +360,7 @@ function triggerLabel(trigger: string) {
     cron: "תזמון אוטומטי",
     webhook: "וובהוק",
     "e2e-manual": "בדיקה ידנית",
+    immediate: "מיידי",
   };
   return map[trigger] ?? trigger;
 }
