@@ -45,15 +45,11 @@ function cornersAgree(png: PNG, bg: Rgba) {
   return pts.every((p) => colorDist(p, bg) < 36);
 }
 
-function columnHasContent(
-  png: PNG,
-  x: number,
-  bg: Rgba,
-  threshold: number,
-) {
+function columnHasContent(png: PNG, x: number, bg: Rgba, threshold: number) {
   let hits = 0;
   const need = Math.max(4, Math.floor(png.height * 0.02));
-  for (let y = 0; y < png.height; y += 2) {
+  const step = Math.max(2, Math.floor(png.height / 120));
+  for (let y = 0; y < png.height; y += step) {
     if (colorDist(pixel(png.data, png.width, x, y), bg) > threshold) {
       hits += 1;
       if (hits >= need) return true;
@@ -62,15 +58,11 @@ function columnHasContent(
   return false;
 }
 
-function rowHasContent(
-  png: PNG,
-  y: number,
-  bg: Rgba,
-  threshold: number,
-) {
+function rowHasContent(png: PNG, y: number, bg: Rgba, threshold: number) {
   let hits = 0;
   const need = Math.max(4, Math.floor(png.width * 0.02));
-  for (let x = 0; x < png.width; x += 2) {
+  const step = Math.max(2, Math.floor(png.width / 120));
+  for (let x = 0; x < png.width; x += step) {
     if (colorDist(pixel(png.data, png.width, x, y), bg) > threshold) {
       hits += 1;
       if (hits >= need) return true;
@@ -79,7 +71,6 @@ function rowHasContent(
   return false;
 }
 
-/** Crop uniform letterbox/frame if the model drew a smaller composition on a flat field. */
 function trimLetterbox(png: PNG): PNG {
   if (png.width < 32 || png.height < 32) return png;
   const bg = sampleCorners(png);
@@ -112,56 +103,51 @@ function trimLetterbox(png: PNG): PNG {
   return out;
 }
 
-function sampleBilinear(
-  data: Buffer,
-  sw: number,
-  sh: number,
-  x: number,
-  y: number,
-): Rgba {
-  const x0 = Math.max(0, Math.min(sw - 1, Math.floor(x)));
-  const y0 = Math.max(0, Math.min(sh - 1, Math.floor(y)));
-  const x1 = Math.max(0, Math.min(sw - 1, x0 + 1));
-  const y1 = Math.max(0, Math.min(sh - 1, y0 + 1));
-  const fx = x - Math.floor(x);
-  const fy = y - Math.floor(y);
-  const a = pixel(data, sw, x0, y0);
-  const b = pixel(data, sw, x1, y0);
-  const c = pixel(data, sw, x0, y1);
-  const d = pixel(data, sw, x1, y1);
-  const mix = (p: number, q: number, t: number) => p + (q - p) * t;
-  return {
-    r: mix(mix(a.r, b.r, fx), mix(c.r, d.r, fx), fy),
-    g: mix(mix(a.g, b.g, fx), mix(c.g, d.g, fx), fy),
-    b: mix(mix(a.b, b.b, fx), mix(c.b, d.b, fx), fy),
-    a: mix(mix(a.a, b.a, fx), mix(c.a, d.a, fx), fy),
-  };
+/** Crop to target aspect with memcpy only — no per-pixel resample. */
+function cropToAspect(png: PNG, aspectW: number, aspectH: number): PNG {
+  const target = aspectW / aspectH;
+  const src = png.width / png.height;
+  let cw = png.width;
+  let ch = png.height;
+  let x = 0;
+  let y = 0;
+  if (src > target) {
+    cw = Math.max(1, Math.round(png.height * target));
+    x = Math.max(0, Math.floor((png.width - cw) / 2));
+  } else if (src < target) {
+    ch = Math.max(1, Math.round(png.width / target));
+    y = Math.max(0, Math.floor((png.height - ch) / 2));
+  }
+  if (x + cw > png.width) cw = png.width - x;
+  if (y + ch > png.height) ch = png.height - y;
+  if (cw === png.width && ch === png.height) return png;
+  const out = new PNG({ width: cw, height: ch });
+  PNG.bitblt(png, out, x, y, cw, ch, 0, 0);
+  return out;
 }
 
-/** Cover-scale so the dest canvas is filled with no padding. */
-function coverResize(png: PNG, dw: number, dh: number): PNG {
-  const sw = png.width;
-  const sh = png.height;
-  const scale = Math.max(dw / sw, dh / sh);
-  const originX = (sw * scale - dw) / 2;
-  const originY = (sh * scale - dh) / 2;
-  const out = new PNG({ width: dw, height: dh });
+function yieldEventLoop() {
+  return new Promise<void>((resolve) => setImmediate(resolve));
+}
 
+/** Nearest-neighbor scale, yielding so Docker healthchecks can still pass. */
+async function scaleNearest(png: PNG, dw: number, dh: number): Promise<PNG> {
+  if (png.width === dw && png.height === dh) return png;
+  const out = new PNG({ width: dw, height: dh });
+  const xRatio = png.width / dw;
+  const yRatio = png.height / dh;
   for (let y = 0; y < dh; y++) {
+    const sy = Math.min(png.height - 1, Math.floor(y * yRatio));
     for (let x = 0; x < dw; x++) {
-      const src = sampleBilinear(
-        png.data,
-        sw,
-        sh,
-        (x + originX) / scale,
-        (y + originY) / scale,
-      );
-      const i = (y * dw + x) * 4;
-      out.data[i] = Math.round(src.r);
-      out.data[i + 1] = Math.round(src.g);
-      out.data[i + 2] = Math.round(src.b);
-      out.data[i + 3] = Math.round(src.a);
+      const sx = Math.min(png.width - 1, Math.floor(x * xRatio));
+      const si = (sy * png.width + sx) * 4;
+      const di = (y * dw + x) * 4;
+      out.data[di] = png.data[si];
+      out.data[di + 1] = png.data[si + 1];
+      out.data[di + 2] = png.data[si + 2];
+      out.data[di + 3] = png.data[si + 3];
     }
+    if (y % 48 === 0) await yieldEventLoop();
   }
   return out;
 }
@@ -171,8 +157,13 @@ export async function fitSocialCanvas(
   width: number,
   height: number,
 ): Promise<Buffer> {
-  const decoded = PNG.sync.read(buffer);
-  const trimmed = trimLetterbox(decoded);
-  const fitted = coverResize(trimmed, width, height);
-  return PNG.sync.write(fitted);
+  try {
+    const decoded = PNG.sync.read(buffer);
+    const trimmed = trimLetterbox(decoded);
+    const cropped = cropToAspect(trimmed, width, height);
+    const fitted = await scaleNearest(cropped, width, height);
+    return PNG.sync.write(fitted);
+  } catch {
+    return buffer;
+  }
 }
