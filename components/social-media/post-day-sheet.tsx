@@ -387,8 +387,8 @@ export function PostDaySheet({
       <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogContent
           className={cn(
-            "relative flex max-h-[92vh] w-[min(96vw,72rem)] max-w-[72rem] flex-col gap-0 overflow-hidden rounded-2xl border-black/[0.08] p-0 shadow-2xl",
-            "data-[state=open]:zoom-in-100",
+            "fixed left-1/2 top-1/2 flex max-h-[92vh] w-[min(96vw,72rem)] max-w-[72rem] -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-2xl border-black/[0.08] p-0 shadow-2xl",
+            "data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 data-[state=open]:zoom-in-100",
           )}
         >
         <DialogHeader className="shrink-0 border-b border-black/[0.06] px-6 py-5 pe-20 text-start sm:px-8">
