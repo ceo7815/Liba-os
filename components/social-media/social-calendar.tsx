@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   daysInMonth,
@@ -35,6 +35,7 @@ type Props = {
   onNext: () => void;
   onSelectDay: (date: string) => void;
   onImmediatePublish: () => void;
+  onOpenReport: () => void;
 };
 
 const CALENDAR_LEGEND: Array<{ label: string; dot: string }> = [
@@ -63,6 +64,7 @@ export function SocialCalendar({
   onNext,
   onSelectDay,
   onImmediatePublish,
+  onOpenReport,
 }: Props) {
   const totalDays = daysInMonth(year, month);
   const offset = firstWeekdayOffset(year, month);
@@ -83,6 +85,15 @@ export function SocialCalendar({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onOpenReport}
+            className="rounded-lg"
+          >
+            <FileText className="h-4 w-4" />
+            הפק דוח
+          </Button>
           <Button
             type="button"
             onClick={onImmediatePublish}

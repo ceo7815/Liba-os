@@ -7,6 +7,7 @@ const PUBLIC_PREFIXES = [
   "/forgot-password",
   "/set-password",
   "/auth",
+  "/r",
 ];
 
 function isPublicPath(pathname: string) {

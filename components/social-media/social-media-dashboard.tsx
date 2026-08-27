@@ -11,6 +11,7 @@ import type { HolidayDay, SocialPost } from "@/lib/social-media/types";
 import type { SocialDashboardPayload } from "@/lib/social-media/types";
 import type { AgentKeyMeta } from "@/app/actions/agents";
 import { SocialCalendar } from "@/components/social-media/social-calendar";
+import { SocialReportDialog } from "@/components/social-media/social-report-dialog";
 import { PostDaySheet } from "@/components/social-media/post-day-sheet";
 import { ImageGenDock, type DockedPostSheet } from "@/components/social-media/image-gen-dock";
 import { useImageGenJobs } from "@/components/social-media/use-image-gen-jobs";
@@ -66,6 +67,7 @@ export function SocialMediaDashboard({
     "scheduled",
   );
   const [docked, setDocked] = useState<DockedPostSheet[]>([]);
+  const [reportOpen, setReportOpen] = useState(false);
   const [, startTransition] = useTransition();
   const { jobs, enqueue, dismiss } = useImageGenJobs(() => {
     startTransition(() => router.refresh());
@@ -198,6 +200,7 @@ export function SocialMediaDashboard({
           onNext={() => shiftMonth(1)}
           onSelectDay={openDay}
           onImmediatePublish={openImmediate}
+          onOpenReport={() => setReportOpen(true)}
         />
       )}
 
@@ -226,6 +229,13 @@ export function SocialMediaDashboard({
           hermesLastSeenAt={hermesLastSeenAt}
         />
       )}
+
+      <SocialReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        year={year}
+        month={month}
+      />
 
       <PostDaySheet
         open={sheetOpen}
