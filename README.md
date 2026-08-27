@@ -85,8 +85,8 @@ VAULT_ENCRYPTION_KEY=
 AZURE_TENANT_ID=
 AZURE_CLIENT_ID=
 AZURE_CLIENT_SECRET=
-SALES_EXCEL_DRIVE_ID=
-SALES_EXCEL_ITEM_ID=
+SALES_EXCEL_USER=
+SALES_EXCEL_FILE_PATH=
 SALES_TV_KIOSK_TOKEN=
 ```
 
@@ -105,9 +105,9 @@ SALES_TV_KIOSK_TOKEN=
 מסך מלא ב-`/sales-tv?token=...` (קיוסק למשרד) ותצוגה מקדימה למנהלים ב-`/sales-dashboard`.
 
 1. הרשימו אפליקציה ב-Azure AD של טננט הסוכנות (client credentials).
-2. הרשאה: `Sites.Selected` (מומלץ) או `Files.Read.All`, עם הסכמת אדמין.
-3. מלאו ב-env: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `SALES_EXCEL_DRIVE_ID`, ו-`SALES_EXCEL_ITEM_ID` או `SALES_EXCEL_FILE_PATH`.
+2. הרשאה: `Files.Read.All` (קובץ ב-OneDrive של משתמש), עם הסכמת אדמין.
+3. מלאו ב-env: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, וגם `SALES_EXCEL_USER` + `SALES_EXCEL_FILE_PATH` או `SALES_EXCEL_DRIVE_ID` + `SALES_EXCEL_ITEM_ID`.
 4. צרו `SALES_TV_KIOSK_TOKEN` ארוך ואקראי. בטלוויזיה פתחו Chrome/Edge ל-`https://YOUR_DOMAIN/sales-tv?token=...`.
-5. בלי Graph מוגדר המסך מציג נתוני הדגמה. העובדת חייבת לשמור את האקסל; הרענון הוא כ-30 שניות.
+5. בלי Graph מוגדר המסך מציג נתוני הדגמה. העובדת חייבת לשמור את האקסל; הרענון הוא כ-5 שניות.
 
 כותרות חובה בגיליון הראשון: `סטאטוס פוליסה`, `פרמיה`, `סוג תהליך`, `תאריך העברה ליצרן`, `תאריך תחילת ביטוח`, `שם לקוח`, `משווק`, `סוג המוצר`, `חברת הביטוח`, `מקור הפנייה`.

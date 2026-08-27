@@ -1,4 +1,4 @@
-import { COL, HEBREW_MONTHS, JERUSALEM_TZ, PROCESS, STATUS } from "@/lib/sales-dashboard/columns";
+import { COL, COL_ALIASES, HEBREW_MONTHS, JERUSALEM_TZ, PROCESS, STATUS } from "@/lib/sales-dashboard/columns";
 import type {
   AgentStat,
   CurrentMonth,
@@ -170,7 +170,8 @@ export function parseSalesWorkbook(
   const rows = raw.map((row) => {
     const next: ExcelRow = {};
     for (const key of Object.keys(row)) {
-      next[key.trim()] = row[key];
+      const trimmed = key.trim();
+      next[COL_ALIASES[trimmed] ?? trimmed] = row[key];
     }
     return next;
   });

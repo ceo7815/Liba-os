@@ -13,6 +13,11 @@ export const COL = {
   source: "מקור הפנייה",
 } as const;
 
+/** Headers seen in the live managers workbook that map to COL. */
+export const COL_ALIASES: Record<string, string> = {
+  "תחילת ביטוח": COL.startDate,
+};
+
 export const STATUS = {
   active: "פעילה",
   activeShort: "פעיל",

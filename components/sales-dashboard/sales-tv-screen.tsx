@@ -29,7 +29,7 @@ import "./sales-tv.css";
 import { getDemoDashboard } from "@/lib/sales-dashboard/demo";
 import type { AgentStat, DashboardData, SaleAlert } from "@/lib/sales-dashboard/types";
 
-const POLL_MS = 15_000;
+const POLL_MS = 5_000;
 const MAIN_SCREEN_MS = 3 * 60_000;
 const LEADERBOARD_SCREEN_MS = 60_000;
 const YELLOW = "#ffd400";

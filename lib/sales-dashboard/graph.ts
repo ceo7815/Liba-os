@@ -6,14 +6,21 @@ type GraphToken = {
 let cachedToken: GraphToken | null = null;
 
 export function isGraphConfigured(): boolean {
-  return Boolean(
+  const azure = Boolean(
     process.env.AZURE_TENANT_ID?.trim() &&
       process.env.AZURE_CLIENT_ID?.trim() &&
-      process.env.AZURE_CLIENT_SECRET?.trim() &&
-      process.env.SALES_EXCEL_DRIVE_ID?.trim() &&
-      (process.env.SALES_EXCEL_ITEM_ID?.trim() ||
-        process.env.SALES_EXCEL_FILE_PATH?.trim()),
+      process.env.AZURE_CLIENT_SECRET?.trim(),
   );
+  if (!azure) return false;
+
+  const driveId = process.env.SALES_EXCEL_DRIVE_ID?.trim();
+  const itemId = process.env.SALES_EXCEL_ITEM_ID?.trim();
+  const filePath = process.env.SALES_EXCEL_FILE_PATH?.trim();
+  const user = process.env.SALES_EXCEL_USER?.trim();
+
+  if (driveId && (itemId || filePath)) return true;
+  if (user && filePath) return true;
+  return false;
 }
 
 async function getGraphToken(): Promise<string> {
@@ -65,21 +72,38 @@ async function getGraphToken(): Promise<string> {
   return cachedToken.accessToken;
 }
 
-function itemUrl(): string {
-  const driveId = process.env.SALES_EXCEL_DRIVE_ID?.trim();
-  if (!driveId) throw new Error("Missing SALES_EXCEL_DRIVE_ID");
+function encodedFilePath(filePath: string) {
+  return filePath
+    .replace(/^\/+/, "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+}
 
+function itemUrl(): string {
+  const filePath = process.env.SALES_EXCEL_FILE_PATH?.trim();
+  const user = process.env.SALES_EXCEL_USER?.trim();
+  const driveId = process.env.SALES_EXCEL_DRIVE_ID?.trim();
   const itemId = process.env.SALES_EXCEL_ITEM_ID?.trim();
-  if (itemId) {
+
+  if (driveId && itemId) {
     return `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`;
   }
 
-  const filePath = process.env.SALES_EXCEL_FILE_PATH?.trim()?.replace(/^\/+/, "");
-  if (!filePath) throw new Error("Missing SALES_EXCEL_ITEM_ID or SALES_EXCEL_FILE_PATH");
-  return `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/root:/${filePath
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/")}`;
+  if (!filePath) {
+    throw new Error("Missing SALES_EXCEL_FILE_PATH or SALES_EXCEL_ITEM_ID");
+  }
+  const pathPart = encodedFilePath(filePath);
+
+  if (driveId) {
+    return `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/root:/${pathPart}`;
+  }
+
+  if (user) {
+    return `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(user)}/drive/root:/${pathPart}`;
+  }
+
+  throw new Error("Missing SALES_EXCEL_DRIVE_ID or SALES_EXCEL_USER");
 }
 
 export type DownloadedExcel = {
