@@ -151,6 +151,7 @@ function emptyMonth(): CurrentMonth {
 export function parseSalesWorkbook(
   input: ArrayBuffer | Uint8Array | Buffer,
   fileName?: string | null,
+  syncedAt?: string | null,
 ): DashboardData {
   const data =
     input instanceof ArrayBuffer
@@ -284,7 +285,7 @@ export function parseSalesWorkbook(
     pendingRows,
     activePolicies,
     fileName: fileName ?? null,
-    syncedAt: new Date().toISOString(),
+    syncedAt: syncedAt?.trim() || new Date().toISOString(),
     source: "live",
   };
 }

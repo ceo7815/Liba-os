@@ -385,6 +385,23 @@
   margin-top: 2px;
 }
 
+.sales-tv-updated {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.sales-tv-updated strong {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
 .sales-tv-sync-right {
   display: flex;
   align-items: center;

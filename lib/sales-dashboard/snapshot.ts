@@ -5,7 +5,7 @@ import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
 import { assertSampleWorkbookParses } from "@/lib/sales-dashboard/sample-workbook";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
 
-const TTL_MS = 0;
+const TTL_MS = 20_000;
 
 let cache: {
   data: DashboardData;
@@ -40,17 +40,25 @@ async function refreshSnapshot(): Promise<DashboardData> {
   }
 
   try {
-    const ingested = await loadIngestedWorkbook();
-    if (ingested) {
-      const data = parseSalesWorkbook(ingested.buffer, ingested.fileName);
-      cache = { data, fetchedAt: Date.now(), etag: ingested.lastModified };
+    if (isGraphConfigured()) {
+      const file = await downloadSalesExcel();
+      const data = parseSalesWorkbook(
+        file.buffer,
+        file.fileName,
+        file.lastModified,
+      );
+      cache = { data, fetchedAt: Date.now(), etag: file.etag };
       return data;
     }
 
-    if (isGraphConfigured()) {
-      const file = await downloadSalesExcel();
-      const data = parseSalesWorkbook(file.buffer, file.fileName);
-      cache = { data, fetchedAt: Date.now(), etag: file.etag };
+    const ingested = await loadIngestedWorkbook();
+    if (ingested) {
+      const data = parseSalesWorkbook(
+        ingested.buffer,
+        ingested.fileName,
+        ingested.lastModified,
+      );
+      cache = { data, fetchedAt: Date.now(), etag: ingested.lastModified };
       return data;
     }
 

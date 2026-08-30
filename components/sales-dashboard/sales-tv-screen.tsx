@@ -81,6 +81,7 @@ function agentInitials(name: string): string {
 type SalesTvScreenProps = {
   token?: string;
   embedded?: boolean;
+  initialData?: DashboardData;
 };
 
 function ils(n: number): string {
@@ -95,20 +96,34 @@ function clockNow(): string {
   });
 }
 
-function timeHm(iso: string): string {
+function formatUpdatedAt(iso: string) {
   try {
-    return new Date(iso).toLocaleTimeString("he-IL", {
+    return new Date(iso).toLocaleString("he-IL", {
+      timeZone: "Asia/Jerusalem",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
     });
   } catch {
     return "";
   }
 }
 
-export function SalesTvScreen({ token, embedded = false }: SalesTvScreenProps) {
+export function SalesTvScreen({
+  token,
+  embedded = false,
+  initialData,
+}: SalesTvScreenProps) {
   const presenting = !embedded;
-  const [data, setData] = useState<DashboardData>(getDemoDashboard);
+  const [data, setData] = useState<DashboardData>(
+    initialData ?? getDemoDashboard,
+  );
+  const [loadState, setLoadState] = useState<"loading" | "ok" | "error">(
+    initialData ? "ok" : "loading",
+  );
   const [clock, setClock] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [alert, setAlert] = useState<SaleAlert | null>(null);
@@ -153,6 +168,7 @@ export function SalesTvScreen({ token, embedded = false }: SalesTvScreenProps) {
     }
     const next = (await res.json()) as DashboardData;
     setData(next);
+    setLoadState("ok");
 
     const keys = new Set(next.activePolicies.map((p) => p.key));
     if (!initializedRef.current) {
@@ -257,6 +273,7 @@ export function SalesTvScreen({ token, embedded = false }: SalesTvScreenProps) {
 
   useEffect(() => {
     void load().catch((err: unknown) => {
+      setLoadState((prev) => (prev === "ok" ? prev : "error"));
       showToast(err instanceof Error ? err.message : "שגיאת טעינה");
     });
     const id = window.setInterval(() => {
@@ -330,7 +347,7 @@ export function SalesTvScreen({ token, embedded = false }: SalesTvScreenProps) {
         label: "סנכרון",
         text:
           data.source === "live"
-            ? `עודכן ${timeHm(data.syncedAt)}`
+            ? `עודכן ${formatUpdatedAt(data.syncedAt)}`
             : "מצב הדגמה — ממתין לחיבור OneDrive",
       },
     ];
@@ -338,13 +355,29 @@ export function SalesTvScreen({ token, embedded = false }: SalesTvScreenProps) {
 
   const tickerLoop = [...ticks, ...ticks];
   const avgPremium = data.active ? Math.round(data.premium / data.active) : 0;
-  const statusClass =
-    data.error ? "" : data.source === "live" ? "ok" : "warn";
   const statusLabel = data.error
     ? "שגיאה"
-    : data.source === "live"
-      ? "ניטור חי פעיל"
-      : "מצב הדגמה";
+    : loadState === "loading"
+      ? "טוען…"
+      : data.source === "live"
+        ? "ניטור חי פעיל"
+        : "מצב הדגמה";
+  const statusClass =
+    data.error || loadState === "error"
+      ? ""
+      : loadState === "loading"
+        ? "warn"
+        : data.source === "live"
+          ? "ok"
+          : "warn";
+  const updatedLabel = formatUpdatedAt(data.syncedAt);
+  const syncSub = data.error
+    ? data.error
+    : loadState === "loading"
+      ? "טוען את דוח המנהלים מ-OneDrive…"
+      : data.source === "live"
+        ? `מנוטר: ${data.fileName ?? "קובץ OneDrive"}`
+        : "אין חיבור ל-OneDrive עדיין — מוצגים נתוני הדגמה עד להגדרת Graph";
 
   return (
     <div
@@ -438,13 +471,13 @@ export function SalesTvScreen({ token, embedded = false }: SalesTvScreenProps) {
             </span>
             <div>
               <div className="sales-tv-sync-title">ניטור חי — דוח מכירות</div>
-              <div className="sales-tv-sync-sub">
-                {data.error
-                  ? data.error
-                  : data.source === "live"
-                    ? `מנוטר: ${data.fileName ?? "קובץ OneDrive"} • עודכן ${timeHm(data.syncedAt)}`
-                    : "אין חיבור ל-OneDrive עדיין — מוצגים נתוני הדגמה עד להגדרת Graph"}
-              </div>
+              <div className="sales-tv-sync-sub">{syncSub}</div>
+              {loadState === "ok" && data.source === "live" ? (
+                <div className="sales-tv-updated">
+                  עדכון אחרון
+                  <strong>{updatedLabel}</strong>
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="sales-tv-sync-right">
