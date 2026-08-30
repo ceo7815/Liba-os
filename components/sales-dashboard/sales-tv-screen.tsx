@@ -232,18 +232,8 @@ export function SalesTvScreen({
     } catch {
       /* Some browsers block move/resize after open. */
     }
-    showToast("חלון ההקרנה נפתח — גררו אותו למסך השני.");
+    showToast("נפתח חלון לטלוויזיה. גררו אותו למסך השני ולחצו מקסם.");
   }, [showToast, token]);
-
-  useEffect(() => {
-    if (!presenting) return;
-    const el = rootRef.current;
-    if (!el || fullscreenElement()) return;
-    const node = el as FsEl;
-    const request = el.requestFullscreen?.bind(el) ?? node.webkitRequestFullscreen?.bind(node);
-    if (!request) return;
-    void Promise.resolve(request()).catch(() => undefined);
-  }, [presenting]);
 
   const toggleNativeFullscreen = useCallback(async () => {
     const el = rootRef.current;
@@ -259,8 +249,30 @@ export function SalesTvScreen({
       if (el.requestFullscreen) await el.requestFullscreen();
       else await node.webkitRequestFullscreen?.();
     } catch {
-      showToast("לא ניתן לעבור למסך מלא בדפדפן זה. השתמשו ב-F11.");
+      showToast("לא ניתן להסתיר את שורת המשימות. המקסמו את החלון על הטלוויזיה.");
     }
+  }, [showToast]);
+
+  const minimizeKioskWindow = useCallback(async () => {
+    try {
+      if (fullscreenElement()) {
+        const doc = document as FsDoc;
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else await doc.webkitExitFullscreen?.();
+      }
+    } catch {
+      /* keep going so the window chrome can appear */
+    }
+    try {
+      const width = Math.min(1600, (window.screen.availWidth || 1600) - 80);
+      const height = Math.min(900, (window.screen.availHeight || 900) - 80);
+      window.resizeTo(width, height);
+      window.moveTo(40, 40);
+    } catch {
+      /* popup move/resize may be blocked */
+    }
+    window.blur();
+    showToast("אפשר למזער עכשיו מהמקף בשורת הכותרת. כשתפתחו שוב — התצוגה נשארת מלאה בחלון.");
   }, [showToast]);
 
   const onFullscreenClick = useCallback(() => {
@@ -433,15 +445,30 @@ export function SalesTvScreen({
             aria-pressed={presenting ? nativeFs : undefined}
             title={
               embedded
-                ? "פתח חלון הקרנה חדש למסך השני"
+                ? "פתח חלון נפרד לטלוויזיה והמשיכו לעבוד כאן"
                 : nativeFs
-                  ? "יציאה ממסך מלא"
-                  : "מסך מלא בדפדפן"
+                  ? "החזר את שורת הכותרת כדי שאפשר למזער"
+                  : "מלא את המסך על הטלוויזיה"
             }
           >
             {presenting && nativeFs ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-            {presenting && nativeFs ? "יציאה" : "מסך מלא"}
+            {embedded
+              ? "חלון לטלוויזיה"
+              : nativeFs
+                ? "יציאה"
+                : "מסך מלא"}
           </button>
+          {presenting ? (
+            <button
+              type="button"
+              className="sales-tv-btn"
+              onClick={() => void minimizeKioskWindow()}
+              title="החזירו את שורת הכותרת ואפשר למזער בלי לאבד את תצוגת הטלוויזיה"
+            >
+              <Minimize2 size={15} />
+              מזער
+            </button>
+          ) : null}
         </div>
       </header>
 
