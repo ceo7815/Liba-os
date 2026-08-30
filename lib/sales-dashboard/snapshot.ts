@@ -1,30 +1,32 @@
 import { getDemoDashboard } from "@/lib/sales-dashboard/demo";
-import { downloadSalesExcel, isGraphConfigured } from "@/lib/sales-dashboard/graph";
-import { loadIngestedWorkbook } from "@/lib/sales-dashboard/ingest-store";
+import {
+  downloadSalesExcel,
+  getSalesExcelMeta,
+  isGraphConfigured,
+  normalizeExcelEtag,
+} from "@/lib/sales-dashboard/graph";
+import {
+  loadIngestedWorkbook,
+  loadParsedDashboardSnapshot,
+  saveParsedDashboardSnapshot,
+} from "@/lib/sales-dashboard/ingest-store";
 import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
 import { assertSampleWorkbookParses } from "@/lib/sales-dashboard/sample-workbook";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
 
-const TTL_MS = 30_000;
-
 let cache: {
   data: DashboardData;
-  fetchedAt: number;
   etag: string | null;
 } | null = null;
 
 let inflight: Promise<DashboardData> | null = null;
 
 export function replaceSalesDashboardSnapshot(data: DashboardData) {
-  cache = { data, fetchedAt: Date.now(), etag: null };
+  cache = { data, etag: null };
 }
 
 export async function getSalesDashboardSnapshot(): Promise<DashboardData> {
-  if (cache && Date.now() - cache.fetchedAt < TTL_MS) {
-    return cache.data;
-  }
   if (inflight) return inflight;
-
   inflight = refreshSnapshot().finally(() => {
     inflight = null;
   });
@@ -32,6 +34,40 @@ export async function getSalesDashboardSnapshot(): Promise<DashboardData> {
 }
 
 let selfTested = false;
+
+function remember(data: DashboardData, etag: string | null) {
+  cache = { data, etag: normalizeExcelEtag(etag) };
+  return data;
+}
+
+async function refreshFromGraph(): Promise<DashboardData> {
+  const meta = await getSalesExcelMeta();
+  const etag = meta.etag;
+
+  if (etag && cache?.etag === etag) {
+    return cache.data;
+  }
+
+  const stored = await loadParsedDashboardSnapshot();
+  if (etag && stored?.etag && stored.etag === etag) {
+    return remember(stored.data, etag);
+  }
+
+  const file = await downloadSalesExcel(meta);
+  const data = parseSalesWorkbook(
+    file.buffer,
+    file.fileName,
+    file.lastModified,
+  );
+  remember(data, file.etag);
+  void saveParsedDashboardSnapshot({
+    etag: file.etag,
+    lastModified: file.lastModified,
+    fileName: file.fileName,
+    data,
+  }).catch(() => undefined);
+  return data;
+}
 
 async function refreshSnapshot(): Promise<DashboardData> {
   if (process.env.NODE_ENV !== "production" && !selfTested) {
@@ -41,14 +77,7 @@ async function refreshSnapshot(): Promise<DashboardData> {
 
   try {
     if (isGraphConfigured()) {
-      const file = await downloadSalesExcel();
-      const data = parseSalesWorkbook(
-        file.buffer,
-        file.fileName,
-        file.lastModified,
-      );
-      cache = { data, fetchedAt: Date.now(), etag: file.etag };
-      return data;
+      return await refreshFromGraph();
     }
 
     const ingested = await loadIngestedWorkbook();
@@ -58,18 +87,19 @@ async function refreshSnapshot(): Promise<DashboardData> {
         ingested.fileName,
         ingested.lastModified,
       );
-      cache = { data, fetchedAt: Date.now(), etag: ingested.lastModified };
-      return data;
+      return remember(data, ingested.lastModified);
     }
 
-    const data = getDemoDashboard();
-    cache = { data, fetchedAt: Date.now(), etag: null };
-    return data;
+    return remember(getDemoDashboard(), null);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "שגיאה בטעינת קובץ המכירות";
     if (cache) {
       return { ...cache.data, error: message };
+    }
+    const stored = await loadParsedDashboardSnapshot().catch(() => null);
+    if (stored?.data) {
+      return { ...stored.data, error: message };
     }
     return { ...getDemoDashboard(), error: message };
   }

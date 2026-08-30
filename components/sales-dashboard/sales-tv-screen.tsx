@@ -29,6 +29,7 @@ import "./sales-tv.css";
 import type { AgentStat, DashboardData, SaleAlert } from "@/lib/sales-dashboard/types";
 
 const POLL_MS = 5_000;
+const CACHE_KEY = "liba-sales-dashboard-live";
 const MAIN_SCREEN_MS = 3 * 60_000;
 const LEADERBOARD_SCREEN_MS = 60_000;
 const YELLOW = "#ffd400";
@@ -111,6 +112,18 @@ function formatUpdatedAt(iso: string) {
   }
 }
 
+function readLiveCache(): DashboardData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DashboardData;
+    return parsed?.source === "live" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function SalesTvScreen({
   token,
   embedded = false,
@@ -131,6 +144,14 @@ export function SalesTvScreen({
   const queueRef = useRef<SaleAlert[]>([]);
   const seenKeysRef = useRef<Set<string> | null>(null);
   const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (initialData) return;
+    const cached = readLiveCache();
+    if (!cached) return;
+    setData(cached);
+    setLoadState("ok");
+  }, [initialData]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -166,6 +187,13 @@ export function SalesTvScreen({
     const next = (await res.json()) as DashboardData;
     setData(next);
     setLoadState("ok");
+    if (next.source === "live") {
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(next));
+      } catch {
+        /* quota / private mode */
+      }
+    }
 
     const keys = new Set(next.activePolicies.map((p) => p.key));
     if (!initializedRef.current) {
