@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { getSalesDashboardSnapshot } from "@/lib/sales-dashboard/snapshot";
 import { SalesTvScreen } from "@/components/sales-dashboard/sales-tv-screen";
 import { authorizeSalesTvPage } from "@/lib/sales-dashboard/kiosk-auth";
 
@@ -28,5 +27,5 @@ export default async function SalesTvPage({ searchParams }: PageProps) {
     );
   }
 
-  return <SalesTvScreen token={token || undefined} initialData={await getSalesDashboardSnapshot()} />;
+  return <SalesTvScreen token={token || undefined} />;
 }

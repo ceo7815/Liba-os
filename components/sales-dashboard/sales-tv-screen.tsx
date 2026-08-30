@@ -26,7 +26,6 @@ import {
   speakTest,
 } from "@/components/sales-dashboard/sales-celebration";
 import "./sales-tv.css";
-import { getDemoDashboard } from "@/lib/sales-dashboard/demo";
 import type { AgentStat, DashboardData, SaleAlert } from "@/lib/sales-dashboard/types";
 
 const POLL_MS = 5_000;
@@ -118,9 +117,7 @@ export function SalesTvScreen({
   initialData,
 }: SalesTvScreenProps) {
   const presenting = !embedded;
-  const [data, setData] = useState<DashboardData>(
-    initialData ?? getDemoDashboard,
-  );
+  const [data, setData] = useState<DashboardData | null>(initialData ?? null);
   const [loadState, setLoadState] = useState<"loading" | "ok" | "error">(
     initialData ? "ok" : "loading",
   );
@@ -307,18 +304,12 @@ export function SalesTvScreen({
   }, [presenting, deckPage]);
 
   const monthAgents = useMemo(
-    () => data.monthAgents ?? [],
-    [data.monthAgents],
+    () => data?.monthAgents ?? [],
+    [data],
   );
-  const maxAgent = Math.max(...data.agents.map((a) => a.sum), 1);
-  const maxMonthAgent = Math.max(...monthAgents.map((a) => a.sum), 1);
-  const activationPct = data.currentMonth.totalCount
-    ? Math.round(
-        (data.currentMonth.activeCount / data.currentMonth.totalCount) * 100,
-      )
-    : 0;
 
   const ticks = useMemo(() => {
+    if (!data) return [];
     const leader = data.agents[0];
     const monthLeader = monthAgents[0];
     const topCompany = data.companies[0];
@@ -365,6 +356,35 @@ export function SalesTvScreen({
     ];
   }, [data, monthAgents]);
 
+  if (!data) {
+    return (
+      <div className={`sales-tv${embedded ? " embedded" : " is-fs"}`}>
+        <div className="sales-tv-sync" style={{ margin: 32 }}>
+          <div className="sales-tv-sync-info">
+            <span className="sales-tv-sync-ico">
+              <TrendingUp size={18} strokeWidth={2.4} />
+            </span>
+            <div>
+              <div className="sales-tv-sync-title">דשבורד מכירות</div>
+              <div className="sales-tv-sync-sub">
+                {loadState === "error"
+                  ? "לא הצלחנו לטעון את הדוח. נסו רענון."
+                  : "טוען את דוח המנהלים מ-OneDrive…"}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const maxAgent = Math.max(...data.agents.map((a) => a.sum), 1);
+  const maxMonthAgent = Math.max(...monthAgents.map((a) => a.sum), 1);
+  const activationPct = data.currentMonth.totalCount
+    ? Math.round(
+        (data.currentMonth.activeCount / data.currentMonth.totalCount) * 100,
+      )
+    : 0;
   const tickerLoop = [...ticks, ...ticks];
   const avgPremium = data.active ? Math.round(data.premium / data.active) : 0;
   const statusLabel = data.error

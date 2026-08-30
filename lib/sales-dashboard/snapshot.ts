@@ -5,7 +5,7 @@ import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
 import { assertSampleWorkbookParses } from "@/lib/sales-dashboard/sample-workbook";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
 
-const TTL_MS = 20_000;
+const TTL_MS = 30_000;
 
 let cache: {
   data: DashboardData;
