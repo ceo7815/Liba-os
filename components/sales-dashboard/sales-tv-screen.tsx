@@ -8,7 +8,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
-  Maximize2,
+  Cast,
   Minimize2,
   Radio,
   RefreshCw,
@@ -35,41 +35,8 @@ const LEADERBOARD_SCREEN_MS = 60_000;
 const YELLOW = "#ffd400";
 const NAVY = "#1b2a4a";
 
-type FsDoc = Document & {
-  webkitFullscreenElement?: Element | null;
-  webkitExitFullscreen?: () => Promise<void> | void;
-};
-
-type FsEl = HTMLElement & {
-  webkitRequestFullscreen?: () => Promise<void> | void;
-};
-
-function fullscreenElement(): Element | null {
-  const doc = document as FsDoc;
-  return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
-}
-
-const PROJECTION_WINDOW_NAME = "liba-sales-tv";
-
-function projectionWindowFeatures(): string {
-  const width = window.screen.availWidth || window.screen.width || 1920;
-  const height = window.screen.availHeight || window.screen.height || 1080;
-  const left = "availLeft" in window.screen ? Number(window.screen.availLeft) || 0 : 0;
-  const top = "availTop" in window.screen ? Number(window.screen.availTop) || 0 : 0;
-  return [
-    "popup=yes",
-    `width=${Math.round(width)}`,
-    `height=${Math.round(height)}`,
-    `left=${Math.round(left)}`,
-    `top=${Math.round(top)}`,
-    "menubar=no",
-    "toolbar=no",
-    "location=no",
-    "status=no",
-    "scrollbars=no",
-    "resizable=yes",
-  ].join(",");
-}
+const CAST_HINT =
+  "בכרום: שלוש נקודות ⋮ → Cast, save and share → Cast… ובחרו את הטלוויזיה.";
 
 function agentInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -137,10 +104,9 @@ export function SalesTvScreen({
   const [clock, setClock] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [alert, setAlert] = useState<SaleAlert | null>(null);
-  const [nativeFs, setNativeFs] = useState(false);
   const [deckPage, setDeckPage] = useState<0 | 1>(0);
   const rootRef = useRef<HTMLDivElement>(null);
-  const projectionWinRef = useRef<Window | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
   const queueRef = useRef<SaleAlert[]>([]);
   const seenKeysRef = useRef<Set<string> | null>(null);
   const initializedRef = useRef(false);
@@ -153,9 +119,10 @@ export function SalesTvScreen({
     setLoadState("ok");
   }, [initialData]);
 
-  const showToast = useCallback((msg: string) => {
+  const showToast = useCallback((msg: string, ms = 3000) => {
     setToast(msg);
-    window.setTimeout(() => setToast(null), 3000);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), ms);
   }, []);
 
   const closeAlert = useCallback(() => {
@@ -213,81 +180,24 @@ export function SalesTvScreen({
     return () => window.clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    const syncFs = () => {
-      setNativeFs(Boolean(fullscreenElement()));
-    };
-    document.addEventListener("fullscreenchange", syncFs);
-    document.addEventListener("webkitfullscreenchange", syncFs);
-    return () => {
-      document.removeEventListener("fullscreenchange", syncFs);
-      document.removeEventListener("webkitfullscreenchange", syncFs);
-    };
-  }, []);
-
-  const openProjectionWindow = useCallback(() => {
-    const existing = projectionWinRef.current;
-    if (existing && !existing.closed) {
-      existing.focus();
-      return;
-    }
+  const openCastWindow = useCallback(() => {
     const url = new URL("/sales-tv", window.location.origin);
     if (token) url.searchParams.set("token", token);
-    const popup = window.open(
-      url.toString(),
-      PROJECTION_WINDOW_NAME,
-      projectionWindowFeatures(),
-    );
-    if (!popup) {
-      showToast("הדפדפן חסם את החלון. אפשרו חלונות קופצים לאתר זה.");
+    // No feature string — a real Chrome tab with the ⋮ Cast menu.
+    const win = window.open(url.toString(), "_blank");
+    if (!win) {
+      showToast("הדפדפן חסם את החלון. אפשרו חלונות קופצים לאתר זה.", 6000);
       return;
     }
-    projectionWinRef.current = popup;
     try {
-      const screenWithOrigin = window.screen as Screen & {
-        availLeft?: number;
-        availTop?: number;
-      };
-      popup.moveTo(screenWithOrigin.availLeft ?? 0, screenWithOrigin.availTop ?? 0);
-      popup.resizeTo(
-        window.screen.availWidth || window.innerWidth,
-        window.screen.availHeight || window.innerHeight,
-      );
-      popup.focus();
+      win.focus();
     } catch {
-      /* Some browsers block move/resize after open. */
+      /* ignore */
     }
-    showToast("נפתח חלון לטלוויזיה. גררו אותו למסך השני ולחצו מקסם.");
+    showToast(CAST_HINT, 10000);
   }, [showToast, token]);
 
-  const toggleNativeFullscreen = useCallback(async () => {
-    const el = rootRef.current;
-    if (!el) return;
-    try {
-      if (fullscreenElement()) {
-        const doc = document as FsDoc;
-        if (document.exitFullscreen) await document.exitFullscreen();
-        else await doc.webkitExitFullscreen?.();
-        return;
-      }
-      const node = el as FsEl;
-      if (el.requestFullscreen) await el.requestFullscreen();
-      else await node.webkitRequestFullscreen?.();
-    } catch {
-      showToast("לא ניתן להסתיר את שורת המשימות. המקסמו את החלון על הטלוויזיה.");
-    }
-  }, [showToast]);
-
-  const minimizeKioskWindow = useCallback(async () => {
-    try {
-      if (fullscreenElement()) {
-        const doc = document as FsDoc;
-        if (document.exitFullscreen) await document.exitFullscreen();
-        else await doc.webkitExitFullscreen?.();
-      }
-    } catch {
-      /* keep going so the window chrome can appear */
-    }
+  const minimizeKioskWindow = useCallback(() => {
     try {
       const width = Math.min(1600, (window.screen.availWidth || 1600) - 80);
       const height = Math.min(900, (window.screen.availHeight || 900) - 80);
@@ -300,13 +210,13 @@ export function SalesTvScreen({
     showToast("אפשר למזער עכשיו מהמקף בשורת הכותרת. כשתפתחו שוב — התצוגה נשארת מלאה בחלון.");
   }, [showToast]);
 
-  const onFullscreenClick = useCallback(() => {
-    if (embedded) {
-      openProjectionWindow();
+  const onCastClick = useCallback(() => {
+    if (embedded || window.opener) {
+      openCastWindow();
       return;
     }
-    void toggleNativeFullscreen();
-  }, [embedded, openProjectionWindow, toggleNativeFullscreen]);
+    showToast(CAST_HINT, 10000);
+  }, [embedded, openCastWindow, showToast]);
 
   useEffect(() => {
     void load().catch((err: unknown) => {
@@ -488,23 +398,16 @@ export function SalesTvScreen({
           ) : null}
           <button
             type="button"
-            className={`sales-tv-btn sales-tv-fs-btn${presenting && nativeFs ? " is-on" : ""}`}
-            onClick={onFullscreenClick}
-            aria-pressed={presenting ? nativeFs : undefined}
+            className="sales-tv-btn sales-tv-fs-btn"
+            onClick={onCastClick}
             title={
               embedded
-                ? "פתח חלון נפרד לטלוויזיה והמשיכו לעבוד כאן"
-                : nativeFs
-                  ? "החזר את שורת הכותרת כדי שאפשר למזער"
-                  : "מלא את המסך על הטלוויזיה"
+                ? "פתח תצוגת טלוויזיה בחלון כרום רגיל — משם Cast לטלוויזיה"
+                : CAST_HINT
             }
           >
-            {presenting && nativeFs ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-            {embedded
-              ? "חלון לטלוויזיה"
-              : nativeFs
-                ? "יציאה"
-                : "מסך מלא"}
+            <Cast size={15} />
+            {embedded ? "פתיחה לשיקוף" : "שיקוף מסך"}
           </button>
           {presenting ? (
             <button
