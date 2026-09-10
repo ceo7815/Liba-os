@@ -308,46 +308,204 @@ export type UploadRecordingResult =
     }
   | { error: string };
 
+export type PrepareRecordingUploadResult =
+  | {
+      error: null;
+      callId: string;
+      storagePath: string;
+      signedUrl: string;
+      token: string;
+      mime: string;
+      fileName: string;
+      displayName: string;
+      bucket: string;
+    }
+  | { error: string };
+
+type SignedUploadApi = {
+  createSignedUploadUrl: (
+    path: string,
+  ) => Promise<{
+    data: { signedUrl: string; token: string; path: string } | null;
+    error: { message: string } | null;
+  }>;
+};
+
+async function enqueueUploadAnalysis(opts: {
+  admin: ReturnType<typeof createAdminClient>;
+  agentId: string;
+  profileId: string;
+  slug: string;
+  callId: string;
+}): Promise<UploadRecordingResult> {
+  const { admin, agentId, profileId, slug, callId } = opts;
+  const now = new Date().toISOString();
+
+  const { data: active } = await admin
+    .from("agent_runs")
+    .select("id, status, metadata, started_at")
+    .eq("agent_id", agentId)
+    .in("status", ["queued", "claimed", "running"])
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (active && (active.status === "running" || active.status === "claimed")) {
+    const meta =
+      active.metadata &&
+      typeof active.metadata === "object" &&
+      !Array.isArray(active.metadata)
+        ? { ...(active.metadata as Record<string, unknown>) }
+        : {};
+    const existingIds = Array.isArray(meta.call_ids)
+      ? meta.call_ids.filter((id): id is string => typeof id === "string")
+      : [];
+    const waitingIds = [...new Set([...existingIds, callId])];
+    await admin
+      .from("agent_runs")
+      .update({
+        metadata: {
+          ...meta,
+          source: "upload",
+          ingest: "pending_calls",
+          call_ids: waitingIds,
+          waiting_count: waitingIds.length,
+        },
+      })
+      .eq("id", active.id);
+
+    revalidatePath(`/agents/${slug}`);
+    return {
+      error: null,
+      callId,
+      runId: active.id,
+      status: "running",
+      waiting: true,
+      message:
+        "ההקלטה נכנסה לתור. מסיימים את הניתוח הנוכחי ואז ממשיכים אוטומטית",
+    };
+  }
+
+  if (active?.status === "queued") {
+    await admin
+      .from("agent_runs")
+      .update({
+        status: "cancelled",
+        finished_at: now,
+        error_message: "replaced by immediate upload analysis",
+      })
+      .eq("id", active.id);
+  }
+
+  const { data: run, error: runError } = await admin
+    .from("agent_runs")
+    .insert({
+      agent_id: agentId,
+      trigger: "manual",
+      status: "running",
+      started_at: now,
+      metadata: {
+        source: "upload",
+        ingest: "pending_calls",
+        call_ids: [callId],
+        requested_by: profileId,
+      },
+    })
+    .select("id, status, started_at")
+    .single();
+
+  if (runError || !run) {
+    await admin
+      .from("agents")
+      .update({ last_run_at: now, last_run_status: "running" })
+      .eq("id", agentId);
+    revalidatePath(`/agents/${slug}`);
+    return {
+      error: null,
+      callId,
+      runId: null,
+      status: "running",
+      waiting: false,
+      message: "ההקלטה מוכנה — הסוכן מתחיל לנתח עכשיו (get_pending)",
+    };
+  }
+
+  await admin
+    .from("agents")
+    .update({
+      last_run_at: run.started_at,
+      last_run_status: "running",
+    })
+    .eq("id", agentId);
+
+  revalidatePath(`/agents/${slug}`);
+  return {
+    error: null,
+    callId,
+    runId: run.id,
+    status: "running",
+    waiting: false,
+    message: "מתחיל ניתוח עכשיו לפי הנחיות הסוכן",
+  };
+}
+
 /**
- * Admin-only: upload a recording into Liba Storage, create a pending call,
- * and start analysis immediately (running). Extra uploads while busy wait in line.
+ * Step 1: mint a short-lived signed upload URL.
+ * Browser uploads the file directly to Supabase (bypasses xCloud Nginx body limits).
  */
-export async function uploadCallRecording(
+export async function prepareCallRecordingUpload(
   slug: string,
-  formData: FormData,
-): Promise<UploadRecordingResult> {
-  const profile = await requirePermission("agents.manage");
+  input: {
+    fileName: string;
+    fileSize: number;
+    mimeType?: string | null;
+    displayName?: string | null;
+  },
+): Promise<PrepareRecordingUploadResult> {
+  await requirePermission("agents.manage");
 
   try {
     if (slug !== "call-control") {
       return { error: "העלאת הקלטות זמינה רק לסוכן בקרת שיחות" };
     }
-
-    const raw = formData.get("file");
-    if (!(raw instanceof File)) {
-      return { error: "לא נבחר קובץ הקלטה" };
+    if (!input.fileName?.trim()) return { error: "לא נבחר קובץ הקלטה" };
+    if (!Number.isFinite(input.fileSize) || input.fileSize <= 0) {
+      return { error: "קובץ ריק" };
     }
-    if (raw.size <= 0) return { error: "קובץ ריק" };
-    if (raw.size > MAX_RECORDING_BYTES) {
+    if (input.fileSize > MAX_RECORDING_BYTES) {
       return { error: "הקובץ גדול מ־200MB" };
     }
 
-    const mime = resolveRecordingMime(raw.name, raw.type);
-    if (!isAllowedRecordingMime(mime, raw.name)) {
+    const mime = resolveRecordingMime(input.fileName, input.mimeType);
+    if (!isAllowedRecordingMime(mime, input.fileName)) {
       return { error: "מותר קבצי אודיו בלבד (mp3, m4a, wav, webm…)" };
     }
 
-    const displayNameRaw = formData.get("display_name");
     const displayName =
-      typeof displayNameRaw === "string" && displayNameRaw.trim()
-        ? displayNameRaw.trim()
-        : raw.name.replace(/\.[^.]+$/, "") || raw.name;
+      typeof input.displayName === "string" && input.displayName.trim()
+        ? input.displayName.trim()
+        : input.fileName.replace(/\.[^.]+$/, "") || input.fileName;
 
     const agent = await ensureAgentRow(slug);
     const admin = createAdminClient();
     await ensureCallRecordingsBucket(admin);
 
-    // Clear stale call-control jobs so a fresh upload can be claimed immediately.
+    const callId = crypto.randomUUID();
+    const safeName = input.fileName.replace(
+      /[^\w.\u0590-\u05FF\u00A0-\uFFFF\- ()]/g,
+      "_",
+    );
+    const storagePath = `uploads/${callId}/${Date.now()}-${safeName}`;
+
+    const bucket = admin.storage.from(
+      CALL_RECORDINGS_BUCKET,
+    ) as unknown as SignedUploadApi;
+    const { data, error } = await bucket.createSignedUploadUrl(storagePath);
+    if (error || !data?.signedUrl || !data.token) {
+      return { error: error?.message ?? "יצירת קישור העלאה נכשלה" };
+    }
+
+    // Stale run cleanup (light) so finalize can start immediately.
     const staleBefore = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     await admin
       .from("agent_runs")
@@ -360,172 +518,112 @@ export async function uploadCallRecording(
       .in("status", ["queued", "claimed", "running"])
       .lt("started_at", staleBefore);
 
-    const callId = crypto.randomUUID();
-    const safeName = raw.name.replace(/[^\w.\u0590-\u05FF\u00A0-\uFFFF\- ()]/g, "_");
-    const storagePath = `uploads/${callId}/${Date.now()}-${safeName}`;
-    const buffer = Buffer.from(await raw.arrayBuffer());
+    return {
+      error: null,
+      callId,
+      storagePath: data.path || storagePath,
+      signedUrl: data.signedUrl,
+      token: data.token,
+      mime,
+      fileName: input.fileName,
+      displayName,
+      bucket: CALL_RECORDINGS_BUCKET,
+    };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "הכנת ההעלאה נכשלה",
+    };
+  }
+}
 
-    const { error: uploadError } = await admin.storage
-      .from(CALL_RECORDINGS_BUCKET)
-      .upload(storagePath, buffer, {
-        contentType: mime || "application/octet-stream",
-        upsert: false,
-      });
-    if (uploadError) {
-      const msg = uploadError.message || "";
-      if (/exceeded the maximum allowed size/i.test(msg)) {
-        return { error: "הקובץ גדול מדי להעלאה (מקסימום 200MB)" };
-      }
-      return { error: msg };
+/**
+ * Step 2: after the browser finished uploading to Storage, register the call and start analysis.
+ */
+export async function finalizeCallRecordingUpload(
+  slug: string,
+  input: {
+    callId: string;
+    storagePath: string;
+    fileName: string;
+    mime: string;
+    displayName: string;
+  },
+): Promise<UploadRecordingResult> {
+  const profile = await requirePermission("agents.manage");
+
+  try {
+    if (slug !== "call-control") {
+      return { error: "העלאת הקלטות זמינה רק לסוכן בקרת שיחות" };
     }
+    if (!input.callId || !input.storagePath) {
+      return { error: "חסרים פרטי העלאה" };
+    }
+
+    const agent = await ensureAgentRow(slug);
+    const admin = createAdminClient();
 
     const { data: signed, error: signError } = await admin.storage
       .from(CALL_RECORDINGS_BUCKET)
-      .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
+      .createSignedUrl(input.storagePath, 60 * 60 * 24 * 7);
     if (signError || !signed?.signedUrl) {
-      await admin.storage.from(CALL_RECORDINGS_BUCKET).remove([storagePath]);
-      return { error: signError?.message ?? "יצירת קישור להקלטה נכשלה" };
+      return {
+        error:
+          signError?.message ??
+          "הקובץ לא נמצא ב־Storage אחרי ההעלאה — נסו שוב",
+      };
     }
 
-    const externalId = `upload:${callId}`;
+    const externalId = `upload:${input.callId}`;
     const { error: callError } = await admin.from("calls").insert({
-      id: callId,
+      id: input.callId,
       external_id: externalId,
       source: "upload",
       status: "pending",
       audio_path: signed.signedUrl,
       metadata: {
-        display_name: displayName,
-        file_name: raw.name,
+        display_name: input.displayName,
+        file_name: input.fileName,
         storage_bucket: CALL_RECORDINGS_BUCKET,
-        storage_path: storagePath,
-        mime_type: mime,
+        storage_path: input.storagePath,
+        mime_type: input.mime,
         uploaded_by: profile.id,
         source: "upload",
       },
     });
 
     if (callError) {
-      await admin.storage.from(CALL_RECORDINGS_BUCKET).remove([storagePath]);
+      await admin.storage
+        .from(CALL_RECORDINGS_BUCKET)
+        .remove([input.storagePath]);
       return { error: callError.message };
     }
 
-    const now = new Date().toISOString();
-    const { data: active } = await admin
-      .from("agent_runs")
-      .select("id, status, metadata, started_at")
-      .eq("agent_id", agent.id)
-      .in("status", ["queued", "claimed", "running"])
-      .order("started_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    // Already analyzing → only park this file as pending; worker continues after current.
-    if (active && (active.status === "running" || active.status === "claimed")) {
-      const meta =
-        active.metadata &&
-        typeof active.metadata === "object" &&
-        !Array.isArray(active.metadata)
-          ? { ...(active.metadata as Record<string, unknown>) }
-          : {};
-      const existingIds = Array.isArray(meta.call_ids)
-        ? meta.call_ids.filter((id): id is string => typeof id === "string")
-        : [];
-      const waitingIds = [...new Set([...existingIds, callId])];
-      await admin
-        .from("agent_runs")
-        .update({
-          metadata: {
-            ...meta,
-            source: "upload",
-            ingest: "pending_calls",
-            call_ids: waitingIds,
-            waiting_count: waitingIds.length,
-          },
-        })
-        .eq("id", active.id);
-
-      revalidatePath(`/agents/${slug}`);
-      return {
-        error: null,
-        callId,
-        runId: active.id,
-        status: "running",
-        waiting: true,
-        message:
-          "ההקלטה נכנסה לתור. מסיימים את הניתוח הנוכחי ואז ממשיכים אוטומטית",
-      };
-    }
-
-    // Cancel leftover queued jobs (old Drive / stuck) — start fresh immediately.
-    if (active?.status === "queued") {
-      await admin
-        .from("agent_runs")
-        .update({
-          status: "cancelled",
-          finished_at: now,
-          error_message: "replaced by immediate upload analysis",
-        })
-        .eq("id", active.id);
-    }
-
-    // Start analysis immediately (running, not queued).
-    const { data: run, error: runError } = await admin
-      .from("agent_runs")
-      .insert({
-        agent_id: agent.id,
-        trigger: "manual",
-        status: "running",
-        started_at: now,
-        metadata: {
-          source: "upload",
-          ingest: "pending_calls",
-          call_ids: [callId],
-          requested_by: profile.id,
-        },
-      })
-      .select("id, status, started_at")
-      .single();
-
-    if (runError || !run) {
-      await admin
-        .from("agents")
-        .update({ last_run_at: now, last_run_status: "running" })
-        .eq("id", agent.id);
-      revalidatePath(`/agents/${slug}`);
-      return {
-        error: null,
-        callId,
-        runId: null,
-        status: "running",
-        waiting: false,
-        message:
-          "ההקלטה מוכנה — הסוכן מתחיל לנתח עכשיו (get_pending)",
-      };
-    }
-
-    await admin
-      .from("agents")
-      .update({
-        last_run_at: run.started_at,
-        last_run_status: "running",
-      })
-      .eq("id", agent.id);
-
-    revalidatePath(`/agents/${slug}`);
-    return {
-      error: null,
-      callId,
-      runId: run.id,
-      status: "running",
-      waiting: false,
-      message: "מתחיל ניתוח עכשיו לפי הנחיות הסוכן",
-    };
+    return enqueueUploadAnalysis({
+      admin,
+      agentId: agent.id,
+      profileId: profile.id,
+      slug,
+      callId: input.callId,
+    });
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "העלאת ההקלטה נכשלה",
+      error: err instanceof Error ? err.message : "סיום ההעלאה נכשל",
     };
   }
+}
+
+/**
+ * @deprecated Prefer prepareCallRecordingUpload + browser direct upload + finalize.
+ * Kept only to avoid breaking old clients; rejects large FormData on purpose.
+ */
+export async function uploadCallRecording(
+  _slug: string,
+  _formData: FormData,
+): Promise<UploadRecordingResult> {
+  return {
+    error:
+      "יש לרענן את הדף — ההעלאה עברה למסלול ישיר ל־Storage (עוקף מגבלת Nginx)",
+  };
 }
 
 /**

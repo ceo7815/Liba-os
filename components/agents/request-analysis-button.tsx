@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { uploadCallRecording } from "@/app/actions/agents";
+import {
+  finalizeCallRecordingUpload,
+  prepareCallRecordingUpload,
+} from "@/app/actions/agents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -35,6 +38,13 @@ function statusLabel(status: string | null, waiting: boolean) {
   }
 }
 
+function mapUploadError(message: string) {
+  if (/exceeded the maximum allowed size/i.test(message)) {
+    return "הקובץ גדול מדי להעלאה (מקסימום 200MB)";
+  }
+  return message;
+}
+
 export function RequestAnalysisButton({
   slug,
   activeStatus,
@@ -42,7 +52,7 @@ export function RequestAnalysisButton({
 }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const [localStatus, setLocalStatus] = useState(activeStatus);
   const [waiting, setWaiting] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -72,7 +82,7 @@ export function RequestAnalysisButton({
     }
   }
 
-  function onAnalyze() {
+  async function onAnalyze() {
     const input = fileRef.current;
     const file = input?.files?.[0] ?? null;
     if (!file) {
@@ -80,15 +90,52 @@ export function RequestAnalysisButton({
       return;
     }
 
-    startTransition(async () => {
-      const body = new FormData();
-      body.set("file", file);
-      if (displayName.trim()) body.set("display_name", displayName.trim());
-      const result = await uploadCallRecording(slug, body);
-      if (result.error !== null) {
-        toast.error(result.error);
+    setPending(true);
+    try {
+      const prep = await prepareCallRecordingUpload(slug, {
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        displayName: displayName.trim() || null,
+      });
+      if (prep.error !== null) {
+        toast.error(mapUploadError(prep.error));
         return;
       }
+
+      // Direct browser → Supabase Storage (does not go through xCloud Nginx).
+      const uploadRes = await fetch(prep.signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": prep.mime || "application/octet-stream",
+          "x-upsert": "false",
+        },
+        body: file,
+      });
+      if (!uploadRes.ok) {
+        let detail = `העלאה ל־Storage נכשלה (${uploadRes.status})`;
+        try {
+          const body = (await uploadRes.json()) as { message?: string; error?: string };
+          detail = mapUploadError(body.message || body.error || detail);
+        } catch {
+          /* keep detail */
+        }
+        toast.error(detail);
+        return;
+      }
+
+      const result = await finalizeCallRecordingUpload(slug, {
+        callId: prep.callId,
+        storagePath: prep.storagePath,
+        fileName: prep.fileName,
+        mime: prep.mime,
+        displayName: prep.displayName,
+      });
+      if (result.error !== null) {
+        toast.error(mapUploadError(result.error));
+        return;
+      }
+
       setLocalStatus(result.status ?? "running");
       setWaiting(Boolean(result.waiting));
       if (result.waiting) {
@@ -105,7 +152,13 @@ export function RequestAnalysisButton({
       setDisplayName("");
       if (input) input.value = "";
       router.refresh();
-    });
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? mapUploadError(err.message) : "העלאת ההקלטה נכשלה",
+      );
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -169,7 +222,7 @@ export function RequestAnalysisButton({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           type="button"
-          onClick={onAnalyze}
+          onClick={() => void onAnalyze()}
           disabled={pending || !fileName}
           className="h-11 min-w-[12rem] rounded-xl font-semibold"
         >
