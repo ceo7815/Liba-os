@@ -4,7 +4,11 @@ import {
   normalizePermissionKeys,
 } from "@/lib/permissions/catalog";
 
-export type AccessProfile = Pick<Profile, "email" | "role" | "permissionKeys">;
+export type AccessProfile = {
+  email?: string | null;
+  role?: Profile["role"] | null;
+  permissionKeys?: Profile["permissionKeys"] | null;
+};
 
 function permissionSet(profile: AccessProfile | null | undefined): Set<string> {
   return new Set(normalizePermissionKeys(profile?.permissionKeys));

@@ -162,19 +162,19 @@ export const FREELANCERS_4 = {
 } as const;
 
 export function isFreelancers3(
-  contract: { freelancerFormula?: FreelancerFormula } | null | undefined,
+  contract: { freelancerFormula?: string | null } | null | undefined,
 ): boolean {
   return contract?.freelancerFormula === "freelancers_3";
 }
 
 export function isFreelancers4(
-  contract: { freelancerFormula?: FreelancerFormula } | null | undefined,
+  contract: { freelancerFormula?: string | null } | null | undefined,
 ): boolean {
   return contract?.freelancerFormula === "freelancers_4";
 }
 
 export function usesHubProductions(
-  contract: { freelancerFormula?: FreelancerFormula } | null | undefined,
+  contract: { freelancerFormula?: string | null } | null | undefined,
 ): boolean {
   return isFreelancers4(contract);
 }
@@ -1072,12 +1072,16 @@ export function monthlyCostLines(
 
 export function monthlyCostsTotal(
   contract:
-    | Pick<EmployeePayContract, "stationCost" | "operationsCost" | "officeCost">
+    | Partial<Pick<EmployeePayContract, "stationCost" | "operationsCost" | "officeCost">>
     | null
     | undefined,
 ): number {
   if (!contract) return 0;
-  return monthlyCostLines(contract).reduce((sum, row) => sum + row.amount, 0);
+  return monthlyCostLines({
+    stationCost: contract.stationCost ?? 0,
+    operationsCost: contract.operationsCost ?? 0,
+    officeCost: contract.officeCost ?? 0,
+  }).reduce((sum, row) => sum + row.amount, 0);
 }
 
 export function freelancerSettledSpec(

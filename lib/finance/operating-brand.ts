@@ -53,7 +53,7 @@ export function isShemeshAgentName(
   if (!raw) return false;
   if (textHasShemeshToken(raw)) return true;
   const canon = canonicalAgentName(raw);
-  for (const employee of shemeshEmployeeNames) {
+  for (const employee of Array.from(shemeshEmployeeNames)) {
     if (canonicalAgentName(employee) === canon) return true;
   }
   return false;
@@ -67,7 +67,7 @@ export function isMusdarAgentName(
   if (!raw) return false;
   if (textHasMusdarToken(raw)) return true;
   const canon = canonicalAgentName(raw);
-  for (const employee of musdarEmployeeNames) {
+  for (const employee of Array.from(musdarEmployeeNames)) {
     if (canonicalAgentName(employee) === canon) return true;
   }
   return false;

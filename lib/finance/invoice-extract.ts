@@ -40,11 +40,11 @@ function suggestVendorFromFileName(fileName: string): string {
 }
 
 function suggestAmountFromFileName(fileName: string): number | null {
-  const matches = [
-    ...fileName.matchAll(
+  const matches = Array.from(
+    fileName.matchAll(
       /(?:₪|ש[״"]?ח|nis|ils)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*(?:₪|ש[״"]?ח)?/gi,
     ),
-  ];
+  );
   const amounts: number[] = [];
   for (const m of matches) {
     const raw = m[1]?.replace(/[,\s]/g, "");

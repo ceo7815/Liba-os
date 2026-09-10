@@ -215,6 +215,7 @@ export function agreementLabelFor(
     studyFundEmployerPercent?: number;
     contributionCeiling?: number;
     severanceEmployerPercent?: number;
+    pensionFromFirstMonth?: boolean;
     stationCost?: number;
     operationsCost?: number;
     officeCost?: number;

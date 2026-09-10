@@ -143,7 +143,7 @@ function collectDropdownSourceNames(bytes: Uint8Array, wb: XLSX.WorkBook, into: 
   }
 
   const xmls = inflateZipXmls(bytes);
-  for (const [path, xml] of xmls) {
+  for (const [path, xml] of Array.from(xmls)) {
     if (/workbook\.xml$/i.test(path)) {
       for (const ref of xmlTagValues(xml, "definedName")) {
         for (const value of valuesFromA1Ref(wb, ref)) add(value);
@@ -557,7 +557,7 @@ function buildMarketing(rows: ExcelRow[], wb?: XLSX.WorkBook, bytes?: Uint8Array
         productions.map((row) => row.agent),
       )
     : [];
-  for (const name of sourceCatalog) {
+  for (const name of Array.from(sourceCatalog)) {
     if (!sources.has(name)) sources.set(name, emptySourceBuf(name));
   }
 

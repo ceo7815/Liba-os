@@ -57,7 +57,15 @@ function readFormFile(formData: FormData): {
 } {
   const file = formData.get("file");
   if (file instanceof File) return { error: null, file };
-  if (file instanceof Blob && !(file instanceof File)) {
+
+  // Some Node/undici paths yield a Blob without File prototype.
+  if (
+    typeof file === "object" &&
+    file !== null &&
+    typeof (file as Blob).arrayBuffer === "function" &&
+    typeof (file as Blob).type === "string"
+  ) {
+    const blob = file as Blob;
     const named = formData.get("file_name");
     const name =
       typeof named === "string" && named.trim()
@@ -65,11 +73,12 @@ function readFormFile(formData: FormData): {
         : "invoice.bin";
     return {
       error: null,
-      file: new File([file], name, {
-        type: file.type || "application/octet-stream",
+      file: new File([blob], name, {
+        type: blob.type || "application/octet-stream",
       }),
     };
   }
+
   return { error: "לא נבחר קובץ", file: null };
 }
 
@@ -138,8 +147,8 @@ function parseDueDay(raw: number | string | null | undefined): number | null {
 function normalizeAllocations(
   allocationType: ExpenseAllocationType,
   allocations: ExpenseSourceAllocation[] | undefined,
-): { error: string } | { error: null; rows: ExpenseSourceAllocation[] } {
-  if (allocationType === "office") return { error: null, rows: [] };
+): { ok: true; rows: ExpenseSourceAllocation[] } | { ok: false; error: string } {
+  if (allocationType === "office") return { ok: true, rows: [] };
   const cleaned = (allocations ?? [])
     .map((row) => ({
       source_name: row.source_name?.trim() ?? "",
@@ -148,27 +157,27 @@ function normalizeAllocations(
     .filter((row) => row.source_name);
 
   if (cleaned.length === 0) {
-    return { error: "בחרו לפחות מקור אחד, או סמנו הוצאות משרד כלליות" };
+    return { ok: false, error: "בחרו לפחות מקור אחד, או סמנו הוצאות משרד כלליות" };
   }
 
   const names = new Set<string>();
   for (const row of cleaned) {
     if (names.has(row.source_name)) {
-      return { error: `מקור כפול: ${row.source_name}` };
+      return { ok: false, error: `מקור כפול: ${row.source_name}` };
     }
     names.add(row.source_name);
     if (!Number.isFinite(row.share_percent) || row.share_percent <= 0) {
-      return { error: `אחוז לא תקין עבור ${row.source_name}` };
+      return { ok: false, error: `אחוז לא תקין עבור ${row.source_name}` };
     }
   }
 
   const sum = cleaned.reduce((acc, row) => acc + row.share_percent, 0);
   if (Math.abs(sum - 100) > 0.05) {
-    return { error: `סכום האחוזים חייב להיות 100% (כרגע ${sum.toFixed(1)}%)` };
+    return { ok: false, error: `סכום האחוזים חייב להיות 100% (כרגע ${sum.toFixed(1)}%)` };
   }
 
   return {
-    error: null,
+    ok: true,
     rows: cleaned.map((row) => ({
       source_name: row.source_name,
       share_percent: Math.round(row.share_percent * 100) / 100,
@@ -354,7 +363,8 @@ export async function createFinanceFixedCost(input: {
   const allocationType: ExpenseAllocationType =
     input.allocation_type === "sources" ? "sources" : "office";
   const alloc = normalizeAllocations(allocationType, input.allocations);
-  if (alloc.error) return { error: alloc.error };
+  if (!alloc.ok) return { error: alloc.error };
+  const allocRows = alloc.rows;
 
   const expenseKind = parseExpenseKind(input.expense_kind);
   const amount = parseOptionalAmount(input.default_amount);
@@ -397,7 +407,7 @@ export async function createFinanceFixedCost(input: {
 
   if (error || !data) return { error: error?.message ?? "שמירה נכשלה" };
 
-  const allocErr = await replaceAllocations(admin, data.id, alloc.rows);
+  const allocErr = await replaceAllocations(admin, data.id, allocRows);
   if (allocErr) return { error: allocErr };
 
   const pay = await recordFixedCostPayment({
@@ -438,7 +448,8 @@ export async function updateFinanceFixedCost(input: {
   const allocationType: ExpenseAllocationType =
     input.allocation_type === "sources" ? "sources" : "office";
   const alloc = normalizeAllocations(allocationType, input.allocations);
-  if (alloc.error) return { error: alloc.error };
+  if (!alloc.ok) return { error: alloc.error };
+  const allocRows = alloc.rows;
 
   const expenseKind = parseExpenseKind(input.expense_kind);
   const amount = parseOptionalAmount(input.default_amount);
@@ -484,7 +495,7 @@ export async function updateFinanceFixedCost(input: {
 
   if (error) return { error: error.message };
 
-  const allocErr = await replaceAllocations(admin, input.id, alloc.rows);
+  const allocErr = await replaceAllocations(admin, input.id, allocRows);
   if (allocErr) return { error: allocErr };
 
   const description = [title, vendor].filter(Boolean).join(" · ");
