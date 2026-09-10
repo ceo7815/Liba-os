@@ -4,8 +4,9 @@ import {
   salesUploadTokenMatches,
 } from "@/lib/sales-dashboard/kiosk-auth";
 import { saveIngestedWorkbook } from "@/lib/sales-dashboard/ingest-store";
+import { applyExcelEmployeeCatalog } from "@/lib/employees/sync-from-excel";
 import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
-import { replaceSalesDashboardSnapshot } from "@/lib/sales-dashboard/snapshot";
+import { persistSalesDashboardSnapshot } from "@/lib/sales-dashboard/snapshot";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -54,7 +55,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  replaceSalesDashboardSnapshot(parsed);
+  await persistSalesDashboardSnapshot(parsed, {
+    lastModified: new Date().toISOString(),
+    fileName: parsed.fileName,
+  });
+  await applyExcelEmployeeCatalog().catch(() => undefined);
   return NextResponse.json({
     ok: true,
     fileName: parsed.fileName,

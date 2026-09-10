@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin, requireProfile } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptVaultSecret, encryptVaultSecret } from "@/lib/vault/crypto";
@@ -59,7 +59,7 @@ export async function listVaultEntries(options?: {
   query?: string;
   category?: string | "all";
 }): Promise<VaultListResult> {
-  await requireProfile();
+  await requirePermission("vault.view");
   const supabase = createClient();
 
   let q = supabase
@@ -96,7 +96,7 @@ export async function listVaultEntries(options?: {
 export async function revealVaultPassword(
   entryId: string,
 ): Promise<VaultRevealResult> {
-  await requireProfile();
+  await requirePermission("vault.view");
 
   if (!entryId?.trim()) {
     return { error: "חסר מזהה רשומה" };
@@ -136,7 +136,7 @@ export async function createVaultEntry(input: {
   system_type?: string;
   login_url?: string;
 }): Promise<VaultMutationResult> {
-  const profile = await requireAdmin();
+  const profile = await requirePermission("vault.manage");
 
   const title = input.title?.trim();
   const password = input.password ?? "";
@@ -194,7 +194,7 @@ export async function updateVaultEntry(input: {
   system_type?: string;
   login_url?: string;
 }): Promise<VaultMutationResult> {
-  const profile = await requireAdmin();
+  const profile = await requirePermission("vault.manage");
 
   if (!input.id?.trim()) return { error: "חסר מזהה" };
   const title = input.title?.trim();
@@ -247,7 +247,7 @@ export async function updateVaultEntry(input: {
 export async function deleteVaultEntry(
   entryId: string,
 ): Promise<VaultMutationResult> {
-  await requireAdmin();
+  await requirePermission("vault.manage");
 
   if (!entryId?.trim()) return { error: "חסר מזהה" };
 

@@ -2,52 +2,92 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bot,
   ChevronDown,
   Contact,
   KeyRound,
-  Layers3,
   LayoutDashboard,
+  BarChart3,
   TrendingUp,
   Users,
+  FileText,
+  Building2,
+  LineChart,
+  Receipt,
   Wallet,
 } from "lucide-react";
 import { LogoBadge } from "@/components/brand/logo-badge";
 import { agents } from "@/lib/agents.config";
-import { portals } from "@/lib/portals.config";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
-import { canAccessFinance } from "@/lib/finance/access";
+import { EMPLOYEE_AGREEMENTS_PATH, EMPLOYEE_PAYROLL_PATH } from "@/lib/employees/access";
+import {
+  canAccessFinance,
+  canAccessFinanceSection,
+  canAccessSettledCommissions,
+  EXPENSES_PATH,
+  FIXED_EXPENSES_PATH,
+  GENERAL_PNL_PATH,
+  INSURANCE_AGREEMENTS_PATH,
+  SETTLED_COMMISSIONS_PATH,
+  SOURCE_PNL_PATH,
+} from "@/lib/finance/access";
 import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
+import {
+  canManageUsers,
+  canViewAgents,
+  canViewEmployeeAgreements,
+  canViewEmployees,
+  canViewVault,
+} from "@/lib/permissions/access";
 
 type SidebarProps = {
   profile: Profile;
   className?: string;
 };
 
-type OpenSection = "agents" | "portals" | null;
+type OpenSection = "agents" | null;
 
 function sectionFromPath(pathname: string): OpenSection {
   if (pathname === "/agents" || pathname.startsWith("/agents/")) return "agents";
-  if (pathname === "/portals" || pathname.startsWith("/portals/")) return "portals";
   return null;
 }
 
 export function Sidebar({ profile, className }: SidebarProps) {
   const pathname = usePathname();
-  const isAdmin = profile.role === "admin";
+  const showAgents = canViewAgents(profile);
+  const showVault = canViewVault(profile);
   const showFinance = canAccessFinance(profile);
   const showSalesDashboard = canAccessSalesDashboard(profile);
+  const showEmployees =
+    canViewEmployees(profile) || canViewEmployeeAgreements(profile);
+  const showUsers = canManageUsers(profile);
+  const showPlGeneral = canAccessFinanceSection(profile, "finance.pl_general");
+  const showSourcePnl = canAccessFinanceSection(profile, "finance.source_pnl");
+  const showFixedExpenses = canAccessFinanceSection(
+    profile,
+    "finance.fixed_expenses",
+  );
+  const showInsurance = canAccessFinanceSection(profile, "finance.insurance");
+  const showSettled = canAccessSettledCommissions(profile);
+  const showOrganization = showUsers || showVault;
 
   const agentsActive = pathname === "/agents" || pathname.startsWith("/agents/");
-  const portalsActive = pathname === "/portals" || pathname.startsWith("/portals/");
   const vaultActive = pathname === "/vault" || pathname.startsWith("/vault/");
-  const financeActive =
-    pathname === "/finance" || pathname.startsWith("/finance/");
-  const employeesActive =
-    pathname === "/employees" || pathname.startsWith("/employees/");
+  const generalPnlActive = pathname === GENERAL_PNL_PATH;
+  const sourcePnlActive = pathname === SOURCE_PNL_PATH;
+  const insuranceAgreementsActive = pathname === INSURANCE_AGREEMENTS_PATH;
+  const settledActive = pathname === SETTLED_COMMISSIONS_PATH;
+  const fixedExpensesActive =
+    pathname === EXPENSES_PATH ||
+    pathname.startsWith(`${EXPENSES_PATH}/`) ||
+    pathname === "/finance/fixed-expenses";
+  const employeeAgreementsActive = pathname === EMPLOYEE_AGREEMENTS_PATH;
+  const payrollActive =
+    pathname === EMPLOYEE_PAYROLL_PATH || pathname.startsWith(`${EMPLOYEE_PAYROLL_PATH}/`);
+  const employeesActive = pathname === "/employees";
   const salesDashboardActive =
     pathname === "/sales-dashboard" || pathname.startsWith("/sales-dashboard/");
 
@@ -88,68 +128,8 @@ export function Sidebar({ profile, className }: SidebarProps) {
           />
         </NavSection>
 
-        <NavSection title="עבודה">
-          <ExpandableNav
-            href="/agents"
-            label="סוכני AI"
-            icon={Bot}
-            sectionActive={agentsActive}
-            overviewActive={pathname === "/agents"}
-            open={openSection === "agents"}
-            onToggle={() => toggleSection("agents")}
-            toggleLabel={
-              openSection === "agents"
-                ? "סגירת רשימת סוכנים"
-                : "פתיחת רשימת סוכנים"
-            }
-          >
-            {agents.map((agent) => (
-              <SubNavItem
-                key={agent.slug}
-                href={agent.href}
-                label={agent.name}
-                active={
-                  pathname === agent.href ||
-                  pathname.startsWith(`${agent.href}/`)
-                }
-              />
-            ))}
-          </ExpandableNav>
-
-          <ExpandableNav
-            href="/portals"
-            label="איחוד פורטלים"
-            icon={Layers3}
-            sectionActive={portalsActive}
-            overviewActive={pathname === "/portals"}
-            open={openSection === "portals"}
-            onToggle={() => toggleSection("portals")}
-            toggleLabel={
-              openSection === "portals"
-                ? "סגירת רשימת פורטלים"
-                : "פתיחת רשימת פורטלים"
-            }
-          >
-            {portals.map((portal) => (
-              <SubNavItem
-                key={portal.slug}
-                href={portal.href}
-                label={portal.name}
-                active={pathname === portal.href}
-              />
-            ))}
-          </ExpandableNav>
-
-          <NavItem
-            href="/vault"
-            label="כספת סיסמאות"
-            icon={KeyRound}
-            active={vaultActive}
-          />
-        </NavSection>
-
         {showSalesDashboard ? (
-          <NavSection title="דשבורד מכירות">
+          <NavSection title="מכירות">
             <NavItem
               href="/sales-dashboard"
               label="דשבורד מכירות"
@@ -160,37 +140,122 @@ export function Sidebar({ profile, className }: SidebarProps) {
         ) : null}
 
         {showFinance ? (
-          <NavSection title="חשבונות ליבה">
-            <NavItem
-              href="/finance"
-              label="חשבונות ליבה"
-              icon={Wallet}
-              active={financeActive}
-            />
+          <NavSection title="חשבונות">
+            {showPlGeneral ? (
+              <NavItem
+                href={GENERAL_PNL_PATH}
+                label="רווח והפסד כללי"
+                icon={LineChart}
+                active={generalPnlActive}
+              />
+            ) : null}
+            {showSourcePnl ? (
+              <NavItem
+                href={SOURCE_PNL_PATH}
+                label="לפי מקור · היקף"
+                icon={BarChart3}
+                active={sourcePnlActive}
+              />
+            ) : null}
+            {showSettled ? (
+              <NavItem
+                href={SETTLED_COMMISSIONS_PATH}
+                label="לפי מקור · נפרעים"
+                icon={Receipt}
+                active={settledActive}
+              />
+            ) : null}
+            {showFixedExpenses ? (
+              <NavItem
+                href={EXPENSES_PATH}
+                label="הוצאות"
+                icon={Building2}
+                active={fixedExpensesActive}
+              />
+            ) : null}
+            {showInsurance ? (
+              <NavItem
+                href={INSURANCE_AGREEMENTS_PATH}
+                label="הסכמים · חברות ביטוח"
+                icon={FileText}
+                active={insuranceAgreementsActive}
+              />
+            ) : null}
           </NavSection>
         ) : null}
 
-        {isAdmin ? (
+        {showEmployees ? (
           <NavSection title="עובדים">
-            <NavItem
-              href="/employees"
-              label="רשימת עובדים"
-              icon={Contact}
-              active={employeesActive}
-            />
+            {canViewEmployees(profile) || canViewEmployeeAgreements(profile) ? (
+              <>
+                <NavItem
+                  href="/employees"
+                  label="עובדים"
+                  icon={Contact}
+                  active={employeesActive || employeeAgreementsActive}
+                />
+                <NavItem
+                  href={EMPLOYEE_PAYROLL_PATH}
+                  label="משכורות"
+                  icon={Wallet}
+                  active={payrollActive}
+                />
+              </>
+            ) : null}
           </NavSection>
         ) : null}
 
-        {isAdmin && (
-          <NavSection title="ארגון">
-            <NavItem
-              href="/dashboard/users"
-              label="ניהול משתמשים"
-              icon={Users}
-              active={pathname.startsWith("/dashboard/users")}
-            />
+        {showAgents ? (
+          <NavSection title="בינה מלאכותית">
+            <ExpandableNav
+              href="/agents"
+              label="סוכני AI"
+              icon={Bot}
+              sectionActive={agentsActive}
+              overviewActive={pathname === "/agents"}
+              open={openSection === "agents"}
+              onToggle={() => toggleSection("agents")}
+              toggleLabel={
+                openSection === "agents"
+                  ? "סגירת רשימת סוכנים"
+                  : "פתיחת רשימת סוכנים"
+              }
+            >
+              {agents.map((agent) => (
+                <SubNavItem
+                  key={agent.slug}
+                  href={agent.href}
+                  label={agent.name}
+                  active={
+                    pathname === agent.href ||
+                    pathname.startsWith(`${agent.href}/`)
+                  }
+                />
+              ))}
+            </ExpandableNav>
           </NavSection>
-        )}
+        ) : null}
+
+        {showOrganization ? (
+          <NavSection title="ארגון">
+            {showUsers ? (
+              <NavItem
+                href="/dashboard/users"
+                label="ניהול משתמשים"
+                icon={Users}
+                active={pathname.startsWith("/dashboard/users")}
+              />
+            ) : null}
+            {showVault ? (
+              <NavItem
+                href="/vault"
+                label="כספת סיסמאות"
+                icon={KeyRound}
+                active={vaultActive}
+              />
+            ) : null}
+          </NavSection>
+        ) : null}
       </nav>
 
       <div className="border-t border-black/[0.06] px-5 py-4 text-center">
@@ -325,12 +390,17 @@ function NavItem({
 }: {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
   active: boolean;
+  icon: React.ComponentType<{ className?: string }>;
 }) {
+  const router = useRouter();
+
   return (
     <Link
       href={href}
+      prefetch
+      onMouseEnter={() => router.prefetch(href)}
+      onFocus={() => router.prefetch(href)}
       className={cn(
         "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
         active
@@ -342,9 +412,12 @@ function NavItem({
         <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-highlight" />
       )}
       <Icon
-        className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-black/35")}
+        className={cn(
+          "h-4 w-4 shrink-0",
+          active ? "text-foreground" : "text-black/35",
+        )}
       />
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
     </Link>
   );
 }

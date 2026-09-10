@@ -7,4 +7,6 @@ export type Profile = {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  /** Granted capability keys from profile_permissions. */
+  permissionKeys?: string[];
 };

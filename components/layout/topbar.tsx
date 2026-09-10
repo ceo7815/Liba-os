@@ -1,11 +1,12 @@
 import { LogOut, Menu } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { GlobalSearch } from "@/components/layout/global-search";
+import { GlobalSyncButton } from "@/components/layout/global-sync-button";
 import { LiveClock } from "@/components/layout/live-clock";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { canAccessFinance } from "@/lib/finance/access";
+import { canAccessFinance, canAccessSourcePnl } from "@/lib/finance/access";
 import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
 import type { Profile } from "@/lib/types";
 
@@ -19,33 +20,35 @@ export function Topbar({ profile }: TopbarProps) {
   const isAdmin = profile.role === "admin";
   const showFinance = canAccessFinance(profile);
   const showSalesDashboard = canAccessSalesDashboard(profile);
+  const showGlobalSync = showFinance || showSalesDashboard;
+  const canSyncAds = canAccessSourcePnl(profile);
   const initials = getInitials(displayName);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/[0.08] bg-white">
-      <div className="flex h-14 items-center gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-black/[0.08] bg-white/92 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80">
+      <div className="flex h-14 items-center gap-1.5 px-3 sm:gap-3 sm:px-6 pt-[env(safe-area-inset-top)]">
         <Sheet>
           <SheetTrigger asChild>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="shrink-0 rounded-lg lg:hidden"
+              className="size-10 shrink-0 rounded-xl active:scale-95 lg:hidden"
               aria-label="תפריט ניווט"
             >
-              <Menu className="h-4 w-4" />
+              <Menu className="size-4" />
             </Button>
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-64 border-s border-black/[0.08] bg-white p-0 [&>button]:hidden"
+            className="w-[min(18rem,88vw)] border-s border-black/[0.08] bg-white p-0 [&>button]:hidden"
           >
             <SheetTitle className="sr-only">תפריט ניווט</SheetTitle>
             <Sidebar profile={profile} className="h-full w-full border-e-0" />
           </SheetContent>
         </Sheet>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 sm:max-w-md sm:flex-1">
           <GlobalSearch
             isAdmin={isAdmin}
             canAccessFinance={showFinance}
@@ -53,13 +56,15 @@ export function Topbar({ profile }: TopbarProps) {
           />
         </div>
 
-        <div className="hidden h-6 w-px bg-black/[0.08] md:block" />
+        <div className="ms-auto flex items-center gap-1 sm:gap-2.5">
+          {showGlobalSync ? <GlobalSyncButton canSyncAds={canSyncAds} /> : null}
 
-        <LiveClock />
+          <div className="hidden md:block">
+            <LiveClock />
+          </div>
 
-        <div className="hidden h-6 w-px bg-black/[0.08] sm:block" />
+          <div className="hidden h-6 w-px bg-black/[0.08] sm:block" />
 
-        <div className="flex items-center gap-2.5">
           <div className="hidden items-center gap-2.5 sm:flex">
             <div
               aria-hidden
@@ -80,10 +85,10 @@ export function Topbar({ profile }: TopbarProps) {
               type="submit"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+              className="size-10 rounded-xl text-muted-foreground hover:text-foreground active:scale-95 sm:size-8 sm:rounded-lg"
               aria-label="יציאה"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="size-4" />
             </Button>
           </form>
         </div>

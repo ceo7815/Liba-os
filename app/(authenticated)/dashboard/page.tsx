@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpLeft, Bot, CheckCircle2, Circle, LayoutDashboard, TrendingUp, Users } from "lucide-react";
-import { WeeklyChart } from "@/components/dashboard/weekly-chart";
-import { canAccessSalesDashboard, requireProfile } from "@/lib/auth";
-import { agents } from "@/lib/agents.config";
-import { createClient } from "@/lib/supabase/server";
+import { ArrowUpLeft, Bot, ChevronLeft } from "lucide-react";
+import { ControlCenterScreen } from "@/components/dashboard/control-center-screen";
+import { requireProfile } from "@/lib/auth";
+import { canViewAgents } from "@/lib/permissions/access";
+import { agents, getAgentStatusLabel } from "@/lib/agents.config";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -13,27 +13,9 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const profile = await requireProfile();
-  const isAdmin = profile.role === "admin";
-  const showSalesDashboard = canAccessSalesDashboard(profile);
   const firstName = profile.full_name?.split(/\s+/)[0] || profile.email;
-  const initials = getInitials(profile.full_name || profile.email);
-
-  const supabase = createClient();
-  // Employees don't need org-wide user counts — skip the extra round-trips.
-  const [{ count: userCount }, { count: activeCount }] = isAdmin
-    ? await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase
-          .from("profiles")
-          .select("id", { count: "exact", head: true })
-          .eq("is_active", true),
-      ])
-    : [{ count: 1 }, { count: 1 }];
-
-  const usersTotal = userCount ?? 1;
-  const usersActive = activeCount ?? 1;
-  const agentsTotal = agents.length;
-  const modulesReady = 2 + (isAdmin ? 1 : 0) + (showSalesDashboard ? 1 : 0);
+  const showAgents = canViewAgents(profile);
+  const agentRows = showAgents ? agents : [];
 
   const today = new Intl.DateTimeFormat("he-IL", {
     weekday: "long",
@@ -41,238 +23,131 @@ export default async function DashboardPage() {
     month: "long",
   }).format(new Date());
 
-  const loginTime = new Intl.DateTimeFormat("he-IL", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date());
-
   return (
-    <section className="mx-auto max-w-[72rem] space-y-5">
-      <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-highlight text-sm font-bold text-black">
-              {initials}
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">{today}</p>
-              <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-foreground">
-                {firstName}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {isAdmin ? "מנהל מערכת" : "עובד"} · ליבה ביטוח ופנסיוני
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4 lg:gap-x-10">
-            <Metric
-              label="עובדים פעילים"
-              value={usersActive}
-              total={usersTotal}
-              accent
-            />
-            <Metric label="סוכני AI" value={agentsTotal} total={Math.max(agentsTotal, 1)} />
-            <Metric label="מודולים" value={modulesReady} total={modulesReady} />
-            <Metric label="משימות פתוחות" value={0} total={0} />
-          </div>
+    <section className="mx-auto w-full max-w-[72rem] space-y-4 sm:space-y-6">
+      <header className="dash-enter px-0.5 sm:px-0">
+        <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
+          {today}
+        </p>
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <h1 className="text-[1.65rem] font-semibold leading-none tracking-tight sm:text-3xl">
+            שלום, {firstName}
+          </h1>
+          <p className="hidden max-w-[14rem] text-end text-sm leading-snug text-muted-foreground sm:block">
+            מצב העסק מהסנכרון האחרון
+          </p>
         </div>
+      </header>
+
+      <div className="dash-enter" style={{ animationDelay: "60ms" }}>
+        <ControlCenterScreen />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-        <WeeklyChart />
-
-        <div className="app-surface overflow-hidden">
-          <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
-            <div>
-              <h2 className="text-base font-semibold text-foreground">פעילות אחרונה</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">יומן עבודה פנימי</p>
-            </div>
-            {isAdmin && (
-              <Link
-                href="/dashboard/users"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-              >
-                לכל העובדים
-                <ArrowUpLeft className="h-3.5 w-3.5" />
-              </Link>
-            )}
+      {agentRows.length > 0 ? (
+        <div
+          className="dash-enter overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]"
+          style={{ animationDelay: "120ms" }}
+        >
+          <div className="flex items-center justify-between border-b border-black/[0.06] px-4 py-3 sm:px-6 sm:py-3.5">
+            <h2 className="text-sm font-semibold">סטטוס סוכנים</h2>
+            <Link
+              href="/agents"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-black/[0.03] hover:text-foreground active:scale-95"
+            >
+              הכל
+              <ArrowUpLeft className="size-3.5" />
+            </Link>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-y border-black/[0.05] text-[11px] font-semibold text-muted-foreground">
-                  <th className="px-5 py-2.5 text-start font-semibold sm:px-6">פעולה</th>
-                  <th className="px-3 py-2.5 text-start font-semibold">מודול</th>
-                  <th className="px-3 py-2.5 text-start font-semibold">סטטוס</th>
-                  <th className="px-5 py-2.5 text-start font-semibold sm:px-6">שעה</th>
+          {/* Mobile: tap cards */}
+          <ul className="divide-y divide-black/[0.05] sm:hidden">
+            {agentRows.map((agent) => (
+              <li key={agent.slug}>
+                <Link
+                  href={agent.href}
+                  className="flex items-center gap-3 px-4 py-3.5 active:bg-highlight/20"
+                >
+                  <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
+                    <Bot className="size-4 text-foreground" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">
+                      {agent.name}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                      {agent.description}
+                    </span>
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                      agent.status === "ready"
+                        ? "bg-emerald-100 text-emerald-900"
+                        : agent.status === "connecting"
+                          ? "bg-amber-100 text-amber-950"
+                          : "bg-black/[0.05] text-muted-foreground",
+                    )}
+                  >
+                    {getAgentStatusLabel(agent.status)}
+                  </span>
+                  <ChevronLeft className="size-4 shrink-0 text-black/25" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          {/* Desktop table */}
+          <table className="hidden w-full text-sm sm:table">
+            <thead>
+              <tr className="border-b border-black/[0.05] text-[11px] text-muted-foreground">
+                <th className="px-6 py-2.5 text-start font-medium">סוכן</th>
+                <th className="px-4 py-2.5 text-start font-medium">תיאור</th>
+                <th className="px-6 py-2.5 text-end font-medium">סטטוס</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agentRows.map((agent, idx) => (
+                <tr
+                  key={agent.slug}
+                  className={cn(
+                    "border-b border-black/[0.04] transition-colors last:border-b-0 hover:bg-[#fffcf0]/60",
+                    idx % 2 === 1 && "bg-background/40",
+                  )}
+                >
+                  <td className="px-6 py-3.5">
+                    <Link
+                      href={agent.href}
+                      className="inline-flex items-center gap-2.5 font-medium hover:underline"
+                    >
+                      <span className="inline-flex size-8 items-center justify-center rounded-xl bg-highlight/35">
+                        <Bot className="size-3.5 text-foreground" />
+                      </span>
+                      {agent.name}
+                    </Link>
+                  </td>
+                  <td className="max-w-md truncate px-4 py-3.5 text-muted-foreground">
+                    {agent.description}
+                  </td>
+                  <td className="px-6 py-3.5 text-end">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-medium",
+                        agent.status === "ready"
+                          ? "bg-emerald-100 text-emerald-900"
+                          : agent.status === "connecting"
+                            ? "bg-amber-100 text-amber-950"
+                            : "bg-black/[0.05] text-muted-foreground",
+                      )}
+                    >
+                      {getAgentStatusLabel(agent.status)}
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                <ActivityRow
-                  action="התחברות למערכת"
-                  module="אימות"
-                  status="הושלם"
-                  time={loginTime}
-                  done
-                  zebra
-                />
-                <ActivityRow
-                  action="טעינת לוח בקרה"
-                  module="סקירה"
-                  status="פעיל"
-                  time={loginTime}
-                  done
-                />
-                {agentsTotal === 0 && (
-                  <ActivityRow
-                    action="סוכן AI ראשון"
-                    module="סוכנים"
-                    status="ממתין"
-                    time="—"
-                  />
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <ModuleCard
-          href="/agents"
-          title="סוכני AI"
-          description="כלים חכמים לעבודה שוטפת בסוכנות"
-          icon={Bot}
-          meta={agentsTotal === 0 ? "אין סוכנים מחוברים" : `${agentsTotal} פעילים`}
-        />
-        {showSalesDashboard && (
-          <ModuleCard
-            href="/sales-dashboard"
-            title="דשבורד מכירות"
-            description="מסך חי מאקסל OneDrive — פוליסות, פרמיה ולידרבורד"
-            icon={TrendingUp}
-            meta="תצוגה מקדימה"
-          />
-        )}
-        {isAdmin && (
-          <ModuleCard
-            href="/dashboard/users"
-            title="ניהול משתמשים"
-            description="הזמנה, תפקידים והרשאות גישה"
-            icon={Users}
-            meta={`${usersActive} פעילים מתוך ${usersTotal}`}
-          />
-        )}
-        <ModuleCard
-          href="/dashboard"
-          title="לוח בקרה"
-          description="מדדים, פעילות ומודולים במבט אחד"
-          icon={LayoutDashboard}
-          meta="מסך נוכחי"
-          current
-        />
-      </div>
+      ) : null}
     </section>
   );
-}
-
-function Metric({
-  label,
-  value,
-  total,
-  accent = false,
-}: {
-  label: string;
-  value: number;
-  total: number;
-  accent?: boolean;
-}) {
-  return (
-    <div>
-      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-foreground">
-        {value}
-        <span className="text-base font-medium text-black/20">/{total || 0}</span>
-      </p>
-      {accent && <span className="mt-2 block h-[3px] w-8 rounded-full bg-highlight" />}
-    </div>
-  );
-}
-
-function ActivityRow({
-  action,
-  module,
-  status,
-  time,
-  done = false,
-  zebra = false,
-}: {
-  action: string;
-  module: string;
-  status: string;
-  time: string;
-  done?: boolean;
-  zebra?: boolean;
-}) {
-  return (
-    <tr className={cn(zebra && "bg-background/80")}>
-      <td className="px-5 py-3.5 font-medium text-foreground sm:px-6">{action}</td>
-      <td className="px-3 py-3.5 text-muted-foreground">{module}</td>
-      <td className="px-3 py-3.5">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-          {done ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-          ) : (
-            <Circle className="h-3.5 w-3.5 text-black/25" />
-          )}
-          {status}
-        </span>
-      </td>
-      <td className="px-5 py-3.5 tabular-nums text-muted-foreground sm:px-6">{time}</td>
-    </tr>
-  );
-}
-
-function ModuleCard({
-  href,
-  title,
-  description,
-  icon: Icon,
-  meta,
-  current = false,
-}: {
-  href: string;
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  meta: string;
-  current?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className="app-surface group block p-5 transition-colors hover:bg-background/40"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-background">
-          <Icon className="h-4 w-4 text-black/70" />
-        </span>
-        <span className="text-[11px] font-medium text-muted-foreground">{meta}</span>
-      </div>
-      <p className="mt-4 text-sm font-semibold text-foreground">{title}</p>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
-      {current && (
-        <span className="mt-3 inline-block h-1 w-8 rounded-full bg-highlight" />
-      )}
-    </Link>
-  );
-}
-
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "ל";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }

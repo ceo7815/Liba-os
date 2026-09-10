@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "crypto";
 import { getCurrentProfile } from "@/lib/auth";
+import { canAccessFinance } from "@/lib/finance/access";
 import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
 
 function bearerToken(request: Request): string | null {
@@ -53,6 +54,7 @@ export async function authorizeSalesDashboardRequest(
 
   const profile = await getCurrentProfile();
   if (profile && canAccessSalesDashboard(profile)) return true;
+  if (profile && canAccessFinance(profile)) return true;
 
   return isDevKioskOpen();
 }

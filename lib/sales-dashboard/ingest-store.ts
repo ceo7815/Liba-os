@@ -1,11 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { normalizeExcelEtag } from "@/lib/sales-dashboard/graph";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
 
 export const SALES_EXCEL_BUCKET = "sales-dashboard";
 export const SALES_EXCEL_OBJECT = "live/managers.xlsx";
 const META_OBJECT = "live/meta.json";
 const SNAPSHOT_OBJECT = "live/dashboard.json";
+/** Bucket allowlist is Excel + octet-stream; JSON MIME is rejected. */
+const SNAPSHOT_CONTENT_TYPE = "application/octet-stream";
 
 export type StoredDashboardSnapshot = {
   etag: string | null;
@@ -54,7 +57,7 @@ export async function saveIngestedWorkbook(
     META_OBJECT,
     JSON.stringify({ fileName, uploadedAt }),
     {
-      contentType: "application/json",
+      contentType: SNAPSHOT_CONTENT_TYPE,
       upsert: true,
       cacheControl: "0",
     },
@@ -102,7 +105,7 @@ export async function saveParsedDashboardSnapshot(
     SNAPSHOT_OBJECT,
     JSON.stringify(snapshot),
     {
-      contentType: "application/json",
+      contentType: SNAPSHOT_CONTENT_TYPE,
       upsert: true,
       cacheControl: "0",
     },
@@ -119,6 +122,7 @@ export async function loadParsedDashboardSnapshot(): Promise<StoredDashboardSnap
   try {
     const parsed = JSON.parse(await data.text()) as StoredDashboardSnapshot;
     if (!parsed?.data || parsed.data.source !== "live") return null;
+    parsed.etag = normalizeExcelEtag(parsed.etag);
     return parsed;
   } catch {
     return null;

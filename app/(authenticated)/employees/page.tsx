@@ -1,50 +1,62 @@
 import type { Metadata } from "next";
-import { Contact } from "lucide-react";
 import { listFinanceEmployees } from "@/app/actions/finance-people";
 import { EmployeesPageClient } from "@/components/employees/employees-page-client";
-import { requireAdmin } from "@/lib/auth";
+import {
+  OperatingBrandBar,
+  OperatingBrandProvider,
+} from "@/components/finance/operating-brand-bar";
+import { requireEmployeesAccess } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "עובדים",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function EmployeesPage() {
-  await requireAdmin();
+  await requireEmployeesAccess();
   const list = await listFinanceEmployees();
   const activeCount = list.employees.filter((e) => e.is_active).length;
 
   return (
-    <section className="mx-auto max-w-[72rem] space-y-6">
-      <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground">עובדים</p>
-            <div className="mt-1 flex items-center gap-2.5">
-              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
-                <Contact className="size-5" />
-              </span>
-              <h1 className="text-2xl font-semibold tracking-tight">עובדים</h1>
-            </div>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              ספר העובדים של הסוכנות — שמות, מחלקות, חיוג וטלפונים. משכורות
-              מוזנות בנפרד תחת חשבונות ליבה.
-            </p>
-          </div>
-          <div className="shrink-0 rounded-2xl border border-black/[0.05] bg-background/80 px-4 py-3 text-center">
-            <p className="text-2xl font-semibold tabular-nums leading-none">
-              {activeCount}
-            </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">עובדים פעילים</p>
-          </div>
-        </div>
-        {list.error ? (
-          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-            {list.error}
+    <OperatingBrandProvider>
+      <section className="mx-auto w-full max-w-[72rem] space-y-4 sm:space-y-6">
+        <header className="dash-enter px-0.5 sm:px-0">
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
+            עובדים · הסכמים ונוכחות
           </p>
-        ) : null}
-      </div>
+          <div className="mt-1 flex items-end justify-between gap-3">
+            <h1 className="text-[1.65rem] font-semibold leading-none tracking-tight sm:text-3xl">
+              עובדים
+            </h1>
+            <div className="shrink-0 rounded-2xl border border-black/[0.06] bg-white px-3.5 py-2 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)]">
+              <p className="text-lg font-semibold tabular-nums leading-none sm:text-xl">
+                {activeCount}
+              </p>
+              <p className="mt-1 text-[10px] text-muted-foreground sm:text-[11px]">
+                פעילים
+              </p>
+            </div>
+          </div>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            לחצו על כרטיס להסכם ולנוכחות. שכר לפי תאריך הפקה — היקף בנפרד מנפרעים.
+          </p>
+          {list.error ? (
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              {list.error}
+            </p>
+          ) : null}
+        </header>
 
-      <EmployeesPageClient initialEmployees={list.employees} />
-    </section>
+        <div className="dash-enter" style={{ animationDelay: "40ms" }}>
+          <OperatingBrandBar />
+        </div>
+
+        <div className="dash-enter" style={{ animationDelay: "80ms" }}>
+          <EmployeesPageClient initialEmployees={list.employees} />
+        </div>
+      </section>
+    </OperatingBrandProvider>
   );
 }

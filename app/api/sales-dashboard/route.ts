@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { authorizeSalesDashboardRequest } from "@/lib/sales-dashboard/kiosk-auth";
-import { getSalesDashboardSnapshot } from "@/lib/sales-dashboard/snapshot";
+import {
+  forceRefreshSalesDashboard,
+  getSalesDashboardSnapshot,
+} from "@/lib/sales-dashboard/snapshot";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,6 +14,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "אין הרשאה" }, { status: 401 });
   }
 
-  const data = await getSalesDashboardSnapshot();
-  return NextResponse.json(data);
+  const force =
+    new URL(request.url).searchParams.get("force") === "1" ||
+    new URL(request.url).searchParams.get("force") === "true";
+  const data = force
+    ? await forceRefreshSalesDashboard()
+    : await getSalesDashboardSnapshot();
+  return NextResponse.json(data, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
 }

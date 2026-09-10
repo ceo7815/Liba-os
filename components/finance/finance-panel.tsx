@@ -1396,6 +1396,7 @@ function EntryDialog({
               employee_id: null,
               supplier_id: null,
               payroll_month: null,
+              fixed_cost_id: null,
               created_at: now,
               updated_at: now,
             });
@@ -1437,6 +1438,7 @@ function EntryDialog({
           employee_id: isSalary ? form.employee_id : form.employee_id || null,
           supplier_id: isSalary ? null : form.supplier_id || null,
           payroll_month: isSalary ? form.payroll_month : null,
+          fixed_cost_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });

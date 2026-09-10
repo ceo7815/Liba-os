@@ -18,6 +18,7 @@ import {
   toLedgerAmount,
   commissionSplitsTotal,
   COMMISSION_SPLIT_TYPES,
+  COMMISSION_TYPE_LABELS,
   parseMoneyInput,
   monthRange,
   plDeltaForEntry,
@@ -54,6 +55,7 @@ function mapEntry(row: {
   employee_id?: string | null;
   supplier_id?: string | null;
   payroll_month?: string | null;
+  fixed_cost_id?: string | null;
   created_at: string;
   updated_at: string;
 }): FinanceEntry {
@@ -80,6 +82,7 @@ function mapEntry(row: {
       row.payroll_month && isPayrollMonth(row.payroll_month)
         ? row.payroll_month
         : null,
+    fixed_cost_id: row.fixed_cost_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -116,7 +119,7 @@ function ledgerAmount(input: {
 }
 
 const ENTRY_COLS =
-  "id, kind, category, amount, currency, occurred_at, portal_slug, commission_type, description, reference_number, vat_included, withholding_applied, notes, employee_id, supplier_id, payroll_month, created_at, updated_at";
+  "id, kind, category, amount, currency, occurred_at, portal_slug, commission_type, description, reference_number, vat_included, withholding_applied, notes, employee_id, supplier_id, payroll_month, fixed_cost_id, created_at, updated_at";
 
 async function resolveSalaryAssignment(
   admin: ReturnType<typeof createAdminClient>,
@@ -247,6 +250,7 @@ export async function createFinanceEntry(input: {
   employee_id?: string;
   supplier_id?: string;
   payroll_month?: string;
+  fixed_cost_id?: string;
 }): Promise<FinanceMutationResult> {
   const profile = await requireFinanceAccess();
 
@@ -314,6 +318,21 @@ export async function createFinanceEntry(input: {
     withholding_applied: withholdingApplied,
   });
 
+  const fixedCostId = input.fixed_cost_id?.trim() || null;
+  if (fixedCostId) {
+    const { data: cost } = await admin
+      .from("finance_fixed_costs")
+      .select("id, category, is_active")
+      .eq("id", fixedCostId)
+      .maybeSingle();
+    if (!cost || !cost.is_active) {
+      return { error: "הוצאה קבועה לא נמצאה" };
+    }
+    if (input.kind !== "expense" || cost.category !== category) {
+      return { error: "סעיף ההוצאה לא תואם להוצאה הקבועה" };
+    }
+  }
+
   const { data, error } = await admin
     .from("finance_entries")
     .insert({
@@ -331,6 +350,7 @@ export async function createFinanceEntry(input: {
       employee_id: assignment.employeeId,
       supplier_id: assignment.supplierId,
       payroll_month: assignment.payrollMonth,
+      fixed_cost_id: fixedCostId,
       created_by: profile.id,
       updated_by: profile.id,
     })
@@ -342,6 +362,7 @@ export async function createFinanceEntry(input: {
   }
 
   revalidatePath("/finance");
+  revalidatePath("/finance/fixed-expenses");
   return { error: null, id: data.id };
 }
 
@@ -583,6 +604,13 @@ export async function getFinancePlReport(input: {
   const portalMap = new Map<string, number>();
   const adjMap = new Map<string, number>();
   const expenseMap = new Map<string, number>();
+  const commissionMap = new Map<string, number>();
+  let marketingExpenseTotal = 0;
+
+  for (const type of COMMISSION_SPLIT_TYPES) {
+    commissionMap.set(type, 0);
+  }
+  commissionMap.set("unspecified", 0);
 
   for (const entry of entries) {
     const d = plDeltaForEntry(entry);
@@ -600,6 +628,21 @@ export async function getFinancePlReport(input: {
         portalKey,
         (portalMap.get(portalKey) ?? 0) + entry.amount,
       );
+      const splitKey =
+        entry.commission_type &&
+        (COMMISSION_SPLIT_TYPES as readonly string[]).includes(
+          entry.commission_type,
+        )
+          ? entry.commission_type
+          : entry.commission_type === "service"
+            ? "settled"
+            : entry.commission_type === "target"
+              ? "campaigns"
+              : "unspecified";
+      commissionMap.set(
+        splitKey,
+        (commissionMap.get(splitKey) ?? 0) + entry.amount,
+      );
     } else if (entry.kind === "income_adjustment") {
       adjMap.set(
         entry.category,
@@ -610,6 +653,13 @@ export async function getFinancePlReport(input: {
         entry.category,
         (expenseMap.get(entry.category) ?? 0) + entry.amount,
       );
+      if (
+        entry.category === "advertising" ||
+        entry.category === "leads" ||
+        entry.category === "events"
+      ) {
+        marketingExpenseTotal += entry.amount;
+      }
     }
   }
 
@@ -656,6 +706,19 @@ export async function getFinancePlReport(input: {
     }))
     .sort((a, b) => b.amount - a.amount);
 
+  const incomeByCommissionType = [
+    ...COMMISSION_SPLIT_TYPES.map((id) => ({
+      id: id as CommissionType | "unspecified",
+      label: COMMISSION_TYPE_LABELS[id],
+      amount: commissionMap.get(id) ?? 0,
+    })),
+    {
+      id: "unspecified" as const,
+      label: "ללא סיווג עמלה",
+      amount: commissionMap.get("unspecified") ?? 0,
+    },
+  ].filter((row) => row.id !== "unspecified" || row.amount > 0);
+
   const netIncome = incomeTotal - adjustmentTotal;
   const operatingProfit = netIncome - expenseTotal;
 
@@ -671,8 +734,10 @@ export async function getFinancePlReport(input: {
       operatingProfit,
       incomeByCategory,
       incomeByPortal,
+      incomeByCommissionType,
       adjustmentsByCategory,
       expensesByGroup,
+      marketingExpenseTotal,
     },
   };
 }

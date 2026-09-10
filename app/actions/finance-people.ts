@@ -1,7 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin, requireFinanceAccess } from "@/lib/auth";
+import {
+  canAccessFinance,
+  canAccessSourcePnl,
+  requireEmployeesAccess,
+  requireFinanceAccess,
+  requireProfile,
+} from "@/lib/auth";
+import { canViewEmployees } from "@/lib/permissions/access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   resolveSupplierCategory,
@@ -9,8 +16,26 @@ import {
   type FinanceMutationResult,
   type FinanceSupplier,
 } from "@/lib/finance/categories";
+import {
+  currentAgreement,
+  currentEmploymentKind,
+  parseEmploymentKind,
+  parsePayAgreements,
+  parsePayContract,
+  serializePayAgreements,
+  withResolvedOneTimePayments,
+  type EmployeeAgreement,
+} from "@/lib/employees/contract";
+import { type SellerHint } from "@/lib/employees/excel-sellers";
+import { applyExcelEmployeeCatalog } from "@/lib/employees/sync-from-excel";
 
 function mapEmployee(row: Record<string, unknown>): FinanceEmployee {
+  const kind = parseEmploymentKind(row.employment_kind);
+  const agreements = parsePayAgreements(row.pay_contract, kind).map((agreement) => ({
+    ...agreement,
+    contract: withResolvedOneTimePayments(agreement.contract),
+  }));
+  const current = currentAgreement(agreements);
   return {
     id: String(row.id),
     full_name: String(row.full_name),
@@ -25,6 +50,9 @@ function mapEmployee(row: Record<string, unknown>): FinanceEmployee {
     notes: (row.notes as string | null) ?? null,
     is_active: Boolean(row.is_active),
     created_at: String(row.created_at),
+    employment_kind: current?.employmentKind ?? kind,
+    pay_contract: current?.contract ?? parsePayContract(row.pay_contract),
+    agreements,
   };
 }
 
@@ -43,7 +71,7 @@ function mapSupplier(row: Record<string, unknown>): FinanceSupplier {
 }
 
 const EMPLOYEE_COLS =
-  "id, full_name, department, short_dial, email, direct_phone, outbound_number, sim_provider, wait_circle, dialer_type, notes, is_active, created_at";
+  "id, full_name, department, short_dial, email, direct_phone, outbound_number, sim_provider, wait_circle, dialer_type, notes, is_active, created_at, employment_kind, pay_contract";
 const SUPPLIER_COLS =
   "id, name, category, phone, email, contact_name, notes, is_active, created_at";
 
@@ -51,7 +79,7 @@ export async function listFinanceEmployees(): Promise<{
   error: string | null;
   employees: FinanceEmployee[];
 }> {
-  await requireAdmin();
+  await requireEmployeesAccess();
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("finance_employees")
@@ -62,6 +90,23 @@ export async function listFinanceEmployees(): Promise<{
     error: null,
     employees: (data ?? []).map((row) => mapEmployee(row)),
   };
+}
+
+export async function getFinanceEmployee(id: string): Promise<{
+  error: string | null;
+  employee: FinanceEmployee | null;
+}> {
+  await requireEmployeesAccess();
+  if (!id?.trim()) return { error: "חסר מזהה", employee: null };
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("finance_employees")
+    .select(EMPLOYEE_COLS)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) return { error: error.message, employee: null };
+  if (!data) return { error: null, employee: null };
+  return { error: null, employee: mapEmployee(data) };
 }
 
 export async function createFinanceEmployee(input: {
@@ -76,7 +121,7 @@ export async function createFinanceEmployee(input: {
   dialer_type?: string;
   notes?: string;
 }): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireEmployeesAccess();
   const name = input.full_name?.trim();
   if (!name) return { error: "חובה למלא שם" };
   const admin = createAdminClient();
@@ -99,6 +144,8 @@ export async function createFinanceEmployee(input: {
   if (error || !data) return { error: error?.message ?? "שמירה נכשלה" };
   revalidatePath("/finance");
   revalidatePath("/employees");
+  revalidatePath("/employees/payroll");
+  revalidatePath("/employees/agreements");
   return { error: null, id: data.id };
 }
 
@@ -116,7 +163,7 @@ export async function updateFinanceEmployee(input: {
   notes?: string;
   is_active?: boolean;
 }): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireEmployeesAccess();
   if (!input.id?.trim()) return { error: "חסר מזהה" };
   const name = input.full_name?.trim();
   if (!name) return { error: "חובה למלא שם" };
@@ -141,20 +188,71 @@ export async function updateFinanceEmployee(input: {
   if (error) return { error: error.message };
   revalidatePath("/finance");
   revalidatePath("/employees");
+  revalidatePath("/employees/payroll");
+  revalidatePath("/employees/agreements");
   return { error: null, id: input.id };
 }
 
 export async function deleteFinanceEmployee(
   id: string,
 ): Promise<FinanceMutationResult> {
-  await requireAdmin();
+  await requireEmployeesAccess();
   if (!id?.trim()) return { error: "חסר מזהה" };
   const admin = createAdminClient();
   const { error } = await admin.from("finance_employees").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/finance");
   revalidatePath("/employees");
+  revalidatePath("/employees/payroll");
+  revalidatePath("/employees/agreements");
   return { error: null, id };
+}
+
+export async function saveEmployeePayContract(input: {
+  id: string;
+  agreements: EmployeeAgreement[];
+}): Promise<FinanceMutationResult> {
+  await requireEmployeesAccess();
+  if (!input.id?.trim()) return { error: "חסר מזהה" };
+  const agreements = parsePayAgreements(
+    serializePayAgreements(input.agreements),
+    null,
+  );
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("finance_employees")
+    .update({
+      employment_kind: currentEmploymentKind(agreements),
+      pay_contract: serializePayAgreements(agreements),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.id);
+  if (error) return { error: error.message };
+  revalidatePath("/finance");
+  revalidatePath("/employees");
+  revalidatePath("/employees/payroll");
+  revalidatePath("/employees/agreements");
+  revalidatePath("/finance/source-pnl");
+  revalidatePath("/finance/settled");
+  return { error: null, id: input.id };
+}
+
+export async function syncEmployeesFromExcel(input?: {
+  sellers?: SellerHint[];
+}): Promise<{
+  error: string | null;
+  added: number;
+  found: number;
+}> {
+  const profile = await requireProfile();
+  if (
+    !canViewEmployees(profile) &&
+    !canAccessSourcePnl(profile) &&
+    !canAccessFinance(profile)
+  ) {
+    return { error: "אין הרשאה", added: 0, found: 0 };
+  }
+  return applyExcelEmployeeCatalog(input?.sellers ?? []);
 }
 
 export async function listFinanceSuppliers(): Promise<{
@@ -207,6 +305,8 @@ export async function createFinanceSupplier(input: {
   if (error || !data) return { error: error?.message ?? "שמירה נכשלה" };
   revalidatePath("/finance");
   revalidatePath("/employees");
+  revalidatePath("/employees/payroll");
+  revalidatePath("/employees/agreements");
   return { error: null, id: data.id };
 }
 
@@ -247,6 +347,8 @@ export async function updateFinanceSupplier(input: {
   if (error) return { error: error.message };
   revalidatePath("/finance");
   revalidatePath("/employees");
+  revalidatePath("/employees/payroll");
+  revalidatePath("/employees/agreements");
   return { error: null, id: input.id };
 }
 
@@ -260,5 +362,7 @@ export async function deleteFinanceSupplier(
   if (error) return { error: error.message };
   revalidatePath("/finance");
   revalidatePath("/employees");
+  revalidatePath("/employees/payroll");
+  revalidatePath("/employees/agreements");
   return { error: null, id };
 }

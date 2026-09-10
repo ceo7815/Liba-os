@@ -20,6 +20,7 @@ export const config = {
     "/finance/:path*",
     "/employees/:path*",
     "/sales-dashboard/:path*",
+    "/marketing-dashboard/:path*",
     "/sales-tv",
   ],
 };

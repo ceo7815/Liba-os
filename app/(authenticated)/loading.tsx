@@ -1,11 +1,7 @@
 export default function AuthenticatedLoading() {
   return (
-    <div className="mx-auto max-w-[72rem] space-y-4 animate-pulse">
-      <div className="app-surface h-28 bg-background/60" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="app-surface h-40 bg-background/60" />
-        <div className="app-surface h-40 bg-background/60" />
-      </div>
+    <div className="h-0.5 w-full overflow-hidden rounded-full bg-muted/40">
+      <div className="h-full w-1/3 animate-pulse bg-highlight/80" />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { KeyRound } from "lucide-react";
 import { listVaultEntries } from "@/app/actions/vault";
-import { requireProfile } from "@/lib/auth";
+import { hasPermission, requirePermission } from "@/lib/auth";
 import { VaultPanel } from "@/components/vault/vault-panel";
 import { hasVaultEncryptionKey } from "@/lib/vault/crypto";
 
@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 
 export default async function VaultPage() {
   const [profile, list] = await Promise.all([
-    requireProfile(),
+    requirePermission("vault.view"),
     listVaultEntries(),
   ]);
-  const isAdmin = profile.role === "admin";
+  const canManage = hasPermission(profile, "vault.manage");
   const keyConfigured = hasVaultEncryptionKey();
 
   return (
@@ -33,7 +33,8 @@ export default async function VaultPage() {
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
               כספת ארגונית משותפת לחשבונות, אתרים, שרתים ופורטלי ביטוח. כל
-              העובדים יכולים לחפש ולהעתיק; רק מנהלים מוסיפים, עורכים ומוחקים.
+              העובדים עם הרשאה יכולים לחפש ולהעתיק; ניהול (הוספה/עריכה/מחיקה)
+              דורש הרשאת כספת — ניהול.
             </p>
           </div>
           <div className="shrink-0 rounded-2xl border border-black/[0.05] bg-background/80 px-4 py-3 text-center">
@@ -53,7 +54,7 @@ export default async function VaultPage() {
 
       <VaultPanel
         initialEntries={list.entries}
-        isAdmin={isAdmin}
+        isAdmin={canManage}
         initialError={list.error}
       />
     </section>

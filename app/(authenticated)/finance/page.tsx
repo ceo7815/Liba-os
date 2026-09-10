@@ -13,7 +13,7 @@ import { formatIls, monthRange } from "@/lib/finance/categories";
 import { FinancePanel } from "@/components/finance/finance-panel";
 
 export const metadata: Metadata = {
-  title: "חשבונות ליבה",
+  title: "רישום תנועות",
 };
 
 export default async function FinancePage() {
@@ -37,13 +37,12 @@ export default async function FinancePage() {
               <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
                 <Wallet className="size-5" />
               </span>
-              <h1 className="text-2xl font-semibold tracking-tight">חשבונות ליבה</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">רישום תנועות</h1>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              רישום ידני של הכנסות מעמלות, הוצאות משרד, משכורות עובדים ודוח
-              רווח והפסד. בהכנסה רושמים נפרעים, מבצעים, היקף ומוצרי צבירה — אלה
-              נשמרים בדוח לפני מע״מ. המערכת מוסיפה מע״מ 18% ומנכה מס במקור 5%
-              כדי להראות כמה צריך להתקבל מהחברה. משכורות ללא מע״מ וללא ניכוי.
+              יומן ידני — הכנסות מעמלות, הוצאות משרד ומשכורות. לסיכום כללי ראו
+              את «דוח רווח והפסד כללי». בהכנסה רושמים נפרעים, מבצעים, היקף ומוצרי
+              צבירה (לפני מע״מ). משכורות ללא מע״מ וללא ניכוי.
             </p>
           </div>
           <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">

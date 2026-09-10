@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
-import { Pencil, Plus, Search, Trash2, Users } from "lucide-react";
+import { ChevronLeft, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -12,6 +12,17 @@ import {
   updateFinanceEmployee,
   updateFinanceSupplier,
 } from "@/app/actions/finance-people";
+import { EmployeeCardDialog, employmentKindLabel } from "@/components/employees/employee-card-dialog";
+import { ProductionLeadersPanel } from "@/components/employees/production-leaders";
+import type { EmployeeHoursRow } from "@/lib/employees/hours";
+import {
+  agreementForDate,
+  emptyPayContract,
+  todayIso,
+  type ContractWageTotal,
+  wageTotalForEmployeeContract,
+} from "@/lib/employees/contract";
+import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 import {
   SUPPLIER_CATEGORIES,
   SUPPLIER_OTHER_CATEGORY,
@@ -21,7 +32,20 @@ import {
   type FinanceEmployee,
   type FinanceSupplier,
 } from "@/lib/finance/categories";
+import {
+  DEFAULT_AGENT_MULTIPLIER,
+  formatIls,
+  insurerIncome,
+  type AgentRate,
+} from "@/lib/sales-dashboard/campaign-math";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
+import {
+  displayWaitCircle,
+  employeeOperatingBrand,
+  matchesOperatingBrand,
+} from "@/lib/finance/operating-brand";
 import {
   Dialog,
   DialogContent,
@@ -44,149 +68,434 @@ import {
 export function EmployeesSection({
   employees,
   onChanged,
+  rates = [],
+  defaultMultiplier = DEFAULT_AGENT_MULTIPLIER,
+  wageTotals = [],
+  wageLoading = false,
+  productions = [],
+  hours = [],
+  onHoursChanged,
+  onRatesChanged,
 }: {
   employees: FinanceEmployee[];
   onChanged: (next: FinanceEmployee[]) => void;
+  rates?: AgentRate[];
+  defaultMultiplier?: number;
+  wageTotals?: ContractWageTotal[];
+  wageLoading?: boolean;
+  productions?: MarketingProduction[];
+  hours?: EmployeeHoursRow[];
+  onHoursChanged?: () => void;
+  onRatesChanged?: () => void;
 }) {
   const router = useRouter();
+  const { brand } = useOperatingBrand();
   const [query, setQuery] = useState("");
+  const [listTab, setListTab] = useState<"premium" | "hidden">("premium");
   const [pending, startTransition] = useTransition();
+  const [spotlightEmp, setSpotlightEmp] = useState<FinanceEmployee | null>(null);
+
+  const branded = useMemo(
+    () =>
+      employees.filter((e) =>
+        matchesOperatingBrand(
+          employeeOperatingBrand({
+            fullName: e.full_name,
+            waitCircle: e.wait_circle,
+            notes: e.notes,
+          }),
+          brand,
+        ),
+      ),
+    [employees, brand],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return employees;
-    return employees.filter((e) =>
+    if (!q) return branded;
+    return branded.filter((e) =>
       [
         e.full_name,
         e.department ?? "",
         e.short_dial ?? "",
         e.direct_phone ?? "",
+        e.outbound_number ?? "",
+        e.email ?? "",
         e.wait_circle ?? "",
         e.sim_provider ?? "",
+        e.notes ?? "",
       ]
         .join(" ")
         .toLowerCase()
         .includes(q),
     );
-  }, [employees, query]);
+  }, [branded, query]);
+
+  const withPremium = useMemo(() => {
+    if (wageLoading) return filtered;
+    return filtered.filter(
+      (emp) => wageTotalForEmployeeContract(emp.full_name, wageTotals).premium > 0,
+    );
+  }, [filtered, wageLoading, wageTotals]);
+
+  const hidden = useMemo(() => {
+    if (wageLoading) return [];
+    return filtered.filter(
+      (emp) => wageTotalForEmployeeContract(emp.full_name, wageTotals).premium <= 0,
+    );
+  }, [filtered, wageLoading, wageTotals]);
+
+  const visible = listTab === "hidden" ? hidden : withPremium;
 
   const byCircle = useMemo(() => {
     const map = new Map<string, FinanceEmployee[]>();
-    for (const e of filtered) {
-      const key = e.wait_circle?.trim() || "ללא מעגל";
+    for (const e of visible) {
+      const key = displayWaitCircle(e.wait_circle);
       const list = map.get(key) ?? [];
       list.push(e);
       map.set(key, list);
     }
     return Array.from(map.entries());
-  }, [filtered]);
+  }, [visible]);
+
+  const emptyMessage =
+    filtered.length === 0
+      ? "אין עובדים להצגה."
+      : listTab === "hidden"
+        ? "אין עובדים מוסתרים."
+        : wageLoading
+          ? "טוען פרמיה מהסנכרון…"
+          : "אין עובדים שהנפיקו פרמיה. מי שלא הנפיק נמצא בטאב «מוסתרים».";
 
   return (
-    <div className="space-y-3">
-      <div className="app-surface flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="חיפוש עובד לפי שם, מחלקה, חיוג או טלפון…"
-            className="h-10 rounded-xl ps-10 text-start"
-          />
+    <div className="space-y-3 sm:space-y-4">
+      <ProductionLeadersPanel
+        employees={branded}
+        productions={productions}
+        loading={wageLoading}
+        onOpenEmployee={setSpotlightEmp}
+      />
+
+      <div className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5">
+        <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
+        <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="תצוגת עובדים">
+          {(
+            [
+              { id: "premium" as const, label: "עם פרמיה", count: withPremium.length },
+              { id: "hidden" as const, label: "מוסתרים", count: hidden.length },
+            ] as const
+          ).map((tab) => {
+            const selected = listTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setListTab(tab.id)}
+                className={cn(
+                  "rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors active:scale-95",
+                  selected && tab.id === "premium" && "bg-black text-white",
+                  selected && tab.id === "hidden" && "bg-zinc-600 text-white",
+                  !selected && "bg-muted/70 text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {tab.label}
+                <span className="ms-1.5 tabular-nums opacity-80">{tab.count}</span>
+              </button>
+            );
+          })}
         </div>
-        <EmployeeDialog
-          mode="create"
-          disabled={pending}
-          onSaved={(row) => {
-            onChanged([row, ...employees.filter((e) => e.id !== row.id)]);
-            router.refresh();
-          }}
-        />
+        <div className="mt-3">
+          <div className="relative min-w-0">
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="חיפוש עובד לפי שם, מחלקה, חיוג או טלפון…"
+              className="h-11 rounded-2xl border-black/[0.06] bg-background ps-10 text-start focus-visible:ring-highlight/40 sm:h-10 sm:rounded-xl"
+            />
+          </div>
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="app-surface px-5 py-10 text-center text-sm text-muted-foreground">
-          אין עובדים להצגה.
-        </p>
+      {visible.length === 0 ? (
+        <div className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-12 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+        </div>
       ) : (
         byCircle.map(([circle, rows]) => (
-          <div key={circle} className="space-y-2">
-            <h3 className="px-1 text-sm font-semibold">
-              {circle} · {rows.length}
-            </h3>
-            <div className="grid gap-2">
+          <div key={circle} className="space-y-2.5">
+            <div className="flex items-baseline justify-between gap-3 px-0.5">
+              <h3 className="text-sm font-semibold tracking-tight">{circle}</h3>
+              <p className="text-[11px] tabular-nums text-muted-foreground">
+                {rows.length} עובדים
+              </p>
+            </div>
+            <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
               {rows.map((emp) => (
-                <article
+                <EmployeeCube
                   key={emp.id}
-                  className="app-surface flex flex-wrap items-start justify-between gap-3 border-2 border-black px-4 py-3"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-semibold">{emp.full_name}</h4>
-                      {emp.department ? (
-                        <span className="rounded-md bg-highlight/35 px-2 py-0.5 text-[11px]">
-                          {emp.department}
-                        </span>
-                      ) : null}
-                      {emp.short_dial ? (
-                        <span className="rounded-md bg-background px-2 py-0.5 text-[11px] tabular-nums">
-                          חיוג {emp.short_dial}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {[
-                        emp.direct_phone,
-                        emp.outbound_number
-                          ? `יוצאות ${emp.outbound_number}`
-                          : null,
-                        emp.sim_provider,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || "אין פרטי טלפון"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <EmployeeDialog
-                      mode="edit"
-                      employee={emp}
-                      disabled={pending}
-                      onSaved={(row) => {
-                        onChanged(
-                          employees.map((e) => (e.id === row.id ? row : e)),
-                        );
-                        router.refresh();
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="text-red-700"
-                      disabled={pending}
-                      onClick={() => {
-                        if (!window.confirm(`למחוק את ${emp.full_name}?`)) return;
-                        startTransition(async () => {
-                          const result = await deleteFinanceEmployee(emp.id);
-                          if (result.error) {
-                            toast.error(result.error);
-                            return;
-                          }
-                          onChanged(employees.filter((e) => e.id !== emp.id));
-                          toast.success("נמחק");
-                          router.refresh();
-                        });
-                      }}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </div>
-                </article>
+                  emp={emp}
+                  employees={employees}
+                  pending={pending}
+                  startTransition={startTransition}
+                  wage={wageTotalForEmployeeContract(emp.full_name, wageTotals)}
+                  wageLoading={wageLoading}
+                  productions={productions}
+                  hours={hours}
+                  onHoursChanged={onHoursChanged}
+                  rates={rates}
+                  defaultMultiplier={defaultMultiplier}
+                  onChanged={onChanged}
+                  onRatesChanged={onRatesChanged}
+                />
               ))}
             </div>
           </div>
         ))
       )}
+
+      {spotlightEmp ? (
+        <EmployeeCardDialog
+          emp={spotlightEmp}
+          open
+          onOpenChange={(open) => {
+            if (!open) setSpotlightEmp(null);
+          }}
+          productions={productions}
+          hours={hours}
+          onHoursChanged={onHoursChanged}
+          rates={rates}
+          defaultMultiplier={defaultMultiplier}
+          onSaved={(saved) => {
+            onChanged(employees.map((row) => (row.id === saved.id ? saved : row)));
+            setSpotlightEmp(saved);
+            onRatesChanged?.();
+          }}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function employeeInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "ע";
+  if (parts.length === 1) return parts[0].slice(0, 2);
+  return `${parts[0][0]}${parts[1][0]}`;
+}
+
+function CubeMeta({ label, value }: { label: string; value?: string | null }) {
+  if (!value?.trim()) return null;
+  return (
+    <div className="flex items-baseline justify-between gap-3 text-[13px]">
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <span className="min-w-0 truncate text-end font-medium tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function agreementStatusLine(emp: FinanceEmployee): { text: string; active: boolean } {
+  const live = agreementForDate(emp.agreements ?? [], todayIso());
+  if (!live) {
+    return {
+      text: emp.agreements?.length ? "אין הסכם בתוקף" : "אין הסכם",
+      active: false,
+    };
+  }
+  if (live.to) {
+    const end = live.to.split("-").reverse().join(".");
+    return { text: `בתוקף עד ${end}`, active: true };
+  }
+  return { text: "בתוקף", active: true };
+}
+
+function EmployeeCube({
+  emp,
+  employees,
+  pending,
+  startTransition,
+  wage,
+  wageLoading,
+  productions,
+  hours,
+  onHoursChanged,
+  rates,
+  defaultMultiplier,
+  onChanged,
+  onRatesChanged,
+}: {
+  emp: FinanceEmployee;
+  employees: FinanceEmployee[];
+  pending: boolean;
+  startTransition: (fn: () => void) => void;
+  wage: ContractWageTotal;
+  wageLoading: boolean;
+  productions: MarketingProduction[];
+  hours: EmployeeHoursRow[];
+  onHoursChanged?: () => void;
+  rates: AgentRate[];
+  defaultMultiplier: number;
+  onChanged: (next: FinanceEmployee[]) => void;
+  onRatesChanged?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const kindLabel = employmentKindLabel(emp.employment_kind);
+  const agreement = agreementStatusLine(emp);
+  const circle = displayWaitCircle(emp.wait_circle);
+  const roleLine = [emp.department, circle !== "ללא מעגל" ? circle : null]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="group relative flex flex-col items-stretch gap-4 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-5 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)]"
+      >
+        <span className="absolute inset-y-0 start-0 w-1 origin-top scale-y-100 bg-highlight transition-transform duration-300 group-hover:scale-y-110" />
+
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-highlight/35 text-sm font-bold">
+              {employeeInitials(emp.full_name)}
+            </span>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold leading-snug tracking-tight">
+                {emp.full_name}
+              </h2>
+              {roleLine ? (
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{roleLine}</p>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {kindLabel ? (
+              <span
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                  emp.employment_kind === "unpaid"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-black text-white",
+                )}
+              >
+                {kindLabel}
+              </span>
+            ) : (
+              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-900">
+                למלא הסכם
+              </span>
+            )}
+            <ChevronLeft className="size-4 text-black/25 transition-transform group-hover:-translate-x-0.5" />
+          </div>
+        </div>
+
+        <div>
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
+            {emp.employment_kind === "unpaid" ? "רווח לחברה · מהסנכרון" : "שכר מצטבר · מהסנכרון"}
+          </p>
+          <p className="mt-1 text-[1.65rem] font-semibold leading-none tracking-tight tabular-nums sm:text-2xl">
+            {wageLoading
+              ? "…"
+              : emp.employment_kind === "unpaid"
+                ? formatIls(insurerIncome(wage.premium))
+                : formatIls(wage.earned)}
+          </p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {wageLoading
+              ? "טוען סגירות…"
+              : emp.employment_kind === "unpaid"
+                ? `שכר ₪0 · ${wage.volumeCount + wage.settledCount} סגירות · פרמיה ${formatIls(wage.premium)}`
+                : `${wage.volumeCount + wage.settledCount} סגירות · פרמיה ${formatIls(wage.premium)}`}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-black/[0.06] bg-black/[0.06]">
+          <div className="bg-white px-3 py-2.5 text-start">
+            <p className="text-[11px] text-muted-foreground">היקף</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">
+              {wageLoading ? "…" : formatIls(wage.volumeWage)}
+            </p>
+            <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+              {wage.volumeCount} סגירות
+              {wage.volumeWage > 0 && emp.employment_kind === "freelancer"
+                ? " · קבוע/חד־פעמי"
+                : ""}
+            </p>
+          </div>
+          <div className="bg-white px-3 py-2.5 text-start">
+            <p className="text-[11px] text-muted-foreground">נפרעים</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">
+              {wageLoading
+                ? "…"
+                : emp.employment_kind === "salaried"
+                  ? formatIls(0)
+                  : formatIls(wage.settledWage)}
+            </p>
+            <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+              {emp.employment_kind === "salaried"
+                ? "שכיר בלי נפרעים"
+                : `${wage.settledCount} סגירות`}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-auto space-y-1.5 border-t border-black/[0.06] pt-3">
+          <div className="flex items-baseline justify-between gap-3 text-[13px]">
+            <span className="shrink-0 text-muted-foreground">הסכם</span>
+            <span
+              className={cn(
+                "min-w-0 truncate text-end font-medium",
+                agreement.active ? "text-foreground" : "text-amber-800",
+              )}
+            >
+              {agreement.text}
+            </span>
+          </div>
+          <CubeMeta label="חיוג מקוצר" value={emp.short_dial} />
+        </div>
+      </button>
+
+      <EmployeeCardDialog
+        emp={emp}
+        open={open}
+        onOpenChange={setOpen}
+        productions={productions}
+        hours={hours}
+        onHoursChanged={onHoursChanged}
+        rates={rates}
+        defaultMultiplier={defaultMultiplier}
+        onSaved={(row) => {
+          onChanged(employees.map((e) => (e.id === row.id ? row : e)));
+          onRatesChanged?.();
+        }}
+        contactEditor={
+          <EmployeeDialog
+            mode="edit"
+            employee={emp}
+            disabled={pending}
+            onSaved={(row) => {
+              onChanged(employees.map((e) => (e.id === row.id ? row : e)));
+            }}
+          />
+        }
+        onDelete={() => {
+          if (!window.confirm(`למחוק את ${emp.full_name}?`)) return;
+          startTransition(async () => {
+            const result = await deleteFinanceEmployee(emp.id);
+            if (result.error) {
+              toast.error(result.error);
+              return;
+            }
+            onChanged(employees.filter((e) => e.id !== emp.id));
+            toast.success("נמחק");
+            setOpen(false);
+          });
+        }}
+      />
+    </>
   );
 }
 
@@ -231,6 +540,9 @@ export function QuickAddEmployee({
         notes: null,
         is_active: true,
         created_at: new Date().toISOString(),
+        employment_kind: null,
+        pay_contract: emptyPayContract(),
+        agreements: [],
       });
       setName("");
       setDepartment("");
@@ -372,6 +684,9 @@ function EmployeeDialog({
           notes: form.notes || null,
           is_active: true,
           created_at: new Date().toISOString(),
+          employment_kind: null,
+          pay_contract: emptyPayContract(),
+          agreements: [],
         });
         setOpen(false);
         return;
@@ -403,7 +718,7 @@ function EmployeeDialog({
     <Dialog open={open} onOpenChange={reset}>
       <DialogTrigger asChild>
         {mode === "create" ? (
-          <Button className="h-10 shrink-0 gap-2 rounded-xl" disabled={disabled}>
+          <Button className="h-11 shrink-0 gap-2 rounded-2xl active:scale-95 sm:h-10 sm:rounded-xl" disabled={disabled}>
             <Plus className="size-4" />
             הוספת עובד
           </Button>
@@ -493,8 +808,16 @@ function EmployeeDialog({
               className="rounded-xl text-start"
             />
           </Field>
-          <DialogFooter>
-            <Button type="submit" className="rounded-xl" disabled={pending}>
+          <DialogFooter className="flex-row justify-end gap-2 sm:space-x-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 min-w-[7rem] rounded-xl font-semibold"
+              onClick={() => reset(false)}
+            >
+              סגירה
+            </Button>
+            <Button type="submit" className="h-11 min-w-[7.5rem] rounded-xl font-semibold" disabled={pending}>
               {pending ? "שומר…" : "שמירה"}
             </Button>
           </DialogFooter>

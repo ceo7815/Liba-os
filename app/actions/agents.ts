@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin, requireProfile } from "@/lib/auth";
+import { requirePermission, requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { generateAgentApiKey, hashAgentApiKey } from "@/lib/agents/api-key";
@@ -62,7 +62,7 @@ export async function listAgentApiKeys(slug: string): Promise<{
   error: string | null;
   keys: AgentKeyMeta[];
 }> {
-  await requireAdmin();
+  await requirePermission("agents.manage");
   try {
     const agent = await ensureAgentRow(slug);
     const admin = createAdminClient();
@@ -89,7 +89,7 @@ export async function createAgentApiKey(
   slug: string,
   label?: string,
 ): Promise<CreateAgentKeyResult> {
-  await requireAdmin();
+  await requirePermission("agents.manage");
 
   try {
     const agent = await ensureAgentRow(slug);
@@ -126,7 +126,7 @@ export async function createAgentApiKey(
 }
 
 export async function revokeAgentApiKey(slug: string, keyId: string) {
-  await requireAdmin();
+  await requirePermission("agents.manage");
   const admin = createAdminClient();
   const agent = await ensureAgentRow(slug);
 
@@ -161,7 +161,7 @@ export type QueueAnalysisResult =
 export async function requestCallAnalysis(
   slug: string,
 ): Promise<QueueAnalysisResult> {
-  const profile = await requireAdmin();
+  const profile = await requirePermission("agents.manage");
 
   try {
     const agent = await ensureAgentRow(slug);
@@ -238,7 +238,7 @@ export async function deleteCall(
   slug: string,
   callId: string,
 ): Promise<{ error: string | null }> {
-  await requireAdmin();
+  await requirePermission("agents.manage");
 
   if (!callId?.trim()) {
     return { error: "חסר מזהה שיחה" };

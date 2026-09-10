@@ -14,7 +14,7 @@ export function MainRegion({ children }: { children: React.ReactNode }) {
         "flex-1",
         salesDashboard
           ? "flex min-h-0 flex-col overflow-hidden p-0"
-          : "px-5 py-6 sm:px-8 sm:py-8",
+          : "flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-8",
       )}
     >
       {children}

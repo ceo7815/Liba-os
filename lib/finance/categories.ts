@@ -132,6 +132,18 @@ export const FINANCE_CATEGORIES: FinanceCategoryDef[] = [
 
   // Office ops
   {
+    id: "office_general",
+    label: "הוצאות משרד כלליות",
+    group: "תפעול משרד",
+    kinds: ["expense"],
+  },
+  {
+    id: "source_allocated",
+    label: "הוצאה לפי מקור",
+    group: "שיווק ומקורות",
+    kinds: ["expense"],
+  },
+  {
     id: "rent",
     label: "שכירות",
     group: "תפעול משרד",
@@ -347,6 +359,8 @@ export const EXPENSE_SUMMARY_BUCKETS: FinanceSummaryBucket[] = [
     label: "הוצאות קבועות",
     hint: "שכירות, ארנונה, אינטרנט, טלפון",
     categories: [
+      "office_general",
+      "source_allocated",
       "rent",
       "arnona",
       "electricity",
@@ -429,6 +443,7 @@ export type FinanceEntry = {
   employee_id: string | null;
   supplier_id: string | null;
   payroll_month: string | null;
+  fixed_cost_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -447,6 +462,9 @@ export type FinanceEmployee = {
   notes: string | null;
   is_active: boolean;
   created_at: string;
+  employment_kind: import("@/lib/employees/contract").EmploymentKind | null;
+  pay_contract: import("@/lib/employees/contract").EmployeePayContract;
+  agreements: import("@/lib/employees/contract").EmployeeAgreement[];
 };
 
 export type FinanceSupplier = {
@@ -460,6 +478,78 @@ export type FinanceSupplier = {
   is_active: boolean;
   created_at: string;
 };
+
+/** Recurring overhead catalog row (rent, utilities, software…). */
+export type ExpenseAllocationType = "office" | "sources";
+
+/** Recurring monthly vs one-off paid expense. */
+export type ExpenseKind = "fixed" | "variable";
+
+export type ExpenseSourceAllocation = {
+  source_name: string;
+  share_percent: number;
+};
+
+export type FinanceFixedCost = {
+  id: string;
+  title: string;
+  category: string;
+  vendor_name: string | null;
+  default_amount: number | null;
+  due_day: number | null;
+  notes: string | null;
+  sort_order: number;
+  is_active: boolean;
+  allocation_type: ExpenseAllocationType;
+  expense_kind: ExpenseKind;
+  invoice_storage_path: string | null;
+  invoice_file_name: string | null;
+  invoice_mime_type: string | null;
+  invoice_uploaded_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FixedCostPayment = {
+  id: string;
+  amount: number;
+  occurred_at: string;
+  description: string | null;
+  reference_number: string | null;
+  vat_included: boolean;
+  notes: string | null;
+  created_at: string;
+};
+
+export type FinanceFixedCostWithMeta = FinanceFixedCost & {
+  payments: FixedCostPayment[];
+  paid_this_month: boolean;
+  this_month_amount: number | null;
+  last_paid_at: string | null;
+  allocations: ExpenseSourceAllocation[];
+};
+
+/** Guess supplier name from an uploaded invoice file name (no OCR). */
+export function suggestVendorFromFileName(fileName: string): string {
+  const base = fileName.replace(/\.[^.]+$/, "");
+  const cleaned = base
+    .replace(
+      /חשבונית|קבלה|אישור|תשלום|מס\.?\s*עסקאות|מעמ|invoice|receipt|tax|vat|pdf|jpg|jpeg|png|webp/gi,
+      " ",
+    )
+    .replace(/\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4}/g, " ")
+    .replace(/\d{4}[-_]\d{2}([-_]\d{2})?/g, " ")
+    .replace(/[_\-.()[\]]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned.slice(0, 80);
+}
+
+export function categoryForAllocation(
+  allocation: ExpenseAllocationType,
+): "office_general" | "source_allocated" {
+  return allocation === "office" ? "office_general" : "source_allocated";
+}
 
 export const SUPPLIER_CATEGORIES = [
   "תקשורת",
@@ -540,8 +630,15 @@ export type PlReport = {
   operatingProfit: number;
   incomeByCategory: PlLine[];
   incomeByPortal: { portal_slug: string; label: string; amount: number }[];
+  /** Always includes the four split types (0 if none recorded). */
+  incomeByCommissionType: {
+    id: CommissionType | "unspecified";
+    label: string;
+    amount: number;
+  }[];
   adjustmentsByCategory: PlLine[];
   expensesByGroup: { group: string; amount: number; lines: PlLine[] }[];
+  marketingExpenseTotal: number;
 };
 
 export function isFinanceKind(v: string): v is FinanceKind {
@@ -554,6 +651,22 @@ export function isCommissionType(v: string): v is CommissionType {
 
 export function getFinanceCategory(id: string): FinanceCategoryDef | undefined {
   return FINANCE_CATEGORIES.find((c) => c.id === id);
+}
+
+/** Category ids that belong to the fixed-overhead rollup (rent, utilities…). */
+export function fixedExpenseCategoryIds(): readonly string[] {
+  return (
+    EXPENSE_SUMMARY_BUCKETS.find((b) => b.id === "fixed")?.categories ?? []
+  );
+}
+
+export function isFixedExpenseCategory(category: string): boolean {
+  return fixedExpenseCategoryIds().includes(category);
+}
+
+export function fixedExpenseCategories(): FinanceCategoryDef[] {
+  const ids = new Set(fixedExpenseCategoryIds());
+  return FINANCE_CATEGORIES.filter((c) => ids.has(c.id));
 }
 
 export function getFinanceCategoryLabel(id: string): string {
@@ -620,6 +733,15 @@ export function roundMoney(amount: number): number {
 export function amountBeforeVat(amount: number, includesVat: boolean): number {
   if (!includesVat) return roundMoney(amount);
   return roundMoney(amount / (1 + ISRAEL_VAT_RATE));
+}
+
+/** Reconstruct cash paid from a ledger (before-VAT) amount. */
+export function amountAsPaid(
+  ledgerAmount: number,
+  includesVat: boolean,
+): number {
+  if (!includesVat) return roundMoney(ledgerAmount);
+  return roundMoney(ledgerAmount * (1 + ISRAEL_VAT_RATE));
 }
 
 export function vatAmountFromGross(gross: number): number {
@@ -727,6 +849,53 @@ export function monthRange(date = new Date()): { from: string; to: string } {
     from: `${y}-${pad(m + 1)}-01`,
     to: `${y}-${pad(m + 1)}-${pad(lastDay)}`,
   };
+}
+
+export type ExpenseDatePreset = "this_month" | "last_month" | "ytd" | "range";
+
+export function expensePeriodBounds(input: {
+  preset: ExpenseDatePreset;
+  from?: string | null;
+  to?: string | null;
+  now?: Date;
+}): { from: string; to: string; label: string } {
+  const now = input.now ?? new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (input.preset === "last_month") {
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const range = monthRange(d);
+    const label = d.toLocaleDateString("he-IL", {
+      month: "long",
+      year: "numeric",
+    });
+    return { ...range, label: `חודש שעבר · ${label}` };
+  }
+  if (input.preset === "ytd") {
+    const y = now.getFullYear();
+    const from = `${y}-01-01`;
+    const to = `${y}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    return {
+      from,
+      to,
+      label: `מתחילת השנה · ${y}`,
+    };
+  }
+  if (input.preset === "range") {
+    const fallback = monthRange(now);
+    const from = input.from?.trim() || fallback.from;
+    const to = input.to?.trim() || fallback.to;
+    const ordered = from <= to ? { from, to } : { from: to, to: from };
+    return {
+      ...ordered,
+      label: `${ordered.from} → ${ordered.to}`,
+    };
+  }
+  const range = monthRange(now);
+  const label = now.toLocaleDateString("he-IL", {
+    month: "long",
+    year: "numeric",
+  });
+  return { ...range, label: `החודש · ${label}` };
 }
 
 export type FinanceMutationResult =

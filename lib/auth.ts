@@ -4,13 +4,34 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile } from "@/lib/types";
-import { canAccessFinance } from "@/lib/finance/access";
+import {
+  canAccessFinance,
+  canAccessSettledCommissions,
+  canAccessSourcePnl,
+} from "@/lib/finance/access";
 import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
+import {
+  canManageUsers,
+  canViewEmployeeAgreements,
+  canViewEmployees,
+  hasPermission,
+} from "@/lib/permissions/access";
+import type { PermissionKey } from "@/lib/permissions/catalog";
+import { normalizePermissionKeys } from "@/lib/permissions/catalog";
 
 const PROFILE_SELECT = "id, email, full_name, role, is_active, created_at";
 
+async function fetchPermissionKeys(userId: string): Promise<string[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("profile_permissions")
+    .select("permission_key")
+    .eq("profile_id", userId)
+    .eq("granted", true);
+  return (data ?? []).map((row) => String(row.permission_key));
+}
+
 async function fetchProfileById(userId: string): Promise<Profile | null> {
-  // Service role — no cookie dependency, safe to cache across requests.
   const admin = createAdminClient();
   const { data } = await admin
     .from("profiles")
@@ -19,17 +40,19 @@ async function fetchProfileById(userId: string): Promise<Profile | null> {
     .maybeSingle<Profile>();
 
   if (!data || !data.is_active) return null;
-  return data;
+
+  const permissionKeys = await fetchPermissionKeys(userId);
+  return { ...data, permissionKeys: normalizePermissionKeys(permissionKeys) };
 }
 
 const getCachedProfileById = unstable_cache(
   fetchProfileById,
-  ["liba-profile-by-id"],
-  { revalidate: 60 },
+  ["liba-profile-by-id-v2"],
+  { revalidate: 30, tags: ["profiles"] },
 );
 
 /**
- * JWT once per request + profile cached ~60s across navigations.
+ * JWT once per request + profile (+ permissions) cached ~30s across navigations.
  */
 export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   const supabase = createClient();
@@ -47,15 +70,31 @@ export async function requireProfile(): Promise<Profile> {
   return profile;
 }
 
-export async function requireAdmin(): Promise<Profile> {
+export async function requirePermission(
+  key: PermissionKey,
+): Promise<Profile> {
   const profile = await requireProfile();
-  if (profile.role !== "admin") {
+  if (!hasPermission(profile, key)) {
     redirect("/dashboard");
   }
   return profile;
 }
 
-/** Finance ledger — CEO + Asaf only (not every admin). */
+export async function requireAnyPermission(
+  keys: readonly PermissionKey[],
+): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!keys.some((k) => hasPermission(profile, k))) {
+    redirect("/dashboard");
+  }
+  return profile;
+}
+
+/** User management — requires org.users. */
+export async function requireAdmin(): Promise<Profile> {
+  return requirePermission("org.users");
+}
+
 export async function requireFinanceAccess(): Promise<Profile> {
   const profile = await requireProfile();
   if (!canAccessFinance(profile)) {
@@ -64,7 +103,22 @@ export async function requireFinanceAccess(): Promise<Profile> {
   return profile;
 }
 
-/** Sales TV dashboard preview — admins only. The office screen uses a kiosk token. */
+export async function requireSourcePnlAccess(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!canAccessSourcePnl(profile)) {
+    redirect("/dashboard");
+  }
+  return profile;
+}
+
+export async function requireSettledCommissionsAccess(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!canAccessSettledCommissions(profile)) {
+    redirect("/dashboard");
+  }
+  return profile;
+}
+
 export async function requireSalesDashboardAccess(): Promise<Profile> {
   const profile = await requireProfile();
   if (!canAccessSalesDashboard(profile)) {
@@ -73,4 +127,21 @@ export async function requireSalesDashboardAccess(): Promise<Profile> {
   return profile;
 }
 
-export { canAccessFinance, canAccessSalesDashboard };
+export async function requireEmployeesAccess(): Promise<Profile> {
+  return requireAnyPermission(["employees.view", "employees.agreements"]);
+}
+
+export async function requireEmployeeAgreementsAccess(): Promise<Profile> {
+  return requirePermission("employees.agreements");
+}
+
+export {
+  canAccessFinance,
+  canAccessSettledCommissions,
+  canAccessSourcePnl,
+  canAccessSalesDashboard,
+  canManageUsers,
+  canViewEmployees,
+  canViewEmployeeAgreements,
+  hasPermission,
+};
