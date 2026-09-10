@@ -4,13 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import {
-  finalizeCallRecordingUpload,
-  prepareCallRecordingUpload,
-} from "@/app/actions/agents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -37,74 +32,6 @@ function statusLabel(status: string | null, waiting: boolean) {
     default:
       return status ?? "ממתין להעלאה";
   }
-}
-
-function formatMb(bytes: number) {
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-}
-
-function mapUploadError(message: string, fileSize?: number) {
-  const sizeHint =
-    typeof fileSize === "number" && fileSize > 0
-      ? ` (גודל הקובץ: ${formatMb(fileSize)})`
-      : "";
-  if (/exceeded the maximum allowed size/i.test(message)) {
-    return `העלאה ל־Storage נדחתה${sizeHint}. נסו שוב או פנו לתמיכה.`;
-  }
-  return `${message}${sizeHint}`;
-}
-
-async function uploadRecordingFile(
-  prep: {
-    bucket: string;
-    storagePath: string;
-    signedUrl: string;
-    token: string;
-    mime: string;
-  },
-  file: File,
-): Promise<{ error: string | null }> {
-  const supabase = createClient();
-
-  // Preferred: session upload (RLS policy on uploads/*).
-  const sessionUpload = await supabase.storage
-    .from(prep.bucket)
-    .upload(prep.storagePath, file, {
-      contentType: prep.mime || file.type || "application/octet-stream",
-      upsert: false,
-    });
-  if (!sessionUpload.error) return { error: null };
-
-  // Fallback: signed upload URL (service-role minted token).
-  const signedUpload = await supabase.storage
-    .from(prep.bucket)
-    .uploadToSignedUrl(prep.storagePath, prep.token, file, {
-      contentType: prep.mime || file.type || "application/octet-stream",
-      upsert: false,
-    });
-  if (!signedUpload.error) return { error: null };
-
-  // Last resort: raw PUT without custom headers (CORS-safe).
-  const putRes = await fetch(prep.signedUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": prep.mime || file.type || "application/octet-stream",
-    },
-    body: file,
-  });
-  if (putRes.ok) return { error: null };
-
-  let detail =
-    signedUpload.error.message ||
-    sessionUpload.error.message ||
-    `העלאה ל־Storage נכשלה (${putRes.status})`;
-  try {
-    const body = (await putRes.json()) as { message?: string; error?: string };
-    detail = body.message || body.error || detail;
-  } catch {
-    /* keep detail */
-  }
-  return { error: detail };
 }
 
 export function RequestAnalysisButton({
@@ -154,41 +81,40 @@ export function RequestAnalysisButton({
 
     setPending(true);
     try {
-      const prep = await prepareCallRecordingUpload(slug, {
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type,
-        displayName: displayName.trim() || null,
+      const body = new FormData();
+      body.set("slug", slug);
+      body.set("file", file, file.name);
+      body.set("file_name", file.name);
+      if (displayName.trim()) body.set("display_name", displayName.trim());
+
+      // Same multipart pattern as sales-dashboard ingest (works on xCloud).
+      const res = await fetch("/api/agents/call-control/upload", {
+        method: "POST",
+        body,
+        credentials: "same-origin",
       });
-      if (prep.error !== null) {
-        toast.error(mapUploadError(prep.error, file.size));
+
+      const payload = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+        status?: string;
+        waiting?: boolean;
+      };
+
+      if (!res.ok || payload.error) {
+        toast.error(
+          payload.error ||
+            `העלאה נכשלה (${res.status}, ${(file.size / (1024 * 1024)).toFixed(1)}MB)`,
+        );
         return;
       }
 
-      const uploaded = await uploadRecordingFile(prep, file);
-      if (uploaded.error) {
-        toast.error(mapUploadError(uploaded.error, file.size));
-        return;
-      }
-
-      const result = await finalizeCallRecordingUpload(slug, {
-        callId: prep.callId,
-        storagePath: prep.storagePath,
-        fileName: prep.fileName,
-        mime: prep.mime,
-        displayName: prep.displayName,
-      });
-      if (result.error !== null) {
-        toast.error(mapUploadError(result.error, file.size));
-        return;
-      }
-
-      setLocalStatus(result.status ?? "running");
-      setWaiting(Boolean(result.waiting));
-      if (result.waiting) {
-        toast.message(result.message);
+      setLocalStatus(payload.status ?? "running");
+      setWaiting(Boolean(payload.waiting));
+      if (payload.waiting) {
+        toast.message(payload.message || "בתור אחרי ניתוח פעיל");
       } else {
-        toast.success(result.message);
+        toast.success(payload.message || "מתחיל ניתוח עכשיו");
       }
       if (!hermesOnline) {
         toast.message(
@@ -201,9 +127,7 @@ export function RequestAnalysisButton({
       router.refresh();
     } catch (err) {
       toast.error(
-        err instanceof Error
-          ? mapUploadError(err.message, file.size)
-          : "העלאת ההקלטה נכשלה",
+        err instanceof Error ? err.message : "העלאת ההקלטה נכשלה",
       );
     } finally {
       setPending(false);

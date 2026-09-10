@@ -610,13 +610,126 @@ export async function finalizeCallRecordingUpload(
 }
 
 /**
- * @deprecated Prefer prepareCallRecordingUpload + browser direct upload + finalize.
- * Kept only to avoid breaking old clients; rejects large FormData on purpose.
+ * Server-side ingest used by /api/agents/call-control/upload.
+ * Uploads via service role (proven path) — same pattern as sales Excel ingest.
+ */
+export async function ingestCallRecordingFile(
+  slug: string,
+  formData: FormData,
+  profileId: string,
+): Promise<UploadRecordingResult> {
+  try {
+    if (slug !== "call-control") {
+      return { error: "העלאת הקלטות זמינה רק לסוכן בקרת שיחות" };
+    }
+
+    const raw = formData.get("file");
+    if (!(raw instanceof File) && !(raw instanceof Blob)) {
+      return { error: "לא נבחר קובץ הקלטה" };
+    }
+    const fileName =
+      raw instanceof File && raw.name
+        ? raw.name
+        : String(formData.get("file_name") || "recording.mp3");
+    if (raw.size <= 0) return { error: "קובץ ריק" };
+    if (raw.size > MAX_RECORDING_BYTES) {
+      return { error: `הקובץ גדול מ־${Math.round(MAX_RECORDING_BYTES / (1024 * 1024))}MB` };
+    }
+
+    const mime = resolveRecordingMime(fileName, raw.type);
+    if (!isAllowedRecordingMime(mime, fileName)) {
+      return { error: "מותר קבצי אודיו בלבד (mp3, m4a, wav, webm…)" };
+    }
+
+    const displayNameRaw = formData.get("display_name");
+    const displayName =
+      typeof displayNameRaw === "string" && displayNameRaw.trim()
+        ? displayNameRaw.trim()
+        : fileName.replace(/\.[^.]+$/, "") || fileName;
+
+    const agent = await ensureAgentRow(slug);
+    const admin = createAdminClient();
+    await ensureCallRecordingsBucket(admin);
+
+    const staleBefore = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    await admin
+      .from("agent_runs")
+      .update({
+        status: "cancelled",
+        finished_at: new Date().toISOString(),
+        error_message: "cleared before upload analysis",
+      })
+      .eq("agent_id", agent.id)
+      .in("status", ["queued", "claimed", "running"])
+      .lt("started_at", staleBefore);
+
+    const callId = crypto.randomUUID();
+    const extMatch = fileName.toLowerCase().match(/(\.[a-z0-9]{2,5})$/);
+    const ext = extMatch?.[1] || ".mp3";
+    const storagePath = `uploads/${callId}/audio${ext}`;
+    const buffer = Buffer.from(await raw.arrayBuffer());
+
+    const { error: uploadError } = await admin.storage
+      .from(CALL_RECORDINGS_BUCKET)
+      .upload(storagePath, buffer, {
+        contentType: mime || "application/octet-stream",
+        upsert: false,
+      });
+    if (uploadError) {
+      return {
+        error: `שמירה ב־Storage נכשלה: ${uploadError.message} (${(buffer.length / (1024 * 1024)).toFixed(1)}MB)`,
+      };
+    }
+
+    const { data: signed, error: signError } = await admin.storage
+      .from(CALL_RECORDINGS_BUCKET)
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
+    if (signError || !signed?.signedUrl) {
+      await admin.storage.from(CALL_RECORDINGS_BUCKET).remove([storagePath]);
+      return { error: signError?.message ?? "יצירת קישור להקלטה נכשלה" };
+    }
+
+    const { error: callError } = await admin.from("calls").insert({
+      id: callId,
+      external_id: `upload:${callId}`,
+      source: "upload",
+      status: "pending",
+      audio_path: signed.signedUrl,
+      metadata: {
+        display_name: displayName,
+        file_name: fileName,
+        storage_bucket: CALL_RECORDINGS_BUCKET,
+        storage_path: storagePath,
+        mime_type: mime,
+        uploaded_by: profileId,
+        source: "upload",
+      },
+    });
+    if (callError) {
+      await admin.storage.from(CALL_RECORDINGS_BUCKET).remove([storagePath]);
+      return { error: callError.message };
+    }
+
+    return enqueueUploadAnalysis({
+      admin,
+      agentId: agent.id,
+      profileId,
+      slug,
+      callId,
+    });
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "העלאת ההקלטה נכשלה",
+    };
+  }
+}
+
+/**
+ * @deprecated Use POST /api/agents/call-control/upload
  */
 export async function uploadCallRecording(): Promise<UploadRecordingResult> {
   return {
-    error:
-      "יש לרענן את הדף — ההעלאה עברה למסלול ישיר ל־Storage (עוקף מגבלת Nginx)",
+    error: "יש לרענן את הדף — ההעלאה עברה לנתיב API חדש",
   };
 }
 
