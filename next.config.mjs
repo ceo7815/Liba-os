@@ -20,7 +20,8 @@ const nextConfig = {
       ],
     },
     serverActions: {
-      bodySizeLimit: "12mb",
+      // Call-control uploads can be long recordings (and FormData overhead).
+      bodySizeLimit: "200mb",
     },
   },
 };

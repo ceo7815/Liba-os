@@ -232,7 +232,7 @@ export async function requestCallAnalysis(
 }
 
 const CALL_RECORDINGS_BUCKET = "call-recordings";
-const MAX_RECORDING_BYTES = 100 * 1024 * 1024;
+const MAX_RECORDING_BYTES = 200 * 1024 * 1024;
 const ALLOWED_RECORDING_MIME = new Set([
   "audio/mpeg",
   "audio/mp3",
@@ -275,13 +275,25 @@ function isAllowedRecordingMime(mime: string, fileName: string): boolean {
 async function ensureCallRecordingsBucket(
   admin: ReturnType<typeof createAdminClient>,
 ) {
-  const { error } = await admin.storage.createBucket(CALL_RECORDINGS_BUCKET, {
+  const options = {
     public: false,
     fileSizeLimit: MAX_RECORDING_BYTES,
     allowedMimeTypes: Array.from(ALLOWED_RECORDING_MIME),
-  });
+  };
+  const { error } = await admin.storage.createBucket(
+    CALL_RECORDINGS_BUCKET,
+    options,
+  );
   if (error && !/already exists|duplicate/i.test(error.message)) {
     throw new Error(error.message);
+  }
+  // Keep limit in sync when the bucket already exists.
+  const { error: updateError } = await admin.storage.updateBucket(
+    CALL_RECORDINGS_BUCKET,
+    options,
+  );
+  if (updateError && !/not found/i.test(updateError.message)) {
+    throw new Error(updateError.message);
   }
 }
 
@@ -291,13 +303,14 @@ export type UploadRecordingResult =
       callId: string;
       runId: string | null;
       status: string | null;
+      waiting?: boolean;
       message: string;
     }
   | { error: string };
 
 /**
  * Admin-only: upload a recording into Liba Storage, create a pending call,
- * and queue Hermes to process OS-owned pending calls (not Drive).
+ * and start analysis immediately (running). Extra uploads while busy wait in line.
  */
 export async function uploadCallRecording(
   slug: string,
@@ -316,7 +329,7 @@ export async function uploadCallRecording(
     }
     if (raw.size <= 0) return { error: "קובץ ריק" };
     if (raw.size > MAX_RECORDING_BYTES) {
-      return { error: "הקובץ גדול מ־100MB" };
+      return { error: "הקובץ גדול מ־200MB" };
     }
 
     const mime = resolveRecordingMime(raw.name, raw.type);
@@ -358,7 +371,13 @@ export async function uploadCallRecording(
         contentType: mime || "application/octet-stream",
         upsert: false,
       });
-    if (uploadError) return { error: uploadError.message };
+    if (uploadError) {
+      const msg = uploadError.message || "";
+      if (/exceeded the maximum allowed size/i.test(msg)) {
+        return { error: "הקובץ גדול מדי להעלאה (מקסימום 200MB)" };
+      }
+      return { error: msg };
+    }
 
     const { data: signed, error: signError } = await admin.storage
       .from(CALL_RECORDINGS_BUCKET)
@@ -391,6 +410,7 @@ export async function uploadCallRecording(
       return { error: callError.message };
     }
 
+    const now = new Date().toISOString();
     const { data: active } = await admin
       .from("agent_runs")
       .select("id, status, metadata, started_at")
@@ -400,9 +420,8 @@ export async function uploadCallRecording(
       .limit(1)
       .maybeSingle();
 
-    // Prefer a dedicated upload run. If something is still active (fresh),
-    // attach this call_id so get_pending can pick it up in the same pass.
-    if (active) {
+    // Already analyzing → only park this file as pending; worker continues after current.
+    if (active && (active.status === "running" || active.status === "claimed")) {
       const meta =
         active.metadata &&
         typeof active.metadata === "object" &&
@@ -412,6 +431,7 @@ export async function uploadCallRecording(
       const existingIds = Array.isArray(meta.call_ids)
         ? meta.call_ids.filter((id): id is string => typeof id === "string")
         : [];
+      const waitingIds = [...new Set([...existingIds, callId])];
       await admin
         .from("agent_runs")
         .update({
@@ -419,7 +439,8 @@ export async function uploadCallRecording(
             ...meta,
             source: "upload",
             ingest: "pending_calls",
-            call_ids: [...new Set([...existingIds, callId])],
+            call_ids: waitingIds,
+            waiting_count: waitingIds.length,
           },
         })
         .eq("id", active.id);
@@ -429,18 +450,33 @@ export async function uploadCallRecording(
         error: null,
         callId,
         runId: active.id,
-        status: active.status,
+        status: "running",
+        waiting: true,
         message:
-          "ההקלטה הועלתה. יש הרצה פעילה — הסוכן ימשוך אותה עכשיו ב־get_pending",
+          "ההקלטה נכנסה לתור. מסיימים את הניתוח הנוכחי ואז ממשיכים אוטומטית",
       };
     }
 
+    // Cancel leftover queued jobs (old Drive / stuck) — start fresh immediately.
+    if (active?.status === "queued") {
+      await admin
+        .from("agent_runs")
+        .update({
+          status: "cancelled",
+          finished_at: now,
+          error_message: "replaced by immediate upload analysis",
+        })
+        .eq("id", active.id);
+    }
+
+    // Start analysis immediately (running, not queued).
     const { data: run, error: runError } = await admin
       .from("agent_runs")
       .insert({
         agent_id: agent.id,
         trigger: "manual",
-        status: "queued",
+        status: "running",
+        started_at: now,
         metadata: {
           source: "upload",
           ingest: "pending_calls",
@@ -452,14 +488,19 @@ export async function uploadCallRecording(
       .single();
 
     if (runError || !run) {
+      await admin
+        .from("agents")
+        .update({ last_run_at: now, last_run_status: "running" })
+        .eq("id", agent.id);
       revalidatePath(`/agents/${slug}`);
       return {
         error: null,
         callId,
         runId: null,
-        status: null,
+        status: "running",
+        waiting: false,
         message:
-          "ההקלטה הועלתה כשיחה ממתינה, אבל יצירת תור ההרצה נכשלה — הסוכן עדיין יכול למשוך ב־get_pending",
+          "ההקלטה מוכנה — הסוכן מתחיל לנתח עכשיו (get_pending)",
       };
     }
 
@@ -467,7 +508,7 @@ export async function uploadCallRecording(
       .from("agents")
       .update({
         last_run_at: run.started_at,
-        last_run_status: "queued",
+        last_run_status: "running",
       })
       .eq("id", agent.id);
 
@@ -476,8 +517,9 @@ export async function uploadCallRecording(
       error: null,
       callId,
       runId: run.id,
-      status: run.status,
-      message: "ההקלטה הועלתה — הסוכן מתחיל לנתח לפי ההנחיות",
+      status: "running",
+      waiting: false,
+      message: "מתחיל ניתוח עכשיו לפי הנחיות הסוכן",
     };
   } catch (err) {
     return {

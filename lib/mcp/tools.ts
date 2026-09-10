@@ -58,7 +58,7 @@ async function requireRunForAgent(
 ) {
   const { data, error } = await admin
     .from("agent_runs")
-    .select("id, agent_id, status")
+    .select("id, agent_id, status, started_at, trigger")
     .eq("id", runId)
     .eq("agent_id", agentId)
     .maybeSingle();
@@ -220,9 +220,21 @@ async function startRun(
   // Continue a queued/claimed work item created by the dashboard button
   if (existingRunId) {
     const existing = await requireRunForAgent(admin, existingRunId, agent.agentId);
+    if (existing.status === "running") {
+      return {
+        ok: true,
+        data: {
+          run_id: existing.id,
+          started_at: existing.started_at,
+          status: existing.status,
+          resumed: true,
+          trigger: existing.trigger,
+        },
+      };
+    }
     if (existing.status !== "queued" && existing.status !== "claimed") {
       throw new Error(
-        `run_id ${existingRunId} is not queued/claimed (status=${existing.status})`,
+        `run_id ${existingRunId} is not queued/claimed/running (status=${existing.status})`,
       );
     }
 
@@ -257,6 +269,38 @@ async function startRun(
   }
 
   const trigger = str(params.trigger, "trigger");
+
+  // Reuse an OS-created running upload run so we don't open a second run.
+  const { data: activeRunning } = await admin
+    .from("agent_runs")
+    .select("id, started_at, status, trigger, metadata")
+    .eq("agent_id", agent.agentId)
+    .eq("status", "running")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (activeRunning) {
+    const meta =
+      activeRunning.metadata &&
+      typeof activeRunning.metadata === "object" &&
+      !Array.isArray(activeRunning.metadata)
+        ? (activeRunning.metadata as Record<string, unknown>)
+        : {};
+    const ingest = String(meta.ingest ?? meta.source ?? "");
+    if (ingest === "pending_calls" || ingest === "upload") {
+      return {
+        ok: true,
+        data: {
+          run_id: activeRunning.id,
+          started_at: activeRunning.started_at,
+          status: activeRunning.status,
+          resumed: true,
+          trigger: activeRunning.trigger,
+        },
+      };
+    }
+  }
 
   const { data, error } = await admin
     .from("agent_runs")

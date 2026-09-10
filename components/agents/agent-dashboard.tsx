@@ -343,9 +343,9 @@ function toolStatusTone(status: string) {
 function runStatusLabel(status: string | null | undefined) {
   if (!status) return "—";
   const map: Record<string, string> = {
-    queued: "בתור",
-    claimed: "נמשך",
-    running: "רץ",
+    queued: "ממתין לסוכן",
+    claimed: "מתחיל",
+    running: "מנתח עכשיו",
     success: "הצליח",
     failed: "נכשל",
     partial: "חלקי",

@@ -15,14 +15,13 @@ type Props = {
   hermesOnline?: boolean;
 };
 
-function statusLabel(status: string | null) {
+function statusLabel(status: string | null, waiting: boolean) {
+  if (waiting) return "מנתח עכשיו · הקלטות נוספות בתור";
   switch (status) {
     case "queued":
-      return "בתור";
     case "claimed":
-      return "נמשך ע״י הסוכן";
     case "running":
-      return "רץ — מנתח עכשיו";
+      return "מנתח עכשיו";
     case "success":
       return "הצליח";
     case "failed":
@@ -45,18 +44,22 @@ export function RequestAnalysisButton({
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [localStatus, setLocalStatus] = useState(activeStatus);
+  const [waiting, setWaiting] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
     setLocalStatus(activeStatus);
+    if (activeStatus !== "running" && activeStatus !== "claimed") {
+      setWaiting(false);
+    }
   }, [activeStatus]);
 
   const busy =
     localStatus === "queued" ||
     localStatus === "claimed" ||
     localStatus === "running";
-  const running = localStatus === "running";
+  const running = localStatus === "running" || localStatus === "claimed";
 
   function onFileChange(file: File | null) {
     if (!file) {
@@ -86,11 +89,16 @@ export function RequestAnalysisButton({
         toast.error(result.error);
         return;
       }
-      if (result.status) setLocalStatus(result.status);
-      toast.success(result.message);
+      setLocalStatus(result.status ?? "running");
+      setWaiting(Boolean(result.waiting));
+      if (result.waiting) {
+        toast.message(result.message);
+      } else {
+        toast.success(result.message);
+      }
       if (!hermesOnline) {
         toast.message(
-          "הסוכן לא אונליין כרגע — ההקלטה בתור. הפעילו את worker של call-qa (--watch).",
+          "הסוכן לא אונליין — ההקלטה מוכנה, הפעילו את worker של call-qa (--watch).",
         );
       }
       setFileName(null);
@@ -105,8 +113,8 @@ export function RequestAnalysisButton({
       <div>
         <p className="text-sm font-semibold">ניתוח הקלטה</p>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          מעלים הקלטה מהמחשב ולוחצים «נתח שיחה». הסוכן מתמלל ומפיק דוח לפי
-          הנחיות הצ׳ק־ליסט במערכת. אין משיכה מגוגל דרייב.
+          מעלים הקלטה ולוחצים «נתח שיחה» — הניתוח מתחיל מיד. רק אם כבר רץ ניתוח,
+          הקלטות נוספות נכנסות לתור וממשיכות אוטומטית אחריו.
         </p>
       </div>
 
@@ -172,7 +180,7 @@ export function RequestAnalysisButton({
           )}
           נתח שיחה
         </Button>
-        <div className="min-w-[11rem]">
+        <div className="min-w-[14rem]">
           <div
             className={cn(
               "flex items-center gap-2 text-[11px] font-medium",
@@ -188,16 +196,11 @@ export function RequestAnalysisButton({
                 aria-hidden
               />
             ) : null}
-            <span>סטטוס: {statusLabel(localStatus)}</span>
+            <span>סטטוס: {statusLabel(localStatus, waiting)}</span>
           </div>
           {running ? (
             <div className="status-run-track mt-2" aria-hidden>
               <span className="status-run-bar" />
-            </div>
-          ) : null}
-          {busy && !running ? (
-            <div className="status-queue-track mt-2" aria-hidden>
-              <span className="status-queue-bar" />
             </div>
           ) : null}
         </div>
