@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { Loader2, Play } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { requestCallAnalysis } from "@/app/actions/agents";
+import { uploadCallRecording } from "@/app/actions/agents";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 type Props = {
   slug: string;
   activeStatus: string | null;
+  hermesOnline?: boolean;
 };
 
 function statusLabel(status: string | null) {
@@ -20,7 +22,7 @@ function statusLabel(status: string | null) {
     case "claimed":
       return "נמשך ע״י הסוכן";
     case "running":
-      return "רץ";
+      return "רץ — מנתח עכשיו";
     case "success":
       return "הצליח";
     case "failed":
@@ -30,14 +32,21 @@ function statusLabel(status: string | null) {
     case "cancelled":
       return "בוטל";
     default:
-      return status ?? "אין הרצה פעילה";
+      return status ?? "ממתין להעלאה";
   }
 }
 
-export function RequestAnalysisButton({ slug, activeStatus }: Props) {
+export function RequestAnalysisButton({
+  slug,
+  activeStatus,
+  hermesOnline = false,
+}: Props) {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [localStatus, setLocalStatus] = useState(activeStatus);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
     setLocalStatus(activeStatus);
@@ -49,47 +58,121 @@ export function RequestAnalysisButton({ slug, activeStatus }: Props) {
     localStatus === "running";
   const running = localStatus === "running";
 
-  function onClick() {
+  function onFileChange(file: File | null) {
+    if (!file) {
+      setFileName(null);
+      return;
+    }
+    setFileName(file.name);
+    if (!displayName.trim()) {
+      setDisplayName(file.name.replace(/\.[^.]+$/, "") || file.name);
+    }
+  }
+
+  function onAnalyze() {
+    const input = fileRef.current;
+    const file = input?.files?.[0] ?? null;
+    if (!file) {
+      toast.error("בחרו קובץ הקלטה");
+      return;
+    }
+
     startTransition(async () => {
-      const result = await requestCallAnalysis(slug);
+      const body = new FormData();
+      body.set("file", file);
+      if (displayName.trim()) body.set("display_name", displayName.trim());
+      const result = await uploadCallRecording(slug, body);
       if (result.error !== null) {
         toast.error(result.error);
         return;
       }
-      setLocalStatus(result.status);
-      if (result.alreadyQueued) {
-        toast.message(result.message);
-      } else {
-        toast.success(result.message);
+      if (result.status) setLocalStatus(result.status);
+      toast.success(result.message);
+      if (!hermesOnline) {
+        toast.message(
+          "הסוכן לא אונליין כרגע — ההקלטה בתור. הפעילו את worker של call-qa (--watch).",
+        );
       }
+      setFileName(null);
+      setDisplayName("");
+      if (input) input.value = "";
       router.refresh();
     });
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4">
       <div>
-        <p className="text-sm font-semibold">ניתוח מתיקיית גוגל דרייב</p>
+        <p className="text-sm font-semibold">ניתוח הקלטה</p>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          לחיצה כאן רק מוסיפה בקשה לתור. מערכת הסוכנים מושכת מגוגל דרייב ומדווחת
-          חזרה — ליבה OS לא מתחברת לדרייב ולא מריצה תמלול.
+          מעלים הקלטה מהמחשב ולוחצים «נתח שיחה». הסוכן מתמלל ומפיק דוח לפי
+          הנחיות הצ׳ק־ליסט במערכת. אין משיכה מגוגל דרייב.
         </p>
       </div>
-      <div className="flex min-w-[12rem] flex-col items-stretch gap-2 sm:items-end">
+
+      <div
+        className={cn(
+          "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold",
+          hermesOnline
+            ? "bg-emerald-50 text-emerald-800"
+            : "bg-amber-50 text-amber-900",
+        )}
+      >
+        <span
+          className={cn(
+            "size-1.5 rounded-full",
+            hermesOnline ? "bg-emerald-600" : "bg-amber-600",
+          )}
+        />
+        {hermesOnline ? "סוכן אונליין — מוכן לנתח" : "סוכן לא מחובר — יש להפעיל call-qa"}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,14rem)]">
+        <label className="block space-y-1.5">
+          <span className="text-xs font-medium text-muted-foreground">
+            קובץ הקלטה
+          </span>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="audio/*,.mp3,.m4a,.wav,.webm,.ogg,.aac,.flac,.mp4"
+            className="block w-full text-sm file:me-3 file:rounded-xl file:border-0 file:bg-black file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+            onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+          />
+          {fileName ? (
+            <span className="block truncate text-[11px] text-muted-foreground">
+              נבחר: {fileName}
+            </span>
+          ) : null}
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-xs font-medium text-muted-foreground">
+            שם להצגה (אופציונלי)
+          </span>
+          <Input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="לקוח / נושא השיחה"
+            className="h-10 rounded-xl text-start"
+          />
+        </label>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           type="button"
-          onClick={onClick}
-          disabled={pending}
-          className="min-w-[11rem]"
+          onClick={onAnalyze}
+          disabled={pending || !fileName}
+          className="h-11 min-w-[12rem] rounded-xl font-semibold"
         >
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Play className="h-4 w-4" />
+            <Upload className="h-4 w-4" />
           )}
-          בצע ניתוח שיחות
+          נתח שיחה
         </Button>
-        <div className="w-full sm:w-[11rem]">
+        <div className="min-w-[11rem]">
           <div
             className={cn(
               "flex items-center gap-2 text-[11px] font-medium",

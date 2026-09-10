@@ -664,7 +664,43 @@ async function getPendingCalls(
     throw new Error(error.message);
   }
 
-  return { ok: true, data: { calls: data ?? [], count: (data ?? []).length } };
+  const rows = (data ?? []) as Array<Record<string, unknown>>;
+  const calls = await Promise.all(
+    rows.map(async (row) => {
+      const meta =
+        row.metadata &&
+        typeof row.metadata === "object" &&
+        !Array.isArray(row.metadata)
+          ? (row.metadata as Record<string, unknown>)
+          : {};
+      const bucket =
+        softStr(meta.storage_bucket) ??
+        (softStr(meta.storage_path) ? "call-recordings" : null);
+      const storagePath = softStr(meta.storage_path);
+      let audioPath = softStr(row.audio_path);
+
+      if (bucket && storagePath) {
+        const { data: signed } = await admin.storage
+          .from(bucket)
+          .createSignedUrl(storagePath, 60 * 60 * 12);
+        if (signed?.signedUrl) {
+          audioPath = signed.signedUrl;
+          await admin
+            .from("calls")
+            .update({ audio_path: audioPath })
+            .eq("id", row.id);
+        }
+      }
+
+      return {
+        ...row,
+        audio_path: audioPath,
+        download_url: audioPath,
+      };
+    }),
+  );
+
+  return { ok: true, data: { calls, count: calls.length } };
 }
 
 async function setCallStatus(

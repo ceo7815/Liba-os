@@ -197,6 +197,7 @@ export async function requestCallAnalysis(
         status: "queued",
         metadata: {
           source: "drive",
+          ingest: "drive",
           requested_by: profile.id,
         },
       })
@@ -226,6 +227,261 @@ export async function requestCallAnalysis(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "יצירת תור העבודה נכשלה",
+    };
+  }
+}
+
+const CALL_RECORDINGS_BUCKET = "call-recordings";
+const MAX_RECORDING_BYTES = 100 * 1024 * 1024;
+const ALLOWED_RECORDING_MIME = new Set([
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/m4a",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/wave",
+  "audio/webm",
+  "audio/ogg",
+  "audio/aac",
+  "audio/flac",
+  "video/mp4",
+  "video/webm",
+  "application/octet-stream",
+]);
+
+function resolveRecordingMime(fileName: string, mimeRaw: string | null | undefined): string {
+  const mime = (mimeRaw || "").toLowerCase().trim();
+  if (ALLOWED_RECORDING_MIME.has(mime) || mime.startsWith("audio/")) return mime;
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".mp3")) return "audio/mpeg";
+  if (lower.endsWith(".m4a")) return "audio/mp4";
+  if (lower.endsWith(".wav")) return "audio/wav";
+  if (lower.endsWith(".webm")) return "audio/webm";
+  if (lower.endsWith(".ogg")) return "audio/ogg";
+  if (lower.endsWith(".aac")) return "audio/aac";
+  if (lower.endsWith(".flac")) return "audio/flac";
+  if (lower.endsWith(".mp4")) return "video/mp4";
+  return mime || "application/octet-stream";
+}
+
+function isAllowedRecordingMime(mime: string, fileName: string): boolean {
+  if (ALLOWED_RECORDING_MIME.has(mime) || mime.startsWith("audio/")) return true;
+  const lower = fileName.toLowerCase();
+  return /\.(mp3|m4a|wav|webm|ogg|aac|flac|mp4)$/i.test(lower);
+}
+
+async function ensureCallRecordingsBucket(
+  admin: ReturnType<typeof createAdminClient>,
+) {
+  const { error } = await admin.storage.createBucket(CALL_RECORDINGS_BUCKET, {
+    public: false,
+    fileSizeLimit: MAX_RECORDING_BYTES,
+    allowedMimeTypes: Array.from(ALLOWED_RECORDING_MIME),
+  });
+  if (error && !/already exists|duplicate/i.test(error.message)) {
+    throw new Error(error.message);
+  }
+}
+
+export type UploadRecordingResult =
+  | {
+      error: null;
+      callId: string;
+      runId: string | null;
+      status: string | null;
+      message: string;
+    }
+  | { error: string };
+
+/**
+ * Admin-only: upload a recording into Liba Storage, create a pending call,
+ * and queue Hermes to process OS-owned pending calls (not Drive).
+ */
+export async function uploadCallRecording(
+  slug: string,
+  formData: FormData,
+): Promise<UploadRecordingResult> {
+  const profile = await requirePermission("agents.manage");
+
+  try {
+    if (slug !== "call-control") {
+      return { error: "העלאת הקלטות זמינה רק לסוכן בקרת שיחות" };
+    }
+
+    const raw = formData.get("file");
+    if (!(raw instanceof File)) {
+      return { error: "לא נבחר קובץ הקלטה" };
+    }
+    if (raw.size <= 0) return { error: "קובץ ריק" };
+    if (raw.size > MAX_RECORDING_BYTES) {
+      return { error: "הקובץ גדול מ־100MB" };
+    }
+
+    const mime = resolveRecordingMime(raw.name, raw.type);
+    if (!isAllowedRecordingMime(mime, raw.name)) {
+      return { error: "מותר קבצי אודיו בלבד (mp3, m4a, wav, webm…)" };
+    }
+
+    const displayNameRaw = formData.get("display_name");
+    const displayName =
+      typeof displayNameRaw === "string" && displayNameRaw.trim()
+        ? displayNameRaw.trim()
+        : raw.name.replace(/\.[^.]+$/, "") || raw.name;
+
+    const agent = await ensureAgentRow(slug);
+    const admin = createAdminClient();
+    await ensureCallRecordingsBucket(admin);
+
+    // Clear stale call-control jobs so a fresh upload can be claimed immediately.
+    const staleBefore = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    await admin
+      .from("agent_runs")
+      .update({
+        status: "cancelled",
+        finished_at: new Date().toISOString(),
+        error_message: "cleared before upload analysis",
+      })
+      .eq("agent_id", agent.id)
+      .in("status", ["queued", "claimed", "running"])
+      .lt("started_at", staleBefore);
+
+    const callId = crypto.randomUUID();
+    const safeName = raw.name.replace(/[^\w.\u0590-\u05FF\u00A0-\uFFFF\- ()]/g, "_");
+    const storagePath = `uploads/${callId}/${Date.now()}-${safeName}`;
+    const buffer = Buffer.from(await raw.arrayBuffer());
+
+    const { error: uploadError } = await admin.storage
+      .from(CALL_RECORDINGS_BUCKET)
+      .upload(storagePath, buffer, {
+        contentType: mime || "application/octet-stream",
+        upsert: false,
+      });
+    if (uploadError) return { error: uploadError.message };
+
+    const { data: signed, error: signError } = await admin.storage
+      .from(CALL_RECORDINGS_BUCKET)
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
+    if (signError || !signed?.signedUrl) {
+      await admin.storage.from(CALL_RECORDINGS_BUCKET).remove([storagePath]);
+      return { error: signError?.message ?? "יצירת קישור להקלטה נכשלה" };
+    }
+
+    const externalId = `upload:${callId}`;
+    const { error: callError } = await admin.from("calls").insert({
+      id: callId,
+      external_id: externalId,
+      source: "upload",
+      status: "pending",
+      audio_path: signed.signedUrl,
+      metadata: {
+        display_name: displayName,
+        file_name: raw.name,
+        storage_bucket: CALL_RECORDINGS_BUCKET,
+        storage_path: storagePath,
+        mime_type: mime,
+        uploaded_by: profile.id,
+        source: "upload",
+      },
+    });
+
+    if (callError) {
+      await admin.storage.from(CALL_RECORDINGS_BUCKET).remove([storagePath]);
+      return { error: callError.message };
+    }
+
+    const { data: active } = await admin
+      .from("agent_runs")
+      .select("id, status, metadata, started_at")
+      .eq("agent_id", agent.id)
+      .in("status", ["queued", "claimed", "running"])
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Prefer a dedicated upload run. If something is still active (fresh),
+    // attach this call_id so get_pending can pick it up in the same pass.
+    if (active) {
+      const meta =
+        active.metadata &&
+        typeof active.metadata === "object" &&
+        !Array.isArray(active.metadata)
+          ? { ...(active.metadata as Record<string, unknown>) }
+          : {};
+      const existingIds = Array.isArray(meta.call_ids)
+        ? meta.call_ids.filter((id): id is string => typeof id === "string")
+        : [];
+      await admin
+        .from("agent_runs")
+        .update({
+          metadata: {
+            ...meta,
+            source: "upload",
+            ingest: "pending_calls",
+            call_ids: [...new Set([...existingIds, callId])],
+          },
+        })
+        .eq("id", active.id);
+
+      revalidatePath(`/agents/${slug}`);
+      return {
+        error: null,
+        callId,
+        runId: active.id,
+        status: active.status,
+        message:
+          "ההקלטה הועלתה. יש הרצה פעילה — הסוכן ימשוך אותה עכשיו ב־get_pending",
+      };
+    }
+
+    const { data: run, error: runError } = await admin
+      .from("agent_runs")
+      .insert({
+        agent_id: agent.id,
+        trigger: "manual",
+        status: "queued",
+        metadata: {
+          source: "upload",
+          ingest: "pending_calls",
+          call_ids: [callId],
+          requested_by: profile.id,
+        },
+      })
+      .select("id, status, started_at")
+      .single();
+
+    if (runError || !run) {
+      revalidatePath(`/agents/${slug}`);
+      return {
+        error: null,
+        callId,
+        runId: null,
+        status: null,
+        message:
+          "ההקלטה הועלתה כשיחה ממתינה, אבל יצירת תור ההרצה נכשלה — הסוכן עדיין יכול למשוך ב־get_pending",
+      };
+    }
+
+    await admin
+      .from("agents")
+      .update({
+        last_run_at: run.started_at,
+        last_run_status: "queued",
+      })
+      .eq("id", agent.id);
+
+    revalidatePath(`/agents/${slug}`);
+    return {
+      error: null,
+      callId,
+      runId: run.id,
+      status: run.status,
+      message: "ההקלטה הועלתה — הסוכן מתחיל לנתח לפי ההנחיות",
+    };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "העלאת ההקלטה נכשלה",
     };
   }
 }

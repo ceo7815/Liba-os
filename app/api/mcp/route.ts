@@ -28,14 +28,16 @@ export async function GET() {
       save_transcript_save_analysis: "upsert by call_id (retry-safe)",
       calls_register: "upsert by external_id",
       audio_path:
-        "Optional downloadable URL or future Storage path. OS does not fetch audio for the agent. Omit for Drive ingest.",
+        "Downloadable HTTPS URL. For OS uploads, mint via calls.get_pending (signed Storage URL).",
       dual_ingest:
-        "Drive → calls.register(source:drive) OR OS queue → calls.get_pending",
+        "Drive → calls.register(source:drive) OR OS upload → calls.get_pending (source:upload)",
       work_queue: {
         poll_work:
-          "Claims oldest queued run → status=claimed. Then os.start_run({ run_id }) promotes claimed→running.",
+          "Claims oldest queued run → status=claimed. Then os.start_run({ run_id }) promotes claimed→running. metadata.ingest=drive|pending_calls|mixed.",
         start_run_with_run_id: "Continues queued/claimed job; does not insert a new run",
         heartbeat: "os.heartbeat({ agent_slug, status: online|offline })",
+        upload_ingest:
+          "When metadata.source=upload or ingest=pending_calls → calls.get_pending and download audio_path/download_url",
       register_dedup:
             "If external_id exists and already analyzed → created:false, skip_analysis:true BUT still upserts call_date/duration_sec/audio_path/metadata (display_name, customer_name, drive_url).",
           register_fields: {

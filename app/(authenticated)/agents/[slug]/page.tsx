@@ -288,6 +288,13 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
   });
 
   const activeQueueStatus = activeQueueRes.data?.status ?? null;
+  const hermesSeenAt = dbAgent?.hermes_last_seen_at
+    ? Date.parse(dbAgent.hermes_last_seen_at)
+    : NaN;
+  const hermesOnline =
+    dbAgent?.hermes_status === "online" &&
+    Number.isFinite(hermesSeenAt) &&
+    Date.now() - hermesSeenAt < 5 * 60 * 1000;
 
   const dashboardData: AgentDashboardData = {
     dbAgent: dbAgent ?? null,
@@ -357,6 +364,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
           <RequestAnalysisButton
             slug={agent.slug}
             activeStatus={activeQueueStatus ?? dbAgent?.last_run_status ?? null}
+            hermesOnline={hermesOnline}
           />
         </div>
       )}
