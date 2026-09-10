@@ -232,7 +232,7 @@ export async function requestCallAnalysis(
 }
 
 const CALL_RECORDINGS_BUCKET = "call-recordings";
-const MAX_RECORDING_BYTES = 200 * 1024 * 1024;
+const MAX_RECORDING_BYTES = 500 * 1024 * 1024;
 const ALLOWED_RECORDING_MIME = new Set([
   "audio/mpeg",
   "audio/mp3",
@@ -275,22 +275,19 @@ function isAllowedRecordingMime(mime: string, fileName: string): boolean {
 async function ensureCallRecordingsBucket(
   admin: ReturnType<typeof createAdminClient>,
 ) {
-  const options = {
+  const { error } = await admin.storage.createBucket(CALL_RECORDINGS_BUCKET, {
     public: false,
     fileSizeLimit: MAX_RECORDING_BYTES,
-    allowedMimeTypes: Array.from(ALLOWED_RECORDING_MIME),
-  };
-  const { error } = await admin.storage.createBucket(
-    CALL_RECORDINGS_BUCKET,
-    options,
-  );
+  });
   if (error && !/already exists|duplicate/i.test(error.message)) {
     throw new Error(error.message);
   }
-  // Keep limit in sync when the bucket already exists.
   const { error: updateError } = await admin.storage.updateBucket(
     CALL_RECORDINGS_BUCKET,
-    options,
+    {
+      public: false,
+      fileSizeLimit: MAX_RECORDING_BYTES,
+    },
   );
   if (updateError && !/not found/i.test(updateError.message)) {
     throw new Error(updateError.message);
@@ -473,7 +470,7 @@ export async function prepareCallRecordingUpload(
       return { error: "קובץ ריק" };
     }
     if (input.fileSize > MAX_RECORDING_BYTES) {
-      return { error: "הקובץ גדול מ־200MB" };
+      return { error: "הקובץ גדול מ־500MB" };
     }
 
     const mime = resolveRecordingMime(input.fileName, input.mimeType);

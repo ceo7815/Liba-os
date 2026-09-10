@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/agents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -38,11 +39,72 @@ function statusLabel(status: string | null, waiting: boolean) {
   }
 }
 
-function mapUploadError(message: string) {
+function formatMb(bytes: number) {
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+function mapUploadError(message: string, fileSize?: number) {
+  const sizeHint =
+    typeof fileSize === "number" && fileSize > 0
+      ? ` (גודל הקובץ: ${formatMb(fileSize)})`
+      : "";
   if (/exceeded the maximum allowed size/i.test(message)) {
-    return "הקובץ גדול מדי להעלאה (מקסימום 200MB)";
+    return `העלאה ל־Storage נדחתה${sizeHint}. נסו שוב או פנו לתמיכה.`;
   }
-  return message;
+  return `${message}${sizeHint}`;
+}
+
+async function uploadRecordingFile(
+  prep: {
+    bucket: string;
+    storagePath: string;
+    signedUrl: string;
+    token: string;
+    mime: string;
+  },
+  file: File,
+): Promise<{ error: string | null }> {
+  const supabase = createClient();
+
+  // Preferred: session upload (RLS policy on uploads/*).
+  const sessionUpload = await supabase.storage
+    .from(prep.bucket)
+    .upload(prep.storagePath, file, {
+      contentType: prep.mime || file.type || "application/octet-stream",
+      upsert: false,
+    });
+  if (!sessionUpload.error) return { error: null };
+
+  // Fallback: signed upload URL (service-role minted token).
+  const signedUpload = await supabase.storage
+    .from(prep.bucket)
+    .uploadToSignedUrl(prep.storagePath, prep.token, file, {
+      contentType: prep.mime || file.type || "application/octet-stream",
+      upsert: false,
+    });
+  if (!signedUpload.error) return { error: null };
+
+  // Last resort: raw PUT without custom headers (CORS-safe).
+  const putRes = await fetch(prep.signedUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": prep.mime || file.type || "application/octet-stream",
+    },
+    body: file,
+  });
+  if (putRes.ok) return { error: null };
+
+  let detail =
+    signedUpload.error.message ||
+    sessionUpload.error.message ||
+    `העלאה ל־Storage נכשלה (${putRes.status})`;
+  try {
+    const body = (await putRes.json()) as { message?: string; error?: string };
+    detail = body.message || body.error || detail;
+  } catch {
+    /* keep detail */
+  }
+  return { error: detail };
 }
 
 export function RequestAnalysisButton({
@@ -99,28 +161,13 @@ export function RequestAnalysisButton({
         displayName: displayName.trim() || null,
       });
       if (prep.error !== null) {
-        toast.error(mapUploadError(prep.error));
+        toast.error(mapUploadError(prep.error, file.size));
         return;
       }
 
-      // Direct browser → Supabase Storage (does not go through xCloud Nginx).
-      const uploadRes = await fetch(prep.signedUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": prep.mime || "application/octet-stream",
-          "x-upsert": "false",
-        },
-        body: file,
-      });
-      if (!uploadRes.ok) {
-        let detail = `העלאה ל־Storage נכשלה (${uploadRes.status})`;
-        try {
-          const body = (await uploadRes.json()) as { message?: string; error?: string };
-          detail = mapUploadError(body.message || body.error || detail);
-        } catch {
-          /* keep detail */
-        }
-        toast.error(detail);
+      const uploaded = await uploadRecordingFile(prep, file);
+      if (uploaded.error) {
+        toast.error(mapUploadError(uploaded.error, file.size));
         return;
       }
 
@@ -132,7 +179,7 @@ export function RequestAnalysisButton({
         displayName: prep.displayName,
       });
       if (result.error !== null) {
-        toast.error(mapUploadError(result.error));
+        toast.error(mapUploadError(result.error, file.size));
         return;
       }
 
@@ -154,7 +201,9 @@ export function RequestAnalysisButton({
       router.refresh();
     } catch (err) {
       toast.error(
-        err instanceof Error ? mapUploadError(err.message) : "העלאת ההקלטה נכשלה",
+        err instanceof Error
+          ? mapUploadError(err.message, file.size)
+          : "העלאת ההקלטה נכשלה",
       );
     } finally {
       setPending(false);
