@@ -616,10 +616,7 @@ export async function finalizeCallRecordingUpload(
  * @deprecated Prefer prepareCallRecordingUpload + browser direct upload + finalize.
  * Kept only to avoid breaking old clients; rejects large FormData on purpose.
  */
-export async function uploadCallRecording(
-  _slug: string,
-  _formData: FormData,
-): Promise<UploadRecordingResult> {
+export async function uploadCallRecording(): Promise<UploadRecordingResult> {
   return {
     error:
       "יש לרענן את הדף — ההעלאה עברה למסלול ישיר ל־Storage (עוקף מגבלת Nginx)",
