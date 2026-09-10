@@ -624,13 +624,12 @@ export async function ingestCallRecordingFile(
     }
 
     const raw = formData.get("file");
-    if (!(raw instanceof File) && !(raw instanceof Blob)) {
+    if (!(raw instanceof File)) {
       return { error: "לא נבחר קובץ הקלטה" };
     }
     const fileName =
-      raw instanceof File && raw.name
-        ? raw.name
-        : String(formData.get("file_name") || "recording.mp3");
+      raw.name ||
+      String(formData.get("file_name") || "recording.mp3");
     if (raw.size <= 0) return { error: "קובץ ריק" };
     if (raw.size > MAX_RECORDING_BYTES) {
       return { error: `הקובץ גדול מ־${Math.round(MAX_RECORDING_BYTES / (1024 * 1024))}MB` };
