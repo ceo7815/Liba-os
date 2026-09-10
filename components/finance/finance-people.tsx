@@ -88,7 +88,6 @@ export function EmployeesSection({
   onHoursChanged?: () => void;
   onRatesChanged?: () => void;
 }) {
-  const router = useRouter();
   const { brand } = useOperatingBrand();
   const [query, setQuery] = useState("");
   const [listTab, setListTab] = useState<"premium" | "hidden">("premium");

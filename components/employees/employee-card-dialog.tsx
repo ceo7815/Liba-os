@@ -154,7 +154,6 @@ export function EmployeeCardDialog({
   onHoursChanged,
   rates,
   defaultMultiplier = DEFAULT_AGENT_MULTIPLIER,
-  contactEditor: _contactEditor,
   onDelete,
   onSaved,
 }: {
@@ -1497,7 +1496,7 @@ function VariableExpensesFields({
         <div>
           <p className="text-sm font-medium">הוצאות משתנות</p>
           <p className="text-[11px] text-muted-foreground">
-            סכום שמוסיפים מהחברה (מענק, תוספת וכו'). חובה לכתוב מה זה. אפשר כמה שורות.
+            סכום שמוסיפים מהחברה (מענק, תוספת וכדומה). חובה לכתוב מה זה. אפשר כמה שורות.
             נכנס לשכר החודש, בלי הפרשות פנסיה.
           </p>
         </div>

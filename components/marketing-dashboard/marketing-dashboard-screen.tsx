@@ -276,16 +276,15 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
   const [financeReady, setFinanceReady] = useState(false);
   const [marketingOpen, setMarketingOpen] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
-  const [loadPhase, setLoadPhase] = useState<LoadPhase>("idle");
-  const [excelStep, setExcelStep] = useState<LoadStepStatus>("pending");
-  const [googleStep, setGoogleStep] = useState<LoadStepStatus>("pending");
-  const [facebookStep, setFacebookStep] = useState<LoadStepStatus>("pending");
+  const [, setLoadPhase] = useState<LoadPhase>("idle");
+  const [, setExcelStep] = useState<LoadStepStatus>("pending");
+  const [, setGoogleStep] = useState<LoadStepStatus>("pending");
+  const [, setFacebookStep] = useState<LoadStepStatus>("pending");
   const [showingSavedSnapshot, setShowingSavedSnapshot] = useState(false);
   const [quietRefreshing, setQuietRefreshing] = useState(false);
   const rangeRef = useRef(rangeForPreset("ytd", { from: null, to: null }));
   const bootDoneRef = useRef(false);
   const lastQuietRefreshAtRef = useRef(0);
-  const quietInFlightRef = useRef(false);
 
   const applySnapshot = useCallback((snapshot: SourcePnlSnapshot) => {
     setData(snapshot.data);

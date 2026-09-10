@@ -818,7 +818,6 @@ function ProductionsTable({
   payProfiles = [],
   wageKind = "volume",
   wageContextRows,
-  defaultMultiplier,
 }: {
   rows: MarketingProduction[];
   rangeRows: MarketingProduction[];
@@ -829,7 +828,7 @@ function ProductionsTable({
   payProfiles?: EmployeePayProfile[];
   wageKind?: SourcePnlKind;
   wageContextRows?: MarketingProduction[];
-  defaultMultiplier: number;
+  defaultMultiplier?: number;
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("הכל");
@@ -1500,12 +1499,10 @@ export function CampaignLineDialog({
   wageContextRows,
   defaultMultiplier,
   insurerMultiplier,
-  googleAds,
   googleCampaigns,
   googleStats,
   facebookCampaigns,
   facebookStats,
-  onChanged,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1521,12 +1518,12 @@ export function CampaignLineDialog({
   wageContextRows?: MarketingProduction[];
   defaultMultiplier: number;
   insurerMultiplier: number;
-  googleAds: GoogleAdsConnection;
+  googleAds?: GoogleAdsConnection;
   googleCampaigns: GoogleAdsCampaignRow[];
   googleStats: GoogleAdsDailyStat[];
   facebookCampaigns: FacebookAdsCampaignRow[];
   facebookStats: FacebookAdsDailyStat[];
-  onChanged: () => void;
+  onChanged?: () => void;
 }) {
   const copy = LINE_COPY[kind];
   const active = productions.filter((row) => row.status === "active");

@@ -28,7 +28,6 @@ import {
   canAccessFinanceSection,
   canAccessSettledCommissions,
   EXPENSES_PATH,
-  FIXED_EXPENSES_PATH,
   GENERAL_PNL_PATH,
   INSURANCE_AGREEMENTS_PATH,
   SETTLED_COMMISSIONS_PATH,

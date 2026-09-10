@@ -170,7 +170,7 @@ function MigdalPanel({ insurer }: { insurer: InsurerAgreement }) {
               <tr className="border-b border-black/[0.08] text-muted-foreground">
                 <th className="pb-2 pe-2 text-right font-medium">בדוח</th>
                 <th className="pb-2 pe-2 text-right font-medium">בחוזה</th>
-                <th className="pb-2 pe-2 text-right font-medium">נפרעים (א')</th>
+                <th className="pb-2 pe-2 text-right font-medium">נפרעים (א׳)</th>
                 <th className="pb-2 pe-2 text-right font-medium">היקף (יעד 1)</th>
                 <th className="pb-2 text-right font-medium">סטטוס</th>
               </tr>
@@ -531,7 +531,7 @@ function PaymentSectionBlock({
         <p className="text-sm font-semibold">כללי חישוב ({rules.length})</p>
         <div className="mt-2 space-y-2">
           {rules.map((rule) => (
-            <CalcRuleCard key={rule.id} rule={rule} accent={accent.badge} />
+            <CalcRuleCard key={rule.id} rule={rule} />
           ))}
         </div>
       </div>
@@ -574,7 +574,7 @@ function PaymentSectionBlock({
   );
 }
 
-function CalcRuleCard({ rule, accent }: { rule: MigdalCalcRule; accent: string }) {
+function CalcRuleCard({ rule }: { rule: MigdalCalcRule }) {
   return (
     <div className="rounded-xl border border-black/[0.06] bg-white/80 px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">

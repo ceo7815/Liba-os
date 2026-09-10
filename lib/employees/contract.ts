@@ -430,17 +430,14 @@ export function defaultSalariedPayContract(): EmployeePayContract {
   };
 }
 
-const SALARIED_BENEFIT_KEYS = [
-  "contributionCeiling",
-  "severanceEmployerPercent",
-  "pensionEmployeePercent",
-  "pensionEmployerPercent",
-  "studyFundEmployeePercent",
-  "studyFundEmployerPercent",
-  "travelAmount",
-] as const;
-
-type SalariedBenefitKey = (typeof SALARIED_BENEFIT_KEYS)[number];
+type SalariedBenefitKey =
+  | "contributionCeiling"
+  | "severanceEmployerPercent"
+  | "pensionEmployeePercent"
+  | "pensionEmployerPercent"
+  | "studyFundEmployeePercent"
+  | "studyFundEmployerPercent"
+  | "travelAmount";
 
 function benefitSource(raw: Record<string, unknown>): Record<string, unknown> {
   return raw.contract && typeof raw.contract === "object"
