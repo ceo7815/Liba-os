@@ -30,7 +30,7 @@ export async function GET() {
       audio_path:
         "Downloadable HTTPS URL. For OS uploads, mint via calls.get_pending (signed Storage URL).",
       dual_ingest:
-        "Drive → calls.register(source:drive) OR OS upload → calls.get_pending (source:upload)",
+        "Voicenter CDR → calls.register(source:voicenter, external_id=CallID) then save_transcript/save_analysis. Drive/upload remain debug-only.",
       work_queue: {
         poll_work:
           "Claims oldest queued run → status=claimed. Then os.start_run({ run_id }) promotes claimed→running. metadata.ingest=drive|pending_calls|mixed.",

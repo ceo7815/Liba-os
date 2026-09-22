@@ -37,9 +37,9 @@ export const agents: AgentDefinition[] = [
   {
     // API / Liba OS slug (Hermes folder/profile may be call-qa — send call-control in API)
     slug: "call-control",
-    name: "סוכן בקרת שיחות",
+    name: "בקרת שיחות",
     description:
-      "ניתוח ובקרת שיחות — סיכומים, המלצות ומדדי איכות. הסוכן רץ במערכת נפרדת; התוצרים מוצגים כאן.",
+      "בקרה רגולטורית על שיחות שיקוף של סופיה מ-Voicenter — תמלול מוכן, צ׳ק־ליסט 11.14, דוח ניהולי.",
     href: "/agents/call-control",
     status: "ready",
     externalBaseUrl: "",

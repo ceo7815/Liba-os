@@ -560,6 +560,12 @@ function buildRegisterPayload(params: Params) {
     softStr(metadata.file_name) ??
     softStr(params.file_name) ??
     softStr(metadata.name);
+  const agentName =
+    softStr(metadata.agent_name) ?? softStr(params.agent_name);
+  const voicenterCallId =
+    softStr(metadata.voicenter_call_id) ??
+    softStr(params.voicenter_call_id) ??
+    (source === "voicenter" ? externalId : null);
 
   if (displayName) metadata.display_name = displayName;
   if (customerName) metadata.customer_name = customerName;

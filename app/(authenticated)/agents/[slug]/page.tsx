@@ -7,14 +7,18 @@ import {
   getAgentBySlug,
   getAgentStatusLabel,
 } from "@/lib/agents.config";
-import { getCurrentProfile } from "@/lib/auth";
+import { getCurrentProfile, requirePermission } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   AgentDashboard,
   type AgentDashboardData,
 } from "@/components/agents/agent-dashboard";
 import { AgentInDevelopmentDialog } from "@/components/agents/agent-in-development-dialog";
-import { RequestAnalysisButton } from "@/components/agents/request-analysis-button";
+import { CallControlScreen } from "@/components/call-control/call-control-screen";
+import {
+  getCallControlManagement,
+  listCallControlCalls,
+} from "@/app/actions/call-control";
 import { listAgentApiKeys } from "@/app/actions/agents";
 import { SocialMediaDashboard } from "@/components/social-media/social-media-dashboard";
 import { loadSocialDashboard } from "@/app/actions/social-media";
@@ -26,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: { slug: string };
-  searchParams?: { year?: string; month?: string };
+  searchParams?: { year?: string; month?: string; call?: string; tab?: string };
 };
 
 export function generateStaticParams() {
@@ -34,6 +38,9 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: PageProps): Metadata {
+  if (params.slug === "call-control") {
+    return { title: "בקרת שיחות — שיקוף ורגולציה" };
+  }
   const agent = getAgentBySlug(params.slug);
   return {
     title: agent ? agent.name : "סוכן AI",
@@ -93,6 +100,28 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
           <p className="text-sm font-semibold">הסוכן בפיתוח</p>
         </div>
       </section>
+    );
+  }
+
+  if (agent.slug === "call-control") {
+    const profile = await requirePermission("agents.view");
+    const [{ rows }, ops] = await Promise.all([
+      listCallControlCalls(),
+      getCallControlManagement(),
+    ]);
+    const keys =
+      profile.role === "admin"
+        ? (await listAgentApiKeys("call-control")).keys
+        : [];
+    return (
+      <CallControlScreen
+        initialRows={rows}
+        initialCallId={searchParams?.call ?? null}
+        initialTab={searchParams?.tab ?? null}
+        isAdmin={profile.role === "admin"}
+        keys={keys}
+        initialManagement={ops.data}
+      />
     );
   }
 
@@ -288,13 +317,6 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
   });
 
   const activeQueueStatus = activeQueueRes.data?.status ?? null;
-  const hermesSeenAt = dbAgent?.hermes_last_seen_at
-    ? Date.parse(dbAgent.hermes_last_seen_at)
-    : NaN;
-  const hermesOnline =
-    dbAgent?.hermes_status === "online" &&
-    Number.isFinite(hermesSeenAt) &&
-    Date.now() - hermesSeenAt < 5 * 60 * 1000;
 
   const dashboardData: AgentDashboardData = {
     dbAgent: dbAgent ?? null,
