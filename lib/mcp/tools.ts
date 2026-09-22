@@ -569,6 +569,8 @@ function buildRegisterPayload(params: Params) {
 
   if (displayName) metadata.display_name = displayName;
   if (customerName) metadata.customer_name = customerName;
+  if (agentName) metadata.agent_name = agentName;
+  if (voicenterCallId) metadata.voicenter_call_id = voicenterCallId;
   if (fileName) {
     if (!softStr(metadata.file_name)) metadata.file_name = fileName;
     if (!softStr(metadata.name)) metadata.name = fileName;

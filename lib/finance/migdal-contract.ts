@@ -94,19 +94,6 @@ export type MigdalIncomeRollup = {
   years: MigdalYearVolume[];
 };
 
-const EMPTY_ROLLUP: MigdalIncomeRollup = {
-  income: 0,
-  cash: 0,
-  gamach: 0,
-  volume: 0,
-  settled: 0,
-  retro: 0,
-  count: 0,
-  volumeCount: 0,
-  settledCount: 0,
-  years: [],
-};
-
 const EMPTY_ROW: MigdalRowIncome = {
   kind: "none",
   year: null,

@@ -381,16 +381,6 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
         </div>
       </div>
 
-      {isAdmin && agent.slug === "call-control" && (
-        <div className="app-surface border border-highlight/50 bg-highlight/10 p-5">
-          <RequestAnalysisButton
-            slug={agent.slug}
-            activeStatus={activeQueueStatus ?? dbAgent?.last_run_status ?? null}
-            hermesOnline={hermesOnline}
-          />
-        </div>
-      )}
-
       <AgentDashboard agentName={agent.name} data={dashboardData} />
     </section>
   );
