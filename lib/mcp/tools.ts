@@ -54,13 +54,14 @@ function asStringArray(v: unknown): string[] | null {
 async function requireRunForAgent(
   admin: SupabaseClient,
   runId: string,
-  _agentId: string,
+  agentId?: string,
 ) {
   const { data, error } = await admin
     .from("agent_runs")
     .select("id, agent_id, status, started_at, trigger")
     .eq("id", runId)
     .maybeSingle();
+  void agentId;
 
   if (error || !data) {
     throw new Error("Run not found for this agent");
@@ -131,21 +132,6 @@ export async function executeMcpTool(
     const message = err instanceof Error ? err.message : "Tool execution failed";
     return { ok: false, error: message, status: 400 };
   }
-}
-
-async function assertAgentSlug(
-  agent: AuthenticatedAgent,
-  params: Params,
-): Promise<McpResult | null> {
-  const slug = str(params.agent_slug ?? agent.agentSlug, "agent_slug");
-  if (slug !== agent.agentSlug) {
-    return {
-      ok: false,
-      error: "agent_slug does not match authenticated agent",
-      status: 403,
-    };
-  }
-  return null;
 }
 
 /** One VPS key may drive call-control + social-media. Act on the requested active agent. */
