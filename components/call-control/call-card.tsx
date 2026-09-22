@@ -13,6 +13,7 @@ import type { CallReportDetail } from "@/app/actions/agents";
 import {
   CHECKLIST_STATUS_LABELS,
   SCORE_WEIGHTS,
+  isAnalysisIncomplete,
   mergeCallIdentification,
   parseCallQaFindings,
 } from "@/lib/agents/call-qa-checklist";
@@ -43,7 +44,7 @@ type TranscriptTurn = {
   startSec: number | null;
 };
 
-type CardTab = "overview" | "checklist" | "transcript";
+type CardTab = "short" | "detailed";
 
 function formatClock(sec: number | null): string | null {
   if (sec == null || !Number.isFinite(sec)) return null;
@@ -122,14 +123,31 @@ function buildOwnerReport(row: CallControlRow, detail: CallReportDetail | null):
       : findings?.gaps?.length
         ? findings.gaps.slice(0, 3).map((g, i) => `${i + 1}. ${g.what}`).join("\n")
         : "אין חוסר מתועד.";
+  const incomplete = isAnalysisIncomplete(findings)
+    ? `ניתוח לא מלא${findings?.incomplete_insurers?.length ? ` · ${findings.incomplete_insurers.join(", ")}` : ""}`
+    : "ניתוח מלא";
   return [
-    `${formatCallClock(row.callDate)} | ${row.agentName} | ${CALL_KIND_LABELS[row.callKind]} | ${formatScore(composed.total ?? row.overallScore)}/100 | קריטי ${row.hasCritical ? "כן" : "לא"}`,
+    `${formatCallClock(row.callDate)} | ${row.agentName} | ${CALL_KIND_LABELS[row.callKind]} | ${formatScore(composed.total ?? row.overallScore)}/100 | קריטי ${row.hasCritical ? "כן" : "לא"} | ${incomplete}`,
     "",
     "חוסרים עיקריים:",
     missing,
     "",
     `המלצה: ${rec}`,
   ].join("\n");
+}
+
+function buildDetailedReport(row: CallControlRow, detail: CallReportDetail | null): string {
+  const short = buildOwnerReport(row, detail);
+  const findings = parseCallQaFindings(detail?.analysis?.findings);
+  const ops = buildOpsRows(detail?.analysis?.findings);
+  const checklist = ops
+    .map((r) => `${r.title}: ${CHECKLIST_STATUS_LABELS[r.status]}${r.whatHappened ? ` — ${r.whatHappened}` : ""}`)
+    .join("\n");
+  const transcript = (detail?.transcript?.full_text || "").trim() || "אין תמלול.";
+  const reason = findings?.incomplete_reason
+    ? `\n${findings.incomplete_reason}\n`
+    : "";
+  return [short, reason, "צ׳ק־ליסט מלא:", checklist || "אין סעיפים.", "", "תמלול:", transcript].join("\n");
 }
 
 export function CallCard({
@@ -163,7 +181,8 @@ export function CallCard({
   );
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
-  const [tab, setTab] = useState<CardTab>("overview");
+  const [tab, setTab] = useState<CardTab>("short");
+  const incomplete = isAnalysisIncomplete(findings) || row.analysisIncomplete;
   const turnRefs = useRef<Array<HTMLLIElement | null>>([]);
 
   const filtered = query.trim()
@@ -175,7 +194,10 @@ export function CallCard({
     : turns;
 
   async function copyReport() {
-    const text = buildOwnerReport(row, detail);
+    const text =
+      tab === "detailed"
+        ? buildDetailedReport(row, detail)
+        : buildOwnerReport(row, detail);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -201,6 +223,11 @@ export function CallCard({
               ) : null}
               <KindPill kind={row.callKind} />
               <StatusPill status={row.processingStatus} />
+              {incomplete ? (
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-950">
+                  ניתוח לא מלא
+                </span>
+              ) : null}
               {row.hasCritical ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-800">
                   <AlertTriangle className="size-3" />
@@ -257,9 +284,8 @@ export function CallCard({
       <div className="flex gap-1 border-b border-black/[0.06] px-4 sm:px-6">
         {(
           [
-            ["overview", "סקירה"],
-            ["checklist", "צ׳ק־ליסט"],
-            ["transcript", "תמלול"],
+            ["short", "דוח קצר"],
+            ["detailed", "דוח מפורט"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -282,7 +308,20 @@ export function CallCard({
       </div>
 
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-7">
-        {tab === "overview" ? (
+        {incomplete ? (
+          <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+            ניתוח לא מלא
+            {findings?.incomplete_insurers?.length
+              ? ` — זוהתה ${findings.incomplete_insurers.join(" / ")}`
+              : row.incompleteInsurers.length
+                ? ` — זוהתה ${row.incompleteInsurers.join(" / ")}`
+                : ""}
+            . שכבת 11.14 רצה; דף הכיסויים חסר או חלקי עד השלמת הצ׳ק־ליסט.
+            {findings?.incomplete_reason ? ` ${findings.incomplete_reason}` : ""}
+          </div>
+        ) : null}
+
+        {tab === "short" || tab === "detailed" ? (
           <>
             {critical.length > 0 ? (
               <section className="space-y-2">
@@ -421,7 +460,11 @@ export function CallCard({
           </>
         ) : null}
 
-        {tab === "checklist" ? (
+        {tab === "detailed" ? (
+          <section className="space-y-3">
+          <h3 className="text-[11px] font-medium tracking-wide text-muted-foreground">
+            צ׳ק־ליסט מלא
+          </h3>
           <ol className="space-y-2">
             {ops.map((item, index) => (
               <li
@@ -472,11 +515,15 @@ export function CallCard({
               </li>
             ))}
           </ol>
+          </section>
         ) : null}
 
-        {tab === "transcript" ? (
+        {tab === "detailed" ? (
           <section>
-            <div className="relative">
+            <h3 className="text-[11px] font-medium tracking-wide text-muted-foreground">
+              תמלול
+            </h3>
+            <div className="relative mt-2">
               <Search className="pointer-events-none absolute end-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={query}

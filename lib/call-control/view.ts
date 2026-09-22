@@ -1,4 +1,5 @@
 import {
+  isAnalysisIncomplete,
   mergeCallIdentification,
   parseCallQaFindings,
   resolveRubricScores,
@@ -55,6 +56,8 @@ export type CallControlRow = {
   rawStatus: string;
   overallScore: number | null;
   hasCritical: boolean;
+  analysisIncomplete: boolean;
+  incompleteInsurers: string[];
   audioPath: string | null;
   isDemo: boolean;
 };
@@ -82,6 +85,7 @@ export function classifyCallKind(raw: string | null | undefined): CallKind {
 export function mapProcessingStatus(status: string): ProcessingStatus {
   switch (status) {
     case "processing":
+    case "claimed":
       return "processing";
     case "done":
       return "ready";
@@ -184,6 +188,8 @@ export function toCallControlRow(input: {
     rawStatus: input.status,
     overallScore: scores.total,
     hasCritical: critical.length > 0,
+    analysisIncomplete: isAnalysisIncomplete(findings),
+    incompleteInsurers: findings?.incomplete_insurers ?? [],
     audioPath: softStr(input.audio_path),
     isDemo,
   };

@@ -79,6 +79,7 @@ export const MCP_TOOL_NAMES = [
   "os.heartbeat",
   "calls.register",
   "calls.get_pending",
+  "calls.requeue_stuck",
   "calls.set_status",
   "calls.save_transcript",
   "calls.save_analysis",
@@ -113,6 +114,8 @@ export async function executeMcpTool(
         return await registerCall(admin, params);
       case "calls.get_pending":
         return await getPendingCalls(admin, params);
+      case "calls.requeue_stuck":
+        return await requeueStuckCalls(admin, params);
       case "calls.set_status":
         return await setCallStatus(admin, params);
       case "calls.save_transcript":
@@ -753,6 +756,23 @@ async function getPendingCalls(
   );
 
   return { ok: true, data: { calls, count: calls.length } };
+}
+
+async function requeueStuckCalls(
+  admin: SupabaseClient,
+  params: Params,
+): Promise<McpResult> {
+  const source = softStr(params.source) ?? "voicenter";
+  const { data, error } = await admin
+    .from("calls")
+    .update({ status: "pending" })
+    .eq("source", source)
+    .in("status", ["claimed", "processing", "failed"])
+    .select("id");
+
+  if (error) throw new Error(error.message);
+  const count = (data ?? []).length;
+  return { ok: true, data: { count, requeued: count } };
 }
 
 async function setCallStatus(

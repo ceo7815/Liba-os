@@ -139,7 +139,21 @@ export type CallQaFindings = {
   critical_events?: CriticalEvent[];
   /** §25.11 סיכום מנהל מובנה */
   manager_summary?: ManagerSummary | null;
+  /** false when Layer 2 company pack is missing (איילון / הכשרה) */
+  analysis_complete?: boolean;
+  analysis_incomplete?: boolean;
+  incomplete_insurers?: string[];
+  incomplete_reason?: string | null;
+  layer2_status?: "ready" | "skipped_missing_pack" | "unknown" | string;
+  company_pack_status?: "ready" | "partial" | "missing" | string;
 };
+
+export function isAnalysisIncomplete(findings: CallQaFindings | null | undefined): boolean {
+  if (!findings) return false;
+  if (findings.analysis_complete === false) return true;
+  if (findings.analysis_incomplete === true) return true;
+  return (findings.incomplete_insurers?.length ?? 0) > 0;
+}
 
 /** Catalog of checklist sections/items (§4–§22) — for UI + Hermes contract */
 export type ChecklistCatalogItem = { id: string; title: string };

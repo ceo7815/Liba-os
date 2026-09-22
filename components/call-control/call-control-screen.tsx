@@ -212,7 +212,7 @@ export function CallControlScreen({
   const runnerOnline = management.hermesStatus === "online";
   const tabs: Array<{ id: WorkspaceTab; label: string; hidden?: boolean }> = [
     { id: "calls", label: "שיחות" },
-    { id: "checklist", label: "צ׳ק־ליסט" },
+    { id: "checklist", label: "הגדרות צ׳ק־ליסט" },
     { id: "keys", label: "מפתחות", hidden: !isAdmin },
   ];
 
@@ -233,8 +233,8 @@ export function CallControlScreen({
               </h1>
             </div>
             <p className="mt-2 hidden max-w-2xl text-sm leading-relaxed text-muted-foreground sm:block">
-              כל השיחות כאן הן שיקוף. הבקרה בודקת שהשיקוף מתבצע ברמה הגבוהה
-              ביותר — לפי צ׳ק־ליסט 11.14.
+              כל השיחות כאן הן שיקוף. קודם 11.14, אחר כך זיהוי חברה ומוצר,
+              ואז דף הכיסויים של אותה חברה.
             </p>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
@@ -412,7 +412,14 @@ export function CallControlScreen({
                           {formatDuration(row.durationSec)}
                         </td>
                         <td className="px-4 py-3.5">
-                          <StatusPill status={row.processingStatus} />
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <StatusPill status={row.processingStatus} />
+                            {row.analysisIncomplete ? (
+                              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-950">
+                                ניתוח לא מלא
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="px-4 py-3.5 tabular-nums font-semibold">
                           {formatScore(row.overallScore)}

@@ -1,8 +1,6 @@
 "use client";
 
-import { OPS_CHECKLIST_11_14 } from "@/lib/call-control/ops-checklist";
 import {
-  BUCKET_LABELS,
   TOOL_STATUS_LABELS,
   mergeExpectedTools,
   type DisplayTool,
@@ -127,92 +125,4 @@ export function AgentOpsPanel({
   );
 }
 
-export function ChecklistReference() {
-  return (
-    <div className="app-surface space-y-8 px-5 py-6 sm:px-7" dir="rtl">
-      <section>
-        <h2 className="text-lg font-semibold tracking-tight">
-          איך ה-AI מנתח שיחת שיקוף
-        </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
-          כל השיחות כאן הן שיחות שיקוף של סופיה. הבקרה היא רגולטורית: האם השיקוף
-          בוצע ברמה הגבוהה ביותר, לפי טופס 11.14. ה-AI לא מחליט במקום המנהל —
-          הוא קורא את התמלול מ-Voicenter, עובר סעיף־סעיף, ומצטט ראיה מההקלטה.
-        </p>
-        <ol className="mt-4 grid gap-3 sm:grid-cols-2">
-          <li className="rounded-2xl bg-background px-4 py-3">
-            <p className="text-sm font-semibold">1. קליטה</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Voicenter שולח CallID, תמלול מוכן ומשך. בלי תמלול אין ציון.
-            </p>
-          </li>
-          <li className="rounded-2xl bg-background px-4 py-3">
-            <p className="text-sm font-semibold">2. מעבר על 21 סעיפים</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              לכל סעיף נקבע: בוצע, חלקי, לא בוצע, לא רלוונטי, או לא ניתן לאימות.
-            </p>
-          </li>
-          <li className="rounded-2xl bg-background px-4 py-3">
-            <p className="text-sm font-semibold">3. ראיה מההקלטה</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              כל קביעה חייבת ציטוט. בלי ראיה הסעיף מסומן «לא ניתן לאימות» ולא
-              נכשל אוטומטית.
-            </p>
-          </li>
-          <li className="rounded-2xl bg-background px-4 py-3">
-            <p className="text-sm font-semibold">4. ציון מורכב</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              רק סעיפים רלוונטיים נכנסים למכנה. בוצע = 1, חלקי = 0.5, לא בוצע =
-              0. לא רלוונטי לא מוריד.
-            </p>
-          </li>
-        </ol>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <div className="rounded-2xl bg-background px-4 py-3">
-            <p className="text-[11px] text-muted-foreground">עמידה רגולטורית</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">60 / 100</p>
-          </div>
-          <div className="rounded-2xl bg-background px-4 py-3">
-            <p className="text-[11px] text-muted-foreground">מקצועיות</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">25 / 100</p>
-          </div>
-          <div className="rounded-2xl bg-background px-4 py-3">
-            <p className="text-[11px] text-muted-foreground">איכות שיחה</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">15 / 100</p>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h3 className="text-sm font-semibold tracking-tight">
-          צ׳ק־ליסט 11.14 — 21 סעיפים
-        </h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          זה מה שה-AI בודק בכל שיקוף. סעיף עם «קריטי» עולה בדגל נפרד גם אם הציון
-          גבוה.
-        </p>
-        <ol className="mt-4 space-y-2">
-          {OPS_CHECKLIST_11_14.map((item, index) => (
-            <li
-              key={item.id}
-              className="rounded-2xl bg-background px-4 py-3 text-sm"
-            >
-              <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-semibold">
-                  {index + 1}. {item.title}
-                  {item.critical ? " · קריטי" : ""}
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {BUCKET_LABELS[item.bucket]}
-                </span>
-              </div>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                {item.prompt}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </section>
-    </div>
-  );
-}
+export { ChecklistSettings as ChecklistReference } from "@/components/call-control/checklist-settings";

@@ -285,6 +285,10 @@ export function CallQaReport({
     analysis?.overall_score,
   );
   const findings = parseCallQaFindings(analysis?.findings);
+  const analysisIncomplete =
+    findings?.analysis_complete === false ||
+    findings?.analysis_incomplete === true ||
+    (findings?.incomplete_insurers?.length ?? 0) > 0;
   const identification = mergeCallIdentification(
     analysis?.rubric_scores,
     findings,
@@ -313,6 +317,15 @@ export function CallQaReport({
 
       {analysis ? (
         <>
+      {analysisIncomplete ? (
+        <section className="rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+          ניתוח לא מלא
+          {findings?.incomplete_insurers?.length
+            ? ` — זוהתה ${findings.incomplete_insurers.join(" / ")}`
+            : ""}
+          . שכבת 11.14 רצה; דף הכיסויים חסר או חלקי עד השלמת הצ׳ק־ליסט.
+        </section>
+      ) : null}
       {/* §25.1–4 scores */}
       <section>
         <h4 className="text-xs font-semibold text-muted-foreground">ציונים</h4>
