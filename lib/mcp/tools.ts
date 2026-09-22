@@ -778,7 +778,7 @@ async function requeueStuckCalls(
     .from("calls")
     .update({ status: "pending" })
     .eq("source", source)
-    .in("status", ["claimed", "processing", "failed"])
+    .in("status", ["claimed", "processing"])
     .select("id");
 
   if (error) throw new Error(error.message);
