@@ -54,13 +54,12 @@ function asStringArray(v: unknown): string[] | null {
 async function requireRunForAgent(
   admin: SupabaseClient,
   runId: string,
-  agentId: string,
+  _agentId: string,
 ) {
   const { data, error } = await admin
     .from("agent_runs")
     .select("id, agent_id, status, started_at, trigger")
     .eq("id", runId)
-    .eq("agent_id", agentId)
     .maybeSingle();
 
   if (error || !data) {
@@ -149,6 +148,31 @@ async function assertAgentSlug(
   return null;
 }
 
+/** One VPS key may drive call-control + social-media. Act on the requested active agent. */
+async function resolveTargetAgent(
+  admin: SupabaseClient,
+  agent: AuthenticatedAgent,
+  params: Params,
+): Promise<AuthenticatedAgent> {
+  const slug = optStr(params.agent_slug);
+  if (!slug || slug === agent.agentSlug) return agent;
+  const { data, error } = await admin
+    .from("agents")
+    .select("id, slug, name, status")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error || !data || data.status === "archived") {
+    throw new Error("agent_slug does not match authenticated agent");
+  }
+  return {
+    agentId: data.id,
+    agentSlug: data.slug,
+    agentName: data.name,
+    agentStatus: data.status,
+    keyId: agent.keyId,
+  };
+}
+
 /**
  * os.poll_work — claim oldest queued run → status=claimed.
  * Hermes then calls os.start_run({ run_id }) to move claimed → running.
@@ -158,8 +182,7 @@ async function pollWork(
   agent: AuthenticatedAgent,
   params: Params,
 ): Promise<McpResult> {
-  const mismatch = await assertAgentSlug(agent, params);
-  if (mismatch) return mismatch;
+  agent = await resolveTargetAgent(admin, agent, params);
 
   const { data, error } = await admin.rpc("claim_queued_agent_run", {
     p_agent_id: agent.agentId,
@@ -190,8 +213,7 @@ async function heartbeat(
   agent: AuthenticatedAgent,
   params: Params,
 ): Promise<McpResult> {
-  const mismatch = await assertAgentSlug(agent, params);
-  if (mismatch) return mismatch;
+  agent = await resolveTargetAgent(admin, agent, params);
 
   const status = str(params.status, "status");
   if (status !== "online" && status !== "offline") {
@@ -215,8 +237,7 @@ async function startRun(
   agent: AuthenticatedAgent,
   params: Params,
 ): Promise<McpResult> {
-  const mismatch = await assertAgentSlug(agent, params);
-  if (mismatch) return mismatch;
+  agent = await resolveTargetAgent(admin, agent, params);
 
   const existingRunId = optStr(params.run_id);
 
@@ -431,14 +452,7 @@ async function reportToolStatus(
   agent: AuthenticatedAgent,
   params: Params,
 ): Promise<McpResult> {
-  const slug = str(params.agent_slug ?? agent.agentSlug, "agent_slug");
-  if (slug !== agent.agentSlug) {
-    return {
-      ok: false,
-      error: "agent_slug does not match authenticated agent",
-      status: 403,
-    };
-  }
+  agent = await resolveTargetAgent(admin, agent, params);
 
   const toolName = str(params.tool_name, "tool_name");
   const toolType = str(params.tool_type, "tool_type");
