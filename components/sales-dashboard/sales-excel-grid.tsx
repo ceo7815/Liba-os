@@ -223,7 +223,7 @@ export function SalesExcelGrid({
                         <Filter className="size-3" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56" dir="rtl">
+                    <DropdownMenuContent align="start" className="w-56">
                       <DropdownMenuLabel className="font-normal">{header}</DropdownMenuLabel>
                       <div className="px-2 pb-1">
                         <Input
