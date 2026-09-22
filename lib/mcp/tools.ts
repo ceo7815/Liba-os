@@ -547,18 +547,29 @@ function isHttpUrl(v: string | null | undefined): v is string {
   return typeof v === "string" && /^https?:\/\//i.test(v);
 }
 
+function humanCustomerName(v: string | null): string | null {
+  if (!v) return null;
+  const compact = v.replace(/[\s\-().+]/g, "");
+  if (/^\d{8,15}$/.test(compact)) return null;
+  if (/^sofia-/i.test(v) || /^לקוח לא/.test(v)) return null;
+  if (!/[א-תA-Za-z]/.test(v)) return null;
+  return v;
+}
+
 /** Normalize Hermes register payload: top-level + metadata aliases. */
 function buildRegisterPayload(params: Params) {
   const externalId = str(params.external_id, "external_id");
   const source = str(params.source, "source");
   const metadata: Record<string, unknown> = { ...asObject(params.metadata) };
 
-  const customerName =
-    softStr(metadata.customer_name) ?? softStr(params.customer_name);
-  const displayName =
+  const customerName = humanCustomerName(
+    softStr(metadata.customer_name) ?? softStr(params.customer_name),
+  );
+  const displayName = humanCustomerName(
     softStr(metadata.display_name) ??
-    softStr(params.display_name) ??
-    customerName;
+      softStr(params.display_name) ??
+      customerName,
+  );
   const fileName =
     softStr(metadata.file_name) ??
     softStr(params.file_name) ??

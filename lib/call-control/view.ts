@@ -75,6 +75,18 @@ function softStr(v: unknown): string | null {
   return t || null;
 }
 
+function isPhoneLike(v: string | null): boolean {
+  if (!v) return false;
+  const compact = v.replace(/[\s\-().+]/g, "");
+  return /^\d{8,15}$/.test(compact);
+}
+
+function isHumanCustomerName(v: string | null): boolean {
+  if (!v || isPhoneLike(v)) return false;
+  if (/^sofia-/i.test(v) || /^לקוח לא/.test(v)) return false;
+  return /[א-תA-Za-z]/.test(v);
+}
+
 export function classifyCallKind(raw: string | null | undefined): CallKind {
   const t = (raw ?? "").trim();
   if (/שיקוף/.test(t)) return "reflection";
@@ -146,9 +158,9 @@ export function toCallControlRow(input: {
   const findings = parseCallQaFindings(input.findings);
   const ident = mergeCallIdentification(input.rubric_scores, findings);
   const customer =
-    ident.customer_name ||
-    softStr(meta.customer_name) ||
-    softStr(meta.display_name);
+    [ident.customer_name, softStr(meta.customer_name), softStr(meta.display_name)]
+      .map((v) => (typeof v === "string" ? v.trim() : null))
+      .find((v) => isHumanCustomerName(v)) ?? null;
   const agent =
     ident.rep_name || softStr(meta.agent_name) || "סופיה";
   const typeRaw = ident.call_type || softStr(meta.call_type);
