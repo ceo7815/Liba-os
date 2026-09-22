@@ -124,7 +124,6 @@ type Props = {
   wageContextRows?: MarketingProduction[];
   insurerYearContext?: MarketingProduction[];
   defaultMultiplier: number;
-  insurerMultiplier: number;
   googleAds: GoogleAdsConnection;
   googleCampaigns: GoogleAdsCampaignRow[];
   googleStats: GoogleAdsDailyStat[];
@@ -1533,7 +1532,6 @@ export function CampaignLineDialog({
   wageContextRows?: MarketingProduction[];
   insurerYearContext?: MarketingProduction[];
   defaultMultiplier: number;
-  insurerMultiplier: number;
   googleAds?: GoogleAdsConnection;
   googleCampaigns: GoogleAdsCampaignRow[];
   googleStats: GoogleAdsDailyStat[];
