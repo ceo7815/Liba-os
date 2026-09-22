@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { canAccessFinance, canAccessSourcePnl } from "@/lib/finance/access";
 import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
+import { canViewFormulas } from "@/lib/formulas/access";
+import { canAccessAcademy } from "@/lib/academy/access";
 import type { Profile } from "@/lib/types";
 
 type TopbarProps = {
@@ -53,6 +55,8 @@ export function Topbar({ profile }: TopbarProps) {
             isAdmin={isAdmin}
             canAccessFinance={showFinance}
             canAccessSalesDashboard={showSalesDashboard}
+            canViewFormulas={canViewFormulas(profile)}
+            canAccessAcademy={canAccessAcademy(profile)}
           />
         </div>
 

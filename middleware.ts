@@ -17,10 +17,13 @@ export const config = {
     "/agents/:path*",
     "/portals/:path*",
     "/vault/:path*",
+    "/organization/:path*",
     "/finance/:path*",
     "/employees/:path*",
     "/sales-dashboard/:path*",
     "/marketing-dashboard/:path*",
+    "/academy",
+    "/academy/:path*",
     "/sales-tv",
   ],
 };

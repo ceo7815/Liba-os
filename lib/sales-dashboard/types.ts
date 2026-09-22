@@ -1,3 +1,5 @@
+import type { SalesWorkbook } from "@/lib/sales-dashboard/workbook-grid";
+
 export type NamedCount = {
   name: string;
   count: number;
@@ -110,6 +112,8 @@ export type DashboardData = {
   pendingRows: PendingRow[];
   activePolicies: SaleAlert[];
   marketing?: MarketingOverview;
+  /** Every Excel sheet, original headers and cell text — 1:1 with the managers workbook. */
+  workbook?: SalesWorkbook;
   fileName: string | null;
   syncedAt: string;
   source: DashboardSource;

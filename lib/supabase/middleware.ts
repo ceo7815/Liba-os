@@ -22,10 +22,12 @@ function isProtectedPath(pathname: string) {
     pathname.startsWith("/agents") ||
     pathname.startsWith("/portals") ||
     pathname.startsWith("/vault") ||
+    pathname.startsWith("/organization") ||
     pathname.startsWith("/finance") ||
     pathname.startsWith("/employees") ||
     pathname.startsWith("/sales-dashboard") ||
-    pathname.startsWith("/marketing-dashboard")
+    pathname.startsWith("/marketing-dashboard") ||
+    pathname.startsWith("/academy")
   );
 }
 

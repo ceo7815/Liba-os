@@ -3,6 +3,8 @@ import type { DashboardData } from "@/lib/sales-dashboard/types";
 export const SOURCE_PNL_SNAPSHOT_KEY = "liba-source-pnl-snapshot";
 export const LIVE_DASHBOARD_CACHE_KEY = "liba-sales-dashboard-live";
 export const LIVE_DASHBOARD_EVENT = "liba-live-dashboard";
+/** Carries the fresh DashboardData so UI can update even if storage quota blocks writes. */
+export const LIVE_DASHBOARD_DATA_EVENT = "liba-live-dashboard-data";
 
 const IDB_NAME = "liba-os";
 const IDB_STORE = "snapshots";
@@ -34,9 +36,22 @@ function writeStorage(key: string, raw: string): boolean {
     return true;
   } catch {
     try {
+      // Quota / private mode: drop stale copies so an old Sept snapshot
+      // cannot win over IndexedDB / memory after the next reload.
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
       sessionStorage.setItem(key, raw);
       return true;
     } catch {
+      try {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
       return false;
     }
   }
@@ -102,50 +117,86 @@ async function writeIndexedDbDashboard(data: DashboardData): Promise<void> {
   }
 }
 
-function readStoredLiveDashboard(): DashboardData | null {
+function syncedAtMs(data: DashboardData | null | undefined): number {
+  if (!data?.syncedAt) return 0;
+  const t = Date.parse(data.syncedAt);
+  return Number.isFinite(t) ? t : 0;
+}
+
+function productionCount(data: DashboardData | null | undefined): number {
+  return data?.marketing?.productions?.length ?? 0;
+}
+
+function pickNewest(
+  ...candidates: Array<DashboardData | null | undefined>
+): DashboardData | null {
+  let best: DashboardData | null = null;
+  for (const candidate of candidates) {
+    if (!isLiveDashboard(candidate)) continue;
+    if (!best) {
+      best = candidate;
+      continue;
+    }
+    const t = syncedAtMs(candidate);
+    const bt = syncedAtMs(best);
+    const pc = productionCount(candidate);
+    const pb = productionCount(best);
+    if (pc === 0 && pb > 0) continue;
+    // A newer slim/corrupt snapshot must not replace a full workbook.
+    if (t > bt) {
+      if (pb > 50 && pc < Math.max(50, Math.floor(pb * 0.5))) continue;
+      best = candidate;
+    } else if (t === bt && pc > pb) {
+      best = candidate;
+    } else if (t < bt && pc > pb * 1.5) {
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+function parseStoredDashboard(raw: string | null): DashboardData | null {
+  if (!raw) return null;
   try {
-    const raw = readStorage(SOURCE_PNL_SNAPSHOT_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as { data?: unknown };
-      if (isLiveDashboard(parsed?.data)) return parsed.data;
-      if (isLiveDashboard(parsed)) return parsed;
-    }
-    const legacy = readStorage(LIVE_DASHBOARD_CACHE_KEY);
-    if (legacy) {
-      const parsed = JSON.parse(legacy) as unknown;
-      if (isLiveDashboard(parsed)) return parsed;
-    }
+    const parsed = JSON.parse(raw) as { data?: unknown };
+    const data = isLiveDashboard(parsed?.data)
+      ? parsed.data
+      : isLiveDashboard(parsed)
+        ? parsed
+        : null;
+    if (!data) return null;
+    // Slim Source P&L cache stores productions: [] to save quota — never treat that as Excel.
+    if (productionCount(data) === 0) return null;
+    return data;
   } catch {
-    /* quota / private mode / bad JSON */
+    /* bad JSON */
   }
   return null;
 }
 
+function readStoredLiveDashboard(): DashboardData | null {
+  return pickNewest(
+    parseStoredDashboard(readStorage(LIVE_DASHBOARD_CACHE_KEY)),
+    parseStoredDashboard(readStorage(SOURCE_PNL_SNAPSHOT_KEY)),
+  );
+}
+
 function persistLiveDashboard(data: DashboardData) {
   const raw = JSON.stringify(data);
-  if (!writeStorage(LIVE_DASHBOARD_CACHE_KEY, raw)) {
-    void writeIndexedDbDashboard(data);
-  }
-  try {
-    const snapshotRaw = readStorage(SOURCE_PNL_SNAPSHOT_KEY);
-    if (!snapshotRaw) return;
-    const parsed = JSON.parse(snapshotRaw) as { data?: unknown; savedAt?: string };
-    if (!parsed || typeof parsed !== "object") return;
-    parsed.data = data;
-    parsed.savedAt = data.syncedAt ?? parsed.savedAt;
-    writeStorage(SOURCE_PNL_SNAPSHOT_KEY, JSON.stringify(parsed));
-  } catch {
-    /* nested snapshot may exceed quota; memory + live key still hold Excel */
-  }
+  writeStorage(LIVE_DASHBOARD_CACHE_KEY, raw);
+  // Always mirror to IndexedDB — large workbooks often exceed localStorage quota.
+  void writeIndexedDbDashboard(data);
+  // Do not rewrite SOURCE_PNL here: embedding the workbook blows the quota and
+  // used to wipe wages + ads. The P&L screen overlays live Excel on read.
 }
 
 /** Last live Excel snapshot saved after «סנכרן הכל» — never a fresh workbook parse. */
 export function readCachedLiveDashboard(): DashboardData | null {
-  if (memory && isLiveDashboard(memory)) return memory;
   const stored = readStoredLiveDashboard();
-  if (stored) {
-    memory = stored;
-    return stored;
+  const best = pickNewest(memory, stored);
+  if (best) {
+    memory = best;
+    return best;
   }
   return null;
 }
@@ -156,6 +207,11 @@ export function publishLiveDashboard(data: DashboardData | null | undefined) {
   memory = data;
   persistLiveDashboard(data);
   notifyLiveDashboard();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(LIVE_DASHBOARD_DATA_EVENT, { detail: data }),
+    );
+  }
 }
 
 export function subscribeLiveDashboard(onChange: () => void): () => void {
@@ -170,37 +226,51 @@ export function subscribeLiveDashboard(onChange: () => void): () => void {
       handler();
     }
   };
+  const onData = (event: Event) => {
+    const detail = (event as CustomEvent<DashboardData>).detail;
+    if (isLiveDashboard(detail)) {
+      memory = detail;
+    }
+    handler();
+  };
   window.addEventListener(LIVE_DASHBOARD_EVENT, handler);
+  window.addEventListener(LIVE_DASHBOARD_DATA_EVENT, onData as EventListener);
   window.addEventListener("storage", onStorage);
   return () => {
     window.removeEventListener(LIVE_DASHBOARD_EVENT, handler);
+    window.removeEventListener(LIVE_DASHBOARD_DATA_EVENT, onData as EventListener);
     window.removeEventListener("storage", onStorage);
   };
 }
 
 /**
- * One network read of the already-parsed snapshot. Skips if this browser
- * already has a live workbook from the last sync.
+ * Load the last system sync from the server. Browser cache is only a
+ * first paint — dashboard.json on the server is the source of truth.
  */
 export async function loadLiveDashboardUntilSync(): Promise<DashboardData | null> {
-  const cached = readCachedLiveDashboard();
-  if (cached) return cached;
   if (networkInflight) return networkInflight;
 
   networkInflight = (async () => {
     const fromIdb = await readIndexedDbDashboard();
-    if (fromIdb) {
+    const local = pickNewest(readCachedLiveDashboard(), fromIdb);
+    if (fromIdb && syncedAtMs(fromIdb) > syncedAtMs(memory)) {
       memory = fromIdb;
       notifyLiveDashboard();
-      return fromIdb;
     }
 
-    const res = await fetch("/api/sales-dashboard", { credentials: "include" });
-    if (!res.ok) return null;
-    const data = (await res.json()) as DashboardData;
-    if (!isLiveDashboard(data)) return null;
-    publishLiveDashboard(data);
-    return data;
+    try {
+      const res = await fetch(`/api/sales-dashboard?t=${Date.now()}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) return local;
+      const data = (await res.json()) as DashboardData;
+      if (!isLiveDashboard(data)) return local;
+      publishLiveDashboard(data);
+      return data;
+    } catch {
+      return local;
+    }
   })().finally(() => {
     networkInflight = null;
   });

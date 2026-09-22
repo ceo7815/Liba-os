@@ -17,6 +17,8 @@ export type GoogleAdsDailyMetric = {
   cost: number;
   clicks: number;
   impressions: number;
+  /** Inbound phone calls — one call = one lead. */
+  leads: number;
 };
 
 type AdsJson = Record<string, unknown>;
@@ -227,11 +229,33 @@ export async function listGoogleAdsDailyMetrics(
   loginCustomerId?: string | null,
 ): Promise<GoogleAdsDailyMetric[]> {
   const rows: AdsJson[] = [];
+  let includeCalls = true;
   for (const chunk of monthRanges(from, to)) {
-    const part = await searchGoogleAds(
-      accessToken,
-      customerId,
-      `SELECT
+    const query = `SELECT
+          campaign.id,
+          campaign.name,
+          segments.date,
+          metrics.cost_micros,
+          metrics.clicks,
+          metrics.impressions
+          ${includeCalls ? ", metrics.phone_calls" : ""}
+        FROM campaign
+        WHERE segments.date BETWEEN '${chunk.from}' AND '${chunk.to}'`;
+    try {
+      const part = await searchGoogleAds(
+        accessToken,
+        customerId,
+        query,
+        loginCustomerId,
+      );
+      rows.push(...part);
+    } catch (err) {
+      if (!includeCalls) throw err;
+      includeCalls = false;
+      const part = await searchGoogleAds(
+        accessToken,
+        customerId,
+        `SELECT
           campaign.id,
           campaign.name,
           segments.date,
@@ -240,9 +264,10 @@ export async function listGoogleAdsDailyMetrics(
           metrics.impressions
         FROM campaign
         WHERE segments.date BETWEEN '${chunk.from}' AND '${chunk.to}'`,
-      loginCustomerId,
-    );
-    rows.push(...part);
+        loginCustomerId,
+      );
+      rows.push(...part);
+    }
   }
   return rows.map((row) => {
     const campaign = asRecord(row.campaign);
@@ -255,6 +280,7 @@ export async function listGoogleAdsDailyMetrics(
       cost: asNumber(metrics.costMicros) / 1_000_000,
       clicks: Math.round(asNumber(metrics.clicks)),
       impressions: Math.round(asNumber(metrics.impressions)),
+      leads: Math.round(asNumber(metrics.phoneCalls)),
     };
   }).filter((row) => row.campaignId && /^\d{4}-\d{2}-\d{2}$/.test(row.day));
 }

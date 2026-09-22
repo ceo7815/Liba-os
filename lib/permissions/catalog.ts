@@ -18,6 +18,9 @@ export const PERMISSION_KEYS = [
   "finance.ledger",
   "employees.view",
   "employees.agreements",
+  "academy.learn",
+  "academy.team",
+  "academy.manage",
   "org.users",
   "portals.view",
 ] as const;
@@ -144,6 +147,28 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     ],
   },
   {
+    id: "academy",
+    label: "הדרכה",
+    description: "מסלולי הכשרה, מבחנים והתקדמות",
+    permissions: [
+      {
+        key: "academy.learn",
+        label: "הדרכה — למידה",
+        description: "כניסה לשיעורים, מבחנים והדשבורד האישי",
+      },
+      {
+        key: "academy.team",
+        label: "הדרכה — צוות",
+        description: "צפייה בהתקדמות ובציונים של עובדים",
+      },
+      {
+        key: "academy.manage",
+        label: "הדרכה — ניהול תוכן",
+        description: "עריכת שיעורים, שאלות ומבחנים",
+      },
+    ],
+  },
+  {
     id: "org",
     label: "ארגון",
     description: "ניהול גישה למערכת",
@@ -184,13 +209,13 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
     id: "employee",
     label: "עובד",
     description: "לוח בקרה, סוכנים וכספת לקריאה",
-    keys: ["dashboard.view", "agents.view", "vault.view"],
+    keys: ["dashboard.view", "agents.view", "vault.view", "academy.learn"],
   },
   {
     id: "sales",
     label: "מכירות",
     description: "עובד + דשבורד מכירות",
-    keys: ["dashboard.view", "agents.view", "vault.view", "sales.view"],
+    keys: ["dashboard.view", "agents.view", "vault.view", "sales.view", "academy.learn"],
   },
   {
     id: "finance",
@@ -204,6 +229,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       "finance.insurance",
       "finance.settled",
       "finance.ledger",
+      "academy.learn",
     ],
   },
   {
@@ -219,6 +245,8 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       "sales.view",
       "employees.view",
       "employees.agreements",
+      "academy.learn",
+      "academy.team",
       "portals.view",
     ],
   },

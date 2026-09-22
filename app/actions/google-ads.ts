@@ -6,11 +6,13 @@ import { SOURCE_PNL_PATH } from "@/lib/finance/access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   GOOGLE_ADS_CUBE_SOURCE,
+  GOOGLE_ADS_SHEMESH_CUBE_SOURCE,
   jerusalemYmd,
   type DateRange,
   type GoogleAdsCampaignRow,
   type GoogleAdsDailyStat,
 } from "@/lib/sales-dashboard/campaign-math";
+import { defaultGoogleAdsCubeForCampaign } from "@/lib/finance/operating-brand";
 import { encryptVaultSecret, decryptVaultSecret, hasVaultEncryptionKey } from "@/lib/vault/crypto";
 import {
   envCustomerId,
@@ -29,7 +31,9 @@ import {
 function isMissingRelation(message: string | undefined): boolean {
   return Boolean(
     message &&
-      (/does not exist/i.test(message) || /schema cache/i.test(message) || /could not find/i.test(message)),
+      (/relation .+ does not exist/i.test(message) ||
+        /could not find the table/i.test(message) ||
+        /schema cache/i.test(message)),
   );
 }
 
@@ -84,6 +88,7 @@ async function fetchGoogleDailyStats(
     cost: number;
     clicks: number;
     impressions: number;
+    leads: number;
   }[]
 > {
   const out: {
@@ -92,11 +97,13 @@ async function fetchGoogleDailyStats(
     cost: number;
     clicks: number;
     impressions: number;
+    leads: number;
   }[] = [];
+  let select = "google_campaign_id, day, cost, clicks, impressions, leads";
   for (let from = 0; ; from += STATS_PAGE_SIZE) {
     let query = admin
       .from("google_ads_daily_stats")
-      .select("google_campaign_id, day, cost, clicks, impressions")
+      .select(select)
       .order("day", { ascending: true })
       .order("google_campaign_id", { ascending: true })
       .range(from, from + STATS_PAGE_SIZE - 1);
@@ -104,10 +111,25 @@ async function fetchGoogleDailyStats(
     const { data, error } = await query;
     if (error) {
       if (isMissingRelation(error.message)) return [];
+      if (select.includes("leads") && /leads/i.test(error.message)) {
+        select = "google_campaign_id, day, cost, clicks, impressions";
+        from = -STATS_PAGE_SIZE;
+        out.length = 0;
+        continue;
+      }
       throw new Error(error.message);
     }
-    const rows = data ?? [];
-    out.push(...rows);
+    const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+    for (const row of rows) {
+      out.push({
+        google_campaign_id: String(row.google_campaign_id ?? ""),
+        day: String(row.day ?? ""),
+        cost: Number(row.cost) || 0,
+        clicks: Number(row.clicks) || 0,
+        impressions: Number(row.impressions) || 0,
+        leads: Number(row.leads) || 0,
+      });
+    }
     if (rows.length < STATS_PAGE_SIZE) break;
   }
   return out;
@@ -173,6 +195,7 @@ export async function readGoogleAdsBundle(statsRange?: DateRange): Promise<Googl
       cost: Number(item.cost) || 0,
       clicks: Number(item.clicks) || 0,
       impressions: Number(item.impressions) || 0,
+      leads: Number(item.leads) || 0,
     })),
   };
 }
@@ -376,11 +399,27 @@ export async function syncGoogleAds(): Promise<{
 
     const admin = createAdminClient();
     const now = new Date().toISOString();
+    const prevSource = new Map(
+      bundle.campaigns.map((row) => [row.googleCampaignId, row.sourceName?.trim() || ""]),
+    );
+    const assignCube = (id: string, name: string) => {
+      const auto = defaultGoogleAdsCubeForCampaign(name);
+      const prev = prevSource.get(id);
+      if (
+        prev &&
+        prev !== auto &&
+        prev !== GOOGLE_ADS_CUBE_SOURCE &&
+        prev !== GOOGLE_ADS_SHEMESH_CUBE_SOURCE
+      ) {
+        return prev;
+      }
+      return auto;
+    };
     const mapRows = campaigns.map((row) => ({
       google_campaign_id: row.id,
       google_campaign_name: row.name,
       status: row.status,
-      source_name: GOOGLE_ADS_CUBE_SOURCE,
+      source_name: assignCube(row.id, row.name),
       mapped_at: now,
       mapped_by: profile.id,
       updated_at: now,
@@ -391,7 +430,7 @@ export async function syncGoogleAds(): Promise<{
         google_campaign_id: extra.campaignId,
         google_campaign_name: extra.campaignName,
         status: "UNKNOWN",
-        source_name: GOOGLE_ADS_CUBE_SOURCE,
+        source_name: assignCube(extra.campaignId, extra.campaignName),
         mapped_at: now,
         mapped_by: profile.id,
         updated_at: now,
@@ -411,6 +450,7 @@ export async function syncGoogleAds(): Promise<{
       cost: Math.round(row.cost * 100) / 100,
       clicks: row.clicks,
       impressions: row.impressions,
+      leads: Math.max(0, Math.round(row.leads || 0)),
     }));
     for (let i = 0; i < statRows.length; i += 400) {
       const { error } = await admin

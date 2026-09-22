@@ -3,7 +3,46 @@ import {
   type CommissionSplitType,
 } from "@/lib/finance/categories";
 import { COL, PROCESS, STATUS } from "@/lib/sales-dashboard/columns";
-import { DEFAULT_INSURER_MULTIPLIER } from "@/lib/sales-dashboard/campaign-math";
+import {
+  AYALON_ANNUAL_MONTHS,
+  AYALON_MORTGAGE_RATE,
+  AYALON_SETTLED_PAY_DELAY_MONTHS,
+  AYALON_SETTLED_RATE,
+  AYALON_VOLUME_PAY_DELAY_MONTHS,
+  formatAyalonTierLabel,
+  AYALON_VOLUME_TIERS as AYALON_LIVE_TIERS,
+} from "@/lib/finance/ayalon-contract";
+import {
+  HAREL_ANNUAL_MONTHS,
+  HAREL_PAY_DELAY_MONTHS,
+  HAREL_SETTLED_RATE,
+  formatHarelTierLabel,
+  HAREL_VOLUME_TIERS as HAREL_LIVE_TIERS,
+} from "@/lib/finance/harel-contract";
+import {
+  CLAL_ANNUAL_MONTHS,
+  CLAL_GAMACH_RATE,
+  CLAL_LADDER_TIERS as CLAL_LIVE_LADDER_TIERS,
+  CLAL_MORTGAGE_TIERS as CLAL_LIVE_MORTGAGE_TIERS,
+  CLAL_SETTLED_PAY_DELAY_MONTHS,
+  CLAL_SETTLED_RATE,
+  CLAL_VOLUME_PAY_DELAY_MONTHS,
+  formatClalTierLabel,
+} from "@/lib/finance/clal-contract";
+import {
+  PHOENIX_ANNUAL_MONTHS,
+  PHOENIX_MORTGAGE_WEIGHT,
+  PHOENIX_PAY_DELAY_MONTHS,
+  PHOENIX_SETTLED_RATE,
+  formatPhoenixTierLabel,
+  PHOENIX_VOLUME_TIERS as PHOENIX_LIVE_TIERS,
+} from "@/lib/finance/phoenix-contract";
+import {
+  MIGDAL_ANNUAL_MONTHS,
+  MIGDAL_SETTLED_RATE,
+  formatMigdalTierLabel,
+  MIGDAL_VOLUME_TIERS as MIGDAL_LIVE_TIERS,
+} from "@/lib/finance/migdal-contract";
 
 export type AgreementStatus = "draft" | "ready" | "coming_soon";
 
@@ -70,7 +109,7 @@ export type ContractDoc = {
   duplicateOf?: string;
 };
 
-export const DEFAULT_PNL_MULTIPLIER = DEFAULT_INSURER_MULTIPLIER;
+export const DEFAULT_PNL_MULTIPLIER = 0;
 
 export const SOURCE_PNL_REPORT_NAME = "רווח והפסד לפי מקור (היקף)";
 export const MANAGERS_EXCEL_NAME = "דוח המנהלים (Excel — גיליון ראשון)";
@@ -102,7 +141,7 @@ export const MIGDAL_EXCEL_COLUMNS: {
     header: COL.premium,
     role: "בסיס חישוב עמלה (חיים / בריאות / משכנתא)",
     usedToday: "כן",
-    note: `היום: ×${DEFAULT_PNL_MULTIPLIER} קבוע. ביעד: ×שיעור מהחוזה.`,
+    note: "פרמיה חודשית × 12 = פרמיה קובעת להיקף. נפרעים = 22% מהחודשית.",
   },
   {
     key: "startDate",
@@ -248,7 +287,7 @@ export const MIGDAL_NOT_IN_EXCEL: MigdalNotInExcel[] = [
     id: "sales-tier",
     title: "מצטבר יעדי מכירות / מדרגה מול מגדל",
     why: "הדוח לא אומר אם אתם ביעד 1 / 2 / 3 — זה נתון שנתי מול החברה.",
-    neededFor: "שיעור היקף 75% / 78% / 82%",
+    neededFor: "שיעור היקף 75% / 78% / 85%",
   },
   {
     id: "campaigns",
@@ -382,7 +421,7 @@ export const MIGDAL_INCOME_MODEL = {
       timing: "חד-פעמי — בדרך כלל",
       formula: "(פרמיה חודשית × 12) × שיעור מדרגת יעד",
       explain:
-        "אושר מול בעלים: פרמיה באקסל = חודשית → ×12 = פרמיה קובעת שנתית → אחוז לפי יעד מכירות (75%/78%/82%). לא חל על נפרעים — נפרעים מקטגוריה/דוח נפרד.",
+        "אושר מול בעלים: פרמיה באקסל = חודשית → ×12 = פרמיה קובעת שנתית → אחוז לפי יעד מכירות (75%/78%/85%), רטרו על כל הפעילות. 20% גמ״ח לסוף שנה.",
     },
     {
       type: "campaigns" as const,
@@ -418,13 +457,13 @@ export const MIGDAL_INCOME_MODEL = {
       usedFor: "היקף (אושר) · נפרעים (פתוח)",
     },
   ],
-  todayNote: `היום ב-${SOURCE_PNL_REPORT_NAME}: עדיין ${COL.premium} × ${DEFAULT_PNL_MULTIPLIER}. נוסחת היקף מהחוזה מתועדת בדף — טרם מחוברת לדוח החי.`,
+  todayNote: `ב-${SOURCE_PNL_REPORT_NAME}: היקף לפי מדרגה שנתית רטרו + נפרעים 22% שוטף 60. חברה בלי חוזה = ₪0.`,
   notes: [
     "לא כל סגירה כוללת את 4 הסוגים — תלוי במוצר (בריאות ≠ פנסיה).",
     "נפרעים = שוטף · היקף = חד-פעמי (בדרך כלל) · מבצעים = תנאי/בונוס · צבירה = גמולים/צבירה.",
-    "היקף (אושר): פרמיה חודשית × 12 × אחוז מדרגת יעד מכירות (75% / 78% / 82%).",
-    "עברתם ~₪500K מצטבר → יעד 3 → 82% (בריאות/ריסק).",
-    `היום ב-${SOURCE_PNL_REPORT_NAME}: רק ${COL.premium} × ${DEFAULT_PNL_MULTIPLIER} — לא מפרק לפי סוג.`,
+    "היקף (אושר): פרמיה חודשית × 12 × אחוז מדרגת יעד מכירות (75% / 78% / 85%), רטרו.",
+    "עברתם ₪500K מצטבר → יעד 3 → 85% על כל המכירות הפעילות בשנה, כולל רטרו +10% מהבסיס.",
+    `ב-${SOURCE_PNL_REPORT_NAME}: מגדל, כלל, איילון, הפניקס והראל לפי החוזה. חברה בלי הסכם = ₪0.`,
   ],
 };
 
@@ -464,7 +503,7 @@ export const MIGDAL_CALC_RULES: MigdalCalcRule[] = [
     formula:
       "עמלה = (פרמיה חודשית × 12) × שיעור מדרגת יעד × שיקול תקופה (ריסק)",
     basis:
-      "פרמיה קובעת שנתית = עמודת «פרמיה» חודשית × 12 (אושר מול בעלים). שיעור = 75%/78%/82% לפי יעד מכירות.",
+      "פרמיה קובעת שנתית = עמודת «פרמיה» חודשית × 12 (אושר מול בעלים). שיעור = 75%/78%/85% לפי יעד מכירות.",
     timing: "חד-פעמי",
     contractRef: "noname (3) · 2.1.1 + אישור בעלים",
     conditions: [
@@ -473,18 +512,18 @@ export const MIGDAL_CALC_RULES: MigdalCalcRule[] = [
       "מדרגה אחת — הגבוהה שהסוכן הגיע אליה (2.1.6)",
     ],
     notes:
-      "דוגמה יעד 3 (~₪500K): 500 × 12 = 6,000 × 82% = 4,920 ₪. לא חל על נפרעים.",
+      "דוגמה יעד 3 (~₪500K): 500 × 12 = 6,000 × 85% = 4,920 ₪. לא חל על נפרעים.",
   },
   {
     id: "volume-sales-tier",
     name: "היקף — בחירת מדרגת יעד מכירות",
     paymentType: "volume",
-    formula: "יעד 1 → 75% · יעד 2 (~₪250K) → 78% · יעד 3 (~₪500K) → 82%",
+    formula: "יעד 1 → 75% · יעד 2 (~₪250K) → 78% · יעד 3 (~₪500K) → 85%",
     basis: "מצטבר מכירות שנתי (ח\"ש) לפי נספח 2025",
     timing: "שנתי — קובע את שיעור ההיקף על סגירות הזכאיות",
     contractRef: "noname (3) · 2.1.1",
     conditions: ["רק המדרגה הגבוהה שהושגה"],
-    notes: "אושר: עברתם ~₪500K → האחוז גדל (יעד 3 / 82% לבריאות וריסק).",
+    notes: "אושר: עברתם ~₪500K → האחוז גדל (יעד 3 / 85% לבריאות וריסק).",
   },
   {
     id: "volume-transfer",
@@ -521,7 +560,7 @@ export const MIGDAL_CALC_RULES: MigdalCalcRule[] = [
     name: "מבצעים — יעדי מכירות",
     paymentType: "campaigns",
     formula: "יעד = תנאי לזכאות · לא סכום קבוע",
-    basis: "יעדי מכירות שנתיים (ח\"ש) — קובעים מדרגת היקף (75% / 78% / 82%)",
+    basis: "יעדי מכירות שנתיים (ח\"ש) — קובעים מדרגת היקף (75% / 78% / 85%)",
     timing: "שנתי — בדיקת עמידה",
     contractRef: "noname (3) · 2.1.1",
     notes: "אי-עמידה → אולי 0 היקף גם על סגירה תקינה",
@@ -569,56 +608,106 @@ export const MIGDAL_CALC_RULES: MigdalCalcRule[] = [
 export const MIGDAL_PNL_COMPARISON = {
   today: {
     title: "היום ב«רווח והפסד לפי מקור»",
-    formula: `הכנסה ממגדל = ${COL.premium} × ${DEFAULT_PNL_MULTIPLIER}`,
-    applies: "כל מוצר · כל שנה · בלי «סוג המוצר» ובלי «תאריך תחילת ביטוח»",
-    example:
-      "דוגמה: פרמיה 500 → הכנסה 4,500 (בלי קשר אם בריאות או משכנתא)",
+    formula: `היקף = (פרמיה × ${MIGDAL_ANNUAL_MONTHS}) × מדרגה · נפרעים = פרמיה × ${Math.round(MIGDAL_SETTLED_RATE * 100)}%`,
+    applies: "מגדל · חיים / משכנתא / בריאות / מחלות קשות / סרטן · פעילה",
+    example: MIGDAL_LIVE_TIERS.map((tier) => formatMigdalTierLabel(tier)).join(" · "),
   },
   target: {
-    title: "יעד — לפי חוזה מגדל",
-    formula: "הכנסה = נפרעית פרמיה × שיעור (לפי מוצר + שנת פוליסה)",
-    applies: `מבוסס ${COL.product}, ${COL.premium}, ${COL.startDate}, ${COL.company}`,
-    example:
-      "דוגמה: בריאות, שנה א', פרמיה 500 (חודשי?) → 500 × 22% = 110 (לא 4,500)",
+    title: "חברה בלי הסכם",
+    formula: "₪0 עד שמזינים חוזה",
+    applies: "מנורה וכו'",
+    example: "אין מכפיל גלובלי",
   },
 } as const;
 
-const COMING_SOON_PNL_NOTE = "טרם הוזן הסכם. בדוח: פרמיה × 9.";
+export const AYALON_INCOME_MODEL = {
+  title: "נוסחת הכנסה מאיילון — לפי חוזה",
+  masterFormula: `היקף = (פרמיה × ${AYALON_ANNUAL_MONTHS}) × שיעור · נפרעים = פרמיה × ${Math.round(AYALON_SETTLED_RATE * 100)}%`,
+  intro:
+    "אין גמ״ח — כל היקף נכנס לתזרים. נפרעים כמו במגדל: 22% שוטף 60 על אותם מוצרים.",
+  tiers: AYALON_LIVE_TIERS.map((tier) => formatAyalonTierLabel(tier)),
+  mortgage: `ביטוח משכנתא: ${Math.round(AYALON_MORTGAGE_RATE * 100)}% קבוע, לא עולה עם המדרגה. נספר למצטבר השנתי של שאר המוצרים.`,
+  timing: `היקף לפי הפקה · שוטף ${AYALON_VOLUME_PAY_DELAY_MONTHS * 30} (מכירות מאי משולמות ביוני).`,
+  settled: `נפרעים ${Math.round(AYALON_SETTLED_RATE * 100)}% מהפרמיה החודשית · שוטף ${AYALON_SETTLED_PAY_DELAY_MONTHS * 30} · אותם מוצרים.`,
+  products: "ריסק משועבד / בריאות / מחלות קשות / מחלות סרטן — מדרגות 70/75/85. משכנתא — 60% קבוע.",
+} as const;
+
+export const PHOENIX_INCOME_MODEL = {
+  title: "נוסחת הכנסה מהפניקס — לפי חוזה",
+  masterFormula: `היקף = (פרמיה × ${PHOENIX_ANNUAL_MONTHS}) × שיעור · נפרעים = פרמיה × ${Math.round(PHOENIX_SETTLED_RATE * 100)}% על מכירה`,
+  intro:
+    "אין גמ״ח. הכל שוטף 60 לפי הפקה. נפרעים 24% על מכירות. מינוי סוכן טרם הוגדר. מגדל ואיילון נשארים 22%.",
+  tiers: PHOENIX_LIVE_TIERS.map((tier) => formatPhoenixTierLabel(tier)),
+  mortgage: `משכנתא נספרת ${Math.round(PHOENIX_MORTGAGE_WEIGHT * 100)}% למדרגה השנתית, ומשולמת באחוז המדרגה המלא (אין נעילה על 60%).`,
+  timing: `שוטף ${PHOENIX_PAY_DELAY_MONTHS * 30} לפי הפקה (מכירה במאי, הפקה ביוני → תשלום ביולי).`,
+  settled: `נפרעים ${Math.round(PHOENIX_SETTLED_RATE * 100)}% מהפרמיה החודשית על מכירה פעילה · שוטף ${PHOENIX_PAY_DELAY_MONTHS * 30}. מינוי סוכן — טרם הוגדר.`,
+  products: "ריסק משועבד / משכנתאות / בריאות / מחלות קשות / מחלות סרטן — אותן מדרגות 80/85/88/90/92.",
+} as const;
+
+export const CLAL_INCOME_MODEL = {
+  title: "נוסחת הכנסה מכלל — לפי חוזה",
+  masterFormula: `היקף = (פרמיה × ${CLAL_ANNUAL_MONTHS}) × שיעור · נפרעים = פרמיה × ${Math.round(CLAL_SETTLED_RATE * 100)}%`,
+  intro:
+    "שני מסלולים נפרדים. גמ״ח 10% נשאר בכלל עד סוף השנה. היקף לפי הפקה שוטף 30. נפרעים 22% שוטף 60 — כמו מגדל.",
+  ladderTiers: CLAL_LIVE_LADDER_TIERS.map((tier) => formatClalTierLabel(tier, "ladder")),
+  mortgageTiers: CLAL_LIVE_MORTGAGE_TIERS.map((tier) => formatClalTierLabel(tier, "mortgage")),
+  gamach: `מתוך ההיקף ${Math.round(CLAL_GAMACH_RATE * 100)} נקודות אחוז גמ״ח לסוף שנה — בשני המסלולים.`,
+  timing: `היקף לפי הפקה · שוטף ${CLAL_VOLUME_PAY_DELAY_MONTHS * 30}.`,
+  settled: `נפרעים ${Math.round(CLAL_SETTLED_RATE * 100)}% מהפרמיה החודשית · שוטף ${CLAL_SETTLED_PAY_DELAY_MONTHS * 30} · אותם מוצרים.`,
+  products: "ריסק / בריאות / מחלות קשות / מחלות סרטן — מדרגות 75/78/85. משכנתא בלבד — מדרגות 70/75/80.",
+} as const;
+
+export const HAREL_INCOME_MODEL = {
+  title: "נוסחת הכנסה מהראל — לפי חוזה",
+  masterFormula: `היקף = (פרמיה × ${HAREL_ANNUAL_MONTHS}) × שיעור · נפרעים = פרמיה × ${Math.round(HAREL_SETTLED_RATE * 100)}% על מכירה`,
+  intro:
+    "אין גמ״ח. הכל שוטף 60 לפי הפקה. נפרעים 24% על מכירות. מינוי סוכן טרם הוגדר.",
+  tiers: HAREL_LIVE_TIERS.map((tier) => formatHarelTierLabel(tier)),
+  mortgage: "משכנתא במדרגה המלאה 75/85 — בלי משקל 50% ובלי נעילה 60%.",
+  timing: `שוטף ${HAREL_PAY_DELAY_MONTHS * 30} לפי הפקה (מכירה במאי, הפקה ביוני → תשלום ביולי).`,
+  settled: `נפרעים ${Math.round(HAREL_SETTLED_RATE * 100)}% מהפרמיה החודשית על מכירה פעילה · שוטף ${HAREL_PAY_DELAY_MONTHS * 30}. מינוי סוכן — טרם הוגדר.`,
+  products: "ריסק משועבד / משכנתאות / בריאות / מחלות קשות / מחלות סרטן — מדרגות 75% / 85%.",
+} as const;
+
+const COMING_SOON_PNL_NOTE = "טרם הוזן הסכם. בדוח החי ההכנסה מחברה זו היא ₪0.";
 
 /** Same insurers and order as «איחוד פורטלים» (`lib/portals.config.ts`). */
 export const INSURERS: InsurerAgreement[] = [
   {
     id: "migdal",
     name: "מגדל",
-    status: "draft",
-    statusLabel: "בהכנה — בדוח עדיין ×9",
-    pnlMode: "multiplier",
+    status: "ready",
+    statusLabel: "מחובר לדוח",
+    pnlMode: "contract",
     pnlNote:
-      "עד שסוגרים את הנוסחה ומאשרים אותה, «רווח והפסד לפי מקור» ממשיך לחשב מגדל כמו שאר החברות: פרמיה × 9.",
+      "היקף לפי מדרגה שנתית (75/78/85) עם גמ״ח 20% לסוף שנה, רטרו על כל הפעילות. נפרעים 22% שוטף 60.",
   },
   {
     id: "phoenix",
     name: "פניקס",
-    status: "coming_soon",
-    statusLabel: "בקרוב",
-    pnlMode: "multiplier",
-    pnlNote: COMING_SOON_PNL_NOTE,
+    status: "ready",
+    statusLabel: "מחובר לדוח",
+    pnlMode: "contract",
+    pnlNote:
+      "היקף לפי מדרגה שנתית (80/85/88/90/92) הכל שוטף 60, בלי גמ״ח. משכנתא נספרת 50% למדרגה ומשולמת במלוא האחוז. נפרעים 24% על מכירות. מינוי סוכן טרם הוגדר.",
   },
   {
     id: "clal",
     name: "כלל",
-    status: "coming_soon",
-    statusLabel: "בקרוב",
-    pnlMode: "multiplier",
-    pnlNote: COMING_SOON_PNL_NOTE,
+    status: "ready",
+    statusLabel: "מחובר לדוח",
+    pnlMode: "contract",
+    pnlNote:
+      "שני מסלולים: ריסק/בריאות 75/78/85 ומשכנתא 70/75/80, גמ״ח 10% לסוף שנה. היקף שוטף 30 לפי הפקה. נפרעים 22% שוטף 60.",
   },
   {
     id: "ayalon",
     name: "איילון",
-    status: "coming_soon",
-    statusLabel: "בקרוב",
-    pnlMode: "multiplier",
-    pnlNote: COMING_SOON_PNL_NOTE,
+    status: "ready",
+    statusLabel: "מחובר לדוח",
+    pnlMode: "contract",
+    pnlNote:
+      "היקף לפי מדרגה שנתית (70/75/85) הכל שוטף, בלי גמ״ח. משכנתא 60% קבוע. שוטף 30. נפרעים 22% שוטף 60.",
   },
   {
     id: "menora",
@@ -639,10 +728,11 @@ export const INSURERS: InsurerAgreement[] = [
   {
     id: "harel",
     name: "הראל",
-    status: "coming_soon",
-    statusLabel: "בקרוב",
-    pnlMode: "multiplier",
-    pnlNote: COMING_SOON_PNL_NOTE,
+    status: "ready",
+    statusLabel: "מחובר לדוח",
+    pnlMode: "contract",
+    pnlNote:
+      "היקף לפי מדרגה שנתית (75/85) הכל שוטף 60, בלי גמ״ח. נפרעים 24% על מכירות. מינוי סוכן טרם הוגדר.",
   },
   {
     id: "meitav",
@@ -731,7 +821,7 @@ export const MIGDAL_CONTRACT_DOCS: ContractDoc[] = [
     sections: [
       { id: "1", title: "הגדרות", detail: "פרמיה קובעת · עמלות היקף · יעדי מכירות" },
       { id: "2.1", title: "עמלות היקף — כללי", detail: "חד-פעמי · בכפוף ליעדים" },
-      { id: "2.1.1", title: "בריאות / ריסק / פנסיה", detail: "75% · 78% · 82% — לפי יעד" },
+      { id: "2.1.1", title: "בריאות / ריסק / פנסיה", detail: "75% · 78% · 85% — לפי יעד" },
       { id: "2.1.2", title: "היקף נוסף — פנסיה", detail: "העברות + יעד מכירות" },
       { id: "2.1.3", title: "היקף — קופות גמל", detail: "2% מפרמיה קובעת" },
       { id: "2.1.4", title: "הפקדות חד-פעמיות", detail: "1.60% · 6.67% — קשת פרט" },
@@ -875,8 +965,8 @@ export const MIGDAL_VOLUME_TIERS: MigdalRateTier[] = [
   },
   {
     label: "יעד מכירות 3 (מצטבר ~₪500,000)",
-    health: "82%",
-    risk: "82%",
+    health: "85%",
+    risk: "85%",
     pension: "7%",
     notes: "אושר: עברתם ~500K → מדרגה זו · האחוז גדל",
   },
@@ -917,8 +1007,8 @@ export const MIGDAL_PAYMENT_SECTIONS: MigdalPaymentSection[] = [
     intro:
       "נספח חיים ובריאות (noname 2). נפרעים = אחוז ממה שהלקוח שילם באותו חודש. בריאות (§9) וחיים/אחרות (§8) — טבלאות נפרדות; אסור לערבב שיעורים או שנות פוליסה.",
     contractFiles: ["noname (2) · 05/10/2025"],
-    pnlStatus: "בתכנון",
-    pnlNote: `מקור הנתונים: קטגוריית «נפרעים» (/finance/settled) — דוח נפרד, לא דוח המנהלים. שיעורים לפי חוזה בדף זה.`,
+    pnlStatus: "מחובר",
+    pnlNote: `נפרעים על אותם מוצרים: ${Math.round(MIGDAL_SETTLED_RATE * 100)}% שוטף 60 מהפרמיה החודשית.`,
     formulaRows: [...MIGDAL_HEALTH_FORMULAS, ...MIGDAL_OTHER_FORMULAS],
     examples: [
       "בריאות §9, שנה א', 500 ₪/חודש → 500 × 22% = 110 ₪",
@@ -937,18 +1027,18 @@ export const MIGDAL_PAYMENT_SECTIONS: MigdalPaymentSection[] = [
     basis:
       "הפרמיה הקובעת השנתית = פרמיה חודשית מהדוח × 12 (אושר) · או סכום העברה/ניוד נטו",
     formula:
-      "עמלה = (פרמיה חודשית × 12) × שיעור מדרגת יעד (75%/78%/82%) · או: ₪ קבוע לכל מיליון ₪ שהועבר",
+      "עמלה = (פרמיה חודשית × 12) × שיעור מדרגת יעד (75%/78%/85%) · או: ₪ קבוע לכל מיליון ₪ שהועבר",
     intro:
       "נספח פעילות 2025 (noname 3), סעיף 2.1. תשלום נפרד מהנפרעים — בדרך כלל חד-פעמי. מותנה בעמידה ביעדי מכירות. אושר מול בעלים: בסיס שנתי = חודשי × 12; מעל ~₪500K מצטבר → מדרגה גבוהה יותר.",
     contractFiles: ["noname (3) · 19/10/2025"],
-    pnlStatus: "בתכנון",
+    pnlStatus: "מחובר",
     pnlNote:
-      "נוסחת היקף מתועדת ומאושרת חלקית — טרם מחוברת לדוח החי (עדיין ×9).",
+      "מחובר לדוח החי: מדרגה שנתית 75/78/85, גמ״ח 20% לסוף שנה, רטרו על כל הפעילות הפעילה.",
     rateTiers: MIGDAL_VOLUME_TIERS,
     transferTiers: MIGDAL_TRANSFER_TIERS,
     examples: [
       "בריאות, יעד 1: (500 × 12) × 75% = 4,500 ₪ חד-פעמי",
-      "בריאות, יעד 3 (~₪500K): (500 × 12) × 82% = 4,920 ₪ חד-פעמי",
+      "בריאות, יעד 3 (~₪500K): (500 × 12) × 85% = 4,920 ₪ חד-פעמי",
       "ניוד ₪2M נטו → לפי טבלת ₪ למיליון (לא אחוז מפרמיה)",
       "המרה לקצבה מיידית: ₪7,605 לכל מיליון",
     ],
@@ -1032,14 +1122,14 @@ export const MIGDAL_OPEN_QUESTIONS: MigdalOpenQuestion[] = [
     priority: "חובה",
     paymentType: "campaigns",
     question: "יעדי מכירות — האם מעל ~₪500K האחוז גדל?",
-    why: "קובע מדרגת היקף 75% / 78% / 82%",
+    why: "קובע מדרגת היקף 75% / 78% / 85%",
     detail:
       "בנספח 2025 יש 3 מדרגות יעד. שאלנו אם בפועל אחרי מצטבר גבוה האחוז עולה.",
     askFor: "אישור מדרגות",
     excelDetect: "מחוץ_לדוח",
     status: "answered",
     answer:
-      "אושר עקרונית: מעל ~₪500K מצטבר → יעד 3 → האחוז גדל (82% בריאות/ריסק). עדיין לאשר סכום מדויק לשנה (שאלה נפרדת).",
+      "אושר עקרונית: מעל ~₪500K מצטבר → יעד 3 → האחוז גדל (85% בריאות/ריסק). עדיין לאשר סכום מדויק לשנה (שאלה נפרדת).",
   },
   {
     id: "q-premium-period",
@@ -1147,7 +1237,7 @@ export const MIGDAL_OPEN_QUESTIONS: MigdalOpenQuestion[] = [
     priority: "חובה",
     paymentType: "campaigns",
     question: "מה המצטבר המדויק לשנה — יעד 1 / 2 / 3?",
-    why: "קובע אם מחשבים 75% / 78% / 82% על כל סגירה",
+    why: "קובע אם מחשבים 75% / 78% / 85% על כל סגירה",
     detail:
       "אושר עקרונית שמעל ~500K האחוז גדל. עכשיו צריך מספר: כמה מצטבר יש לכם מול מגדל השנה, ובאיזו מדרגה אתם רשמית. בלי זה נחשב היקף באחוז לא נכון.",
     askFor: "מספר מצטבר + מדרגה רשמית (1/2/3) לשנה הנוכחית",

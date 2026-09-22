@@ -11,11 +11,14 @@ import {
 } from "@/lib/sales-dashboard/campaign-math";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 import {
+  PARTNERSHIP,
   buildMonthlyAgentPremiumTotals,
   explainWageForProduction,
   formatTierRange,
+  isPartnershipSource,
   productionDateOf,
   productionMonthKey,
+  profileUsesPartnershipProductions,
   wageForOneProduction,
   type EmployeePayProfile,
   type EmploymentKind,
@@ -74,14 +77,14 @@ export function formatCampaignOwnerCopy(input: {
   expenses: CampaignExpense[];
   wageTotal: number;
   workers: { name: string; count: number; sum: number; multiplier: number; wage: number }[];
-  insurerMultiplier: number;
+  income: number;
 }): string {
   const adsTotal = input.expenses.reduce((sum, row) => sum + row.amount, 0);
   const pnl = campaignPnl({
     premium: input.premium,
     wageTotal: input.wageTotal,
     adsTotal,
-    insurerMultiplier: input.insurerMultiplier,
+    income: input.income,
   });
   const byChannel = {
     google: 0,
@@ -99,7 +102,7 @@ export function formatCampaignOwnerCopy(input: {
     "",
     `הפקות פעילות: ${input.activeCount}`,
     `פרמיה שנסגרה: ₪${ils(input.premium)}`,
-    `הכנסה מחברות (פרמיה × ${input.insurerMultiplier}): ₪${ils(pnl.income)}`,
+    `הכנסה מחברות (לפי חוזה): ₪${ils(pnl.income)}`,
     "פעילות בלבד — ללא בוטלה / גניזה",
     "",
     "הוצאות:",
@@ -149,8 +152,9 @@ export function groupWorkers(
     : null;
   for (const row of rows) {
     if (row.status !== "active") continue;
-    const key = canonicalAgentName(row.agent);
-    const display = key || row.agent;
+    const partnerRow = isPartnershipSource(row.source);
+    const key = partnerRow ? PARTNERSHIP.canonicalSource : canonicalAgentName(row.agent);
+    const display = partnerRow ? PARTNERSHIP.canonicalSource : key || row.agent;
     const current = map.get(key) ?? { name: display, count: 0, sum: 0, wage: 0 };
     current.count += 1;
     current.sum += row.premium;
@@ -221,15 +225,23 @@ export function workerWageBreakdown(
   },
 ): WorkerWageBreakdown {
   const profile =
-    wageOptions?.profiles.find((row) => excelAgentKey(row.fullName) === excelAgentKey(workerName)) ??
-    null;
+    wageOptions?.profiles.find((row) => {
+      if (excelAgentKey(row.fullName) === excelAgentKey(workerName)) return true;
+      return isPartnershipSource(workerName) && profileUsesPartnershipProductions(row);
+    }) ?? null;
   const monthlyTotals = wageOptions
     ? buildMonthlyAgentPremiumTotals(wageOptions.contextRows ?? rows)
     : null;
   const lines: WorkerWageDetailLine[] = [];
+  const partnerWorker = isPartnershipSource(workerName);
   for (const row of rows) {
     if (row.status !== "active") continue;
-    if (workerDisplayName(row.agent) !== workerName) continue;
+    const partnerRow = isPartnershipSource(row.source);
+    if (partnerWorker) {
+      if (!partnerRow) continue;
+    } else if (partnerRow || workerDisplayName(row.agent) !== workerName) {
+      continue;
+    }
     const explained = wageOptions
       ? explainWageForProduction(row, {
           profiles: wageOptions.profiles,

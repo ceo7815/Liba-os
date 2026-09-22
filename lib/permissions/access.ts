@@ -77,3 +77,19 @@ export function canViewVault(profile: AccessProfile | null | undefined): boolean
 export function canManageVault(profile: AccessProfile | null | undefined): boolean {
   return hasPermission(profile, "vault.manage");
 }
+
+export function canLearnAcademy(profile: AccessProfile | null | undefined): boolean {
+  return hasPermission(profile, "academy.learn");
+}
+
+export function canViewAcademyTeam(profile: AccessProfile | null | undefined): boolean {
+  return hasPermission(profile, "academy.team");
+}
+
+export function canManageAcademy(profile: AccessProfile | null | undefined): boolean {
+  return hasPermission(profile, "academy.manage");
+}
+
+export function canAccessAcademy(profile: AccessProfile | null | undefined): boolean {
+  return canLearnAcademy(profile) || canViewAcademyTeam(profile) || canManageAcademy(profile);
+}

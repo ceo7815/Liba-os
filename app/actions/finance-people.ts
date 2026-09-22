@@ -19,12 +19,14 @@ import {
 import {
   currentAgreement,
   currentEmploymentKind,
+  emptyAgreement,
   parseEmploymentKind,
   parsePayAgreements,
   parsePayContract,
   serializePayAgreements,
   withResolvedOneTimePayments,
   type EmployeeAgreement,
+  type EmploymentKind,
 } from "@/lib/employees/contract";
 import { type SellerHint } from "@/lib/employees/excel-sellers";
 import { applyExcelEmployeeCatalog } from "@/lib/employees/sync-from-excel";
@@ -120,10 +122,16 @@ export async function createFinanceEmployee(input: {
   wait_circle?: string;
   dialer_type?: string;
   notes?: string;
+  employment_kind?: EmploymentKind;
 }): Promise<FinanceMutationResult> {
   await requireEmployeesAccess();
   const name = input.full_name?.trim();
   if (!name) return { error: "חובה למלא שם" };
+  const kind = input.employment_kind ?? null;
+  const agreements =
+    kind === "partnership"
+      ? [{ ...emptyAgreement("partnership", ""), from: "" }]
+      : [];
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("finance_employees")
@@ -138,6 +146,8 @@ export async function createFinanceEmployee(input: {
       wait_circle: input.wait_circle?.trim() || null,
       dialer_type: input.dialer_type?.trim() || null,
       notes: input.notes?.trim() || null,
+      employment_kind: kind,
+      pay_contract: agreements.length ? serializePayAgreements(agreements) : undefined,
     })
     .select("id")
     .single();

@@ -12,6 +12,7 @@ import {
 } from "@/lib/sales-dashboard/ingest-store";
 import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
+import { persistWorkbookFromDashboard } from "@/lib/sales-dashboard/workbook-store";
 
 let cache: {
   data: DashboardData;
@@ -48,10 +49,6 @@ export async function persistSalesDashboardSnapshot(
 }
 
 export async function getSalesDashboardSnapshot(): Promise<DashboardData> {
-  if (cache?.data && hasProductions(cache.data)) {
-    return cache.data;
-  }
-
   if (inflight) return inflight;
   inflight = hydrateSnapshot().finally(() => {
     inflight = null;
@@ -73,12 +70,17 @@ export async function forceRefreshSalesDashboard(): Promise<DashboardData> {
 async function hydrateSnapshot(): Promise<DashboardData> {
   const stored = await loadParsedDashboardSnapshot().catch(() => null);
   if (stored?.data && hasProductions(stored.data)) {
-    return remember(stored.data, stored.etag);
+    const storedMs = Date.parse(stored.data.syncedAt || "") || 0;
+    const cacheMs = Date.parse(cache?.data?.syncedAt || "") || 0;
+    if (!cache?.data || !hasProductions(cache.data) || storedMs >= cacheMs) {
+      return remember(stored.data, stored.etag);
+    }
+    return cache.data;
   }
 
   // Never re-parse the ingested xlsx here. Manual «סנכרן הכל» is the only
   // path that downloads / parses Excel and writes dashboard.json.
-  if (cache?.data) return cache.data;
+  if (cache?.data && hasProductions(cache.data)) return cache.data;
   return remember(getDemoDashboard(), null);
 }
 
@@ -93,6 +95,7 @@ async function persist(data: DashboardData, etag: string | null, extra?: {
     fileName: extra?.fileName ?? data.fileName,
     data,
   });
+  await persistWorkbookFromDashboard(data).catch(() => undefined);
   return data;
 }
 

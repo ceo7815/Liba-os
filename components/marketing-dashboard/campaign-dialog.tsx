@@ -28,6 +28,11 @@ import {
   type GoogleAdsDailyStat,
 } from "@/lib/sales-dashboard/campaign-math";
 import {
+  explainInsurerIncome,
+  insurerIncomeForProductions,
+  insurerIncomeNote,
+} from "@/lib/finance/insurer-income";
+import {
   formatCampaignOwnerCopy,
   groupWorkers,
   workerWageBreakdown,
@@ -117,6 +122,7 @@ type Props = {
   payProfiles?: EmployeePayProfile[];
   wageKind?: SourcePnlKind;
   wageContextRows?: MarketingProduction[];
+  insurerYearContext?: MarketingProduction[];
   defaultMultiplier: number;
   insurerMultiplier: number;
   googleAds: GoogleAdsConnection;
@@ -142,6 +148,7 @@ export function CampaignDialog({
   payProfiles = [],
   wageKind = "volume",
   wageContextRows,
+  insurerYearContext = [],
   defaultMultiplier,
   insurerMultiplier,
   googleCampaigns,
@@ -180,11 +187,13 @@ export function CampaignDialog({
     [productions, rates, defaultMultiplier, payProfiles, wageKind, wageContextRows],
   );
   const wageTotal = workers.reduce((sum, row) => sum + row.wage, 0);
+  const yearContext = insurerYearContext.length ? insurerYearContext : productions;
+  const insurer = insurerIncomeForProductions(active, { yearContext });
   const pnl = campaignPnl({
     premium,
     wageTotal,
     adsTotal,
-    insurerMultiplier,
+    income: insurer.income,
   });
   const copyText = formatCampaignOwnerCopy({
     name,
@@ -197,7 +206,7 @@ export function CampaignDialog({
     expenses,
     wageTotal,
     workers,
-    insurerMultiplier,
+    income: insurer.income,
   });
 
   async function copySummary() {
@@ -238,9 +247,9 @@ export function CampaignDialog({
             />
             <Mini label="פרמיה שנסגרה" value={<Money value={premium} />} />
             <Mini
-              label={`הכנסה ×${insurerMultiplier}`}
+              label="הכנסה מחברות"
               value={<Money value={pnl.income} />}
-              hint={`עובדים ${workers.length} · גוגל ${google.campaigns.length} · פייסבוק ${facebook.campaigns.length}`}
+              hint={insurerIncomeNote(insurer)}
             />
             <Mini label="שכר עובדים" value={<Money value={wageTotal} minus />} />
             <Mini label="שיווק והוצאות" value={<Money value={adsTotal} minus />} />
@@ -306,7 +315,7 @@ export function CampaignDialog({
               adsTotal={adsTotal}
               income={pnl.income}
               net={pnl.net}
-              insurerMultiplier={insurerMultiplier}
+              incomeNote={insurerIncomeNote(insurer)}
               byChannel={marketing.byChannel}
               expenses={expenses}
               googleCost={google.cost}
@@ -480,7 +489,7 @@ function OverviewPanel({
   adsTotal,
   income,
   net,
-  insurerMultiplier,
+  incomeNote,
   byChannel,
   expenses,
   googleCost,
@@ -495,7 +504,7 @@ function OverviewPanel({
   adsTotal: number;
   income: number;
   net: number;
-  insurerMultiplier: number;
+  incomeNote: string;
   byChannel: Record<ExpenseChannel, number>;
   expenses: CampaignExpense[];
   googleCost: number;
@@ -548,10 +557,11 @@ function OverviewPanel({
             </li>
             <li className="flex justify-between gap-3">
               <span className="text-muted-foreground">
-                הכנסה מחברות ×{insurerMultiplier}
+                הכנסה מחברות
               </span>
               <Money value={income} />
             </li>
+            <li className="text-[11px] text-muted-foreground">{incomeNote}</li>
             <li className="flex justify-between gap-3">
               <span className="text-muted-foreground">שכר עובדים</span>
               <Money value={wageTotal} minus />
@@ -1060,6 +1070,8 @@ function wageReasonLabel(reason: WageExplainReason): string {
   if (reason === "appointment") return "מינוי סוכן";
   if (reason === "settled_blocked") return "שכיר — אין שכר נפרעים";
   if (reason === "unpaid") return "ללא שכר";
+  if (reason === "partnership") return "שותף · פרמיה × 4";
+  if (reason === "partnership_source") return "לא בשכר · מקור אורשן";
   if (reason === "inactive") return "לא פעילה";
   return "אין חישוב";
 }
@@ -1232,6 +1244,8 @@ function WageFormulaPanel({
         ? "עצמאי"
         : breakdown.employmentKind === "unpaid"
           ? "ללא שכר"
+          : breakdown.employmentKind === "partnership"
+            ? "שיתוף פעולה"
           : null;
 
   return (
@@ -1262,6 +1276,8 @@ function WageFormulaPanel({
             ? "לכל מכירה: פרמיה × מכפיל המדרגה של חודש השכר. המדרגה לפי סה״כ ההיקף של העובד באותו חודש בכל המקורות."
             : breakdown.employmentKind === "freelancer"
               ? "עצמאי: לכל מכירה פרמיה × אחוז מההסכם."
+              : breakdown.employmentKind === "partnership"
+                ? "שיתוף פעולה אורשן: תשלום לשותף = פרמיה × 4 על סגירה פעילה מהמקור. בלי נפרעים לשותף."
               : "החישוב לפי הסכם העובד לכל הפקה בנפרד."}
           {blendedMultiplier > 0 && uniquePaidMultipliers(breakdown.lines).length !== 1
             ? ` אין מכפיל אחד. הממוצע בקמפיין הוא ×${blendedMultiplier}.`
@@ -1468,7 +1484,7 @@ const LINE_COPY: Record<CampaignLineKind, { title: string; hint: string }> = {
   },
   income: {
     title: "הכנסה מחברות",
-    hint: "על כל פרמיה שנסגרה ליבה מקבלת מהחברות את הפרמיה כפול המכפיל.",
+    hint: "לפי חוזה החברה באקסל. מגדל, כלל, איילון, הפניקס והראל לפי מדרגות היקף + נפרעים. חברה בלי הסכם = ₪0.",
   },
   wage: {
     title: "שכר עובדים",
@@ -1497,6 +1513,7 @@ export function CampaignLineDialog({
   payProfiles = [],
   wageKind = "volume",
   wageContextRows,
+  insurerYearContext = [],
   defaultMultiplier,
   insurerMultiplier,
   googleCampaigns,
@@ -1516,6 +1533,7 @@ export function CampaignLineDialog({
   payProfiles?: EmployeePayProfile[];
   wageKind?: SourcePnlKind;
   wageContextRows?: MarketingProduction[];
+  insurerYearContext?: MarketingProduction[];
   defaultMultiplier: number;
   insurerMultiplier: number;
   googleAds?: GoogleAdsConnection;
@@ -1550,11 +1568,13 @@ export function CampaignLineDialog({
     [productions, rates, defaultMultiplier, payProfiles, wageKind, wageContextRows],
   );
   const wageTotal = workers.reduce((sum, row) => sum + row.wage, 0);
+  const yearContext = insurerYearContext.length ? insurerYearContext : productions;
+  const insurer = insurerIncomeForProductions(active, { yearContext });
   const pnl = campaignPnl({
     premium,
     wageTotal,
     adsTotal,
-    insurerMultiplier,
+    income: insurer.income,
   });
   const byChannel = marketing.byChannel;
 
@@ -1577,7 +1597,7 @@ export function CampaignLineDialog({
               {kind === "income" ? (
                 <>
                   <span className="mx-2 text-black/20">·</span>
-                  מכפיל חברות ×{insurerMultiplier}
+                  {insurerIncomeNote(insurer)}
                 </>
               ) : null}
             </DialogDescription>
@@ -1596,7 +1616,7 @@ export function CampaignLineDialog({
             />
           ) : null}
           {kind === "income" ? (
-            <LineIncome rows={active} insurerMultiplier={insurerMultiplier} total={pnl.income} />
+            <LineIncome rows={active} yearContext={yearContext} total={pnl.income} />
           ) : null}
           {kind === "wage" ? (
             <WorkersTable
@@ -1639,7 +1659,7 @@ export function CampaignLineDialog({
               wageTotal={wageTotal}
               adsTotal={adsTotal}
               net={pnl.net}
-              insurerMultiplier={insurerMultiplier}
+              incomeNote={insurerIncomeNote(insurer)}
               workers={workers}
               byChannel={byChannel}
             />
@@ -1722,11 +1742,11 @@ function LineProductions({
 
 function LineIncome({
   rows,
-  insurerMultiplier,
+  yearContext,
   total,
 }: {
   rows: MarketingProduction[];
-  insurerMultiplier: number;
+  yearContext: MarketingProduction[];
   total: number;
 }) {
   if (rows.length === 0) {
@@ -1741,6 +1761,7 @@ function LineIncome({
             <th className="py-2 text-start font-semibold">לקוח</th>
             <th className="py-2 text-start font-semibold">עובד</th>
             <th className="py-2 text-start font-semibold">מוצר</th>
+            <th className="py-2 text-start font-semibold">חברה</th>
             <th className="py-2 text-start font-semibold">פרמיה</th>
             <th className="py-2 text-start font-semibold">חישוב</th>
             <th className="py-2 text-start font-semibold">הכנסה</th>
@@ -1748,20 +1769,19 @@ function LineIncome({
         </thead>
         <tbody>
           {rows.map((row, index) => {
-            const income = row.premium * insurerMultiplier;
+            const explained = explainInsurerIncome(row, yearContext);
             return (
               <tr key={`${row.key}-${index}`} className="border-b border-black/[0.04] last:border-0">
                 <td className="py-2.5 font-medium">{row.client}</td>
                 <td className="py-2.5">{row.agent}</td>
                 <td className="py-2.5">{row.product}</td>
+                <td className="py-2.5">{row.company}</td>
                 <td dir="ltr" className="py-2.5 tabular-nums">
                   {ils(row.premium)}
                 </td>
-                <td dir="ltr" className="py-2.5 text-xs tabular-nums text-muted-foreground">
-                  {ils(row.premium)} × {insurerMultiplier}
-                </td>
+                <td className="py-2.5 text-xs text-muted-foreground">{explained.formula}</td>
                 <td dir="ltr" className="py-2.5 font-semibold tabular-nums">
-                  {ils(income)}
+                  {ils(explained.income)}
                 </td>
               </tr>
             );
@@ -1769,7 +1789,7 @@ function LineIncome({
         </tbody>
         <tfoot>
           <tr className="border-t border-black/[0.12] text-sm font-semibold">
-            <td className="py-3" colSpan={3}>
+            <td className="py-3" colSpan={4}>
               סה״כ
             </td>
             <td dir="ltr" className="py-3 tabular-nums">
@@ -1845,7 +1865,7 @@ function LineNet({
   wageTotal,
   adsTotal,
   net,
-  insurerMultiplier,
+  incomeNote,
   workers,
   byChannel,
 }: {
@@ -1854,7 +1874,7 @@ function LineNet({
   wageTotal: number;
   adsTotal: number;
   net: number;
-  insurerMultiplier: number;
+  incomeNote: string;
   workers: { name: string; count: number; sum: number; multiplier: number; wage: number }[];
   byChannel: Record<ExpenseChannel, number>;
 }) {
@@ -1866,9 +1886,10 @@ function LineNet({
           <Money value={premium} />
         </li>
         <li className="flex items-baseline justify-between gap-3">
-          <span className="text-muted-foreground">הכנסה מחברות ×{insurerMultiplier}</span>
+          <span className="text-muted-foreground">הכנסה מחברות</span>
           <Money value={income} />
         </li>
+        <li className="text-[11px] text-muted-foreground">{incomeNote}</li>
         <li className="flex items-baseline justify-between gap-3">
           <span className="text-muted-foreground">שכר עובדים</span>
           <Money value={wageTotal} minus />

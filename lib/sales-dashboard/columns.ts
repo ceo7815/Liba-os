@@ -29,6 +29,7 @@ export const COL_ALIASES: Record<string, string> = {
   "מקור הפניה": COL.source,
   "מקור פנייה": COL.source,
   "מקור פניה": COL.source,
+  מקור: COL.source,
   "סטטוס פוליסה": COL.status,
   "סטטוס": COL.status,
   "סטאטוס": COL.status,
@@ -38,6 +39,7 @@ export function resolveHeader(raw: string): string {
   const trimmed = normalizeExcelText(raw);
   if (!trimmed) return trimmed;
   if (COL_ALIASES[trimmed]) return COL_ALIASES[trimmed];
+  if (trimmed === "מקור") return COL.source;
   if (trimmed.includes("מקור") && trimmed.includes("פני")) return COL.source;
   return trimmed;
 }

@@ -11,26 +11,26 @@ import {
 } from "react";
 import { BarChart3, ChevronDown, ChevronLeft, ChevronUp, Receipt, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import {
-  loadMarketingBaseState,
-} from "@/app/actions/marketing-campaigns";
-import { readGoogleAdsBundle, type GoogleAdsConnection } from "@/app/actions/google-ads";
-import { readFacebookAdsBundle, type FacebookAdsConnection } from "@/app/actions/facebook-ads";
+import { type GoogleAdsConnection } from "@/app/actions/google-ads";
+import { type FacebookAdsConnection } from "@/app/actions/facebook-ads";
 import { cn } from "@/lib/utils";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
 import {
   DATE_PRESET_LABEL,
   DATE_PRESET_ORDER,
   DEFAULT_AGENT_MULTIPLIER,
-  DEFAULT_INSURER_MULTIPLIER,
   GOOGLE_ADS_CUBE_SOURCE,
+  GOOGLE_ADS_SHEMESH_CUBE_SOURCE,
   campaignPnl,
   cubeMarketingTotals,
   facebookAdsRollup,
   formatRangeDisplay,
   formatIls,
   googleAdsRollup,
+  googleSpendBySource as rollupGoogleSpendBySource,
+  facebookSpendBySource as rollupFacebookSpendBySource,
   inDateRange,
+  isoDay,
   isGoogleAdsCube,
   rangeForPreset,
   resolveCampaignNames,
@@ -60,6 +60,7 @@ import {
   productionDateOf,
   type EmployeePayProfile,
 } from "@/lib/employees/contract";
+import { insurerIncomeForProductions } from "@/lib/finance/insurer-income";
 import {
   matchesSourcePnlKind,
   type SourcePnlKind,
@@ -67,7 +68,6 @@ import {
 import {
   adsSourceBrand,
   assignOperatingBrand,
-  filterGoogleCampaignsForBrand,
   matchesOperatingBrand,
   sourceNameVisibleInBrand,
 } from "@/lib/finance/operating-brand";
@@ -126,6 +126,100 @@ function isHiddenSourceCube(card: { income: number; expenseTotal: number }): boo
   return card.income <= 0 && card.expenseTotal <= 0;
 }
 
+function asArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (value && typeof value === "object") return Object.values(value) as T[];
+  return [];
+}
+
+function normalizeGoogleCampaigns(rows: unknown[]): GoogleAdsCampaignRow[] {
+  return asArray<Record<string, unknown>>(rows)
+    .map((row) => {
+      const googleCampaignId = String(row.googleCampaignId ?? row.google_campaign_id ?? "").trim();
+      if (!googleCampaignId) return null;
+      const source = row.sourceName ?? row.source_name;
+      return {
+        googleCampaignId,
+        googleCampaignName: String(row.googleCampaignName ?? row.google_campaign_name ?? ""),
+        status: String(row.status ?? ""),
+        sourceName: source == null || source === "" ? null : String(source),
+        enabled: row.enabled !== false,
+      } satisfies GoogleAdsCampaignRow;
+    })
+    .filter((row): row is GoogleAdsCampaignRow => Boolean(row));
+}
+
+function normalizeGoogleStats(rows: unknown[]): GoogleAdsDailyStat[] {
+  return asArray<Record<string, unknown>>(rows)
+    .map((row) => {
+      const googleCampaignId = String(row.googleCampaignId ?? row.google_campaign_id ?? "").trim();
+      const day = isoDay(row.day);
+      if (!googleCampaignId || !day) return null;
+      return {
+        googleCampaignId,
+        day,
+        cost: Number(row.cost) || 0,
+        clicks: Number(row.clicks) || 0,
+        impressions: Number(row.impressions) || 0,
+        leads: Number(row.leads) || 0,
+      } satisfies GoogleAdsDailyStat;
+    })
+    .filter((row): row is GoogleAdsDailyStat => Boolean(row));
+}
+
+function normalizeFacebookCampaigns(rows: unknown[]): FacebookAdsCampaignRow[] {
+  return asArray<Record<string, unknown>>(rows)
+    .map((row) => {
+      const facebookCampaignId = String(
+        row.facebookCampaignId ?? row.facebook_campaign_id ?? "",
+      ).trim();
+      if (!facebookCampaignId) return null;
+      const source = row.sourceName ?? row.source_name;
+      return {
+        facebookCampaignId,
+        facebookCampaignName: String(row.facebookCampaignName ?? row.facebook_campaign_name ?? ""),
+        status: String(row.status ?? ""),
+        sourceName: source == null || source === "" ? null : String(source),
+        enabled: row.enabled !== false,
+      } satisfies FacebookAdsCampaignRow;
+    })
+    .filter((row): row is FacebookAdsCampaignRow => Boolean(row));
+}
+
+function normalizeFacebookStats(rows: unknown[]): FacebookAdsDailyStat[] {
+  return asArray<Record<string, unknown>>(rows)
+    .map((row) => {
+      const facebookCampaignId = String(
+        row.facebookCampaignId ?? row.facebook_campaign_id ?? "",
+      ).trim();
+      const day = isoDay(row.day);
+      if (!facebookCampaignId || !day) return null;
+      return {
+        facebookCampaignId,
+        day,
+        cost: Number(row.cost) || 0,
+        clicks: Number(row.clicks) || 0,
+        impressions: Number(row.impressions) || 0,
+        leads: Number(row.leads) || 0,
+      } satisfies FacebookAdsDailyStat;
+    })
+    .filter((row): row is FacebookAdsDailyStat => Boolean(row));
+}
+
+function asSpendMap(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, number> = {};
+  for (const [key, amount] of Object.entries(value as Record<string, unknown>)) {
+    const n = Number(amount);
+    if (key && Number.isFinite(n) && n !== 0) out[canonicalCampaignSource(key)] = n;
+  }
+  return out;
+}
+
+function spendForSource(map: Record<string, number>, sourceName: string): number {
+  return map[canonicalCampaignSource(sourceName)] ?? 0;
+}
+
 type SourcePnlSnapshot = {
   version: 1;
   savedAt: string;
@@ -137,24 +231,42 @@ type SourcePnlSnapshot = {
   rates: AgentRate[];
   payProfiles: EmployeePayProfile[];
   defaultMultiplier: number;
-  insurerMultiplier: number;
+  insurerMultiplier?: number;
   googleAds: GoogleAdsConnection;
   googleCampaigns: GoogleAdsCampaignRow[];
   googleStats: GoogleAdsDailyStat[];
+  googleSpendBySource?: Record<string, number>;
   facebookAds: FacebookAdsConnection;
   facebookCampaigns: FacebookAdsCampaignRow[];
   facebookStats: FacebookAdsDailyStat[];
+  facebookSpendBySource?: Record<string, number>;
 };
 
-function snapshotLooksFinanceReady(snapshot: SourcePnlSnapshot): boolean {
-  if (snapshot.financeReady !== true) return false;
-  // Snapshot marked ready but ads rows never persisted (quota / race) → show טוען, not fake ₪0.
+function marketingLooksLive(marketing: {
+  payProfiles?: EmployeePayProfile[];
+  googleAds?: GoogleAdsConnection;
+  facebookAds?: FacebookAdsConnection;
+  googleCampaigns?: GoogleAdsCampaignRow[];
+  facebookCampaigns?: FacebookAdsCampaignRow[];
+  googleStats?: GoogleAdsDailyStat[];
+  facebookStats?: FacebookAdsDailyStat[];
+  googleSpendBySource?: Record<string, number>;
+  facebookSpendBySource?: Record<string, number>;
+}): boolean {
+  if ((marketing.payProfiles?.length ?? 0) === 0) return false;
   const adsConnected =
-    Boolean(snapshot.facebookAds?.connected) || Boolean(snapshot.googleAds?.connected);
+    Boolean(marketing.googleAds?.connected) || Boolean(marketing.facebookAds?.connected);
+  const hasMaps =
+    (marketing.googleCampaigns?.length ?? 0) > 0 ||
+    (marketing.facebookCampaigns?.length ?? 0) > 0;
+  const hasSpend =
+    Object.values(marketing.googleSpendBySource ?? {}).some((n) => n > 0) ||
+    Object.values(marketing.facebookSpendBySource ?? {}).some((n) => n > 0);
+  if (adsConnected && !hasMaps && !hasSpend) return false;
   const hasAdsStats =
-    (snapshot.facebookStats?.length ?? 0) > 0 ||
-    (snapshot.googleStats?.length ?? 0) > 0;
-  if (adsConnected && !hasAdsStats) return false;
+    (marketing.googleStats?.length ?? 0) > 0 ||
+    (marketing.facebookStats?.length ?? 0) > 0;
+  if (adsConnected && !hasAdsStats && !hasSpend) return false;
   return true;
 }
 
@@ -200,13 +312,14 @@ function readSourcePnlSnapshot(): SourcePnlSnapshot | null {
       rates: [],
       payProfiles: [],
       defaultMultiplier: DEFAULT_AGENT_MULTIPLIER,
-      insurerMultiplier: DEFAULT_INSURER_MULTIPLIER,
       googleAds: EMPTY_GOOGLE,
       googleCampaigns: [],
       googleStats: [],
+      googleSpendBySource: {},
       facebookAds: EMPTY_FACEBOOK,
       facebookCampaigns: [],
       facebookStats: [],
+      facebookSpendBySource: {},
     };
   }
   if (live) {
@@ -222,13 +335,32 @@ function readSourcePnlSnapshot(): SourcePnlSnapshot | null {
 function writeSourcePnlSnapshot(snapshot: SourcePnlSnapshot) {
   if (snapshot.data.source !== "live") return;
   publishLiveDashboard(snapshot.data);
+  const stored: SourcePnlSnapshot = {
+    ...snapshot,
+    // Daily ads rows + full Excel blow localStorage quota and used to come
+    // back as fake ₪0. Excel is in the live cache; stats are refetched.
+    financeReady: false,
+    googleStats: [],
+    facebookStats: [],
+    data: {
+      ...snapshot.data,
+      marketing: snapshot.data.marketing
+        ? { ...snapshot.data.marketing, productions: [] }
+        : snapshot.data.marketing,
+    },
+  };
   try {
-    const raw = JSON.stringify(snapshot);
+    const raw = JSON.stringify(stored);
     localStorage.setItem(CACHE_KEY, raw);
     sessionStorage.setItem(CACHE_KEY, raw);
     sessionStorage.setItem(LEGACY_CACHE_KEY, JSON.stringify(snapshot.data));
   } catch {
-    /* quota / private mode */
+    try {
+      localStorage.removeItem(CACHE_KEY);
+      sessionStorage.removeItem(CACHE_KEY);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -258,7 +390,6 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
   const [rates, setRates] = useState<AgentRate[]>([]);
   const [payProfiles, setPayProfiles] = useState<EmployeePayProfile[]>([]);
   const [defaultMultiplier, setDefaultMultiplier] = useState(DEFAULT_AGENT_MULTIPLIER);
-  const [insurerMultiplier, setInsurerMultiplier] = useState(DEFAULT_INSURER_MULTIPLIER);
   const [preset, setPreset] = useState<DatePreset>("ytd");
   const [cubeView, setCubeView] = useState<CubeViewTab>("all");
   const [custom, setCustom] = useState<DateRange>({ from: null, to: null });
@@ -270,9 +401,11 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
   const [googleAds, setGoogleAds] = useState<GoogleAdsConnection>(EMPTY_GOOGLE);
   const [googleCampaigns, setGoogleCampaigns] = useState<GoogleAdsCampaignRow[]>([]);
   const [googleStats, setGoogleStats] = useState<GoogleAdsDailyStat[]>([]);
+  const [googleSpendBySource, setGoogleSpendBySource] = useState<Record<string, number>>({});
   const [facebookAds, setFacebookAds] = useState<FacebookAdsConnection>(EMPTY_FACEBOOK);
   const [facebookCampaigns, setFacebookCampaigns] = useState<FacebookAdsCampaignRow[]>([]);
   const [facebookStats, setFacebookStats] = useState<FacebookAdsDailyStat[]>([]);
+  const [facebookSpendBySource, setFacebookSpendBySource] = useState<Record<string, number>>({});
   const [financeReady, setFinanceReady] = useState(false);
   const [marketingOpen, setMarketingOpen] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
@@ -285,6 +418,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
   const rangeRef = useRef(rangeForPreset("ytd", { from: null, to: null }));
   const bootDoneRef = useRef(false);
   const lastQuietRefreshAtRef = useRef(0);
+  const skipRangeFetchRef = useRef(true);
 
   const applySnapshot = useCallback((snapshot: SourcePnlSnapshot) => {
     setData(snapshot.data);
@@ -292,16 +426,32 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
     setFlags(snapshot.flags);
     setExpenses(snapshot.expenses);
     setRates(snapshot.rates);
-    setPayProfiles(snapshot.payProfiles ?? []);
+    if ((snapshot.payProfiles?.length ?? 0) > 0) {
+      setPayProfiles(snapshot.payProfiles);
+    }
     setDefaultMultiplier(snapshot.defaultMultiplier);
-    setInsurerMultiplier(snapshot.insurerMultiplier);
-    setGoogleAds(snapshot.googleAds);
-    setGoogleCampaigns(snapshot.googleCampaigns);
-    setGoogleStats(snapshot.googleStats);
-    setFacebookAds(snapshot.facebookAds);
-    setFacebookCampaigns(snapshot.facebookCampaigns);
-    setFacebookStats(snapshot.facebookStats);
-    setFinanceReady(snapshotLooksFinanceReady(snapshot));
+    if (snapshot.googleAds?.connected) setGoogleAds(snapshot.googleAds);
+    if ((snapshot.googleCampaigns?.length ?? 0) > 0) {
+      setGoogleCampaigns(normalizeGoogleCampaigns(snapshot.googleCampaigns));
+    }
+    if (snapshot.googleSpendBySource) {
+      setGoogleSpendBySource(snapshot.googleSpendBySource);
+    }
+    if (snapshot.facebookAds?.connected) setFacebookAds(snapshot.facebookAds);
+    if ((snapshot.facebookCampaigns?.length ?? 0) > 0) {
+      setFacebookCampaigns(normalizeFacebookCampaigns(snapshot.facebookCampaigns));
+    }
+    if (snapshot.facebookSpendBySource) {
+      setFacebookSpendBySource(snapshot.facebookSpendBySource);
+    }
+    if ((snapshot.googleStats?.length ?? 0) > 0) {
+      setGoogleStats(normalizeGoogleStats(snapshot.googleStats));
+    }
+    if ((snapshot.facebookStats?.length ?? 0) > 0) {
+      setFacebookStats(normalizeFacebookStats(snapshot.facebookStats));
+    }
+    // Cache may paint Excel; wages/ads stay «טוען» until this session's DB fetch.
+    setFinanceReady(false);
     setShowingSavedSnapshot(true);
   }, []);
 
@@ -317,7 +467,15 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
 
   useEffect(() => {
     if (!liveDashboard) return;
-    setData(liveDashboard);
+    setData((current) => {
+      const incoming = liveDashboard.marketing?.productions?.length ?? 0;
+      const have = current?.marketing?.productions?.length ?? 0;
+      if (incoming === 0 && have > 0) return current;
+      if (have > 50 && incoming < Math.max(50, Math.floor(have * 0.5))) {
+        return current;
+      }
+      return liveDashboard;
+    });
     setLoadState("ok");
   }, [liveDashboard]);
 
@@ -356,55 +514,76 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
         setFacebookStep("pending");
       }
 
-      const basePromise = loadMarketingBaseState(statsRange).then((base) => {
-        setFlags(base.flags);
-        setExpenses(base.expenses);
-        setRates(base.rates);
-        setPayProfiles(base.payProfiles ?? []);
-        setDefaultMultiplier(base.defaultMultiplier);
-        setInsurerMultiplier(base.insurerMultiplier);
-        if (base.error) toast.error(base.error);
-        return base;
-      });
+      const params = new URLSearchParams({ t: String(Date.now()) });
+      if (statsRange?.from) params.set("from", statsRange.from);
+      if (statsRange?.to) params.set("to", statsRange.to);
 
-      const adsPromise = Promise.all([
-        readGoogleAdsBundle(statsRange),
-        readFacebookAdsBundle(statsRange),
-      ]).then(([google, facebook]) => {
-        setGoogleAds(google.connection);
-        setGoogleCampaigns(google.campaigns);
-        setGoogleStats(google.stats);
+      try {
+        const res = await fetch(`/api/marketing-finance?${params}`, {
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error(
+            res.status === 401 ? "אין הרשאה" : "טעינת שכר ושיווק נכשלה",
+          );
+        }
+        const bundle = (await res.json()) as {
+          flags: CampaignFlag[];
+          expenses: CampaignExpense[];
+          rates: AgentRate[];
+          payProfiles?: EmployeePayProfile[];
+          defaultMultiplier: number;
+          insurerMultiplier?: number;
+          error?: string;
+          googleAds: GoogleAdsConnection;
+          googleCampaigns: GoogleAdsCampaignRow[];
+          googleStats: GoogleAdsDailyStat[];
+          googleSpendBySource?: Record<string, number>;
+          facebookAds: FacebookAdsConnection;
+          facebookCampaigns: FacebookAdsCampaignRow[];
+          facebookStats: FacebookAdsDailyStat[];
+          facebookSpendBySource?: Record<string, number>;
+        };
+        if (bundle.error) toast.error(bundle.error);
+        const googleCampaignsNext = normalizeGoogleCampaigns(bundle.googleCampaigns);
+        const googleStatsNext = normalizeGoogleStats(bundle.googleStats);
+        const facebookCampaignsNext = normalizeFacebookCampaigns(bundle.facebookCampaigns);
+        const facebookStatsNext = normalizeFacebookStats(bundle.facebookStats);
+        const googleSpendNext = asSpendMap(bundle.googleSpendBySource);
+        const facebookSpendNext = asSpendMap(bundle.facebookSpendBySource);
+        setFlags(asArray<CampaignFlag>(bundle.flags));
+        setExpenses(asArray<CampaignExpense>(bundle.expenses));
+        setRates(asArray<AgentRate>(bundle.rates));
+        setPayProfiles(asArray<EmployeePayProfile>(bundle.payProfiles));
+        setDefaultMultiplier(bundle.defaultMultiplier);
+        setGoogleAds(bundle.googleAds);
+        setGoogleCampaigns(googleCampaignsNext);
+        setGoogleStats(googleStatsNext);
+        setGoogleSpendBySource(googleSpendNext);
+        setFacebookAds(bundle.facebookAds);
+        setFacebookCampaigns(facebookCampaignsNext);
+        setFacebookStats(facebookStatsNext);
+        setFacebookSpendBySource(facebookSpendNext);
         if (trackSteps) {
           setGoogleStep("done");
-          setLoadPhase("facebook");
-          setFacebookStep("active");
-        }
-        setFacebookAds(facebook.connection);
-        setFacebookCampaigns(facebook.campaigns);
-        setFacebookStats(facebook.stats);
-        if (trackSteps) {
           setFacebookStep("done");
           setLoadPhase("idle");
         }
-        return { google, facebook };
-      });
-
-      try {
-        const [base, ads] = await Promise.all([basePromise, adsPromise]);
-        setFinanceReady(true);
         return {
-          flags: base.flags,
-          expenses: base.expenses,
-          rates: base.rates,
-          payProfiles: base.payProfiles ?? [],
-          defaultMultiplier: base.defaultMultiplier,
-          insurerMultiplier: base.insurerMultiplier,
-          googleAds: ads.google.connection,
-          googleCampaigns: ads.google.campaigns,
-          googleStats: ads.google.stats,
-          facebookAds: ads.facebook.connection,
-          facebookCampaigns: ads.facebook.campaigns,
-          facebookStats: ads.facebook.stats,
+          flags: asArray<CampaignFlag>(bundle.flags),
+          expenses: asArray<CampaignExpense>(bundle.expenses),
+          rates: asArray<AgentRate>(bundle.rates),
+          payProfiles: asArray<EmployeePayProfile>(bundle.payProfiles),
+          defaultMultiplier: bundle.defaultMultiplier,
+          googleAds: bundle.googleAds,
+          googleCampaigns: googleCampaignsNext,
+          googleStats: googleStatsNext,
+          googleSpendBySource: googleSpendNext,
+          facebookAds: bundle.facebookAds,
+          facebookCampaigns: facebookCampaignsNext,
+          facebookStats: facebookStatsNext,
+          facebookSpendBySource: facebookSpendNext,
         };
       } catch (err) {
         setFinanceReady(false);
@@ -422,19 +601,36 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
   const persistSnapshot = useCallback(
     (
       excelData: DashboardData,
-      marketing: Awaited<ReturnType<typeof loadStateRow>>,
+      marketing: NonNullable<Awaited<ReturnType<typeof loadStateRow>>>,
     ) => {
-      writeSourcePnlSnapshot({
+      const snapshot: SourcePnlSnapshot = {
         version: 1,
         savedAt: excelData.syncedAt ?? new Date().toISOString(),
         financeReady: true,
         data: excelData,
         ...marketing,
-      });
-      setFinanceReady(true);
+      };
+      const ready = marketingLooksLive(marketing);
+      writeSourcePnlSnapshot({ ...snapshot, financeReady: ready });
+      setFinanceReady(ready);
       setShowingSavedSnapshot(false);
     },
     [],
+  );
+
+  const refreshMarketing = useCallback(
+    async (statsRange: DateRange) => {
+      let marketing = await loadStateRow(statsRange, { trackSteps: false });
+      if (marketing && !marketingLooksLive(marketing)) {
+        await new Promise((r) => setTimeout(r, 800));
+        marketing = await loadStateRow(statsRange, { trackSteps: false });
+      }
+      if (marketing && !marketingLooksLive(marketing)) {
+        toast.error("שכר או הוצאות שיווק לא נטענו מהשרת — רעננו את הדף");
+      }
+      return marketing;
+    },
+    [loadStateRow],
   );
 
   // After topbar «סנכרן הכל» — refresh marketing bundles and keep local snapshot.
@@ -443,9 +639,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
       void (async () => {
         try {
           setFinanceReady(false);
-          const marketing = await loadStateRow(rangeRef.current, {
-            trackSteps: false,
-          });
+          const marketing = await refreshMarketing(rangeRef.current);
           const excelData = readCachedLiveDashboard();
           if (excelData && marketing) persistSnapshot(excelData, marketing);
           setShowingSavedSnapshot(false);
@@ -457,37 +651,27 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
     };
     window.addEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
     return () => window.removeEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
-  }, [loadStateRow, persistSnapshot]);
+  }, [persistSnapshot, refreshMarketing]);
 
-  // Last stored snapshot only. Excel is re-parsed solely by «סנכרן הכל».
+  // Paint Excel instantly, then always reload wages + ads from the database.
   useEffect(() => {
     bootDoneRef.current = true;
     void (async () => {
       const saved = readSourcePnlSnapshot();
-      if (saved?.data?.source === "live") {
-        try {
-          const marketing = await loadStateRow(rangeRef.current, {
-            trackSteps: false,
-          });
-          if (marketing) persistSnapshot(saved.data, marketing);
-        } catch (err: unknown) {
-          setFinanceReady(false);
-          toast.error(err instanceof Error ? err.message : "טעינת שיווק נכשלה");
-        }
-        return;
-      }
       setQuietRefreshing(true);
+      setFinanceReady(false);
       try {
-        const marketingPromise = loadStateRow(rangeRef.current, {
-          trackSteps: false,
-        });
         const [excelData, marketing] = await Promise.all([
           loadExcel({ force: false }),
-          marketingPromise,
+          refreshMarketing(rangeRef.current),
         ]);
-        if (excelData?.source === "live" && marketing) {
-          persistSnapshot(excelData, marketing);
-        }
+        const nextExcel =
+          excelData?.source === "live"
+            ? excelData
+            : saved?.data?.source === "live"
+              ? saved.data
+              : null;
+        if (nextExcel && marketing) persistSnapshot(nextExcel, marketing);
         lastQuietRefreshAtRef.current = Date.now();
       } catch (err: unknown) {
         setFinanceReady(false);
@@ -501,11 +685,14 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once
   }, []);
 
-  // Date range change → DB stats only (already-synced data), never Excel / Ads APIs.
+  // Date range change → DB stats only. Skip the first run; boot already loaded.
   useEffect(() => {
-    if (!bootDoneRef.current) return;
+    if (skipRangeFetchRef.current) {
+      skipRangeFetchRef.current = false;
+      return;
+    }
     let cancelled = false;
-    void loadStateRow(range, { trackSteps: false }).catch((err: unknown) => {
+    void refreshMarketing(range).catch((err: unknown) => {
       if (!cancelled) {
         toast.error(err instanceof Error ? err.message : "שגיאת טעינת שיווק");
       }
@@ -513,7 +700,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
     return () => {
       cancelled = true;
     };
-  }, [loadStateRow, range.from, range.to]);
+  }, [refreshMarketing, range.from, range.to]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -521,7 +708,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
     const facebookFlag = params.get("facebook_ads");
     if (!googleFlag && !facebookFlag) return;
     const googleMessages: Record<string, string> = {
-      connected: `גוגל אדס חובר. כל ההוצאות נספרות ב«${GOOGLE_ADS_CUBE_SOURCE}».`,
+      connected: `גוגל אדס חובר. ביטוחים ב«${GOOGLE_ADS_CUBE_SOURCE}», פיננסים ב«${GOOGLE_ADS_SHEMESH_CUBE_SOURCE}».`,
       pick: "בחרו חשבון גוגל אדס",
       missing_env: "חסרים פרטי חיבור גוגל אדס בשרת",
       error: "חיבור גוגל אדס נכשל",
@@ -601,7 +788,10 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
     for (const row of data?.marketing?.sources ?? []) consider(row.name);
     for (const name of data?.marketing?.sourceCatalog ?? []) consider(name);
     if (kind === "volume") {
-      names.add(GOOGLE_ADS_CUBE_SOURCE);
+      if (brand === "all" || brand === "liba") names.add(GOOGLE_ADS_CUBE_SOURCE);
+      if (brand === "all" || brand === "shemesh") {
+        names.add(GOOGLE_ADS_SHEMESH_CUBE_SOURCE);
+      }
       for (const row of facebookCampaigns) consider(row.sourceName ?? "");
     }
     return Array.from(names);
@@ -627,10 +817,6 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
       ]),
     [productions, expenses, googleStats, facebookStats, kind],
   );
-  const googleCampaignsForBrand = useMemo(
-    () => filterGoogleCampaignsForBrand(googleCampaigns, brand),
-    [googleCampaigns, brand],
-  );
 
   const unmappedFacebookCount = useMemo(
     () =>
@@ -653,6 +839,14 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
       ),
     [googleStats, range],
   );
+  const googleSpendResolved = useMemo(() => {
+    const computed = rollupGoogleSpendBySource(googleCampaigns, googleStats, range);
+    return Object.keys(computed).length > 0 ? computed : googleSpendBySource;
+  }, [googleCampaigns, googleStats, range, googleSpendBySource]);
+  const facebookSpendResolved = useMemo(() => {
+    const computed = rollupFacebookSpendBySource(facebookCampaigns, facebookStats, range);
+    return Object.keys(computed).length > 0 ? computed : facebookSpendBySource;
+  }, [facebookCampaigns, facebookStats, range, facebookSpendBySource]);
 
   const allCards = useMemo(
     () =>
@@ -679,18 +873,24 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
           const active = rows.filter((row) => row.status === "active");
           const premium = active.reduce((sum, row) => sum + row.premium, 0);
           const google = includeGoogleAds
-            ? googleAdsRollup(name, googleCampaignsForBrand, googleStats, range)
+            ? googleAdsRollup(name, googleCampaigns, googleStats, range)
             : { cost: 0, clicks: 0, impressions: 0, campaigns: [] };
           const facebook = includeManualAds
             ? facebookAdsRollup(name, facebookCampaigns, facebookStats, range)
             : { cost: 0, clicks: 0, impressions: 0, campaigns: [] };
+          const googleCost = includeGoogleAds
+            ? spendForSource(googleSpendResolved, name) || google.cost
+            : 0;
+          const facebookCost = includeManualAds
+            ? spendForSource(facebookSpendResolved, name) || facebook.cost
+            : 0;
           const marketing = cubeMarketingTotals(
             name,
             costs,
-            google.cost,
-            google.campaigns.length,
-            facebook.cost,
-            facebook.campaigns.length,
+            googleCost,
+            google.campaigns.length || (googleCost > 0 ? 1 : 0),
+            facebookCost,
+            facebook.campaigns.length || (facebookCost > 0 ? 1 : 0),
           );
           const adsTotal = includeGoogleAds || includeManualAds ? marketing.adsTotal : 0;
           const wageTotal = wageForContractProductions(active, {
@@ -700,11 +900,14 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
             kind,
             contextRows: wageContextRows,
           });
+          const insurer = insurerIncomeForProductions(active, {
+            yearContext: data?.marketing?.productions ?? productions,
+          });
           const pnl = campaignPnl({
             premium,
             wageTotal,
             adsTotal,
-            insurerMultiplier,
+            income: insurer.income,
           });
           const workers = new Set(
             active.map((row) => row.agent).filter((agent) => agent && agent !== "—"),
@@ -733,17 +936,19 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
       productions,
       expenses,
       range,
-      googleCampaignsForBrand,
+      googleCampaigns,
       googleStats,
+      googleSpendResolved,
       facebookCampaigns,
       facebookStats,
+      facebookSpendResolved,
       rates,
       payProfiles,
       wageContextRows,
       defaultMultiplier,
-      insurerMultiplier,
       kind,
       brand,
+      data,
     ],
   );
 
@@ -832,10 +1037,10 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
               </h1>
             </div>
             <p className="mt-2 hidden max-w-2xl text-sm leading-relaxed text-muted-foreground sm:block">
-              {copy.subtitleLead} פרמיה, הכנסה ×{insurerMultiplier}, שכר ושיווק לפי מותג.
+              {copy.subtitleLead} פרמיה, הכנסה לפי חוזה, שכר ושיווק לפי מותג.
             </p>
             <p className="mt-1.5 text-[12px] leading-snug text-muted-foreground sm:hidden">
-              פרמיה · הכנסה ×{insurerMultiplier} · שכר · שיווק לפי מותג
+              פרמיה · הכנסה לפי חוזה · שכר · שיווק לפי מותג
             </p>
           </div>
           <LastSyncPanel
@@ -1075,7 +1280,10 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
                 אימות מקורות נתונים
               </p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                שכר · גוגל · פייסבוק
+                שכר {payProfiles.length} · גוגל {googleCampaigns.length}/{googleStats.length}
+                {googleSpendInRange > 0 ? ` · ${formatIls(googleSpendInRange)}` : ""}
+                {" · "}פייסבוק {facebookCampaigns.length}/{facebookStats.length}
+                {facebookSpendInRange > 0 ? ` · ${formatIls(facebookSpendInRange)}` : ""}
               </p>
             </div>
             {verificationOpen ? (
@@ -1099,7 +1307,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
                   <span>
                     גוגל אדס:{" "}
                     {googleAds.connected
-                      ? `מחובר · ${formatLastUpdatedAt(googleAds.lastSyncedAt) ?? "—"} · ${formatIls(googleSpendInRange)} · «${GOOGLE_ADS_CUBE_SOURCE}»`
+                      ? `מחובר · ${formatLastUpdatedAt(googleAds.lastSyncedAt) ?? "—"} · ${formatIls(googleSpendInRange)} · ביטוחים «${GOOGLE_ADS_CUBE_SOURCE}» · פיננסים «${GOOGLE_ADS_SHEMESH_CUBE_SOURCE}»`
                       : "לא מחובר"}
                   </span>
                 </li>
@@ -1252,7 +1460,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
                     onOpen={() => setLineDetail({ name: card.name, kind: "premium" })}
                   />
                   <CubeLine
-                    label={`הכנסה מחברות ×${insurerMultiplier}`}
+                    label="הכנסה מחברות"
                     value={<Money value={card.income} className="font-medium tabular-nums" />}
                     onOpen={() => setLineDetail({ name: card.name, kind: "income" })}
                   />
@@ -1363,9 +1571,9 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
         wageKind={kind}
         wageContextRows={wageContextRows}
         defaultMultiplier={defaultMultiplier}
-        insurerMultiplier={insurerMultiplier}
+        insurerYearContext={data?.marketing?.productions ?? []}
         googleAds={googleAds}
-        googleCampaigns={googleCampaignsForBrand}
+        googleCampaigns={googleCampaigns}
         googleStats={googleStats}
         facebookCampaigns={facebookCampaigns}
         facebookStats={facebookStats}
@@ -1389,9 +1597,9 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
         wageKind={kind}
         wageContextRows={wageContextRows}
         defaultMultiplier={defaultMultiplier}
-        insurerMultiplier={insurerMultiplier}
+        insurerYearContext={data?.marketing?.productions ?? []}
         googleAds={googleAds}
-        googleCampaigns={googleCampaignsForBrand}
+        googleCampaigns={googleCampaigns}
         googleStats={googleStats}
         facebookCampaigns={facebookCampaigns}
         facebookStats={facebookStats}

@@ -4,8 +4,6 @@ import { JERUSALEM_TZ, normalizeExcelText } from "@/lib/sales-dashboard/columns"
 export const DEFAULT_PROFIT_THRESHOLD = 0.45;
 /** Wage is 0 until an employee agreement is saved. Kept at 0 so old cubes cannot invent salary. */
 export const DEFAULT_AGENT_MULTIPLIER = 0;
-/** What Liba receives from the insurers on each closed premium. */
-export const DEFAULT_INSURER_MULTIPLIER = 9;
 
 export type AgentRate = {
   agentName: string;
@@ -69,16 +67,27 @@ export type DateRange = {
 
 export type ProfitStatus = "profit" | "loss" | "no-cost";
 
-/** All Google Ads spend is attributed to this Excel referral cube. */
+/** Liba Google Ads cube — campaign «ביטוחים». */
 export const GOOGLE_ADS_CUBE_SOURCE = "שיחות נכנסות";
+/** Shemesh Google Ads cube — campaign «פיננסים». */
+export const GOOGLE_ADS_SHEMESH_CUBE_SOURCE = "קמפיין שמש";
+
+export function isLibaGoogleAdsCube(name: string): boolean {
+  return canonicalCampaignSource(name) === GOOGLE_ADS_CUBE_SOURCE;
+}
+
+export function isShemeshGoogleAdsCube(name: string): boolean {
+  return canonicalCampaignSource(name) === GOOGLE_ADS_SHEMESH_CUBE_SOURCE;
+}
 
 export function isGoogleAdsCube(name: string): boolean {
-  return canonicalCampaignSource(name) === GOOGLE_ADS_CUBE_SOURCE;
+  return isLibaGoogleAdsCube(name) || isShemeshGoogleAdsCube(name);
 }
 
 /** Excel / DB spelling variants for the same referral cube. */
 const CAMPAIGN_SOURCE_ALIASES: Record<string, string> = {
   "רועי אוזלאי": "רועי אזולאי",
+  "אושרן משכנתאות": "אורשן משכנתאות",
 };
 
 export function canonicalCampaignSource(name: string): string {
@@ -126,37 +135,80 @@ function shiftMonth(ymd: string, delta: number): { year: number; month: number }
   return { year, month: month + 1 };
 }
 
-export function rangeForPreset(preset: DatePreset, custom: DateRange): DateRange {
+/** Excel stamps productions on the last calendar day of the month. */
+function lastYmdOfMonth(year: number, month: number): string {
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
+}
+
+export function rangeForPreset(
+  preset: DatePreset,
+  custom: DateRange,
+  today = jerusalemYmd(),
+): DateRange {
   if (preset === "all") return { from: null, to: null };
   if (preset === "custom") return custom;
-  const today = jerusalemYmd();
   const [y, m] = today.split("-").map(Number);
   if (preset === "ytd") {
-    return { from: `${y}-01-01`, to: today };
+    return { from: `${y}-01-01`, to: lastYmdOfMonth(y, m) };
   }
   if (preset === "month") {
-    return { from: `${y}-${String(m).padStart(2, "0")}-01`, to: today };
+    return {
+      from: `${y}-${String(m).padStart(2, "0")}-01`,
+      to: lastYmdOfMonth(y, m),
+    };
   }
   if (preset === "prev") {
     const prev = shiftMonth(today, -1);
-    const last = new Date(Date.UTC(prev.year, prev.month, 0)).getUTCDate();
     const mm = String(prev.month).padStart(2, "0");
     return {
       from: `${prev.year}-${mm}-01`,
-      to: `${prev.year}-${mm}-${String(last).padStart(2, "0")}`,
+      to: lastYmdOfMonth(prev.year, prev.month),
     };
   }
   const start = new Date(`${today}T00:00:00+03:00`);
   start.setDate(start.getDate() - 89);
-  return { from: jerusalemYmd(start), to: today };
+  return { from: jerusalemYmd(start), to: lastYmdOfMonth(y, m) };
+}
+
+export function assertDatePresetsCoverExcelMonth(): void {
+  const month = rangeForPreset("month", { from: null, to: null }, "2026-09-16");
+  if (month.from !== "2026-09-01" || month.to !== "2026-09-30") {
+    throw new Error(`expected החודש to cover 1–30 Sep, got ${month.from}–${month.to}`);
+  }
+  const ytd = rangeForPreset("ytd", { from: null, to: null }, "2026-09-16");
+  if (ytd.from !== "2026-01-01" || ytd.to !== "2026-09-30") {
+    throw new Error(`expected YTD to include Sep 30 Excel rows, got ${ytd.from}–${ytd.to}`);
+  }
+  const prev = rangeForPreset("prev", { from: null, to: null }, "2026-09-16");
+  if (prev.from !== "2026-08-01" || prev.to !== "2026-08-31") {
+    throw new Error(`expected חודש שעבר Aug 1–31, got ${prev.from}–${prev.to}`);
+  }
+}
+
+export function isoDay(value: unknown): string {
+  if (value == null || value === "" || value === "—") return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return jerusalemYmd(value);
+  }
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  const dmy = raw.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+  if (dmy) {
+    return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  }
+  return "";
 }
 
 export function inDateRange(isoDate: string, range: DateRange): boolean {
   if (!range.from && !range.to) return true;
-  if (!isoDate || isoDate === "—") return false;
-  const day = isoDate.slice(0, 10);
-  if (range.from && day < range.from) return false;
-  if (range.to && day > range.to) return false;
+  const day = isoDay(isoDate);
+  if (!day) return false;
+  const from = isoDay(range.from) || range.from || "";
+  const to = isoDay(range.to) || range.to || "";
+  if (from && day < from) return false;
+  if (to && day > to) return false;
   return true;
 }
 
@@ -174,28 +226,18 @@ export function profitRatio(premium: number, expenses: number): number | null {
   return premium / expenses;
 }
 
-export function insurerIncome(
-  premium: number,
-  multiplier = DEFAULT_INSURER_MULTIPLIER,
-): number {
-  return wageForPremium(premium, multiplier);
-}
-
 export function campaignPnl(input: {
   premium: number;
   wageTotal: number;
   adsTotal: number;
-  insurerMultiplier?: number;
+  income: number;
 }): {
   income: number;
   expenseTotal: number;
   net: number;
   status: ProfitStatus;
 } {
-  const income = insurerIncome(
-    input.premium,
-    input.insurerMultiplier ?? DEFAULT_INSURER_MULTIPLIER,
-  );
+  const income = Math.round(Number(input.income) || 0);
   const expenseTotal = input.wageTotal + input.adsTotal;
   const net = income - expenseTotal;
   return {
@@ -365,6 +407,7 @@ export type GoogleAdsDailyStat = {
   cost: number;
   clicks: number;
   impressions: number;
+  leads: number;
 };
 
 export type GoogleAdsMappedLine = {
@@ -387,6 +430,12 @@ export function googleAdsStatusLabel(status: string): string {
   return GOOGLE_ADS_STATUS_LABEL[status] ?? status;
 }
 
+function defaultGoogleCubeForCampaignName(campaignName: string): string {
+  const v = normalizeExcelText(campaignName);
+  if (v.includes("פיננס")) return GOOGLE_ADS_SHEMESH_CUBE_SOURCE;
+  return GOOGLE_ADS_CUBE_SOURCE;
+}
+
 export function googleAdsRollup(
   sourceName: string,
   campaigns: GoogleAdsCampaignRow[],
@@ -399,14 +448,27 @@ export function googleAdsRollup(
   campaigns: GoogleAdsMappedLine[];
 } {
   const mapped = campaigns.filter((row) => {
-    if (!row.enabled) return false;
-    if (row.sourceName && sourceMatchesCampaignName(row.sourceName, sourceName)) return true;
-    return isGoogleAdsCube(sourceName) && !row.sourceName;
+    if (row.enabled === false) return false;
+    const mappedName = row.sourceName ?? (row as { source_name?: string }).source_name;
+    if (mappedName && sourceMatchesCampaignName(String(mappedName), sourceName)) {
+      return true;
+    }
+    if (!String(mappedName ?? "").trim()) {
+      return (
+        canonicalCampaignSource(sourceName) ===
+        defaultGoogleCubeForCampaignName(row.googleCampaignName)
+      );
+    }
+    return false;
   });
   const byId = new Map<string, GoogleAdsMappedLine>();
   for (const row of mapped) {
-    byId.set(String(row.googleCampaignId), {
-      googleCampaignId: String(row.googleCampaignId),
+    const id = String(
+      row.googleCampaignId ?? (row as { google_campaign_id?: string }).google_campaign_id ?? "",
+    ).trim();
+    if (!id) continue;
+    byId.set(id, {
+      googleCampaignId: id,
       googleCampaignName: row.googleCampaignName,
       status: row.status,
       cost: 0,
@@ -418,15 +480,19 @@ export function googleAdsRollup(
   let clicks = 0;
   let impressions = 0;
   for (const row of stats) {
-    const item = byId.get(String(row.googleCampaignId));
-    if (!item) continue;
     if (!inDateRange(row.day, range)) continue;
-    item.cost += row.cost;
-    item.clicks += row.clicks;
-    item.impressions += row.impressions;
-    cost += row.cost;
-    clicks += row.clicks;
-    impressions += row.impressions;
+    const id = String(
+      row.googleCampaignId ?? (row as { google_campaign_id?: string }).google_campaign_id ?? "",
+    ).trim();
+    const item = byId.get(id);
+    if (!item) continue;
+    const rowCost = Number(row.cost) || 0;
+    item.cost += rowCost;
+    item.clicks += Number(row.clicks) || 0;
+    item.impressions += Number(row.impressions) || 0;
+    cost += rowCost;
+    clicks += Number(row.clicks) || 0;
+    impressions += Number(row.impressions) || 0;
   }
   return {
     cost,
@@ -452,6 +518,7 @@ export type FacebookAdsDailyStat = {
   cost: number;
   clicks: number;
   impressions: number;
+  leads: number;
 };
 
 export type FacebookAdsMappedLine = {
@@ -476,6 +543,43 @@ export function facebookAdsStatusLabel(status: string): string {
   return FACEBOOK_ADS_STATUS_LABEL[status] ?? status;
 }
 
+export function googleSpendBySource(
+  campaigns: GoogleAdsCampaignRow[],
+  stats: GoogleAdsDailyStat[],
+  range: DateRange,
+): Record<string, number> {
+  const names = new Set<string>([
+    GOOGLE_ADS_CUBE_SOURCE,
+    GOOGLE_ADS_SHEMESH_CUBE_SOURCE,
+  ]);
+  for (const row of campaigns) {
+    if (row.sourceName) names.add(canonicalCampaignSource(row.sourceName));
+  }
+  const out: Record<string, number> = {};
+  for (const name of names) {
+    const cost = googleAdsRollup(name, campaigns, stats, range).cost;
+    if (cost) out[name] = cost;
+  }
+  return out;
+}
+
+export function facebookSpendBySource(
+  campaigns: FacebookAdsCampaignRow[],
+  stats: FacebookAdsDailyStat[],
+  range: DateRange,
+): Record<string, number> {
+  const names = new Set<string>();
+  for (const row of campaigns) {
+    if (row.sourceName) names.add(canonicalCampaignSource(row.sourceName));
+  }
+  const out: Record<string, number> = {};
+  for (const name of names) {
+    const cost = facebookAdsRollup(name, campaigns, stats, range).cost;
+    if (cost) out[name] = cost;
+  }
+  return out;
+}
+
 export function facebookAdsRollup(
   sourceName: string,
   campaigns: FacebookAdsCampaignRow[],
@@ -489,7 +593,7 @@ export function facebookAdsRollup(
 } {
   const mapped = campaigns.filter(
     (row) =>
-      row.enabled &&
+      row.enabled !== false &&
       Boolean(row.sourceName) &&
       sourceMatchesCampaignName(row.sourceName ?? "", sourceName),
   );
@@ -508,15 +612,21 @@ export function facebookAdsRollup(
   let clicks = 0;
   let impressions = 0;
   for (const row of stats) {
-    const item = byId.get(String(row.facebookCampaignId));
+    const id = String(
+      row.facebookCampaignId ??
+        (row as { facebook_campaign_id?: string }).facebook_campaign_id ??
+        "",
+    ).trim();
+    const item = byId.get(id);
     if (!item) continue;
     if (!inDateRange(row.day, range)) continue;
-    item.cost += row.cost;
-    item.clicks += row.clicks;
-    item.impressions += row.impressions;
-    cost += row.cost;
-    clicks += row.clicks;
-    impressions += row.impressions;
+    const rowCost = Number(row.cost) || 0;
+    item.cost += rowCost;
+    item.clicks += Number(row.clicks) || 0;
+    item.impressions += Number(row.impressions) || 0;
+    cost += rowCost;
+    clicks += Number(row.clicks) || 0;
+    impressions += Number(row.impressions) || 0;
   }
   return {
     cost,
@@ -550,7 +660,7 @@ export function cubeMarketingTotals(
     if (skipManualFacebook && row.channel === "facebook") continue;
     byChannel[row.channel] += row.amount;
   }
-  if (isGoogleAdsCube(sourceName)) byChannel.google += googleCost;
+  byChannel.google += googleCost;
   byChannel.facebook += facebookCost;
   return {
     adsTotal: byChannel.google + byChannel.facebook + byChannel.manual,

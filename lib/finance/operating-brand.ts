@@ -1,7 +1,10 @@
 import { normalizeExcelText } from "@/lib/sales-dashboard/columns";
 import {
   canonicalAgentName,
-  isGoogleAdsCube,
+  GOOGLE_ADS_CUBE_SOURCE,
+  GOOGLE_ADS_SHEMESH_CUBE_SOURCE,
+  isLibaGoogleAdsCube,
+  isShemeshGoogleAdsCube,
 } from "@/lib/sales-dashboard/campaign-math";
 
 export const OPERATING_BRANDS = ["all", "liba", "shemesh"] as const;
@@ -98,13 +101,24 @@ export function sourceNameVisibleInBrand(
   hasRowsInBrand: boolean,
 ): boolean {
   if (selected === "all") return true;
-  if (isGoogleAdsCube(sourceName)) return true;
+  if (isLibaGoogleAdsCube(sourceName)) {
+    return selected === "liba" || hasRowsInBrand;
+  }
+  if (isShemeshGoogleAdsCube(sourceName)) {
+    return selected === "shemesh" || hasRowsInBrand;
+  }
   if (hasRowsInBrand) return true;
   if (selected === "shemesh") return isShemeshSourceName(sourceName);
   return !isShemeshSourceName(sourceName);
 }
 
-/** Ads follow the source name, not the agent on a mixed source. */
+/** Google campaign «פיננסים» lands on שמש. «ביטוחים» / liba names land on ליבה. */
+export function defaultGoogleAdsCubeForCampaign(campaignName: string): string {
+  return googleCampaignOperatingBrand(campaignName) === "shemesh"
+    ? GOOGLE_ADS_SHEMESH_CUBE_SOURCE
+    : GOOGLE_ADS_CUBE_SOURCE;
+}
+
 export function adsSourceBrand(sourceName: string): AssignedOperatingBrand {
   return isShemeshSourceName(sourceName) ? "shemesh" : "liba";
 }
@@ -251,6 +265,12 @@ export function assertOperatingBrandRules() {
   if (googleCampaignOperatingBrand("msm_phone_Calls_liba") !== "liba") {
     throw new Error("liba-named google campaign should stay liba");
   }
+  if (defaultGoogleAdsCubeForCampaign("ביטוחים") !== GOOGLE_ADS_CUBE_SOURCE) {
+    throw new Error("ביטוחים should map to שיחות נכנסות");
+  }
+  if (defaultGoogleAdsCubeForCampaign("פיננסים") !== GOOGLE_ADS_SHEMESH_CUBE_SOURCE) {
+    throw new Error("פיננסים should map to קמפיין שמש");
+  }
   if (facebookCampaignVisibleInBrand({ sourceName: "קמפיין שמש" }, "liba")) {
     throw new Error("shemesh-mapped facebook campaign must not appear on liba");
   }
@@ -269,10 +289,16 @@ export function assertOperatingBrandRules() {
   if (!facebookCampaignVisibleInBrand({ sourceName: null }, "shemesh")) {
     throw new Error("unmapped facebook campaign must stay on shemesh");
   }
-  if (!sourceNameVisibleInBrand("שיחות נכנסות", "shemesh", false)) {
-    throw new Error("שיחות נכנסות must appear on shemesh");
+  if (sourceNameVisibleInBrand("שיחות נכנסות", "shemesh", false)) {
+    throw new Error("שיחות נכנסות must not appear on shemesh without shemesh rows");
   }
   if (!sourceNameVisibleInBrand("שיחות נכנסות", "liba", false)) {
     throw new Error("שיחות נכנסות must appear on liba");
+  }
+  if (!sourceNameVisibleInBrand("קמפיין שמש", "shemesh", false)) {
+    throw new Error("קמפיין שמש must appear on shemesh");
+  }
+  if (sourceNameVisibleInBrand("קמפיין שמש", "liba", false)) {
+    throw new Error("קמפיין שמש must not appear on liba without liba rows");
   }
 }

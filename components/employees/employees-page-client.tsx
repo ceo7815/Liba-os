@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { loadMarketingCampaignsState } from "@/app/actions/marketing-campaigns";
+import { loadAdsLeadSnapshot, loadMarketingCampaignsState } from "@/app/actions/marketing-campaigns";
 import { listFinanceEmployees, syncEmployeesFromExcel } from "@/app/actions/finance-people";
 import { listEmployeeHours } from "@/app/actions/finance-employee-hours";
+import { listAlexanderUnproducedLeads } from "@/app/actions/finance-alexander-leads";
 import { EmployeesSection } from "@/components/finance/finance-people";
 import {
   DEFAULT_AGENT_MULTIPLIER,
@@ -17,6 +18,12 @@ import {
   parsePayAgreements,
 } from "@/lib/employees/contract";
 import { collectExcelSellerNames, excelAgentKey } from "@/lib/employees/excel-sellers";
+import {
+  buildLeadCplBySourceMonth,
+  EMPTY_ADS_LEAD_SNAPSHOT,
+  groupAlexanderUnproducedByEmployeeId,
+  type AdsLeadSnapshot,
+} from "@/lib/employees/lead-costs";
 import { groupHoursByEmployeeId, groupVacationDaysByEmployeeId, type EmployeeHoursRow } from "@/lib/employees/hours";
 import type { FinanceEmployee } from "@/lib/finance/categories";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
@@ -36,12 +43,17 @@ export function EmployeesPageClient({
   const [defaultMultiplier, setDefaultMultiplier] = useState(DEFAULT_AGENT_MULTIPLIER);
   const [productions, setProductions] = useState<MarketingProduction[]>([]);
   const [hours, setHours] = useState<EmployeeHoursRow[]>([]);
+  const [alexanderByEmployee, setAlexanderByEmployee] = useState<Map<string, Record<string, number>>>(
+    () => new Map(),
+  );
+  const [ads, setAds] = useState<AdsLeadSnapshot>(EMPTY_ADS_LEAD_SNAPSHOT);
   const [wageLoading, setWageLoading] = useState(true);
   const [syncing, startSync] = useTransition();
   const { dashboard: liveDashboard, ready: liveReady } = useLiveDashboard();
 
   const hoursByEmployee = useMemo(() => groupHoursByEmployeeId(hours), [hours]);
   const vacationByEmployee = useMemo(() => groupVacationDaysByEmployeeId(hours), [hours]);
+  const leadCpl = useMemo(() => buildLeadCplBySourceMonth(ads), [ads]);
 
   const totals = useMemo(
     () =>
@@ -64,12 +76,14 @@ export function EmployeesPageClient({
             agreements,
             hoursByMonth: hoursByEmployee.get(row.id),
             vacationDaysByMonth: vacationByEmployee.get(row.id),
+            alexanderUnproducedByMonth: alexanderByEmployee.get(row.id),
           });
         }),
         rates: [],
         fallback: 0,
+        leadCpl,
       }),
-    [employees, hoursByEmployee, productions, vacationByEmployee],
+    [employees, hoursByEmployee, alexanderByEmployee, leadCpl, productions, vacationByEmployee],
   );
 
   const excelNames = useMemo(
@@ -145,6 +159,15 @@ export function EmployeesPageClient({
     setHours(result.hours);
   }, []);
 
+  const reloadAlexander = useCallback(async () => {
+    const result = await listAlexanderUnproducedLeads();
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setAlexanderByEmployee(groupAlexanderUnproducedByEmployeeId(result.rows));
+  }, []);
+
   useEffect(() => {
     void listFinanceEmployees().then((list) => {
       if (!list.error) setEmployees(list.employees);
@@ -160,16 +183,26 @@ export function EmployeesPageClient({
   }, [reloadHours]);
 
   useEffect(() => {
+    void reloadAlexander();
+  }, [reloadAlexander]);
+
+  useEffect(() => {
+    void loadAdsLeadSnapshot().then(setAds).catch(() => setAds(EMPTY_ADS_LEAD_SNAPSHOT));
+  }, []);
+
+  useEffect(() => {
     const onGlobalSync = () => {
       void listFinanceEmployees().then((list) => {
         if (!list.error) setEmployees(list.employees);
       });
       void reloadHours();
+      void reloadAlexander();
       void loadRates();
+      void loadAdsLeadSnapshot().then(setAds).catch(() => setAds(EMPTY_ADS_LEAD_SNAPSHOT));
     };
     window.addEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
     return () => window.removeEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
-  }, [loadRates, reloadHours]);
+  }, [loadRates, reloadHours, reloadAlexander]);
 
   const syncedAtLabel = formatLastUpdatedAt(dashboard?.syncedAt);
 
@@ -208,7 +241,10 @@ export function EmployeesPageClient({
         wageLoading={wageLoading}
         productions={productions}
         hours={hours}
+        alexanderByEmployee={alexanderByEmployee}
+        leadCpl={leadCpl}
         onHoursChanged={() => void reloadHours()}
+        onAlexanderChanged={() => void reloadAlexander()}
         onRatesChanged={() => {
           void loadRates();
         }}

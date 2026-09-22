@@ -3,18 +3,22 @@ import {
   agentBelongsToEmployee,
   emptyPayContract,
   extrasAmountForMonth,
+  countsForPartnershipVolume,
   countsForVolumeCommission,
+  filterPartnershipProductions,
   monthlyCostsTotal,
   FREELANCERS_4,
   filterFreelancers4PayProductions,
   freelancers1SettledForPayMonth,
   isEmployeeWageMonth,
+  isPartnershipSource,
   productionMonthKey,
   usesFreelancers1,
   isFreelancers3,
   isFreelancers4,
   oneTimeMonthsForContract,
   profileUsesHubProductions,
+  profileUsesPartnershipProductions,
   salariedBaseWageForMonth,
   salariedVacationByMonth,
   toPayProfile,
@@ -25,6 +29,7 @@ import {
 import { monthLabel } from "@/lib/employees/review";
 import type { FinanceEmployee } from "@/lib/finance/categories";
 import { jerusalemYmd } from "@/lib/sales-dashboard/campaign-math";
+import { freelancerLeadCosts, type LeadCplMap } from "@/lib/employees/lead-costs";
 import { sourcePnlKindForProcess } from "@/lib/sales-dashboard/columns";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 
@@ -45,6 +50,7 @@ export type PayrollMonthSlice = {
   settledCount: number;
   settledPremium: number;
   monthlyCosts: number;
+  leadCosts: number;
   total: number;
 };
 
@@ -67,6 +73,7 @@ export type PayrollEmployeeRow = {
   settledCount: number;
   settledPremium: number;
   monthlyCosts: number;
+  leadCosts: number;
   total: number;
   months: PayrollMonthSlice[];
 };
@@ -180,6 +187,7 @@ function emptySlice(month: string): PayrollMonthSlice {
     settledCount: 0,
     settledPremium: 0,
     monthlyCosts: 0,
+    leadCosts: 0,
     total: 0,
   };
 }
@@ -195,6 +203,7 @@ function addSlice(target: PayrollMonthSlice, extra: PayrollMonthSlice) {
   target.settledCount += extra.settledCount;
   target.settledPremium += extra.settledPremium;
   target.monthlyCosts += extra.monthlyCosts;
+  target.leadCosts += extra.leadCosts;
   target.total += extra.total;
 }
 
@@ -223,6 +232,9 @@ export function agreementLabelFor(
 ): string {
   if (!kind || !contract) return "אין הסכם";
   if (kind === "unpaid") return "ללא שכר";
+  if (kind === "partnership") {
+    return "שיתוף פעולה · תשלום ×4 על סגירה מהמקור · בלי נפרעים לשותף";
+  }
   if (kind === "freelancer") {
     const extrasTotal = (contract.variableExpenses ?? [])
       .filter((row) => row.amount > 0 && row.note.trim())
@@ -234,7 +246,7 @@ export function agreementLabelFor(
     const costLabel = costs ? `עלויות ₪${costs.toLocaleString("he-IL")}` : null;
     const parts = [
       isFreelancers4(contract)
-        ? `עצמאים 4 אביחי יוסף · ₪${FREELANCERS_4.fixedMonthly.toLocaleString("he-IL")} קבוע + היקף ליבה · פער קיזוזים חד־פעמי ₪${FREELANCERS_4.oneTimeGap.amount.toLocaleString("he-IL")}`
+        ? `עצמאים 4 אביחי יוסף · ₪${FREELANCERS_4.fixedMonthly.toLocaleString("he-IL")} קבוע + היקף ליבה · בלי עלויות לידים · פער קיזוזים חד־פעמי ₪${FREELANCERS_4.oneTimeGap.amount.toLocaleString("he-IL")}`
         : isFreelancers3(contract)
         ? "עצמאים 3 בן סגל · מכפיל 7 · בלי נפרעים"
         : contract.volumePercent
@@ -310,7 +322,9 @@ export function buildPayrollLedger(input: {
   productions: MarketingProduction[];
   hoursByEmployee: Map<string, Record<string, number>>;
   vacationByEmployee?: Map<string, Record<string, number>>;
+  alexanderByEmployee?: Map<string, Record<string, number>>;
   months: string[];
+  leadCpl?: LeadCplMap;
 }): PayrollLedger {
   const months = input.months.filter((month) => /^\d{4}-\d{2}$/.test(month));
   const employees: PayrollEmployeeRow[] = [];
@@ -325,15 +339,19 @@ export function buildPayrollLedger(input: {
       agreements: emp.agreements ?? [],
       hoursByMonth,
       vacationDaysByMonth: input.vacationByEmployee?.get(emp.id),
+      alexanderUnproducedByMonth: input.alexanderByEmployee?.get(emp.id),
     });
-    const ownProductions = profileUsesHubProductions(profile)
-      ? filterFreelancers4PayProductions(input.productions)
-      : input.productions.filter((row) => agentBelongsToEmployee(row.agent, emp.full_name));
+    const ownProductions = profileUsesPartnershipProductions(profile)
+      ? filterPartnershipProductions(input.productions)
+      : profileUsesHubProductions(profile)
+        ? filterFreelancers4PayProductions(input.productions)
+        : input.productions.filter((row) => agentBelongsToEmployee(row.agent, emp.full_name));
     const salesByMonth: Record<string, number> = {};
     const lookbackMonths = new Set<string>([
       ...months,
       ...Object.keys(hoursByMonth),
       ...Object.keys(profile.vacationDaysByMonth ?? {}),
+      ...Object.keys(profile.alexanderUnproducedByMonth ?? {}),
     ]);
     for (const row of ownProductions) {
       const month = productionMonthKey(row);
@@ -349,6 +367,7 @@ export function buildPayrollLedger(input: {
       });
     }
     const vacation = salariedVacationByMonth(profile, salesByMonth);
+    const leadCharge = freelancerLeadCosts(profile, ownProductions, input.leadCpl);
     const monthSlices: PayrollMonthSlice[] = [];
 
     for (const month of months) {
@@ -363,6 +382,13 @@ export function buildPayrollLedger(input: {
       const monthRows = ownProductions.filter((row) => productionMonthKey(row) === month);
       const active = monthRows.filter((row) => row.status === "active");
       for (const row of active) {
+        if (kind === "partnership") {
+          if (!countsForPartnershipVolume(row)) continue;
+          slice.volumeCount += 1;
+          slice.volumePremium += row.premium;
+          continue;
+        }
+        if (isPartnershipSource(row.source)) continue;
         const report = sourcePnlKindForProcess(row.process ?? "");
         if (report === "volume") {
           if (!countsForVolumeCommission(row)) continue;
@@ -384,7 +410,11 @@ export function buildPayrollLedger(input: {
         kind === "salaried" || isFreelancers3(contract)
           ? 0
           : wageForContractProductions(active, { ...wageOptions, kind: "settled" });
-      if (kind === "freelancer" && isFreelancers3(contract)) {
+      if (kind === "partnership") {
+        slice.settledCount = 0;
+        slice.settledPremium = 0;
+        slice.settledWage = 0;
+      } else if (kind === "freelancer" && isFreelancers3(contract)) {
         slice.settledCount = 0;
         slice.settledPremium = 0;
         slice.settledWage = 0;
@@ -407,12 +437,20 @@ export function buildPayrollLedger(input: {
       } else if (kind === "freelancer" && contract) {
         slice.agreementWage = extrasAmountForMonth(contract, month);
       }
-      if (kind && kind !== "unpaid" && contract) {
+      if (kind && kind !== "unpaid" && kind !== "partnership" && contract) {
         slice.monthlyCosts = monthlyCostsTotal(contract);
+      }
+      if (kind === "freelancer") {
+        slice.leadCosts = leadCharge.byMonth[month]?.amount ?? 0;
       }
       slice.volumePremium = roundMoney(slice.volumePremium);
       slice.settledPremium = roundMoney(slice.settledPremium);
-      slice.total = slice.agreementWage + slice.volumeWage + slice.settledWage - slice.monthlyCosts;
+      slice.total =
+        slice.agreementWage +
+        slice.volumeWage +
+        slice.settledWage -
+        slice.monthlyCosts -
+        slice.leadCosts;
       monthSlices.push(slice);
     }
 
@@ -446,6 +484,7 @@ export function buildPayrollLedger(input: {
       settledCount: summed.settledCount,
       settledPremium: summed.settledPremium,
       monthlyCosts: summed.monthlyCosts,
+      leadCosts: summed.leadCosts,
       total: summed.total,
       months: monthSlices,
     });
@@ -465,6 +504,7 @@ export function buildPayrollLedger(input: {
     settledCount: 0,
     settledPremium: 0,
     monthlyCosts: 0,
+    leadCosts: 0,
     total: 0,
     employeeCount: employees.length,
     withPay: employees.filter((row) => row.total > 0).length,
@@ -481,6 +521,7 @@ export function buildPayrollLedger(input: {
     totals.settledCount += row.settledCount;
     totals.settledPremium += row.settledPremium;
     totals.monthlyCosts += row.monthlyCosts;
+    totals.leadCosts += row.leadCosts;
     totals.total += row.total;
   }
 

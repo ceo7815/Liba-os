@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Plus, Trash2, CircleHelp, X } from "lucide-react";
 import { toast } from "sonner";
 import { saveEmployeePayContract, updateFinanceEmployee, getFinanceEmployee } from "@/app/actions/finance-people";
+import { AlexanderUnproducedEditor } from "@/components/employees/alexander-leads-panel";
 import { EmployeeReviewPanel } from "@/components/employees/employee-review-panel";
 import { EmployeeHoursPanel } from "@/components/employees/employee-hours-panel";
 import {
@@ -36,6 +37,7 @@ import {
   usesMonthlySalary,
   isFreelancers3,
   isFreelancers4,
+  freelancerPaysLeadCosts,
   fixedMonthlyForMonth,
   oneTimePaymentsIncomplete,
   resolvedOneTimePayments,
@@ -55,6 +57,7 @@ import {
   type AgentRate,
 } from "@/lib/sales-dashboard/campaign-math";
 import { countVacationDays, type EmployeeHoursRow } from "@/lib/employees/hours";
+import type { LeadCplMap } from "@/lib/employees/lead-costs";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -142,6 +145,7 @@ type CardTab = "review" | "details" | "agreement" | "hours";
 const KIND_OPTIONS = [
   { id: "salaried", label: "שכיר" },
   { id: "freelancer", label: "עצמאי" },
+  { id: "partnership", label: "שיתוף פעולה" },
   { id: "unpaid", label: "ללא שכר" },
 ] as const;
 
@@ -151,7 +155,11 @@ export function EmployeeCardDialog({
   onOpenChange,
   productions,
   hours = [],
+  alexanderByMonth = {},
+  leadCpl,
+  focusLeads = false,
   onHoursChanged,
+  onAlexanderChanged,
   rates,
   defaultMultiplier = DEFAULT_AGENT_MULTIPLIER,
   onDelete,
@@ -162,7 +170,11 @@ export function EmployeeCardDialog({
   onOpenChange: (open: boolean) => void;
   productions: MarketingProduction[];
   hours?: EmployeeHoursRow[];
+  alexanderByMonth?: Record<string, number>;
+  leadCpl?: LeadCplMap;
+  focusLeads?: boolean;
   onHoursChanged?: () => void;
+  onAlexanderChanged?: () => void;
   rates: AgentRate[];
   defaultMultiplier?: number;
   contactEditor?: React.ReactNode;
@@ -171,6 +183,7 @@ export function EmployeeCardDialog({
 }) {
   const [pending, startTransition] = useTransition();
   const [tab, setTab] = useState<CardTab>("review");
+  const [leadFocus, setLeadFocus] = useState(false);
   const [agreements, setAgreements] = useState<EmployeeAgreement[]>(() =>
     agreementsFromEmployee(emp),
   );
@@ -201,8 +214,11 @@ export function EmployeeCardDialog({
   }, [emp.id, open]);
 
   useEffect(() => {
-    if (open) setTab("review");
-  }, [open]);
+    if (open) {
+      setTab("review");
+      setLeadFocus(Boolean(focusLeads));
+    }
+  }, [open, focusLeads]);
 
   const selected = agreements.find((row) => row.id === selectedId) ?? null;
   const kind = selected?.employmentKind ?? null;
@@ -234,8 +250,9 @@ export function EmployeeCardDialog({
         agreements,
         hoursByMonth,
         vacationDaysByMonth,
+        alexanderUnproducedByMonth: alexanderByMonth,
       }),
-    [agreements, emp.full_name, hoursByMonth, vacationDaysByMonth],
+    [agreements, alexanderByMonth, emp.full_name, hoursByMonth, vacationDaysByMonth],
   );
 
   const live = useMemo(() => {
@@ -243,9 +260,10 @@ export function EmployeeCardDialog({
       profiles: [profile],
       rates,
       fallback: 0,
+      leadCpl,
     });
     return wageTotalForEmployeeContract(emp.full_name, totals);
-  }, [defaultMultiplier, emp.full_name, productions, profile, rates]);
+  }, [defaultMultiplier, emp.full_name, leadCpl, productions, profile, rates]);
 
   const review = useMemo(
     () =>
@@ -253,8 +271,9 @@ export function EmployeeCardDialog({
         profiles: [profile],
         rates,
         fallback: 0,
+        leadCpl,
       }),
-    [defaultMultiplier, emp.full_name, productions, profile, rates],
+    [defaultMultiplier, emp.full_name, leadCpl, productions, profile, rates],
   );
 
   function patchAgreement(id: string, partial: Partial<EmployeeAgreement>) {
@@ -443,7 +462,16 @@ export function EmployeeCardDialog({
                   </div>
                 ) : null}
               </section>
-              <EmployeeReviewPanel review={review} />
+              {kind === "freelancer" && freelancerPaysLeadCosts(contract)
+                ? (
+                <AlexanderUnproducedEditor
+                  employeeId={emp.id}
+                  months={review.months.map((row) => row.key).filter((key) => /^\d{4}-\d{2}$/.test(key))}
+                  byMonth={alexanderByMonth}
+                  onChanged={onAlexanderChanged}
+                />
+              ) : null}
+              <EmployeeReviewPanel review={review} focusLeads={leadFocus} />
             </div>
           ) : null}
 
@@ -640,7 +668,7 @@ export function EmployeeCardDialog({
 
                     <div className="space-y-2">
                       <h3 className="text-base font-semibold">סוג העסקה בתקופה זו</h3>
-                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2">
                         {KIND_OPTIONS.map((option) => (
                           <button
                             key={option.id}
@@ -684,6 +712,7 @@ export function EmployeeCardDialog({
                       <FreelancerFields contract={contract} patch={patchContract} />
                     ) : null}
                     {kind === "unpaid" ? <UnpaidFields /> : null}
+                    {kind === "partnership" ? <PartnershipFields /> : null}
 
                     <Button
                       type="button"
@@ -713,12 +742,39 @@ export function EmployeeCardDialog({
               <aside className="space-y-4 border-t border-black/[0.06] bg-muted/20 p-4 sm:p-5 lg:border-t-0 lg:border-s">
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    {kind === "unpaid" ? "שכר לעובד" : "חישוב חי מהאקסל"}
+                    {kind === "unpaid" ? "שכר לעובד" : kind === "partnership" ? "תשלום לשותף" : "שכר ששולם"}
                   </p>
                   <p className="mt-1 text-xl font-semibold tabular-nums sm:text-2xl">{formatIls(live.earned)}</p>
+                  {kind === "unpaid" || kind === "partnership" ? null : (
+                    <>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {(live.agreementCosts ?? 0) > 0
+                          ? `פחות הוצאות הסכם ${formatIls(live.agreementCosts)}`
+                          : "פחות הוצאות ההסכם"}
+                      </p>
+                      {kind === "freelancer" && freelancerPaysLeadCosts(contract) ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTab("review");
+                            setLeadFocus(true);
+                          }}
+                          className="mt-0.5 text-start text-xs text-muted-foreground underline decoration-dotted decoration-black/25 underline-offset-4 hover:text-foreground"
+                        >
+                          {(live.leadCosts ?? 0) > 0
+                            ? `עלויות לידים −${formatIls(live.leadCosts)}${live.leadCount ? ` · ${live.leadCount} הפקות` : ""} · לחצו לפירוט`
+                            : "עלויות לידים: 50% מעלות הליד לכל הפקה ממקור בתשלום"}
+                        </button>
+                      ) : kind === "freelancer" ? (
+                        <p className="mt-0.5 text-xs text-muted-foreground">עלויות לידים: הנוסחה לא מחייבת</p>
+                      ) : null}
+                    </>
+                  )}
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     {kind === "unpaid"
                       ? "ללא שכר: הסגירות נכנסות לדוחות בלי הוצאת שכר — רווח ישיר לחברה."
+                      : kind === "partnership"
+                        ? "שיתוף פעולה לפי מקור הפניה אורשן משכנתאות: תשלום לשותף = פרמיה × 4 על כל סגירה פעילה, כולל תאונות. הנפרעים נשארים בחברה. מוכר ליבה לא מקבל עמלה על השורות האלה."
                       : kind === "salaried" && isSalaryOnly(contract?.salaryKind)
                         ? "רק משכורת חודשית. אין מדרגות, אין בונוסים, אין נסיעות ואין נפרעים."
                       : kind === "salaried" && usesMonthlySalary(contract?.salaryKind)
@@ -726,7 +782,7 @@ export function EmployeeCardDialog({
                       : kind === "salaried"
                         ? "שכיר לא מקבל נפרעים. השכר נכנס להיקף: מדרגות + שעתי + נסיעות + הפרשות מעסיק."
                       : contract && isFreelancers4(contract)
-                        ? "עצמאים 4 אביחי יוסף: ₪5,000 קבועים כל חודש + היקף מקורות ליבה. ניב לב רן גם על שמש כל התקופה. שאר שמש / דניאל כהן על שמש רק עד 31.5.2026. מיוני בלי השם שמש. נפרעים 3% רק על ליבה."
+                        ? "עצמאים 4 אביחי יוסף: ₪5,000 קבועים כל חודש + היקף מקורות ליבה. ניב לב רן גם על שמש כל התקופה. שאר שמש / דניאל כהן על שמש רק עד 31.5.2026. מיוני בלי השם שמש. נפרעים 3% רק על ליבה. בלי עלויות לידים."
                       : contract && isFreelancers3(contract)
                         ? "עצמאים 3 בן סגל: מכפיל 7 על מכירה בחודש המכירה. בלי נפרעים."
                       : "כל לקוח נכנס לחודש המכירה: הפקה ב־1 לחודש שייכת לחודש שלפניו, גם אם ההעברה ליצרן בחודש אחר."}
@@ -734,13 +790,16 @@ export function EmployeeCardDialog({
                 </div>
                 <dl className="space-y-3 text-sm">
                   <div className="rounded-xl bg-background/80 px-3 py-2.5">
-                    <dt className="text-xs text-muted-foreground">היקף — דוח מכירה</dt>
+                    <dt className="text-xs text-muted-foreground">
+                      {kind === "partnership" ? "תשלום לשותף · פרמיה × 4" : "היקף — דוח מכירה"}
+                    </dt>
                     <dd className="mt-1 font-semibold tabular-nums">{formatIls(live.volumeWage)}</dd>
                     <dd className="text-[11px] text-muted-foreground">
                       {live.volumeCount} סגירות · פרמיה {formatIls(live.volumePremium)}
+                      {kind === "partnership" ? " · כולל תאונות אישיות" : ""}
                     </dd>
                   </div>
-                  {kind === "salaried" || (contract && isFreelancers3(contract)) ? null : (
+                  {kind === "salaried" || kind === "partnership" || (contract && isFreelancers3(contract)) ? null : (
                     <div className="rounded-xl bg-background/80 px-3 py-2.5">
                       <dt className="text-xs text-muted-foreground">
                         {contract && usesFreelancers1(contract)
@@ -777,7 +836,9 @@ export function EmployeeCardDialog({
                       <dd className="mt-1 font-semibold tabular-nums">{formatIls(contract.travelAmount)}</dd>
                     </div>
                   ) : null}
-                  {contract &&
+                  {kind !== "unpaid" &&
+                  kind !== "partnership" &&
+                  contract &&
                   !isSalaryOnly(contract.salaryKind) &&
                   (extrasAmountForMonth(contract) > 0 ||
                     resolvedOneTimePayments(contract).some((row) => row.amount > 0)) ? (
@@ -805,6 +866,32 @@ export function EmployeeCardDialog({
                               : " · חד־פעמי"}
                           </dd>
                         ))}
+                    </div>
+                  ) : null}
+                  {kind === "freelancer" && freelancerPaysLeadCosts(contract) ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTab("review");
+                        setLeadFocus(true);
+                      }}
+                      className="w-full rounded-xl bg-background/80 px-3 py-2.5 text-start hover:bg-background"
+                    >
+                      <dt className="text-xs text-muted-foreground">עלויות לידים — לחצו לפירוט החישוב</dt>
+                      <dd className="mt-1 font-semibold tabular-nums">
+                        {(live.leadCosts ?? 0) > 0 ? `−${formatIls(live.leadCosts)}` : formatIls(0)}
+                      </dd>
+                      <dd className="text-[11px] text-muted-foreground">
+                        {live.leadCount
+                          ? `${live.leadCount} הפקות ממקור בתשלום · 50% מעלות הליד של אותו חודש`
+                          : "גוגל: שיחה נכנסת. פייסבוק: טופס באתר. רק אחרי הפקה."}
+                      </dd>
+                    </button>
+                  ) : kind === "freelancer" ? (
+                    <div className="rounded-xl bg-background/80 px-3 py-2.5">
+                      <dt className="text-xs text-muted-foreground">עלויות לידים</dt>
+                      <dd className="mt-1 font-semibold tabular-nums">{formatIls(0)}</dd>
+                      <dd className="text-[11px] text-muted-foreground">עצמאים 4 · הנוסחה לא מחייבת לידים</dd>
                     </div>
                   ) : null}
                   {contract && monthlyCostsTotal(contract) > 0 ? (
@@ -1807,6 +1894,7 @@ function FreelancerFields({
                 שוטף 60 ונגרר כל עוד הפוליסה פעילה. אין נפרע על מכירות שמש של ניב לב רן, דניאל כהן והשמות עם «שמש».
                 העסק מקבל {FREELANCERS_4.companyPercent}% מהפרמיה.
               </p>
+              <p>אין חיוב עלויות לידים — לא גוגל, לא פייסבוק, לא רועי אזולאי ולא אלכסנדר.</p>
             </>
           ) : formula === "freelancers_3" ? (
             <>
@@ -1925,6 +2013,19 @@ function FreelancerFields({
   );
 }
 
+function PartnershipFields() {
+  return (
+    <section className="space-y-2 rounded-2xl border border-violet-200 bg-violet-50/80 p-4">
+      <h3 className="text-sm font-semibold">שיתוף פעולה — לפי מקור, לא לפי מוכר</h3>
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        הכרטיס יושב על מקור ההפניה «אורשן משכנתאות» (גם אם באקסל כתוב אושרן). על כל סגירה
+        פעילה מהמקור משלמים לשותף פרמיה × 4, כולל תאונות אישיות. אין נפרעים לשותף — הם
+        נשארים בדוח החברה. מוכר ליבה לא מקבל היקף ולא נפרעים על אותה שורה.
+      </p>
+    </section>
+  );
+}
+
 function UnpaidFields() {
   return (
     <section className="space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
@@ -1940,6 +2041,7 @@ function UnpaidFields() {
 export function employmentKindLabel(kind: EmploymentKind | null): string | null {
   if (kind === "salaried") return "שכיר";
   if (kind === "freelancer") return "עצמאי";
+  if (kind === "partnership") return "שיתוף פעולה";
   if (kind === "unpaid") return "ללא שכר";
   return null;
 }

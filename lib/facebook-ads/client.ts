@@ -24,6 +24,8 @@ export type FacebookDailyMetric = {
   cost: number;
   clicks: number;
   impressions: number;
+  /** Website form fills (pixel lead / complete registration). */
+  leads: number;
 };
 
 function asRecord(value: unknown): GraphJson {
@@ -210,6 +212,28 @@ function monthRanges(from: string, to: string): { from: string; to: string }[] {
   return out;
 }
 
+/** Website form lead — pixel Lead, else complete registration, else Ads Manager lead. */
+export function facebookWebsiteLeadCount(actions: unknown): number {
+  if (!Array.isArray(actions)) return 0;
+  const byType = new Map<string, number>();
+  for (const item of actions) {
+    const rec = asRecord(item);
+    const type = asString(rec.action_type).toLowerCase();
+    const value = Math.round(asNumber(rec.value));
+    if (!type || value <= 0) continue;
+    byType.set(type, (byType.get(type) ?? 0) + value);
+  }
+  let pixel = 0;
+  let complete = 0;
+  let generic = 0;
+  for (const [type, value] of byType) {
+    if (type.includes("fb_pixel_lead") || type === "onsite_web_lead") pixel += value;
+    else if (type.includes("complete_registration")) complete += value;
+    else if (type === "lead" || type === "onsite_conversion.lead_grouped") generic += value;
+  }
+  return pixel || complete || generic;
+}
+
 export async function listFacebookDailyMetrics(
   accessToken: string,
   adAccountId: string,
@@ -217,15 +241,29 @@ export async function listFacebookDailyMetrics(
   to: string,
 ): Promise<FacebookDailyMetric[]> {
   const rows: GraphJson[] = [];
+  let fields = "campaign_id,campaign_name,spend,clicks,impressions,date_start,actions";
   for (const chunk of monthRanges(from, to)) {
-    const part = await graphPages(`/${actId(adAccountId)}/insights`, accessToken, {
-      level: "campaign",
-      fields: "campaign_id,campaign_name,spend,clicks,impressions,date_start",
-      time_increment: "1",
-      time_range: JSON.stringify({ since: chunk.from, until: chunk.to }),
-      limit: "500",
-    });
-    rows.push(...part);
+    try {
+      const part = await graphPages(`/${actId(adAccountId)}/insights`, accessToken, {
+        level: "campaign",
+        fields,
+        time_increment: "1",
+        time_range: JSON.stringify({ since: chunk.from, until: chunk.to }),
+        limit: "500",
+      });
+      rows.push(...part);
+    } catch (err) {
+      if (!fields.includes("actions")) throw err;
+      fields = "campaign_id,campaign_name,spend,clicks,impressions,date_start";
+      const part = await graphPages(`/${actId(adAccountId)}/insights`, accessToken, {
+        level: "campaign",
+        fields,
+        time_increment: "1",
+        time_range: JSON.stringify({ since: chunk.from, until: chunk.to }),
+        limit: "500",
+      });
+      rows.push(...part);
+    }
   }
   return rows
     .map((row) => ({
@@ -235,6 +273,7 @@ export async function listFacebookDailyMetrics(
       cost: Math.round(asNumber(row.spend) * 100) / 100,
       clicks: Math.round(asNumber(row.clicks)),
       impressions: Math.round(asNumber(row.impressions)),
+      leads: facebookWebsiteLeadCount(row.actions),
     }))
     .filter((row) => row.campaignId && /^\d{4}-\d{2}-\d{2}$/.test(row.day));
 }

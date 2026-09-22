@@ -6,6 +6,14 @@ import { COL, PROCESS, STATUS, sourcePnlKindForProcess } from "@/lib/sales-dashb
 import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
 import { assertOperatingBrandRules } from "@/lib/finance/operating-brand";
 import { assertContractWagesDoNotMix } from "@/lib/employees/contract";
+import { assertLeadCostRules } from "@/lib/employees/lead-costs";
+import { assertFormulasCatalog } from "@/lib/formulas/catalog";
+import { assertPhoenixContract } from "@/lib/finance/phoenix-contract";
+import { assertHarelContract } from "@/lib/finance/harel-contract";
+import { assertAyalonContract } from "@/lib/finance/ayalon-contract";
+import { assertClalContract } from "@/lib/finance/clal-contract";
+import { assertMigdalContract } from "@/lib/finance/migdal-contract";
+import { assertDatePresetsCoverExcelMonth } from "@/lib/sales-dashboard/campaign-math";
 import { assertHoursWorkbookParses } from "@/lib/employees/hours";
 import { assertPayrollLedgerSplits } from "@/lib/employees/payroll";
 import { assertReviewTiersReset, assertSplitEmploymentMonths } from "@/lib/employees/review";
@@ -125,7 +133,27 @@ export function assertSampleWorkbookParses() {
     }
   }
   assertNewSourcesParse();
+  if (!parsed.workbook?.sheets.length) {
+    throw new Error("expected workbook sheets from sample Excel");
+  }
+  const sampleSheet = parsed.workbook.sheets[0];
+  for (const header of [COL.agent, COL.premium, COL.client, COL.status]) {
+    if (!sampleSheet.headers.includes(header)) {
+      throw new Error(`expected workbook header ${header}, got ${sampleSheet.headers.join(", ")}`);
+    }
+  }
+  if (sampleSheet.rows.length < 3) {
+    throw new Error(`expected sample workbook rows, got ${sampleSheet.rows.length}`);
+  }
+  assertDatePresetsCoverExcelMonth();
   assertContractWagesDoNotMix();
+  assertLeadCostRules();
+  assertFormulasCatalog();
+  assertMigdalContract();
+  assertClalContract();
+  assertAyalonContract();
+  assertPhoenixContract();
+  assertHarelContract();
   assertHoursWorkbookParses();
   assertPayrollLedgerSplits();
   assertReviewTiersReset();

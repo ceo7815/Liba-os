@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { toast } from "sonner";
+import { loadAdsLeadSnapshot } from "@/app/actions/marketing-campaigns";
 import { listEmployeeHours } from "@/app/actions/finance-employee-hours";
+import { listAlexanderUnproducedLeads } from "@/app/actions/finance-alexander-leads";
 import { listFinanceEmployees } from "@/app/actions/finance-people";
 import {
   EmployeeCardDialog,
@@ -13,6 +15,12 @@ import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
 import { Input } from "@/components/ui/input";
 import { type EmploymentKind, type SalaryKind } from "@/lib/employees/contract";
 import { groupHoursByEmployeeId, groupVacationDaysByEmployeeId, type EmployeeHoursRow } from "@/lib/employees/hours";
+import {
+  buildLeadCplBySourceMonth,
+  EMPTY_ADS_LEAD_SNAPSHOT,
+  groupAlexanderUnproducedByEmployeeId,
+  type AdsLeadSnapshot,
+} from "@/lib/employees/lead-costs";
 import {
   buildPayrollLedger,
   collectActivityMonths,
@@ -54,6 +62,7 @@ const KIND_FILTERS: { id: "all" | EmploymentKind; label: string }[] = [
   { id: "all", label: "הכל" },
   { id: "salaried", label: "שכיר" },
   { id: "freelancer", label: "עצמאי" },
+  { id: "partnership", label: "שיתוף פעולה" },
   { id: "unpaid", label: "ללא שכר" },
 ];
 
@@ -66,6 +75,7 @@ function salaryKindTitle(kind: SalaryKind | null): string {
 
 function payModelTitle(row: Pick<PayrollEmployeeRow, "employmentKind" | "salaryKind">): string {
   if (row.employmentKind === "unpaid") return "ללא שכר";
+  if (row.employmentKind === "partnership") return "תשלום לשותף ×4 · בלי נפרעים";
   if (row.employmentKind === "freelancer") return "עמלות (היקף + נפרעים)";
   if (row.employmentKind === "salaried") {
     return `שכיר · ${salaryKindTitle(row.salaryKind)}`;
@@ -78,6 +88,9 @@ function kindBadge(kind: EmploymentKind | null) {
   if (kind === "unpaid") {
     return { label, className: "bg-emerald-700 text-white" };
   }
+  if (kind === "partnership") {
+    return { label, className: "bg-violet-700 text-white" };
+  }
   if (kind === "salaried") {
     return { label, className: "bg-black text-white" };
   }
@@ -85,6 +98,21 @@ function kindBadge(kind: EmploymentKind | null) {
     return { label, className: "bg-amber-700 text-white" };
   }
   return { label, className: "bg-amber-100 text-amber-900" };
+}
+
+function payrollDeductions(row: { monthlyCosts?: number; leadCosts?: number }) {
+  return (row.monthlyCosts ?? 0) + (row.leadCosts ?? 0);
+}
+
+function payrollDeductionsLabel(row: { monthlyCosts?: number; leadCosts?: number }) {
+  const agreement = row.monthlyCosts ?? 0;
+  const leads = row.leadCosts ?? 0;
+  if (agreement > 0 && leads > 0) {
+    return `הסכם −${formatIls(agreement)} · לידים −${formatIls(leads)}`;
+  }
+  if (leads > 0) return `עלויות לידים −${formatIls(leads)}`;
+  if (agreement > 0) return `עלויות הסכם −${formatIls(agreement)}`;
+  return "";
 }
 
 function MoneyCell({
@@ -173,6 +201,10 @@ export function PayrollScreen({
   const [employees, setEmployees] = useState(initialEmployees);
   const [productions, setProductions] = useState<MarketingProduction[]>([]);
   const [hours, setHours] = useState<EmployeeHoursRow[]>([]);
+  const [alexanderByEmployee, setAlexanderByEmployee] = useState<Map<string, Record<string, number>>>(
+    () => new Map(),
+  );
+  const [ads, setAds] = useState<AdsLeadSnapshot>(EMPTY_ADS_LEAD_SNAPSHOT);
   const [syncedAt, setSyncedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [preset, setPreset] = useState<PayrollPreset>("this_month");
@@ -205,15 +237,25 @@ export function PayrollScreen({
     setHours(result.hours);
   }, []);
 
+  const reloadAlexander = useCallback(async () => {
+    const result = await listAlexanderUnproducedLeads();
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setAlexanderByEmployee(groupAlexanderUnproducedByEmployeeId(result.rows));
+  }, []);
+
   const loadPeople = useCallback(async () => {
     try {
       const list = await listFinanceEmployees();
       if (!list.error) setEmployees(list.employees);
       await reloadHours();
+      await reloadAlexander();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "שגיאת טעינת משכורות");
     }
-  }, [reloadHours]);
+  }, [reloadAlexander, reloadHours]);
 
   useLayoutEffect(() => {
     if (liveDashboard) applyDashboard(liveDashboard);
@@ -225,8 +267,13 @@ export function PayrollScreen({
   }, [loadPeople]);
 
   useEffect(() => {
+    void loadAdsLeadSnapshot().then(setAds).catch(() => setAds(EMPTY_ADS_LEAD_SNAPSHOT));
+  }, []);
+
+  useEffect(() => {
     const onGlobalSync = () => {
       void loadPeople();
+      void loadAdsLeadSnapshot().then(setAds).catch(() => setAds(EMPTY_ADS_LEAD_SNAPSHOT));
     };
     window.addEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
     return () => window.removeEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
@@ -239,10 +286,13 @@ export function PayrollScreen({
     ]);
     return collectActivityMonths(
       productions,
-      hours.map((row) => row.month),
+      [
+        ...hours.map((row) => row.month),
+        ...Array.from(alexanderByEmployee.values()).flatMap((byMonth) => Object.keys(byMonth)),
+      ],
       contracts,
     );
-  }, [employees, hours, productions]);
+  }, [alexanderByEmployee, employees, hours, productions]);
 
   const yearOptions = useMemo(() => {
     const years = new Set<string>();
@@ -278,6 +328,8 @@ export function PayrollScreen({
     [activityMonths, pickedMonth, preset, rangeFrom, rangeTo],
   );
 
+  const leadCpl = useMemo(() => buildLeadCplBySourceMonth(ads), [ads]);
+
   const ledger = useMemo(
     () =>
       buildPayrollLedger({
@@ -285,9 +337,11 @@ export function PayrollScreen({
         productions,
         hoursByEmployee,
         vacationByEmployee,
+        alexanderByEmployee,
         months,
+        leadCpl,
       }),
-    [employees, hoursByEmployee, months, productions, vacationByEmployee],
+    [alexanderByEmployee, employees, hoursByEmployee, leadCpl, months, productions, vacationByEmployee],
   );
 
   const branded = useMemo(
@@ -326,10 +380,12 @@ export function PayrollScreen({
       settledWage: 0,
       premiumWage: 0,
       monthlyCosts: 0,
+      leadCosts: 0,
       total: 0,
       withPay: 0,
       salaried: 0,
       freelancer: 0,
+      partnership: 0,
     };
     for (const row of visible) {
       next.hours += row.hours;
@@ -338,10 +394,12 @@ export function PayrollScreen({
       next.settledWage += row.settledWage;
       next.premiumWage += row.premiumWage;
       next.monthlyCosts += row.monthlyCosts;
+      next.leadCosts += row.leadCosts;
       next.total += row.total;
       if (row.total > 0) next.withPay += 1;
       if (row.employmentKind === "salaried") next.salaried += 1;
       if (row.employmentKind === "freelancer") next.freelancer += 1;
+      if (row.employmentKind === "partnership") next.partnership += 1;
     }
     return next;
   }, [visible]);
@@ -534,6 +592,8 @@ export function PayrollScreen({
                       ? "bg-amber-700 text-white"
                       : item.id === "unpaid"
                         ? "bg-emerald-700 text-white"
+                        : item.id === "partnership"
+                          ? "bg-violet-700 text-white"
                         : "bg-black text-white"
                     : "bg-muted/70 text-muted-foreground hover:bg-muted",
                 )}
@@ -578,7 +638,7 @@ export function PayrollScreen({
         <SummaryCube
           label="סה״כ לתשלום"
           value={formatIls(visibleTotals.total)}
-          hint={`${visibleTotals.withPay} עם שכר · ${visibleTotals.salaried} שכירים · ${visibleTotals.freelancer} עצמאים`}
+          hint={`${visibleTotals.withPay} עם שכר · ${visibleTotals.salaried} שכירים · ${visibleTotals.freelancer} עצמאים${visibleTotals.partnership ? ` · ${visibleTotals.partnership} שותפים` : ""}`}
           accent="profit"
         />
         <SummaryCube
@@ -618,7 +678,7 @@ export function PayrollScreen({
             <span className="text-end">שכר קבוע</span>
             <span className="text-end">פרמיית היקף</span>
             <span className="text-end">נפרעים</span>
-            <span className="text-end">ניכויים</span>
+            <span className="text-end">עלויות</span>
             <span className="text-end">סה״כ</span>
           </div>
           <div className="divide-y divide-black/[0.04]">
@@ -641,9 +701,9 @@ export function PayrollScreen({
                   <MetricTile label="נפרעים">
                     <MoneyCell value={row.settledWage} />
                   </MetricTile>
-                  <MetricTile label="ניכויים">
+                  <MetricTile label="עלויות">
                     <span className="tabular-nums text-muted-foreground">
-                      {row.monthlyCosts ? `−${formatIls(row.monthlyCosts)}` : "—"}
+                      {payrollDeductions(row) ? `−${formatIls(payrollDeductions(row))}` : "—"}
                     </span>
                   </MetricTile>
                   <div className="hidden text-end sm:block">
@@ -669,10 +729,10 @@ export function PayrollScreen({
               <MetricTile label="נפרעים">
                 <span className="tabular-nums">{formatIls(visibleTotals.settledWage)}</span>
               </MetricTile>
-              <MetricTile label="ניכויים">
+              <MetricTile label="עלויות">
                 <span className="tabular-nums text-muted-foreground">
-                  {visibleTotals.monthlyCosts
-                    ? `−${formatIls(visibleTotals.monthlyCosts)}`
+                  {payrollDeductions(visibleTotals)
+                    ? `−${formatIls(payrollDeductions(visibleTotals))}`
                     : "—"}
                 </span>
               </MetricTile>
@@ -754,7 +814,10 @@ export function PayrollScreen({
           }}
           productions={productions}
           hours={hours}
+          alexanderByMonth={alexanderByEmployee.get(dialogEmp.id) ?? {}}
+          leadCpl={leadCpl}
           onHoursChanged={() => void reloadHours()}
+          onAlexanderChanged={() => void reloadAlexander()}
           rates={[]}
           onSaved={(saved) => {
             setEmployees((current) =>
@@ -826,9 +889,9 @@ function EmployeePayrollRows({
           <div className="shrink-0 pt-0.5 text-end lg:hidden">
             <p className="text-[10px] font-medium text-muted-foreground">סה״כ</p>
             <MoneyCell value={row.total} emphasize />
-            {row.monthlyCosts > 0 ? (
+            {payrollDeductions(row) > 0 ? (
               <p className="mt-0.5 text-[10px] text-muted-foreground">
-                −{formatIls(row.monthlyCosts)}
+                {payrollDeductionsLabel(row)}
               </p>
             ) : null}
           </div>
@@ -852,9 +915,9 @@ function EmployeePayrollRows({
 
         <div className="hidden text-end lg:block">
           <MoneyCell value={row.total} emphasize />
-          {row.monthlyCosts > 0 ? (
+          {payrollDeductions(row) > 0 ? (
             <span className="mt-0.5 block text-[11px] text-muted-foreground">
-              ניכוי −{formatIls(row.monthlyCosts)}
+              {payrollDeductionsLabel(row)}
             </span>
           ) : null}
         </div>
@@ -881,8 +944,8 @@ function EmployeePayrollRows({
                   נפרעים: {row.settledCount} סגירות · {formatIls(row.settledPremium)}
                 </span>
               ) : null}
-              {row.monthlyCosts > 0 ? (
-                <span>ניכויים −{formatIls(row.monthlyCosts)}</span>
+              {payrollDeductions(row) > 0 ? (
+                <span>{payrollDeductionsLabel(row)}</span>
               ) : null}
             </div>
           </div>
@@ -896,7 +959,7 @@ function EmployeePayrollRows({
               <span className="text-end">שכר קבוע</span>
               <span className="text-end">פרמיית היקף</span>
               <span className="text-end">נפרעים</span>
-              <span className="text-end">ניכויים</span>
+              <span className="text-end">עלויות</span>
               <span className="text-end">סה״כ</span>
             </div>
             <div className="divide-y divide-black/[0.04]">
@@ -931,10 +994,10 @@ function EmployeePayrollRows({
                         <MoneyCell value={month.settledWage} />
                       )}
                     </MetricTile>
-                    <MetricTile label="ניכויים">
+                    <MetricTile label="עלויות">
                       <span className="tabular-nums text-muted-foreground">
-                        {month.monthlyCosts
-                          ? `−${formatIls(month.monthlyCosts)}`
+                        {payrollDeductions(month)
+                          ? `−${formatIls(payrollDeductions(month))}`
                           : "—"}
                       </span>
                     </MetricTile>

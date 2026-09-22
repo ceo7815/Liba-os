@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bot,
+  Calculator,
   ChevronDown,
   Contact,
   KeyRound,
@@ -12,9 +13,13 @@ import {
   BarChart3,
   TrendingUp,
   Users,
+  BookOpen,
+  FileSpreadsheet,
   FileText,
+  GraduationCap,
   Building2,
   LineChart,
+  PieChart,
   Receipt,
   Wallet,
 } from "lucide-react";
@@ -33,7 +38,11 @@ import {
   SETTLED_COMMISSIONS_PATH,
   SOURCE_PNL_PATH,
 } from "@/lib/finance/access";
-import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
+import {
+  canAccessSalesDashboard,
+  SALES_BY_SOURCE_PATH,
+  SALES_EXCEL_REPORT_PATH,
+} from "@/lib/sales-dashboard/access";
 import {
   canManageUsers,
   canViewAgents,
@@ -41,6 +50,15 @@ import {
   canViewEmployees,
   canViewVault,
 } from "@/lib/permissions/access";
+import {
+  ACADEMY_CATALOG_PATH,
+  ACADEMY_MANAGE_PATH,
+  ACADEMY_PATH,
+  ACADEMY_TEAM_PATH,
+  canLearnAcademy,
+  canManageAcademy,
+  canViewAcademyTeam,
+} from "@/lib/academy/access";
 
 type SidebarProps = {
   profile: Profile;
@@ -72,6 +90,10 @@ export function Sidebar({ profile, className }: SidebarProps) {
   const showInsurance = canAccessFinanceSection(profile, "finance.insurance");
   const showSettled = canAccessSettledCommissions(profile);
   const showOrganization = showUsers || showVault;
+  const showAcademyLearn = canLearnAcademy(profile);
+  const showAcademyTeam = canViewAcademyTeam(profile);
+  const showAcademyManage = canManageAcademy(profile);
+  const showAcademy = showAcademyLearn || showAcademyTeam || showAcademyManage;
 
   const agentsActive = pathname === "/agents" || pathname.startsWith("/agents/");
   const vaultActive = pathname === "/vault" || pathname.startsWith("/vault/");
@@ -87,8 +109,23 @@ export function Sidebar({ profile, className }: SidebarProps) {
   const payrollActive =
     pathname === EMPLOYEE_PAYROLL_PATH || pathname.startsWith(`${EMPLOYEE_PAYROLL_PATH}/`);
   const employeesActive = pathname === "/employees";
-  const salesDashboardActive =
-    pathname === "/sales-dashboard" || pathname.startsWith("/sales-dashboard/");
+  const salesTvActive = pathname === "/sales-dashboard";
+  const salesBySourceActive =
+    pathname === SALES_BY_SOURCE_PATH ||
+    pathname.startsWith(`${SALES_BY_SOURCE_PATH}/`);
+  const salesExcelActive =
+    pathname === SALES_EXCEL_REPORT_PATH ||
+    pathname.startsWith(`${SALES_EXCEL_REPORT_PATH}/`);
+  const academyHomeActive = pathname === ACADEMY_PATH;
+  const academyCatalogActive =
+    pathname === ACADEMY_CATALOG_PATH || pathname.startsWith(`${ACADEMY_CATALOG_PATH}/`);
+  const academyTeamActive = pathname === ACADEMY_TEAM_PATH;
+  const academyManageActive =
+    pathname === ACADEMY_MANAGE_PATH || pathname.startsWith(`${ACADEMY_MANAGE_PATH}/`);
+  const academyCourseActive =
+    pathname.startsWith("/academy/courses/") ||
+    pathname.startsWith("/academy/lessons/") ||
+    pathname.startsWith("/academy/exams/");
 
   const [openSection, setOpenSection] = useState<OpenSection>(() =>
     sectionFromPath(pathname),
@@ -133,7 +170,19 @@ export function Sidebar({ profile, className }: SidebarProps) {
               href="/sales-dashboard"
               label="דשבורד מכירות"
               icon={TrendingUp}
-              active={salesDashboardActive}
+              active={salesTvActive}
+            />
+            <NavItem
+              href={SALES_BY_SOURCE_PATH}
+              label="מכירות לפי מקור"
+              icon={PieChart}
+              active={salesBySourceActive}
+            />
+            <NavItem
+              href={SALES_EXCEL_REPORT_PATH}
+              label="דוח אקסל מכירות"
+              icon={FileSpreadsheet}
+              active={salesExcelActive}
             />
           </NavSection>
         ) : null}
@@ -178,6 +227,43 @@ export function Sidebar({ profile, className }: SidebarProps) {
                 label="הסכמים · חברות ביטוח"
                 icon={FileText}
                 active={insuranceAgreementsActive}
+              />
+            ) : null}
+          </NavSection>
+        ) : null}
+
+        {showAcademy ? (
+          <NavSection title="הדרכה">
+            {showAcademyLearn ? (
+              <>
+                <NavItem
+                  href={ACADEMY_PATH}
+                  label="הדשבורד שלי"
+                  icon={GraduationCap}
+                  active={academyHomeActive || academyCourseActive}
+                />
+                <NavItem
+                  href={ACADEMY_CATALOG_PATH}
+                  label="קטלוג קורסים"
+                  icon={BookOpen}
+                  active={academyCatalogActive}
+                />
+              </>
+            ) : null}
+            {showAcademyTeam ? (
+              <NavItem
+                href={ACADEMY_TEAM_PATH}
+                label="התקדמות צוות"
+                icon={Users}
+                active={academyTeamActive}
+              />
+            ) : null}
+            {showAcademyManage ? (
+              <NavItem
+                href={ACADEMY_MANAGE_PATH}
+                label="ניהול תוכן"
+                icon={FileText}
+                active={academyManageActive}
               />
             ) : null}
           </NavSection>

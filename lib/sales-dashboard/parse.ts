@@ -26,6 +26,7 @@ import type {
   SaleAlert,
   TrendSeries,
 } from "@/lib/sales-dashboard/types";
+import { parseSalesWorkbookGrid } from "@/lib/sales-dashboard/workbook-parse";
 import * as XLSX from "xlsx";
 import { inflateRawSync } from "node:zlib";
 
@@ -242,21 +243,30 @@ function isActiveStatus(status: string): boolean {
 }
 
 function isPendingStatus(status: string): boolean {
-  return (
-    status === STATUS.pending ||
-    status === "ממתין למינוי" ||
-    status === "ממתינה" ||
-    status === "ממתין"
-  );
+  const v = normalizeExcelText(status);
+  if (!v) return false;
+  if (isActiveStatus(v) || isCancelledStatus(v)) return false;
+  if (v === STATUS.pending || v === "ממתין למינוי" || v === "ממתינה" || v === "ממתין") {
+    return true;
+  }
+  if (v.includes("ממתין") || v.includes("ממתינה")) return true;
+  if (v.includes("בתהליך")) return true;
+  if (v.includes("חוסר")) return true;
+  if (v.includes("חיתום")) return true;
+  if (v.includes("שימור")) return true;
+  return false;
 }
 
 function isCancelledStatus(status: string): boolean {
+  const v = normalizeExcelText(status);
   return (
-    status === STATUS.archived ||
-    status === STATUS.cancelled ||
-    status === "בוטל" ||
-    status === "מבוטלת" ||
-    status === "מבוטל"
+    v === STATUS.archived ||
+    v === STATUS.cancelled ||
+    v === "בוטל" ||
+    v === "מבוטלת" ||
+    v === "מבוטל" ||
+    v.includes("דחי") ||
+    v.includes("נדח")
   );
 }
 
@@ -942,6 +952,7 @@ export function parseSalesWorkbook(
     pendingRows,
     activePolicies,
     marketing: buildMarketing(rows, wb, data),
+    workbook: parseSalesWorkbookGrid(wb, fileName),
     fileName: fileName ?? null,
     syncedAt: syncedAt?.trim() || new Date().toISOString(),
     source: "live",
@@ -965,6 +976,7 @@ function emptyDashboard(fileName?: string | null): DashboardData {
     pendingRows: [],
     activePolicies: [],
     marketing: emptyMarketing(),
+    workbook: { fileName: fileName ?? null, sheets: [] },
     fileName: fileName ?? null,
     syncedAt: new Date().toISOString(),
     source: "live",

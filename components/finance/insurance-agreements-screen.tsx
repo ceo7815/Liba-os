@@ -1,13 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Calculator, Download, ExternalLink, FileText, HelpCircle, Scale } from "lucide-react";
+import { Calculator, ChevronLeft, Download, ExternalLink, FileText, HelpCircle, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { COMMISSION_TYPE_LABELS, type CommissionSplitType } from "@/lib/finance/categories";
 import { SOURCE_PNL_PATH } from "@/lib/finance/access";
+import { FORMULAS_PATH } from "@/lib/formulas/access";
+import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
+import { formatIls } from "@/lib/sales-dashboard/campaign-math";
 import {
-  DEFAULT_PNL_MULTIPLIER,
+  AYALON_MORTGAGE_RATE,
+  AYALON_VOLUME_TIERS,
+  ayalonIncomeForProductions,
+  formatAyalonTierLabel,
+} from "@/lib/finance/ayalon-contract";
+import {
+  CLAL_GAMACH_RATE,
+  CLAL_LADDER_TIERS,
+  CLAL_MORTGAGE_TIERS,
+  CLAL_SETTLED_RATE,
+  CLAL_VOLUME_PAY_DELAY_MONTHS,
+  clalIncomeForProductions,
+  formatClalTierLabel,
+} from "@/lib/finance/clal-contract";
+import {
+  HAREL_PAY_DELAY_MONTHS,
+  HAREL_SETTLED_RATE,
+  HAREL_VOLUME_TIERS,
+  formatHarelTierLabel,
+  harelIncomeForProductions,
+} from "@/lib/finance/harel-contract";
+import {
+  PHOENIX_MORTGAGE_WEIGHT,
+  PHOENIX_VOLUME_TIERS,
+  formatPhoenixTierLabel,
+  phoenixIncomeForProductions,
+} from "@/lib/finance/phoenix-contract";
+import {
+  MIGDAL_VOLUME_TIERS,
+  formatMigdalTierLabel,
+  migdalIncomeForProductions,
+} from "@/lib/finance/migdal-contract";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AYALON_INCOME_MODEL,
+  CLAL_INCOME_MODEL,
   INSURERS,
   MANAGERS_EXCEL_NAME,
   MIGDAL_CALC_RULES,
@@ -17,10 +61,11 @@ import {
   MIGDAL_INCOME_MODEL,
   MIGDAL_NOT_IN_EXCEL,
   MIGDAL_OPEN_QUESTIONS,
-  MIGDAL_PAYMENT_INTRO,
   MIGDAL_PAYMENT_SECTIONS,
   MIGDAL_POLICY_TERM_SCALE,
   MIGDAL_PRODUCT_MAP,
+  PHOENIX_INCOME_MODEL,
+  HAREL_INCOME_MODEL,
   SOURCE_PNL_REPORT_NAME,
   type ContractDoc,
   type InsurerAgreement,
@@ -62,8 +107,30 @@ const PAYMENT_ACCENT: Record<
 const PHASE_LABELS = { א: "שלב א' — לפני חיבור PnL", ב: "שלב ב' — פנסיה / גמל / היקף", ג: "שלב ג' — כללי" } as const;
 
 export function InsuranceAgreementsScreen() {
-  const [activeId, setActiveId] = useState("migdal");
-  const active = INSURERS.find((row) => row.id === activeId) ?? INSURERS[0];
+  const [openId, setOpenId] = useState<string | null>(null);
+  const { dashboard } = useLiveDashboard();
+  const productions = dashboard?.marketing?.productions ?? [];
+  const migdalLive = useMemo(
+    () => migdalIncomeForProductions(productions, { yearContext: productions }),
+    [productions],
+  );
+  const clalLive = useMemo(
+    () => clalIncomeForProductions(productions, { yearContext: productions }),
+    [productions],
+  );
+  const ayalonLive = useMemo(
+    () => ayalonIncomeForProductions(productions, { yearContext: productions }),
+    [productions],
+  );
+  const phoenixLive = useMemo(
+    () => phoenixIncomeForProductions(productions, { yearContext: productions }),
+    [productions],
+  );
+  const harelLive = useMemo(
+    () => harelIncomeForProductions(productions, { yearContext: productions }),
+    [productions],
+  );
+  const open = INSURERS.find((row) => row.id === openId) ?? null;
 
   return (
     <section className="mx-auto max-w-[80rem] space-y-5" dir="rtl">
@@ -76,50 +143,632 @@ export function InsuranceAgreementsScreen() {
           <h1 className="text-2xl font-semibold tracking-tight">הסכמים חברות ביטוח</h1>
         </div>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          {MIGDAL_PAYMENT_INTRO} חיבור ל
-          <Link href={SOURCE_PNL_PATH} className="mx-1 font-medium text-foreground underline-offset-2 hover:underline">
+          כל חברה בכרטיס משלה — הסכם, נוסחה וחישוב חי. מגדל, כלל, איילון, הפניקס והראל מחוברות לדוח. השאר ₪0 עד שיוזן חוזה.
+          {" "}
+          <Link href={SOURCE_PNL_PATH} className="font-medium text-foreground underline-offset-2 hover:underline">
             {SOURCE_PNL_REPORT_NAME}
           </Link>
-          — בתכנון.
+          {" · "}
+          <Link href={FORMULAS_PATH} className="font-medium text-foreground underline-offset-2 hover:underline">
+            נוסחאות חישוב
+          </Link>
         </p>
       </header>
 
-      <div className="app-surface p-2 sm:p-3">
-        <div className="flex gap-1 overflow-x-auto pb-1" role="tablist" aria-label="חברות ביטוח">
-          {INSURERS.map((insurer) => (
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {INSURERS.map((insurer) => {
+          const live =
+            insurer.id === "migdal"
+              ? migdalLive
+              : insurer.id === "clal"
+                ? clalLive
+                : insurer.id === "ayalon"
+                ? ayalonLive
+                : insurer.id === "phoenix"
+                  ? phoenixLive
+                  : insurer.id === "harel"
+                    ? harelLive
+                    : null;
+          return (
             <button
               key={insurer.id}
               type="button"
-              role="tab"
-              aria-selected={activeId === insurer.id}
-              disabled={insurer.status === "coming_soon"}
-              onClick={() => setActiveId(insurer.id)}
-              className={cn(
-                "shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors",
-                activeId === insurer.id
-                  ? "bg-foreground text-background"
-                  : insurer.status === "coming_soon"
-                    ? "cursor-not-allowed text-muted-foreground/50"
-                    : "text-muted-foreground hover:bg-black/[0.04] hover:text-foreground",
-              )}
+              onClick={() => setOpenId(insurer.id)}
+              className="group app-surface flex flex-col gap-4 p-4 text-start transition-shadow hover:shadow-[0_10px_28px_-18px_rgba(17,17,17,0.45)] sm:p-5"
             >
-              {insurer.name}
-              {insurer.status === "coming_soon" ? (
-                <span className="mr-1.5 text-[10px] opacity-70">· בקרוב</span>
-              ) : null}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-lg font-semibold tracking-tight">{insurer.name}</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">{insurer.statusLabel}</p>
+                </div>
+                <ChevronLeft className="size-4 text-black/25 transition-transform group-hover:-translate-x-0.5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
+                  הכנסה לפי חוזה
+                </p>
+                <p className="mt-1 text-[1.65rem] font-semibold leading-none tracking-tight tabular-nums sm:text-2xl">
+                  {insurer.status === "coming_soon"
+                    ? formatIls(0)
+                    : live
+                      ? formatIls(live.income)
+                      : formatIls(0)}
+                </p>
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  {insurer.status === "coming_soon"
+                    ? "אין הסכם — בדוח ₪0"
+                    : live && (insurer.id === "ayalon" || insurer.id === "phoenix" || insurer.id === "harel")
+                      ? `היקף ${formatIls(live.volume)} · נפרעים ${formatIls(live.settled)} · בלי גמ״ח`
+                      : live
+                        ? `היקף ${formatIls(live.volume)} · נפרעים ${formatIls(live.settled)} · גמ״ח ${formatIls(live.gamach)}`
+                        : insurer.pnlNote}
+                </p>
+              </div>
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {active.status === "coming_soon" ? (
-        <ComingSoonPanel insurer={active} />
-      ) : active.id === "migdal" ? (
-        <MigdalPanel insurer={active} />
-      ) : (
-        <ComingSoonPanel insurer={active} />
-      )}
+      <InsurerCardDialog
+        insurer={open}
+        open={Boolean(open)}
+        onOpenChange={(next) => {
+          if (!next) setOpenId(null);
+        }}
+        migdalLive={migdalLive}
+        clalLive={clalLive}
+        ayalonLive={ayalonLive}
+        phoenixLive={phoenixLive}
+        harelLive={harelLive}
+      />
     </section>
+  );
+}
+
+type InsurerTab = "overview" | "formula" | "agreement" | "docs";
+
+function InsurerCardDialog({
+  insurer,
+  open,
+  onOpenChange,
+  migdalLive,
+  clalLive,
+  ayalonLive,
+  phoenixLive,
+  harelLive,
+}: {
+  insurer: InsurerAgreement | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  migdalLive: ReturnType<typeof migdalIncomeForProductions>;
+  clalLive: ReturnType<typeof clalIncomeForProductions>;
+  ayalonLive: ReturnType<typeof ayalonIncomeForProductions>;
+  phoenixLive: ReturnType<typeof phoenixIncomeForProductions>;
+  harelLive: ReturnType<typeof harelIncomeForProductions>;
+}) {
+  const [tab, setTab] = useState<InsurerTab>("overview");
+  useEffect(() => {
+    setTab("overview");
+  }, [insurer?.id]);
+  if (!insurer) return null;
+  const isMigdal = insurer.id === "migdal";
+  const isClal = insurer.id === "clal";
+  const isAyalon = insurer.id === "ayalon";
+  const isPhoenix = insurer.id === "phoenix";
+  const isHarel = insurer.id === "harel";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-[1.25rem] p-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-auto sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,72rem)] sm:max-w-[72rem] sm:translate-x-[-50%] sm:translate-y-[-50%]">
+        <DialogHeader className="relative shrink-0 space-y-0 border-b border-black/[0.06] bg-white px-4 pb-4 pt-5 text-start sm:px-7 sm:pb-5 sm:pt-6">
+          <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
+            הסכם חברת ביטוח
+          </p>
+          <DialogTitle className="mt-1.5 text-[1.35rem] font-semibold tracking-tight sm:text-2xl">
+            {insurer.name}
+          </DialogTitle>
+          <DialogDescription className="mt-2 text-sm text-muted-foreground">
+            {insurer.pnlNote}
+          </DialogDescription>
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-0.5">
+            {(
+              [
+                ["overview", "סקירה"],
+                ["formula", "נוסחה"],
+                ["agreement", "הסכם"],
+                ["docs", "מסמכים"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={cn(
+                  "shrink-0 rounded-xl px-3.5 py-2 text-sm font-medium",
+                  tab === id ? "bg-foreground text-background" : "bg-black/[0.04] text-muted-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fafafa] px-4 py-4 sm:px-7 sm:py-6">
+          {tab === "overview" ? (
+            isMigdal ? (
+              <MigdalOverview live={migdalLive} />
+            ) : isClal ? (
+              <ClalOverview live={clalLive} />
+            ) : isAyalon ? (
+              <AyalonOverview live={ayalonLive} />
+            ) : isPhoenix ? (
+              <PhoenixOverview live={phoenixLive} />
+            ) : isHarel ? (
+              <HarelOverview live={harelLive} />
+            ) : (
+              <ComingSoonPanel insurer={insurer} />
+            )
+          ) : null}
+          {tab === "formula" ? (
+            isMigdal ? (
+              <MigdalFormulaPanel />
+            ) : isClal ? (
+              <ClalFormulaPanel />
+            ) : isAyalon ? (
+              <AyalonFormulaPanel />
+            ) : isPhoenix ? (
+              <PhoenixFormulaPanel />
+            ) : isHarel ? (
+              <HarelFormulaPanel />
+            ) : (
+              <ComingSoonPanel insurer={insurer} />
+            )
+          ) : null}
+          {tab === "agreement" ? (
+            isMigdal ? (
+              <MigdalPanel insurer={insurer} />
+            ) : isClal ? (
+              <ClalPanel />
+            ) : isAyalon ? (
+              <AyalonPanel />
+            ) : isPhoenix ? (
+              <PhoenixPanel />
+            ) : isHarel ? (
+              <HarelPanel />
+            ) : (
+              <ComingSoonPanel insurer={insurer} />
+            )
+          ) : null}
+          {tab === "docs" ? (
+            isMigdal ? (
+              <ContractDocumentsPanel docs={MIGDAL_CONTRACT_DOCS} />
+            ) : isAyalon || isPhoenix || isHarel || isClal ? (
+              <AyalonDocsPanel />
+            ) : (
+              <ComingSoonPanel insurer={insurer} />
+            )
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ClalOverview({ live }: { live: ReturnType<typeof clalIncomeForProductions> }) {
+  const ladder = [...live.years].reverse().find((row) => row.track === "ladder") ?? null;
+  const mortgage = [...live.years].reverse().find((row) => row.track === "mortgage") ?? null;
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
+        <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="לפי מדרגה · שוטף 30" />
+        <OverviewStat
+          label="גמ״ח אצל כלל"
+          value={formatIls(live.gamach)}
+          hint={`${Math.round(CLAL_GAMACH_RATE * 100)}% לסוף שנה`}
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="app-surface px-4 py-4 sm:px-5">
+          <p className="text-sm font-semibold">מדרגת ריסק / בריאות / מחלות</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {ladder
+              ? `${ladder.year} · פרמיה קובעת ${formatIls(ladder.determiningPremium)} · ${formatClalTierLabel(ladder.tier, "ladder")}`
+              : "אין עדיין סגירות כלל במסלול הזה."}
+          </p>
+        </div>
+        <div className="app-surface px-4 py-4 sm:px-5">
+          <p className="text-sm font-semibold">מדרגת משכנתא</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {mortgage
+              ? `${mortgage.year} · פרמיה קובעת ${formatIls(mortgage.determiningPremium)} · ${formatClalTierLabel(mortgage.tier, "mortgage")}`
+              : "אין עדיין סגירות משכנתא בכלל."}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ClalFormulaPanel() {
+  return (
+    <div className="app-surface space-y-4 px-5 py-5 sm:px-7">
+      <h2 className="text-lg font-semibold">נוסחה חיה — כלל</h2>
+      <p className="text-sm leading-relaxed text-muted-foreground">{CLAL_INCOME_MODEL.intro}</p>
+      <p className="rounded-xl bg-black/[0.03] px-3 py-2 font-mono text-sm">
+        {CLAL_INCOME_MODEL.masterFormula}
+      </p>
+      <ul className="space-y-2 text-sm">
+        {CLAL_LADDER_TIERS.map((tier) => (
+          <li key={`ladder-${tier.id}`} className="rounded-xl bg-black/[0.03] px-3 py-2">
+            {formatClalTierLabel(tier, "ladder")}
+          </li>
+        ))}
+        {CLAL_MORTGAGE_TIERS.map((tier) => (
+          <li key={`mortgage-${tier.id}`} className="rounded-xl bg-black/[0.03] px-3 py-2">
+            {formatClalTierLabel(tier, "mortgage")}
+          </li>
+        ))}
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{CLAL_INCOME_MODEL.gamach}</li>
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{CLAL_INCOME_MODEL.timing}</li>
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{CLAL_INCOME_MODEL.settled}</li>
+      </ul>
+      <Link href={FORMULAS_PATH} className="inline-flex text-sm font-medium underline-offset-2 hover:underline">
+        לכל הנוסחאות בארגון
+      </Link>
+    </div>
+  );
+}
+
+function ClalPanel() {
+  const rules = [
+    "פרמיה בדוח חודשית × 12 = פרמיה קובעת שנתית.",
+    "שני מסלולים נפרדים — ריסק/בריאות לא מרימים את מדרגת המשכנתא ולהפך.",
+    `גמ״ח ${Math.round(CLAL_GAMACH_RATE * 100)}% נשאר בכלל עד סוף השנה.`,
+    CLAL_INCOME_MODEL.products,
+    CLAL_INCOME_MODEL.timing,
+    CLAL_INCOME_MODEL.settled,
+    `נפרעים ${Math.round(CLAL_SETTLED_RATE * 100)}% · היקף שוטף ${CLAL_VOLUME_PAY_DELAY_MONTHS * 30}.`,
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="app-surface space-y-3 px-5 py-5 sm:px-7">
+        <h2 className="text-lg font-semibold">{CLAL_INCOME_MODEL.title}</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">{CLAL_INCOME_MODEL.intro}</p>
+        <ul className="space-y-2 text-sm">
+          {rules.map((rule) => (
+            <li key={rule} className="rounded-xl bg-black/[0.03] px-3 py-2">
+              {rule}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function MigdalOverview({ live }: { live: ReturnType<typeof migdalIncomeForProductions> }) {
+  const current = live.years[live.years.length - 1] ?? null;
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
+        <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="55%–65% לפי מדרגה" />
+        <OverviewStat label="גמ״ח אצל מגדל" value={formatIls(live.gamach)} hint="20% לסוף שנה" />
+      </div>
+      <div className="app-surface px-4 py-4 sm:px-5">
+        <p className="text-sm font-semibold">מדרגה שנתית נוכחית</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {current
+            ? `${current.year} · פרמיה קובעת ${formatIls(current.determiningPremium)} · ${formatMigdalTierLabel(current.tier)}`
+            : "אין עדיין סגירות מגדל פעילות במוצרים שבחוזה."}
+        </p>
+        {current?.tier.id === "top" ? (
+          <p className="mt-2 text-sm text-emerald-900">
+            רטרו 10% על כל המכירות הפעילות השנה כבר כלול בהכנסה.
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function OverviewStat({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="app-surface px-4 py-4">
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
+function AyalonOverview({ live }: { live: ReturnType<typeof ayalonIncomeForProductions> }) {
+  const current = live.years[live.years.length - 1] ?? null;
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
+        <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="הכל עכשיו · בלי גמ״ח" />
+        <OverviewStat
+          label="משכנתא"
+          value={`${Math.round(AYALON_MORTGAGE_RATE * 100)}%`}
+          hint="קבוע, לא עולה עם המדרגה"
+        />
+      </div>
+      <div className="app-surface px-4 py-4 sm:px-5">
+        <p className="text-sm font-semibold">מדרגה שנתית נוכחית</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {current
+            ? `${current.year} · פרמיה קובעת ${formatIls(current.determiningPremium)} · ${formatAyalonTierLabel(current.tier)}`
+            : "אין עדיין סגירות איילון פעילות במוצרים שבחוזה."}
+        </p>
+        {current?.tier.id === "mid" ? (
+          <p className="mt-2 text-sm text-emerald-900">
+            רטרו 5% על ריסק / בריאות / מחלות קשות / סרטן כבר כלול. משכנתא נשארת 60%.
+          </p>
+        ) : null}
+        {current?.tier.id === "top" ? (
+          <p className="mt-2 text-sm text-emerald-900">
+            רטרו 15% על ריסק / בריאות / מחלות קשות / סרטן כבר כלול. משכנתא נשארת 60%.
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function AyalonFormulaPanel() {
+  return (
+    <div className="app-surface space-y-4 px-5 py-5 sm:px-7">
+      <h2 className="text-lg font-semibold">נוסחה חיה — איילון</h2>
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        {AYALON_INCOME_MODEL.intro}
+      </p>
+      <p className="rounded-xl bg-black/[0.03] px-3 py-2 font-mono text-sm">
+        {AYALON_INCOME_MODEL.masterFormula}
+      </p>
+      <ul className="space-y-2 text-sm">
+        {AYALON_VOLUME_TIERS.map((tier) => (
+          <li key={tier.id} className="rounded-xl bg-black/[0.03] px-3 py-2">
+            {formatAyalonTierLabel(tier)}
+          </li>
+        ))}
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{AYALON_INCOME_MODEL.mortgage}</li>
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{AYALON_INCOME_MODEL.timing}</li>
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{AYALON_INCOME_MODEL.settled}</li>
+      </ul>
+      <Link href={FORMULAS_PATH} className="inline-flex text-sm font-medium underline-offset-2 hover:underline">
+        לכל הנוסחאות בארגון
+      </Link>
+    </div>
+  );
+}
+
+function AyalonPanel() {
+  const rules = [
+    "פרמיה בדוח חודשית × 12 = פרמיה קובעת שנתית.",
+    "מדרגה אחת לינואר–דצמבר, רטרו על כל הפעילות במדרגה.",
+    "אין גמ״ח — כל ההיקף שוטף, חודש בחודשו.",
+    AYALON_INCOME_MODEL.products,
+    AYALON_INCOME_MODEL.mortgage,
+    AYALON_INCOME_MODEL.timing,
+    AYALON_INCOME_MODEL.settled,
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="app-surface space-y-3 px-5 py-5 sm:px-7">
+        <h2 className="text-lg font-semibold">{AYALON_INCOME_MODEL.title}</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">{AYALON_INCOME_MODEL.intro}</p>
+        <ul className="space-y-2 text-sm">
+          {rules.map((rule) => (
+            <li key={rule} className="rounded-xl bg-black/[0.03] px-3 py-2">
+              {rule}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function AyalonDocsPanel() {
+  return (
+    <div className="app-surface px-5 py-12 text-center sm:px-7">
+      <p className="text-lg font-semibold">אין מסמך PDF עדיין</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        החוזה הוזן לפי אישור רועי. כשיהיה נספח סרוק — ייכנס לכאן.
+      </p>
+    </div>
+  );
+}
+
+function PhoenixOverview({ live }: { live: ReturnType<typeof phoenixIncomeForProductions> }) {
+  const current = live.years[live.years.length - 1] ?? null;
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
+        <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="הכל עכשיו · בלי גמ״ח · שוטף 60" />
+        <OverviewStat
+          label="משכנתא למדרגה"
+          value={`${Math.round(PHOENIX_MORTGAGE_WEIGHT * 100)}%`}
+          hint="נספרת חצי, משולמת באחוז המדרגה"
+        />
+      </div>
+      <div className="app-surface px-4 py-4 sm:px-5">
+        <p className="text-sm font-semibold">מדרגה שנתית נוכחית</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {current
+            ? `${current.year} · פרמיה משוקללת ${formatIls(current.determiningPremium)} · ${formatPhoenixTierLabel(current.tier)}`
+            : "אין עדיין סגירות הפניקס פעילות במוצרים שבחוזה."}
+        </p>
+        {current && current.tier.id !== "r80" ? (
+          <p className="mt-2 text-sm text-emerald-900">
+            רטרו על כל המכירות הפעילות השנה כבר כלול. משכנתא משולמת באחוז המדרגה, לא ב־50%.
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function PhoenixFormulaPanel() {
+  return (
+    <div className="app-surface space-y-4 px-5 py-5 sm:px-7">
+      <h2 className="text-lg font-semibold">נוסחה חיה — הפניקס</h2>
+      <p className="text-sm leading-relaxed text-muted-foreground">{PHOENIX_INCOME_MODEL.intro}</p>
+      <p className="rounded-xl bg-black/[0.03] px-3 py-2 font-mono text-sm">
+        {PHOENIX_INCOME_MODEL.masterFormula}
+      </p>
+      <ul className="space-y-2 text-sm">
+        {PHOENIX_VOLUME_TIERS.map((tier) => (
+          <li key={tier.id} className="rounded-xl bg-black/[0.03] px-3 py-2">
+            {formatPhoenixTierLabel(tier)}
+          </li>
+        ))}
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{PHOENIX_INCOME_MODEL.mortgage}</li>
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{PHOENIX_INCOME_MODEL.timing}</li>
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{PHOENIX_INCOME_MODEL.settled}</li>
+      </ul>
+      <Link href={FORMULAS_PATH} className="inline-flex text-sm font-medium underline-offset-2 hover:underline">
+        לכל הנוסחאות בארגון
+      </Link>
+    </div>
+  );
+}
+
+function PhoenixPanel() {
+  const rules = [
+    "פרמיה בדוח חודשית × 12 = פרמיה קובעת שנתית.",
+    "מדרגה אחת לינואר–דצמבר, רטרו על כל הפעילות.",
+    "אין גמ״ח — כל ההיקף שוטף 60 לפי הפקה.",
+    PHOENIX_INCOME_MODEL.products,
+    PHOENIX_INCOME_MODEL.mortgage,
+    PHOENIX_INCOME_MODEL.timing,
+    PHOENIX_INCOME_MODEL.settled,
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="app-surface space-y-3 px-5 py-5 sm:px-7">
+        <h2 className="text-lg font-semibold">{PHOENIX_INCOME_MODEL.title}</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">{PHOENIX_INCOME_MODEL.intro}</p>
+        <ul className="space-y-2 text-sm">
+          {rules.map((rule) => (
+            <li key={rule} className="rounded-xl bg-black/[0.03] px-3 py-2">
+              {rule}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function HarelOverview({ live }: { live: ReturnType<typeof harelIncomeForProductions> }) {
+  const current = live.years[live.years.length - 1] ?? null;
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
+        <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="הכל עכשיו · בלי גמ״ח · שוטף 60" />
+        <OverviewStat
+          label="נפרעים"
+          value={`${Math.round(HAREL_SETTLED_RATE * 100)}%`}
+          hint={`על מכירה · שוטף ${HAREL_PAY_DELAY_MONTHS * 30}`}
+        />
+      </div>
+      <div className="app-surface px-4 py-4 sm:px-5">
+        <p className="text-sm font-semibold">מדרגה שנתית נוכחית</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {current
+            ? `${current.year} · פרמיה קובעת ${formatIls(current.determiningPremium)} · ${formatHarelTierLabel(current.tier)}`
+            : "אין עדיין סגירות הראל פעילות במוצרים שבחוזה."}
+        </p>
+        {current && current.tier.id !== "r75" ? (
+          <p className="mt-2 text-sm text-emerald-900">
+            רטרו על כל המכירות הפעילות השנה כבר כלול. משכנתא במדרגה המלאה.
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function HarelFormulaPanel() {
+  return (
+    <div className="app-surface space-y-4 px-5 py-5 sm:px-7">
+      <h2 className="text-lg font-semibold">נוסחה חיה — הראל</h2>
+      <p className="text-sm leading-relaxed text-muted-foreground">{HAREL_INCOME_MODEL.intro}</p>
+      <p className="rounded-xl bg-black/[0.03] px-3 py-2 font-mono text-sm">
+        {HAREL_INCOME_MODEL.masterFormula}
+      </p>
+      <ul className="space-y-2 text-sm">
+        {HAREL_VOLUME_TIERS.map((tier) => (
+          <li key={tier.id} className="rounded-xl bg-black/[0.03] px-3 py-2">
+            {formatHarelTierLabel(tier)}
+          </li>
+        ))}
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{HAREL_INCOME_MODEL.mortgage}</li>
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{HAREL_INCOME_MODEL.timing}</li>
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">{HAREL_INCOME_MODEL.settled}</li>
+      </ul>
+      <Link href={FORMULAS_PATH} className="inline-flex text-sm font-medium underline-offset-2 hover:underline">
+        לכל הנוסחאות בארגון
+      </Link>
+    </div>
+  );
+}
+
+function HarelPanel() {
+  const rules = [
+    "פרמיה בדוח חודשית × 12 = פרמיה קובעת שנתית.",
+    "מדרגה אחת לינואר–דצמבר, רטרו על כל הפעילות.",
+    "אין גמ״ח — כל ההיקף שוטף 60 לפי הפקה.",
+    HAREL_INCOME_MODEL.products,
+    HAREL_INCOME_MODEL.mortgage,
+    HAREL_INCOME_MODEL.timing,
+    HAREL_INCOME_MODEL.settled,
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="app-surface space-y-3 px-5 py-5 sm:px-7">
+        <h2 className="text-lg font-semibold">{HAREL_INCOME_MODEL.title}</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">{HAREL_INCOME_MODEL.intro}</p>
+        <ul className="space-y-2 text-sm">
+          {rules.map((rule) => (
+            <li key={rule} className="rounded-xl bg-black/[0.03] px-3 py-2">
+              {rule}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function MigdalFormulaPanel() {
+  return (
+    <div className="app-surface space-y-4 px-5 py-5 sm:px-7">
+      <h2 className="text-lg font-semibold">נוסחה חיה — מגדל</h2>
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        פרמיה באקסל היא חודשית. פרמיה קובעת = ×12. מדרגה אחת לינואר–דצמבר, רטרו על כל הפעילות.
+      </p>
+      <ul className="space-y-2 text-sm">
+        {MIGDAL_VOLUME_TIERS.map((tier) => (
+          <li key={tier.id} className="rounded-xl bg-black/[0.03] px-3 py-2">
+            {formatMigdalTierLabel(tier)}
+          </li>
+        ))}
+        <li className="rounded-xl bg-black/[0.03] px-3 py-2">
+          נפרעים: 22% מהפרמיה החודשית · שוטף 60 · אותם מוצרים
+        </li>
+      </ul>
+      <Link href={FORMULAS_PATH} className="inline-flex text-sm font-medium underline-offset-2 hover:underline">
+        לכל הנוסחאות בארגון
+      </Link>
+    </div>
   );
 }
 
@@ -989,7 +1638,7 @@ function ComingSoonPanel({ insurer }: { insurer: InsurerAgreement }) {
     <div className="app-surface px-5 py-12 text-center sm:px-7">
       <p className="text-lg font-semibold">{insurer.name}</p>
       <p className="mt-2 text-sm text-muted-foreground">
-        הסכם ונוסחה יתווספו בהמשך. בדוח: פרמיה × {DEFAULT_PNL_MULTIPLIER}.
+        הסכם ונוסחה יתווספו בהמשך. עד אז ההכנסה מחברה זו בדוח היא ₪0.
       </p>
     </div>
   );

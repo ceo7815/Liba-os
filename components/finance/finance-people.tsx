@@ -15,13 +15,21 @@ import {
 import { EmployeeCardDialog, employmentKindLabel } from "@/components/employees/employee-card-dialog";
 import { ProductionLeadersPanel } from "@/components/employees/production-leaders";
 import type { EmployeeHoursRow } from "@/lib/employees/hours";
+import type { LeadCplMap } from "@/lib/employees/lead-costs";
 import {
   agreementForDate,
+  emptyAgreement,
   emptyPayContract,
+  freelancerPaysLeadCosts,
+  currentAgreement,
+  PARTNERSHIP,
+  partnershipVolumeStats,
+  partnershipVolumeWage,
   todayIso,
   type ContractWageTotal,
   wageTotalForEmployeeContract,
 } from "@/lib/employees/contract";
+import { productionsForEmployee } from "@/lib/employees/review";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 import {
   SUPPLIER_CATEGORIES,
@@ -35,9 +43,9 @@ import {
 import {
   DEFAULT_AGENT_MULTIPLIER,
   formatIls,
-  insurerIncome,
   type AgentRate,
 } from "@/lib/sales-dashboard/campaign-math";
+import { insurerIncomeForProductions } from "@/lib/finance/insurer-income";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
@@ -65,6 +73,64 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const EMPLOYEE_LIST_SECTIONS = [
+  { id: "partnership", label: "שותפים" },
+  { id: "salaried", label: "שכירים" },
+  { id: "freelancer", label: "עצמאים" },
+  { id: "unpaid", label: "ללא שכר" },
+  { id: "none", label: "אין הסכם" },
+] as const;
+
+function employeeListSection(emp: FinanceEmployee): (typeof EMPLOYEE_LIST_SECTIONS)[number] {
+  const kind = emp.employment_kind ?? currentAgreement(emp.agreements)?.employmentKind ?? null;
+  return EMPLOYEE_LIST_SECTIONS.find((row) => row.id === kind) ?? EMPLOYEE_LIST_SECTIONS[4];
+}
+
+const SYNTHETIC_OSHRAN_ID = "partnership-oshran";
+
+function syntheticOshranEmployee(): FinanceEmployee {
+  return {
+    id: SYNTHETIC_OSHRAN_ID,
+    full_name: PARTNERSHIP.canonicalSource,
+    department: "שותפים",
+    short_dial: null,
+    email: null,
+    direct_phone: null,
+    outbound_number: null,
+    sim_provider: null,
+    wait_circle: "ליבה",
+    dialer_type: null,
+    notes: "שיתוף פעולה לפי מקור הפניה. תשלום לשותף = פרמיה × 4.",
+    is_active: true,
+    created_at: new Date().toISOString(),
+    employment_kind: "partnership",
+    pay_contract: emptyPayContract(),
+    agreements: [{ ...emptyAgreement("partnership", ""), from: "" }],
+  };
+}
+
+function partnershipCubeWage(productions: MarketingProduction[]): ContractWageTotal {
+  const stats = partnershipVolumeStats(productions);
+  const volumeWage = partnershipVolumeWage(stats.premium);
+  return {
+    agentName: PARTNERSHIP.canonicalSource,
+    count: stats.count,
+    premium: Math.round(stats.premium),
+    volumeCount: stats.count,
+    volumePremium: Math.round(stats.premium),
+    volumeWage,
+    settledCount: 0,
+    settledPremium: 0,
+    settledWage: 0,
+    pensionWage: 0,
+    earned: volumeWage,
+    agreementCosts: 0,
+    leadCosts: 0,
+    leadCount: 0,
+    employmentKind: "partnership",
+  };
+}
+
 export function EmployeesSection({
   employees,
   onChanged,
@@ -74,7 +140,10 @@ export function EmployeesSection({
   wageLoading = false,
   productions = [],
   hours = [],
+  alexanderByEmployee,
+  leadCpl,
   onHoursChanged,
+  onAlexanderChanged,
   onRatesChanged,
 }: {
   employees: FinanceEmployee[];
@@ -85,7 +154,10 @@ export function EmployeesSection({
   wageLoading?: boolean;
   productions?: MarketingProduction[];
   hours?: EmployeeHoursRow[];
+  alexanderByEmployee?: Map<string, Record<string, number>>;
+  leadCpl?: LeadCplMap;
   onHoursChanged?: () => void;
+  onAlexanderChanged?: () => void;
   onRatesChanged?: () => void;
 }) {
   const { brand } = useOperatingBrand();
@@ -123,6 +195,8 @@ export function EmployeesSection({
         e.wait_circle ?? "",
         e.sim_provider ?? "",
         e.notes ?? "",
+        employmentKindLabel(e.employment_kind) ?? "",
+        employeeListSection(e).label,
       ]
         .join(" ")
         .toLowerCase()
@@ -132,30 +206,40 @@ export function EmployeesSection({
 
   const withPremium = useMemo(() => {
     if (wageLoading) return filtered;
-    return filtered.filter(
-      (emp) => wageTotalForEmployeeContract(emp.full_name, wageTotals).premium > 0,
-    );
+    return filtered.filter((emp) => {
+      if (employeeListSection(emp).id === "partnership") return true;
+      return wageTotalForEmployeeContract(emp.full_name, wageTotals).premium > 0;
+    });
   }, [filtered, wageLoading, wageTotals]);
 
   const hidden = useMemo(() => {
     if (wageLoading) return [];
-    return filtered.filter(
-      (emp) => wageTotalForEmployeeContract(emp.full_name, wageTotals).premium <= 0,
-    );
+    return filtered.filter((emp) => {
+      if (employeeListSection(emp).id === "partnership") return false;
+      return wageTotalForEmployeeContract(emp.full_name, wageTotals).premium <= 0;
+    });
   }, [filtered, wageLoading, wageTotals]);
 
   const visible = listTab === "hidden" ? hidden : withPremium;
 
-  const byCircle = useMemo(() => {
+  const byKind = useMemo(() => {
     const map = new Map<string, FinanceEmployee[]>();
-    for (const e of visible) {
-      const key = displayWaitCircle(e.wait_circle);
-      const list = map.get(key) ?? [];
-      list.push(e);
-      map.set(key, list);
+    for (const emp of visible) {
+      const section = employeeListSection(emp);
+      const list = map.get(section.id) ?? [];
+      list.push(emp);
+      map.set(section.id, list);
     }
-    return Array.from(map.entries());
-  }, [visible]);
+    return EMPLOYEE_LIST_SECTIONS.map((section) => {
+      let rows = [...(map.get(section.id) ?? [])].sort((a, b) =>
+        a.full_name.localeCompare(b.full_name, "he"),
+      );
+      if (section.id === "partnership" && rows.length === 0 && listTab !== "hidden") {
+        rows = [syntheticOshranEmployee()];
+      }
+      return { id: section.id, label: section.label, rows };
+    }).filter((group) => group.rows.length > 0);
+  }, [listTab, visible]);
 
   const emptyMessage =
     filtered.length === 0
@@ -211,7 +295,7 @@ export function EmployeesSection({
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="חיפוש עובד לפי שם, מחלקה, חיוג או טלפון…"
+              placeholder="חיפוש לפי שם, סוג העסקה, מחלקה או טלפון…"
               className="h-11 rounded-2xl border-black/[0.06] bg-background ps-10 text-start focus-visible:ring-highlight/40 sm:h-10 sm:rounded-xl"
             />
           </div>
@@ -223,12 +307,12 @@ export function EmployeesSection({
           <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : (
-        byCircle.map(([circle, rows]) => (
-          <div key={circle} className="space-y-2.5">
+        byKind.map(({ id, label, rows }) => (
+          <div key={id} className="space-y-2.5">
             <div className="flex items-baseline justify-between gap-3 px-0.5">
-              <h3 className="text-sm font-semibold tracking-tight">{circle}</h3>
+              <h3 className="text-sm font-semibold tracking-tight">{label}</h3>
               <p className="text-[11px] tabular-nums text-muted-foreground">
-                {rows.length} עובדים
+                {rows.length}
               </p>
             </div>
             <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -239,11 +323,18 @@ export function EmployeesSection({
                   employees={employees}
                   pending={pending}
                   startTransition={startTransition}
-                  wage={wageTotalForEmployeeContract(emp.full_name, wageTotals)}
+                  wage={
+                    emp.id === SYNTHETIC_OSHRAN_ID
+                      ? partnershipCubeWage(productions)
+                      : wageTotalForEmployeeContract(emp.full_name, wageTotals)
+                  }
                   wageLoading={wageLoading}
                   productions={productions}
                   hours={hours}
+                  alexanderByMonth={alexanderByEmployee?.get(emp.id) ?? {}}
+                  leadCpl={leadCpl}
                   onHoursChanged={onHoursChanged}
+                  onAlexanderChanged={onAlexanderChanged}
                   rates={rates}
                   defaultMultiplier={defaultMultiplier}
                   onChanged={onChanged}
@@ -264,7 +355,10 @@ export function EmployeesSection({
           }}
           productions={productions}
           hours={hours}
+          alexanderByMonth={alexanderByEmployee?.get(spotlightEmp.id) ?? {}}
+          leadCpl={leadCpl}
           onHoursChanged={onHoursChanged}
+          onAlexanderChanged={onAlexanderChanged}
           rates={rates}
           defaultMultiplier={defaultMultiplier}
           onSaved={(saved) => {
@@ -319,7 +413,10 @@ function EmployeeCube({
   wageLoading,
   productions,
   hours,
+  alexanderByMonth = {},
+  leadCpl,
   onHoursChanged,
+  onAlexanderChanged,
   rates,
   defaultMultiplier,
   onChanged,
@@ -333,25 +430,62 @@ function EmployeeCube({
   wageLoading: boolean;
   productions: MarketingProduction[];
   hours: EmployeeHoursRow[];
+  alexanderByMonth?: Record<string, number>;
+  leadCpl?: LeadCplMap;
   onHoursChanged?: () => void;
+  onAlexanderChanged?: () => void;
   rates: AgentRate[];
   defaultMultiplier: number;
   onChanged: (next: FinanceEmployee[]) => void;
   onRatesChanged?: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const kindLabel = employmentKindLabel(emp.employment_kind);
-  const agreement = agreementStatusLine(emp);
-  const circle = displayWaitCircle(emp.wait_circle);
-  const roleLine = [emp.department, circle !== "ללא מעגל" ? circle : null]
+  const [focusLeads, setFocusLeads] = useState(false);
+  const [card, setCard] = useState(emp);
+  const kindLabel = employmentKindLabel(card.employment_kind);
+  const agreement = agreementStatusLine(card);
+  const circle = displayWaitCircle(card.wait_circle);
+  const roleLine = [card.department, circle !== "ללא מעגל" ? circle : null]
     .filter(Boolean)
     .join(" · ");
+  const paysLeadCosts =
+    card.employment_kind === "freelancer" &&
+    freelancerPaysLeadCosts(currentAgreement(card.agreements)?.contract ?? card.pay_contract);
+
+  function openCard(event?: { target: EventTarget | null }) {
+    const target = event?.target as HTMLElement | null;
+    setFocusLeads(Boolean(target?.closest("[data-lead-costs]")));
+    if (emp.id !== SYNTHETIC_OSHRAN_ID) {
+      setOpen(true);
+      return;
+    }
+    startTransition(async () => {
+      const result = await createFinanceEmployee({
+        full_name: PARTNERSHIP.canonicalSource,
+        department: "שותפים",
+        wait_circle: "ליבה",
+        notes: "שיתוף פעולה לפי מקור הפניה. תשלום לשותף = פרמיה × 4.",
+        employment_kind: "partnership",
+      });
+      if (!isFinanceOk(result) || !result.id) {
+        toast.error(result.error ?? "לא הצלחנו לפתוח כרטיס שותף");
+        return;
+      }
+      const saved: FinanceEmployee = {
+        ...syntheticOshranEmployee(),
+        id: result.id,
+        created_at: new Date().toISOString(),
+      };
+      setCard(saved);
+      setOpen(true);
+    });
+  }
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={(event) => openCard(event)}
         className="group relative flex flex-col items-stretch gap-4 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-5 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)]"
       >
         <span className="absolute inset-y-0 start-0 w-1 origin-top scale-y-100 bg-highlight transition-transform duration-300 group-hover:scale-y-110" />
@@ -377,6 +511,8 @@ function EmployeeCube({
                   "rounded-full px-2.5 py-1 text-[11px] font-semibold",
                   emp.employment_kind === "unpaid"
                     ? "bg-emerald-700 text-white"
+                    : emp.employment_kind === "partnership"
+                      ? "bg-violet-700 text-white"
                     : "bg-black text-white",
                 )}
               >
@@ -393,52 +529,133 @@ function EmployeeCube({
 
         <div>
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
-            {emp.employment_kind === "unpaid" ? "רווח לחברה · מהסנכרון" : "שכר מצטבר · מהסנכרון"}
+            {emp.employment_kind === "unpaid"
+              ? "רווח לחברה · מהסנכרון"
+              : emp.employment_kind === "partnership"
+                ? "תשלום לשותף"
+                : "שכר ששולם"}
           </p>
           <p className="mt-1 text-[1.65rem] font-semibold leading-none tracking-tight tabular-nums sm:text-2xl">
             {wageLoading
               ? "…"
               : emp.employment_kind === "unpaid"
-                ? formatIls(insurerIncome(wage.premium))
+                ? formatIls(
+                    insurerIncomeForProductions(
+                      productionsForEmployee(emp.full_name, productions).filter(
+                        (row) => row.status === "active",
+                      ),
+                      { yearContext: productions },
+                    ).income,
+                  )
                 : formatIls(wage.earned)}
           </p>
           <p className="mt-1.5 text-[11px] text-muted-foreground">
             {wageLoading
               ? "טוען סגירות…"
               : emp.employment_kind === "unpaid"
-                ? `שכר ₪0 · ${wage.volumeCount + wage.settledCount} סגירות · פרמיה ${formatIls(wage.premium)}`
-                : `${wage.volumeCount + wage.settledCount} סגירות · פרמיה ${formatIls(wage.premium)}`}
+                ? `שכר ₪0 · היקף ${wage.volumeCount} · נפרעים ${wage.settledCount} · פרמיה ${formatIls(wage.premium)}`
+                : emp.employment_kind === "partnership"
+                  ? `פרמיה × 4 · ${wage.volumeCount} סגירות מהמקור · נפרעים לשותף ₪0`
+                : emp.employment_kind === "freelancer" && paysLeadCosts
+                  ? "היקף + נפרעים − עלויות הסכם − עלויות לידים"
+                  : emp.employment_kind === "freelancer"
+                    ? "היקף + נפרעים − עלויות הסכם"
+                    : "היקף + נפרעים − עלויות הסכם"}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-black/[0.06] bg-black/[0.06]">
-          <div className="bg-white px-3 py-2.5 text-start">
-            <p className="text-[11px] text-muted-foreground">היקף</p>
-            <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">
-              {wageLoading ? "…" : formatIls(wage.volumeWage)}
-            </p>
-            <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
-              {wage.volumeCount} סגירות
-              {wage.volumeWage > 0 && emp.employment_kind === "freelancer"
-                ? " · קבוע/חד־פעמי"
-                : ""}
-            </p>
+        <div className="overflow-hidden rounded-2xl border border-black/[0.06]">
+          <div className="grid grid-cols-2 gap-px bg-black/[0.06]">
+            <div className="bg-white px-3 py-2.5 text-start">
+              <p className="text-[11px] text-muted-foreground">
+                {emp.employment_kind === "partnership" ? "תשלום לשותף" : "היקף"}
+              </p>
+              <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">
+                {wageLoading ? "…" : formatIls(wage.volumeWage)}
+              </p>
+              <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+                {wageLoading
+                  ? "…"
+                  : `${wage.volumeCount} סגירות · פרמיה ${formatIls(wage.volumePremium)}${
+                      wage.volumeWage > 0 && emp.employment_kind === "freelancer"
+                        ? " · כולל קבוע/חד־פעמי"
+                        : ""
+                    }`}
+              </p>
+            </div>
+            <div className="bg-white px-3 py-2.5 text-start">
+              <p className="text-[11px] text-muted-foreground">נפרעים</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">
+                {wageLoading
+                  ? "…"
+                  : emp.employment_kind === "salaried" || emp.employment_kind === "partnership"
+                    ? formatIls(0)
+                    : formatIls(wage.settledWage)}
+              </p>
+              <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+                {emp.employment_kind === "partnership"
+                  ? "נפרעים נשארים בחברה"
+                  : emp.employment_kind === "salaried"
+                  ? "שכיר בלי נפרעים"
+                  : wageLoading
+                    ? "…"
+                    : `${wage.settledCount} סגירות · פרמיה ${formatIls(wage.settledPremium)}`}
+              </p>
+            </div>
           </div>
-          <div className="bg-white px-3 py-2.5 text-start">
-            <p className="text-[11px] text-muted-foreground">נפרעים</p>
-            <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">
-              {wageLoading
-                ? "…"
-                : emp.employment_kind === "salaried"
-                  ? formatIls(0)
-                  : formatIls(wage.settledWage)}
-            </p>
-            <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
-              {emp.employment_kind === "salaried"
-                ? "שכיר בלי נפרעים"
-                : `${wage.settledCount} סגירות`}
-            </p>
-          </div>
+          {emp.employment_kind === "unpaid" || emp.employment_kind === "partnership" ? null : (
+            <div className="border-t border-black/[0.06] bg-[#fff8f0] px-3 py-2.5 text-start">
+              <p className="text-[11px] text-muted-foreground">עלויות שקוזזו</p>
+              <p
+                className={cn(
+                  "mt-1 text-sm font-semibold tabular-nums tracking-tight",
+                  (wage.agreementCosts ?? 0) > 0 ? "text-red-800" : undefined,
+                )}
+              >
+                {wageLoading
+                  ? "…"
+                  : (wage.agreementCosts ?? 0) > 0
+                    ? `−${formatIls(wage.agreementCosts)}`
+                    : formatIls(0)}
+              </p>
+              <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+                עמדה, תפעול ומשרד מההסכם
+              </p>
+            </div>
+          )}
+          {emp.employment_kind === "freelancer" && paysLeadCosts ? (
+            <div
+              data-lead-costs
+              className="border-t border-black/[0.06] bg-[#f4f8ff] px-3 py-2.5 text-start underline decoration-dotted decoration-black/20 underline-offset-4"
+            >
+              <p className="text-[11px] text-muted-foreground">עלויות לידים · לחצו לפירוט</p>
+              <p
+                className={cn(
+                  "mt-1 text-sm font-semibold tabular-nums tracking-tight",
+                  (wage.leadCosts ?? 0) > 0 ? "text-red-800" : undefined,
+                )}
+              >
+                {wageLoading
+                  ? "…"
+                  : (wage.leadCosts ?? 0) > 0
+                    ? `−${formatIls(wage.leadCosts)}`
+                    : formatIls(0)}
+              </p>
+              <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground no-underline">
+                {(wage.leadCount ?? 0) > 0
+                  ? `${wage.leadCount} הפקות × 50% מעלות הליד באותו חודש`
+                  : "50% מעלות הליד לכל הפקה ממקור בתשלום"}
+              </p>
+            </div>
+          ) : emp.employment_kind === "freelancer" ? (
+            <div className="border-t border-black/[0.06] bg-[#f4f8ff] px-3 py-2.5 text-start">
+              <p className="text-[11px] text-muted-foreground">עלויות לידים</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">{formatIls(0)}</p>
+              <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+                עצמאים 4 · הנוסחה לא מחייבת לידים
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-auto space-y-1.5 border-t border-black/[0.06] pt-3">
@@ -458,12 +675,27 @@ function EmployeeCube({
       </button>
 
       <EmployeeCardDialog
-        emp={emp}
+        emp={card}
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) {
+            setFocusLeads(false);
+            if (
+              card.id !== SYNTHETIC_OSHRAN_ID &&
+              !employees.some((row) => row.id === card.id)
+            ) {
+              onChanged([card, ...employees]);
+            }
+          }
+        }}
         productions={productions}
         hours={hours}
+        alexanderByMonth={alexanderByMonth}
+        leadCpl={leadCpl}
+        focusLeads={focusLeads}
         onHoursChanged={onHoursChanged}
+        onAlexanderChanged={onAlexanderChanged}
         rates={rates}
         defaultMultiplier={defaultMultiplier}
         onSaved={(row) => {
@@ -473,7 +705,7 @@ function EmployeeCube({
         contactEditor={
           <EmployeeDialog
             mode="edit"
-            employee={emp}
+            employee={card}
             disabled={pending}
             onSaved={(row) => {
               onChanged(employees.map((e) => (e.id === row.id ? row : e)));
@@ -481,9 +713,10 @@ function EmployeeCube({
           />
         }
         onDelete={() => {
-          if (!window.confirm(`למחוק את ${emp.full_name}?`)) return;
+          if (card.id === SYNTHETIC_OSHRAN_ID) return;
+          if (!window.confirm(`למחוק את ${card.full_name}?`)) return;
           startTransition(async () => {
-            const result = await deleteFinanceEmployee(emp.id);
+            const result = await deleteFinanceEmployee(card.id);
             if (result.error) {
               toast.error(result.error);
               return;

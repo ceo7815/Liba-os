@@ -22,7 +22,9 @@ import {
 function isMissingRelation(message: string | undefined): boolean {
   return Boolean(
     message &&
-      (/does not exist/i.test(message) || /schema cache/i.test(message) || /could not find/i.test(message)),
+      (/relation .+ does not exist/i.test(message) ||
+        /could not find the table/i.test(message) ||
+        /schema cache/i.test(message)),
   );
 }
 
@@ -75,6 +77,7 @@ async function fetchFacebookDailyStats(
     cost: number;
     clicks: number;
     impressions: number;
+    leads: number;
   }[]
 > {
   const out: {
@@ -83,11 +86,13 @@ async function fetchFacebookDailyStats(
     cost: number;
     clicks: number;
     impressions: number;
+    leads: number;
   }[] = [];
+  let select = "facebook_campaign_id, day, cost, clicks, impressions, leads";
   for (let from = 0; ; from += STATS_PAGE_SIZE) {
     let query = admin
       .from("facebook_ads_daily_stats")
-      .select("facebook_campaign_id, day, cost, clicks, impressions")
+      .select(select)
       .order("day", { ascending: true })
       .order("facebook_campaign_id", { ascending: true })
       .range(from, from + STATS_PAGE_SIZE - 1);
@@ -95,10 +100,25 @@ async function fetchFacebookDailyStats(
     const { data, error } = await query;
     if (error) {
       if (isMissingRelation(error.message)) return [];
+      if (select.includes("leads") && /leads/i.test(error.message)) {
+        select = "facebook_campaign_id, day, cost, clicks, impressions";
+        from = -STATS_PAGE_SIZE;
+        out.length = 0;
+        continue;
+      }
       throw new Error(error.message);
     }
-    const rows = data ?? [];
-    out.push(...rows);
+    const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+    for (const row of rows) {
+      out.push({
+        facebook_campaign_id: String(row.facebook_campaign_id ?? ""),
+        day: String(row.day ?? ""),
+        cost: Number(row.cost) || 0,
+        clicks: Number(row.clicks) || 0,
+        impressions: Number(row.impressions) || 0,
+        leads: Number(row.leads) || 0,
+      });
+    }
     if (rows.length < STATS_PAGE_SIZE) break;
   }
   return out;
@@ -159,6 +179,7 @@ export async function readFacebookAdsBundle(statsRange?: DateRange): Promise<Fac
       cost: Number(item.cost) || 0,
       clicks: Number(item.clicks) || 0,
       impressions: Number(item.impressions) || 0,
+      leads: Number(item.leads) || 0,
     })),
   };
 }
@@ -326,6 +347,7 @@ export async function syncFacebookAds(): Promise<{
       cost: number;
       clicks: number;
       impressions: number;
+      leads: number;
     }[] = [];
     for (const account of accounts) {
       const listed = await listFacebookCampaigns(accessToken, account.id);
@@ -384,6 +406,7 @@ export async function syncFacebookAds(): Promise<{
       cost: row.cost,
       clicks: row.clicks,
       impressions: row.impressions,
+      leads: Math.max(0, Math.round(row.leads || 0)),
     }));
     for (let i = 0; i < statRows.length; i += 400) {
       const { error } = await admin

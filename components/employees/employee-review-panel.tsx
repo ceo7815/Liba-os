@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { formatIls } from "@/lib/sales-dashboard/campaign-math";
 import { sourcePnlKindForProcess } from "@/lib/sales-dashboard/columns";
 import { productionDateOf, isSalaryOnly, usesMonthlySalary } from "@/lib/employees/contract";
@@ -12,6 +12,7 @@ import {
   type ReviewMonthAudit,
   type ReviewSaleLine,
 } from "@/lib/employees/review";
+import { leadChannelLabel, type LeadCostSourceMonth } from "@/lib/employees/lead-costs";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 import { cn } from "@/lib/utils";
 import type { WageExplainReason } from "@/lib/employees/contract";
@@ -37,12 +38,32 @@ function Kpi({
 function Split({
   bucket,
   salaried,
+  partnership,
   extrasLines,
 }: {
   bucket: EmployeeBucket;
   salaried?: boolean;
+  partnership?: boolean;
   extrasLines?: { amount: number; note: string }[];
 }) {
+  if (partnership) {
+    return (
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl bg-background px-3 py-2.5">
+          <p className="text-[11px] text-muted-foreground">תשלום לשותף · פרמיה × 4</p>
+          <p className="mt-1 font-semibold tabular-nums">{formatIls(bucket.volumeWage)}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {bucket.volumeCount} סגירות מהמקור · פרמיה {formatIls(bucket.volumePremium)} · כולל תאונות
+          </p>
+        </div>
+        <div className="rounded-xl bg-background px-3 py-2.5">
+          <p className="text-[11px] text-muted-foreground">נפרעים לשותף</p>
+          <p className="mt-1 font-semibold tabular-nums">{formatIls(0)}</p>
+          <p className="text-[11px] text-muted-foreground">נשארים בדוח החברה</p>
+        </div>
+      </div>
+    );
+  }
   if (salaried) {
     return (
       <div className="grid gap-2 sm:grid-cols-2">
@@ -165,6 +186,8 @@ function reasonLabel(reason: WageExplainReason): string {
   if (reason === "settled_blocked") return "שכיר בלי נפרעים";
   if (reason === "personal_accident") return "תאונות אישיות · בלי היקף";
   if (reason === "unpaid") return "ללא שכר";
+  if (reason === "partnership") return "שותף · פרמיה × 4";
+  if (reason === "partnership_source") return "לא בשכר · מקור אורשן";
   if (reason === "inactive") return "לא פעילה";
   return "—";
 }
@@ -221,7 +244,7 @@ function SaleRow({ row, salaried }: { row: ReviewSaleLine; salaried?: boolean })
   );
 }
 
-type DrillKind = "volume" | "sales" | "salary" | "settled" | "costs" | "total";
+type DrillKind = "volume" | "sales" | "salary" | "settled" | "costs" | "leads" | "total";
 
 function ClickNum({
   children,
@@ -254,7 +277,7 @@ function productionsForDrill(audit: ReviewMonthAudit, kind: DrillKind, salaried?
       : audit.sales.filter((row) => row.report === "settled");
   if (kind === "settled") return settled;
   if (kind === "salary") return [];
-  if (kind === "costs") return [];
+  if (kind === "costs" || kind === "leads") return [];
   if (salaried || kind === "volume" || kind === "sales") return volume;
   return [...volume, ...settled];
 }
@@ -263,6 +286,7 @@ function monthKindLabel(kind: EmployeeBucket["employmentKind"]): string | null {
   if (kind === "salaried") return "שכיר";
   if (kind === "freelancer") return "עצמאי";
   if (kind === "unpaid") return "ללא שכר";
+  if (kind === "partnership") return "שיתוף פעולה";
   return null;
 }
 
@@ -285,7 +309,8 @@ function drillTitle(kind: DrillKind, audit: ReviewMonthAudit, earned?: number): 
     }
     return `נפרעים ${audit.label}`;
   }
-  if (kind === "costs") return `עלויות חודשיות ${audit.label}`;
+  if (kind === "costs") return `עלויות הסכם ${audit.label}`;
+  if (kind === "leads") return `עלויות לידים ${audit.label}`;
   return `סה״כ ${audit.label} · ${formatIls(earned ?? audit.productionWage + audit.baseWage + extrasTotal(audit))}`;
 }
 
@@ -494,6 +519,114 @@ function SalaryBreakdown({ audit }: { audit: ReviewMonthAudit }) {
   );
 }
 
+function formatCpl(n: number): string {
+  return `₪${n.toLocaleString("he-IL", { maximumFractionDigits: 2, minimumFractionDigits: 0 })}`;
+}
+
+function LeadCostsBreakdown({
+  groups,
+  total,
+  count,
+}: {
+  groups: LeadCostSourceMonth[];
+  total: number;
+  count: number;
+}) {
+  if (groups.length === 0) {
+    return (
+      <p className="px-4 py-3 text-sm text-muted-foreground">
+        אין חיוב לידים. גוגל/פייסבוק: 50% מעלות הליד. רועי אזולאי: פרמיה שהופקה. אלכסנדר: ₪60 לליד.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-4 px-4 py-3">
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        גוגל ופייסבוק: 50% מ־CPL לפי חודש העברה. רועי אזולאי / קו 2: כל שקל פרמיה שהופקה יורד מהשכר
+        לפי חודש מכירה. אלכסנדר: ₪60 לכל סגירה וגם לכל ליד שהתקבל ולא הופק.
+      </p>
+      {groups.map((group) => (
+        <div key={group.key} className="overflow-hidden rounded-xl border border-black/[0.06] bg-white">
+          <div className="space-y-1 border-b border-black/[0.06] bg-[#f4f8ff] px-3 py-2.5">
+            <p className="text-sm font-semibold">
+              {group.source} · {monthLabel(group.month)}
+            </p>
+            <p className="text-[11px] text-muted-foreground">{leadChannelLabel(group.channel)}</p>
+            {group.formula === "premium" ? (
+              <p className="text-[12px] leading-relaxed">
+                פרמיה שהופקה {formatIls(group.amount)} = חיוב{" "}
+                <span className="font-semibold">−{formatIls(group.amount)}</span>
+                {` · ${group.count} הפקות`}
+              </p>
+            ) : group.formula === "alexander" ? (
+              <p className="text-[12px] leading-relaxed">
+                {group.count} סגירות × {formatIls(group.unit)} ={" "}
+                <span className="font-semibold">−{formatIls(group.amount)}</span>
+              </p>
+            ) : group.formula === "alexander-unproduced" ? (
+              <p className="text-[12px] leading-relaxed">
+                {group.count.toLocaleString("he-IL")} לידים שהתקבלו ולא הופקו × {formatIls(group.unit)} ={" "}
+                <span className="font-semibold">−{formatIls(group.amount)}</span>
+              </p>
+            ) : group.adsLeads > 0 && group.spend > 0 ? (
+              <>
+                <p className="text-[12px] leading-relaxed">
+                  {formatIls(group.spend)} הוצאה ÷ {group.adsLeads.toLocaleString("he-IL")} לידים ={" "}
+                  <span className="font-medium">{formatCpl(group.cpl)}</span> לליד
+                </p>
+                <p className="text-[12px] leading-relaxed">
+                  להפקה: 50% × {formatCpl(group.cpl)} = {formatIls(group.unit)} · {group.count} הפקות ×{" "}
+                  {formatIls(group.unit)} ={" "}
+                  <span className="font-semibold">−{formatIls(group.amount)}</span>
+                </p>
+              </>
+            ) : (
+              <p className="text-[12px]">
+                CPL <span className="font-medium">{formatCpl(group.cpl)}</span>
+              </p>
+            )}
+          </div>
+          {group.lines.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-start text-[12px]">
+                <thead className="text-[11px] text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-1.5 font-medium">
+                      {group.formula === "cpl" ? "העברה" : "תאריך"}
+                    </th>
+                    <th className="px-3 py-1.5 font-medium">לקוח</th>
+                    <th className="px-3 py-1.5 font-medium">מוצר</th>
+                    <th className="px-3 py-1.5 font-medium">פרמיה</th>
+                    <th className="px-3 py-1.5 font-medium">חיוב</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.lines.map((line, index) => (
+                    <tr key={`${group.key}-${line.date}-${line.client}-${index}`} className="border-t border-black/[0.04]">
+                      <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{line.date || "—"}</td>
+                      <td className="px-3 py-1.5">{line.client || "—"}</td>
+                      <td className="px-3 py-1.5">{line.product || "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">
+                        {line.premium ? formatIls(line.premium) : "—"}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-1.5 font-medium tabular-nums">
+                        −{formatIls(line.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </div>
+      ))}
+      <p className="text-sm font-semibold">
+        סה״כ −{formatIls(total)} · {count.toLocaleString("he-IL")} חיובים
+      </p>
+    </div>
+  );
+}
+
 function CostsBreakdown({ audit }: { audit: ReviewMonthAudit }) {
   const rows = audit.monthlyCosts ?? [];
   const total = rows.reduce((sum, row) => sum + row.amount, 0);
@@ -503,7 +636,13 @@ function CostsBreakdown({ audit }: { audit: ReviewMonthAudit }) {
   return (
     <div className="space-y-1.5 px-4 py-3">
       {rows.map((row) => (
-        <SlipRow key={row.key} label={row.label} hint="יורד כל חודש" amount={row.amount} negative />
+        <SlipRow
+          key={row.key}
+          label={row.label}
+          hint={row.key === "leads" ? "50% מעלות הליד לכל הפקה" : "יורד כל חודש"}
+          amount={row.amount}
+          negative
+        />
       ))}
       <SlipRow label="סה״כ עלויות החודש" amount={total} strong negative />
     </div>
@@ -694,14 +833,33 @@ function ProductionTable({
   );
 }
 
-export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
-  const [drill, setDrill] = useState<{ month: string; kind: DrillKind } | null>(null);
+export function EmployeeReviewPanel({
+  review,
+  focusLeads = false,
+}: {
+  review: EmployeeReview;
+  focusLeads?: boolean;
+}) {
+  const [drill, setDrill] = useState<{ month: string; kind: DrillKind } | null>(
+    focusLeads ? { month: "all", kind: "leads" } : null,
+  );
+  const leadRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!focusLeads) return;
+    setDrill({ month: "all", kind: "leads" });
+    const id = window.requestAnimationFrame(() => {
+      leadRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [focusLeads]);
   const mixedKinds = review.hasSalariedMonths && review.hasFreelancerMonths;
   const showSalaryCol = review.hasSalariedMonths;
   const showFixedCol = !showSalaryCol && review.months.some((row) => row.baseWage > 0);
   const showBaseCol = showSalaryCol || showFixedCol;
   const showSettledCols = review.hasFreelancerMonths;
-  const hideSettledProcess = review.hasSalariedMonths && !review.hasFreelancerMonths;
+  const hideSettledProcess =
+    (review.hasSalariedMonths && !review.hasFreelancerMonths) ||
+    (review.partnership && !review.hasFreelancerMonths);
   const colSpan = 6 + (showBaseCol ? 1 : 0) + (showSettledCols ? 3 : 0);
   const monthTotals = review.months.reduce(
     (sum, row) => ({
@@ -715,6 +873,7 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
       settledNewWage: sum.settledNewWage + row.settledNewWage,
       settledTrailWage: sum.settledTrailWage + row.settledTrailWage,
       monthlyCosts: sum.monthlyCosts + row.monthlyCosts,
+      leadCosts: sum.leadCosts + (row.leadCosts ?? 0),
       earned: sum.earned + row.earned,
     }),
     {
@@ -728,6 +887,7 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
       settledNewWage: 0,
       settledTrailWage: 0,
       monthlyCosts: 0,
+      leadCosts: 0,
       earned: 0,
     },
   );
@@ -753,6 +913,8 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
         <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
           {review.unpaid
             ? "עובד ללא שכר: אין הוצאת שכר. הפרמיה שנסגרה היא רווח ישיר לחברה."
+            : review.partnership
+              ? "שיתוף פעולה אורשן משכנתאות: תשלום לשותף = פרמיה × 4 על סגירה פעילה מהמקור, כולל תאונות. נפרעים לשותף ₪0 — נשארים בחברה."
             : mixedKinds
               ? "כל חודש לפי ההסכם שחל בו: שכיר — משכורת ומדרגות בלי נפרעים; עצמאי — היקף, שוטף 60 ונגרר. עלויות רק לפי הסכם אותו חודש. הפקה ב־1 לחודש נספרת לחודש שלפניו."
               : review.salaried
@@ -766,12 +928,16 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
           label={
             review.unpaid
               ? `רווח נקי לחברה · ${review.thisMonthLabel}`
+              : review.partnership
+                ? `תשלום לשותף · ${review.thisMonthLabel}`
               : `קיבל החודש · ${review.thisMonthLabel}`
           }
           value={formatIls(review.unpaid ? review.month.companyIncome : review.month.earned)}
           hint={
             review.unpaid
               ? `שכר ₪0 · ${review.month.volumeCount + review.month.settledCount} סגירות`
+              : review.partnership
+                ? `×4 על פרמיה ${formatIls(review.month.volumePremium)} · נפרעים לשותף ₪0`
               : review.salaried
                 ? `משכורת ${formatIls(review.month.baseWage)} · מדרגות ${formatIls(review.month.salesWage)}`
                 : monthOneTime > 0
@@ -781,9 +947,11 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
         />
         <Kpi
           label="פרמיה החודש"
-          value={formatIls(review.salaried ? review.month.volumePremium : review.month.volumePremium + review.month.settledPremium)}
+          value={formatIls(review.salaried || review.partnership ? review.month.volumePremium : review.month.volumePremium + review.month.settledPremium)}
           hint={
-            review.salaried
+            review.partnership
+              ? `${review.month.volumeCount} סגירות מהמקור · נפרעים לחברה`
+              : review.salaried
               ? `${review.month.volumeCount} סגירות היקף`
               : `היקף ${formatIls(review.month.volumePremium)} · נפרעים ${formatIls(review.month.settledPremium)}`
           }
@@ -802,11 +970,12 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
 
       <section className="space-y-2 rounded-2xl border border-black/[0.06] bg-muted/15 p-4">
         <h3 className="text-sm font-semibold">
-          {review.salaried ? "החודש — משכורת מול מדרגות" : "החודש — היקף מול נפרעים"}
+          {review.salaried ? "החודש — משכורת מול מדרגות" : review.partnership ? "החודש — תשלום לשותף" : "החודש — היקף מול נפרעים"}
         </h3>
         <Split
           bucket={review.month}
           salaried={review.salaried}
+          partnership={review.partnership}
           extrasLines={monthExtras}
         />
         {review.month.pendingCount > 0 || review.month.cancelledCount > 0 ? (
@@ -815,6 +984,45 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
           </p>
         ) : null}
       </section>
+
+      {review.hasFreelancerMonths ? (
+        <section
+          ref={leadRef}
+          className="overflow-hidden rounded-2xl border border-black/[0.06]"
+        >
+          <button
+            type="button"
+            onClick={() => toggle("all", "leads")}
+            className={cn(
+              "flex w-full items-baseline justify-between gap-3 px-4 py-3 text-start",
+              drill?.month === "all" && drill.kind === "leads" ? "bg-[#eef4ff]" : "bg-[#f4f8ff] hover:bg-[#eef4ff]",
+            )}
+          >
+            <span>
+              <p className="text-[11px] text-muted-foreground">עלויות לידים — לחצו לפירוט החישוב</p>
+              <p className="mt-0.5 text-sm font-semibold">
+                {(review.leadBreakdown?.total ?? review.all.leadCosts)
+                  ? `−${formatIls(review.leadBreakdown?.total ?? review.all.leadCosts)}`
+                  : formatIls(0)}
+              </p>
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {(review.leadBreakdown?.count ?? review.all.leadCount) > 0
+                ? `${review.leadBreakdown?.count ?? review.all.leadCount} הפקות × 50% מ־CPL המקור`
+                : "רק מקורות בתשלום"}
+            </span>
+          </button>
+          {drill?.month === "all" && drill.kind === "leads" ? (
+            <div className="border-t border-black/[0.06] bg-muted/20">
+              <LeadCostsBreakdown
+                groups={review.leadBreakdown?.groups ?? []}
+                total={review.leadBreakdown?.total ?? review.all.leadCosts}
+                count={review.leadBreakdown?.count ?? review.all.leadCount}
+              />
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="space-y-2">
         <h3 className="text-sm font-semibold">שכר לפי חודשים</h3>
@@ -929,9 +1137,21 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
                           </>
                         ) : null}
                         <td className="px-3 py-2 tabular-nums">
-                          <ClickNum active={kind === "costs"} onClick={() => toggle(row.key, "costs")}>
-                            {row.monthlyCosts ? `−${formatIls(row.monthlyCosts)}` : formatIls(0)}
-                          </ClickNum>
+                          <div className="flex flex-col items-start gap-0.5">
+                            {(row.monthlyCosts ?? 0) > 0 ? (
+                              <ClickNum active={kind === "costs"} onClick={() => toggle(row.key, "costs")}>
+                                {`הסכם −${formatIls(row.monthlyCosts)}`}
+                              </ClickNum>
+                            ) : null}
+                            {(row.leadCosts ?? 0) > 0 ? (
+                              <ClickNum active={kind === "leads"} onClick={() => toggle(row.key, "leads")}>
+                                {`לידים −${formatIls(row.leadCosts)}`}
+                              </ClickNum>
+                            ) : null}
+                            {(row.monthlyCosts ?? 0) === 0 && (row.leadCosts ?? 0) === 0
+                              ? formatIls(0)
+                              : null}
+                          </div>
                         </td>
                         <td className="px-3 py-2 font-semibold tabular-nums">
                           <ClickNum active={kind === "total"} onClick={() => toggle(row.key, "total")}>
@@ -953,7 +1173,11 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
                                       </p>
                                     ) : kind === "costs" ? (
                                       <p className="text-[12px] text-muted-foreground">
-                                        הסכומים מההסכם, יורדים כל חודש
+                                        עמדה, תפעול ומשרד מההסכם — יורדים כל חודש
+                                      </p>
+                                    ) : kind === "leads" ? (
+                                      <p className="text-[12px] text-muted-foreground">
+                                        לפי חודש ההעברה של המקור, 50% מעלות הליד
                                       </p>
                                     ) : kind === "salary" && !rowSalaried ? (
                                       <p className="text-[12px] text-muted-foreground">
@@ -970,6 +1194,13 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
                                     rowSalaried ? <SalaryBreakdown audit={audit} /> : <FixedMonthlyBreakdown audit={audit} />
                                   ) : null}
                                   {kind === "costs" ? <CostsBreakdown audit={audit} /> : null}
+                                  {kind === "leads" ? (
+                                    <LeadCostsBreakdown
+                                      groups={audit.leadGroups ?? []}
+                                      total={row.leadCosts ?? 0}
+                                      count={row.leadCount ?? 0}
+                                    />
+                                  ) : null}
                                   {kind === "total" && rowSalaried ? (
                                     <SalaryBreakdown audit={audit} />
                                   ) : null}
@@ -981,7 +1212,7 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
                                       <FixedMonthlyBreakdown audit={audit} />
                                     </>
                                   ) : null}
-                                  {kind !== "salary" && kind !== "costs" ? (
+                                  {kind !== "salary" && kind !== "costs" && kind !== "leads" ? (
                                     <>
                                       {kind === "total" && rowSalaried ? (
                                         <p className="px-4 pt-1 text-[11px] font-semibold text-muted-foreground">
@@ -1016,9 +1247,21 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
                                       {kind === "total" && (audit.monthlyCosts?.length ?? 0) > 0 ? (
                                         <>
                                           <p className="px-4 pt-2 text-[11px] font-semibold text-muted-foreground">
-                                            עלויות חודשיות
+                                            עלויות הסכם
                                           </p>
                                           <CostsBreakdown audit={audit} />
+                                        </>
+                                      ) : null}
+                                      {kind === "total" && (audit.leadGroups?.length ?? 0) > 0 ? (
+                                        <>
+                                          <p className="px-4 pt-2 text-[11px] font-semibold text-muted-foreground">
+                                            עלויות לידים
+                                          </p>
+                                          <LeadCostsBreakdown
+                                            groups={audit.leadGroups}
+                                            total={row.leadCosts ?? 0}
+                                            count={row.leadCount ?? 0}
+                                          />
                                         </>
                                       ) : null}
                                     </>
@@ -1057,7 +1300,9 @@ export function EmployeeReviewPanel({ review }: { review: EmployeeReview }) {
                     </>
                   ) : null}
                   <td className="px-3 py-2.5 tabular-nums">
-                    {monthTotals.monthlyCosts ? `−${formatIls(monthTotals.monthlyCosts)}` : formatIls(0)}
+                    {(monthTotals.monthlyCosts || monthTotals.leadCosts)
+                      ? `−${formatIls((monthTotals.monthlyCosts ?? 0) + (monthTotals.leadCosts ?? 0))}`
+                      : formatIls(0)}
                   </td>
                   <td className="px-3 py-2.5 tabular-nums">{formatIls(monthTotals.earned)}</td>
                 </tr>

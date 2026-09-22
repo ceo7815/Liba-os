@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Contact, KeyRound, Layers3, LayoutDashboard, Search, TrendingUp, Users, Wallet, X } from "lucide-react";
+import { Bot, Calculator, Contact, FileSpreadsheet, GraduationCap, KeyRound, Layers3, LayoutDashboard, PieChart, Search, TrendingUp, Users, Wallet, X } from "lucide-react";
 import { agents } from "@/lib/agents.config";
 import { portals } from "@/lib/portals.config";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { FORMULAS_PATH } from "@/lib/formulas/access";
 import { cn } from "@/lib/utils";
 
 type SearchItem = {
@@ -22,12 +23,16 @@ type GlobalSearchProps = {
   isAdmin: boolean;
   canAccessFinance?: boolean;
   canAccessSalesDashboard?: boolean;
+  canViewFormulas?: boolean;
+  canAccessAcademy?: boolean;
 };
 
 export function GlobalSearch({
   isAdmin,
   canAccessFinance = false,
   canAccessSalesDashboard = false,
+  canViewFormulas = false,
+  canAccessAcademy = false,
 }: GlobalSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -95,23 +100,59 @@ export function GlobalSearch({
     ];
 
     if (canAccessSalesDashboard) {
-      items.push({
-        id: "sales-dashboard",
-        label: "דשבורד מכירות",
-        description: "מסך מכירות חי מאקסל OneDrive",
-        href: "/sales-dashboard",
-        icon: TrendingUp,
-        keywords: [
-          "מכירות",
-          "דשבורד",
-          "sales",
-          "excel",
-          "onedrive",
-          "פרמיה",
-          "פוליסות",
-          "tv",
-        ],
-      });
+      items.push(
+        {
+          id: "sales-dashboard",
+          label: "דשבורד מכירות",
+          description: "מסך מכירות חי מאקסל OneDrive",
+          href: "/sales-dashboard",
+          icon: TrendingUp,
+          keywords: [
+            "מכירות",
+            "דשבורד",
+            "sales",
+            "excel",
+            "onedrive",
+            "פרמיה",
+            "פוליסות",
+            "tv",
+          ],
+        },
+        {
+          id: "sales-by-source",
+          label: "מכירות לפי מקור",
+          description: "צנורת מכירה לפי מקור הפנייה — ממתינות, הופעלו, שיווק",
+          href: "/sales-dashboard/by-source",
+          icon: PieChart,
+          keywords: [
+            "מכירות לפי מקור",
+            "מקור",
+            "צנורת",
+            "ממתינה",
+            "קמפיין",
+            "גוגל",
+            "פייסבוק",
+            "שיווק",
+          ],
+        },
+        {
+          id: "sales-excel-report",
+          label: "דוח אקסל מכירות",
+          description: "טבלת דוח המנהלים אחד לאחד — כל הגיליונות והעמודות",
+          href: "/sales-dashboard/excel",
+          icon: FileSpreadsheet,
+          keywords: [
+            "דוח אקסל מכירות",
+            "אקסל",
+            "דוח מנהלים",
+            "טבלה",
+            "excel",
+            "גיליון",
+            "משווק",
+            "פוליסה",
+          ],
+        },
+      );
     }
 
     if (canAccessFinance) {
@@ -133,6 +174,47 @@ export function GlobalSearch({
           "הפסד",
           "עמלות",
           "בנק",
+        ],
+      });
+    }
+
+    if (canAccessAcademy) {
+      items.push({
+        id: "academy",
+        label: "הדרכה",
+        description: "מסלולי הכשרה, שיעורים ומבחנים",
+        href: "/academy",
+        icon: GraduationCap,
+        keywords: [
+          "הדרכה",
+          "academy",
+          "קורס",
+          "שיעור",
+          "מבחן",
+          "הכשרה",
+          "לימוד",
+        ],
+      });
+    }
+
+    if (canViewFormulas) {
+      items.push({
+        id: "formulas",
+        label: "נוסחאות חישוב",
+        description: "לידים, שכר עצמאים וכל נוסחאות המערכת",
+        href: FORMULAS_PATH,
+        icon: Calculator,
+        keywords: [
+          "נוסחאות",
+          "חישוב",
+          "לידים",
+          "עצמאים",
+          "שכר",
+          "CPL",
+          "אלכסנדר",
+          "רועי",
+          "אביחי",
+          "formula",
         ],
       });
     }
@@ -167,7 +249,7 @@ export function GlobalSearch({
     }
 
     return items;
-  }, [isAdmin, canAccessFinance, canAccessSalesDashboard]);
+  }, [isAdmin, canAccessFinance, canAccessSalesDashboard, canViewFormulas, canAccessAcademy]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

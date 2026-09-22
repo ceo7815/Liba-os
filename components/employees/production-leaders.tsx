@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import {
   agentBelongsToEmployee,
+  isPartnershipSource,
   productionMonthKey,
 } from "@/lib/employees/contract";
 import { monthsInRange } from "@/lib/employees/payroll";
@@ -64,11 +65,12 @@ function rankByProductions(
   const rows: RankRow[] = [];
   for (const emp of employees) {
     if (!emp.is_active) continue;
-    if (emp.employment_kind === "unpaid") continue;
+    if (emp.employment_kind === "unpaid" || emp.employment_kind === "partnership") continue;
     let count = 0;
     let premium = 0;
     for (const row of productions) {
       if (row.status !== "active") continue;
+      if (isPartnershipSource(row.source)) continue;
       if (!agentBelongsToEmployee(row.agent, emp.full_name)) continue;
       const key = productionMonthKey(row);
       if (!key || !months.has(key)) continue;

@@ -11,7 +11,9 @@ import {
   extrasAmountForMonth,
   formatTierRange,
   FREELANCERS_4,
+  countsForPartnershipVolume,
   filterFreelancers4PayProductions,
+  filterPartnershipProductions,
   freelancers1PayMonthsThrough,
   freelancers1SettledForPayMonth,
   freelancers1SettledForPayMonths,
@@ -26,7 +28,9 @@ import {
   oneTimeLinesForMonth,
   oneTimeMonthsForContract,
   productionDateOf,
+  isPartnershipSource,
   profileUsesHubProductions,
+  profileUsesPartnershipProductions,
   salariedMonthlyPayMonths,
   usesFreelancerSettledBook,
   usesMonthlySalary,
@@ -47,11 +51,14 @@ import {
   type WageExplainReason,
 } from "@/lib/employees/contract";
 import { HEBREW_MONTHS, sourcePnlKindForProcess } from "@/lib/sales-dashboard/columns";
+import { jerusalemYmd, type AgentRate } from "@/lib/sales-dashboard/campaign-math";
+import { insurerIncomeForProductions } from "@/lib/finance/insurer-income";
 import {
-  insurerIncome,
-  jerusalemYmd,
-  type AgentRate,
-} from "@/lib/sales-dashboard/campaign-math";
+  freelancerLeadCosts,
+  type LeadCplMap,
+  type LeadCostCharge,
+  type LeadCostSourceMonth,
+} from "@/lib/employees/lead-costs";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 
 export type EmployeeBucket = {
@@ -74,6 +81,8 @@ export type EmployeeBucket = {
   earned: number;
   companyIncome: number;
   monthlyCosts: number;
+  leadCosts: number;
+  leadCount: number;
   employmentKind: EmploymentKind | null;
 };
 
@@ -132,6 +141,7 @@ export type ReviewMonthAudit = {
   settledSourceMonth?: string;
   deferredSettledSales?: ReviewSaleLine[];
   monthlyCosts: { key: string; label: string; amount: number }[];
+  leadGroups: LeadCostSourceMonth[];
   employmentKind: EmploymentKind | null;
 };
 
@@ -144,14 +154,17 @@ export type EmployeeReview = {
   ytd: EmployeeBucket;
   months: EmployeeBucket[];
   audits: ReviewMonthAudit[];
+  leadBreakdown: LeadCostCharge;
   products: EmployeeNamedRollup[];
   sources: EmployeeNamedRollup[];
   companies: EmployeeNamedRollup[];
   recent: (MarketingProduction & { wage: number; paidMultiplier: number; reason: WageExplainReason })[];
   unpaid: boolean;
+  partnership: boolean;
   salaried: boolean;
   hasSalariedMonths: boolean;
   hasFreelancerMonths: boolean;
+  hasPartnershipMonths: boolean;
 };
 
 function emptyBucket(key: string, label: string): EmployeeBucket {
@@ -175,6 +188,8 @@ function emptyBucket(key: string, label: string): EmployeeBucket {
     earned: 0,
     companyIncome: 0,
     monthlyCosts: 0,
+    leadCosts: 0,
+    leadCount: 0,
     employmentKind: null,
   };
 }
@@ -243,6 +258,8 @@ function rollupBucket(
     profiles: EmployeePayProfile[];
     rates: AgentRate[];
     fallback?: number;
+    leadCpl?: LeadCplMap;
+    insurerYearContext?: MarketingProduction[];
   },
   allRows: MarketingProduction[] = rows,
   settledPayMonths?: string[],
@@ -262,6 +279,13 @@ function rollupBucket(
       continue;
     }
     if (row.status !== "active") continue;
+    if (isPartnershipSource(row.source)) {
+      if (profileUsesPartnershipProductions(options.profiles[0]) && countsForPartnershipVolume(row)) {
+        bucket.volumeCount += 1;
+        bucket.volumePremium += row.premium;
+      }
+      continue;
+    }
     if (kind === "volume") {
       if (!countsForVolumeCommission(row)) continue;
       bucket.volumeCount += 1;
@@ -302,7 +326,7 @@ function rollupBucket(
         bucket.settledWage = delayed.wage;
         bucket.settledNewWage = delayed.newWage;
         bucket.settledTrailWage = delayed.trailWage;
-      } else if (payTerms?.employmentKind === "salaried") {
+      } else if (payTerms?.employmentKind === "salaried" || payTerms?.employmentKind === "partnership") {
         bucket.settledCount = 0;
         bucket.settledPremium = 0;
         bucket.settledWage = 0;
@@ -316,7 +340,9 @@ function rollupBucket(
   bucket.pendingPremium = Math.round(bucket.pendingPremium);
   bucket.cancelledPremium = Math.round(bucket.cancelledPremium);
   bucket.earned = bucket.volumeWage + bucket.settledWage;
-  bucket.companyIncome = insurerIncome(bucket.volumePremium + bucket.settledPremium);
+  bucket.companyIncome = insurerIncomeForProductions(active, {
+    yearContext: options.insurerYearContext ?? allRows,
+  }).income;
   return bucket;
 }
 
@@ -335,6 +361,7 @@ export function buildMonthWageAudits(
     profiles: EmployeePayProfile[];
     rates: AgentRate[];
     fallback?: number;
+    leadCpl?: LeadCplMap;
   },
   monthOrder: string[],
 ): ReviewMonthAudit[] {
@@ -367,6 +394,7 @@ export function buildMonthWageAudits(
       : 0;
   }
   const vacation = profile ? salariedVacationByMonth(profile, salesByMonth) : {};
+  const leadCharge = freelancerLeadCosts(profile, rows, options.leadCpl);
 
   return Array.from(byMonth.entries())
     .sort((a, b) => b[0].localeCompare(a[0]))
@@ -525,7 +553,13 @@ export function buildMonthWageAudits(
         crossings: sales.filter((row) => row.crossedTier),
         settledSourceMonth: delayed?.saleMonth || undefined,
         deferredSettledSales,
-        monthlyCosts: terms?.employmentKind === "unpaid" || !terms ? [] : monthlyCostLines(contract),
+        monthlyCosts:
+          terms?.employmentKind === "unpaid" ||
+          terms?.employmentKind === "partnership" ||
+          !terms
+            ? []
+            : monthlyCostLines(contract),
+        leadGroups: leadCharge.groups.filter((group) => group.month === month),
         employmentKind: terms?.employmentKind ?? null,
       };
     });
@@ -538,18 +572,22 @@ export function buildEmployeeReview(
     profiles: EmployeePayProfile[];
     rates: AgentRate[];
     fallback?: number;
+    leadCpl?: LeadCplMap;
   },
 ): EmployeeReview {
   const profile = options.profiles[0] ?? null;
-  const scoped = profileUsesHubProductions(profile)
-    ? filterFreelancers4PayProductions(productions)
-    : productionsForEmployee(employeeName, productions);
+  const scoped = profileUsesPartnershipProductions(profile)
+    ? filterPartnershipProductions(productions)
+    : profileUsesHubProductions(profile)
+      ? filterFreelancers4PayProductions(productions)
+      : productionsForEmployee(employeeName, productions);
   const rows = scoped.filter((row) => {
     const key = wageMonthKeyFromIso(productionDateOf(row));
     return !key || isEmployeeWageMonth(key);
   });
   const today = jerusalemYmd();
   const thisMonthKey = today.slice(0, 7);
+  const insurerOptions = { ...options, insurerYearContext: productions };
   const byMonth = new Map<string, MarketingProduction[]>();
   const monthRows: MarketingProduction[] = [];
   const ytdRows: MarketingProduction[] = [];
@@ -580,6 +618,9 @@ export function buildEmployeeReview(
       for (const month of oneTimeMonthsForContract(agreement.contract)) {
         if (isEmployeeWageMonth(month) && !byMonth.has(month)) byMonth.set(month, []);
       }
+    }
+    for (const month of Object.keys(profile.alexanderUnproducedByMonth ?? {})) {
+      if (isEmployeeWageMonth(month) && !byMonth.has(month)) byMonth.set(month, []);
     }
   }
   for (const key of Array.from(byMonth.keys())) {
@@ -617,7 +658,7 @@ export function buildEmployeeReview(
     for (const month of monthsForBucket) {
       if (!isEmployeeWageMonth(month)) continue;
       const terms = agreementForDate(profile.agreements ?? [], `${month}-01`);
-      if (!terms || terms.employmentKind === "unpaid") continue;
+      if (!terms || terms.employmentKind === "unpaid" || terms.employmentKind === "partnership") continue;
       costs += monthlyCostsTotal(terms.contract);
       if (terms.employmentKind === "freelancer") {
         const extras = extrasAmountForMonth(terms.contract, month);
@@ -627,13 +668,34 @@ export function buildEmployeeReview(
     }
     bucket.monthlyCosts = costs;
     bucket.earned -= costs;
+    const allLead = freelancerLeadCosts(profile, rows, options.leadCpl);
+    if (bucket.key === "all") {
+      bucket.leadCosts = allLead.total;
+      bucket.leadCount = allLead.count;
+    } else if (bucket.key === "ytd") {
+      let ytdLead = 0;
+      let ytdCount = 0;
+      for (const [month, item] of Object.entries(allLead.byMonth)) {
+        if (month.startsWith(today.slice(0, 4)) && month <= thisMonthKey) {
+          ytdLead += item.amount;
+          ytdCount += item.count;
+        }
+      }
+      bucket.leadCosts = ytdLead;
+      bucket.leadCount = ytdCount;
+    } else {
+      const slice = allLead.byMonth[bucket.key];
+      bucket.leadCosts = slice?.amount ?? 0;
+      bucket.leadCount = slice?.count ?? 0;
+    }
+    bucket.earned -= bucket.leadCosts;
     return bucket;
   };
 
   const rolled = Array.from(byMonth.entries())
     .sort((a, b) => b[0].localeCompare(a[0]))
     .map(([key, list]) => {
-      const bucket = rollupBucket(list, key, monthLabel(key), options, rows);
+      const bucket = rollupBucket(list, key, monthLabel(key), insurerOptions, rows);
       salesByMonth[key] = bucket.volumeWage;
       return bucket;
     });
@@ -675,25 +737,29 @@ export function buildEmployeeReview(
     rows,
     thisMonthKey,
     thisMonthLabel: monthLabel(thisMonthKey),
-    all: applyBase(rollupBucket(rows, "all", "כל התקופה", options, rows), allMonths),
+    all: applyBase(rollupBucket(rows, "all", "כל התקופה", insurerOptions, rows), allMonths),
     month: applyBase(
-      rollupBucket(monthRows, thisMonthKey, monthLabel(thisMonthKey), options, rows),
+      rollupBucket(monthRows, thisMonthKey, monthLabel(thisMonthKey), insurerOptions, rows),
       [thisMonthKey],
     ),
     ytd: applyBase(
-      rollupBucket(ytdRows, "ytd", `מתחילת ${today.slice(0, 4)}`, options, rows, ytdMonths),
+      rollupBucket(ytdRows, "ytd", `מתחילת ${today.slice(0, 4)}`, insurerOptions, rows, ytdMonths),
       ytdMonths,
     ),
     months,
     audits,
+    leadBreakdown: freelancerLeadCosts(profile, rows, options.leadCpl),
     products: namedRollup(rows, "product"),
     sources: namedRollup(rows, "source"),
     companies: namedRollup(rows, "company"),
     recent,
     unpaid: thisMonthTerms?.employmentKind === "unpaid" || profile?.employmentKind === "unpaid",
+    partnership:
+      thisMonthTerms?.employmentKind === "partnership" || profile?.employmentKind === "partnership",
     salaried,
     hasSalariedMonths,
     hasFreelancerMonths,
+    hasPartnershipMonths: months.some((row) => row.employmentKind === "partnership"),
   };
 }
 

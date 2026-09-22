@@ -16,7 +16,6 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   DEFAULT_AGENT_MULTIPLIER,
-  DEFAULT_INSURER_MULTIPLIER,
   DATE_PRESET_LABEL,
   campaignPnl,
   formatRangeDisplay,
@@ -25,6 +24,7 @@ import {
   type DatePreset,
   type DateRange,
 } from "@/lib/sales-dashboard/campaign-math";
+import { insurerIncomeForProductions, insurerIncomeNote } from "@/lib/finance/insurer-income";
 import { wageForContractProductions, productionDateOf } from "@/lib/employees/contract";
 import { getSalesDashboardSnapshot } from "@/lib/sales-dashboard/snapshot";
 
@@ -46,7 +46,7 @@ export type GeneralPlSnapshot = {
   periodLabel: string;
   rangeDisplay: string;
   excel: {
-    insurerMultiplier: number;
+    incomeNote?: string;
     agentMultiplierDefault: number;
     closures: number;
     premium: number;
@@ -120,8 +120,8 @@ export async function getGeneralPlSnapshot(input?: {
       error: err instanceof Error ? err.message : "שגיאת שיווק",
       rates: [],
       payProfiles: [],
+      employeesLoaded: false,
       expenses: [],
-      insurerMultiplier: DEFAULT_INSURER_MULTIPLIER,
       defaultMultiplier: DEFAULT_AGENT_MULTIPLIER,
       threshold: 1,
       flags: [],
@@ -143,10 +143,6 @@ export async function getGeneralPlSnapshot(input?: {
       .eq("is_active", true),
   ]);
 
-  const insurerMultiplier =
-    "insurerMultiplier" in marketing
-      ? marketing.insurerMultiplier
-      : DEFAULT_INSURER_MULTIPLIER;
   const defaultMultiplier =
     "defaultMultiplier" in marketing
       ? marketing.defaultMultiplier
@@ -165,7 +161,8 @@ export async function getGeneralPlSnapshot(input?: {
     .map((row) => String(row.full_name ?? "").trim())
     .filter(Boolean);
 
-  const productions = (excelResult.data?.marketing?.productions ?? []).filter((row) =>
+  const allProductions = excelResult.data?.marketing?.productions ?? [];
+  const productions = allProductions.filter((row) =>
     matchesOperatingBrand(
       assignOperatingBrand({
         agent: row.agent,
@@ -196,11 +193,12 @@ export async function getGeneralPlSnapshot(input?: {
       )
       .reduce((sum, row) => sum + row.amount, 0),
   );
+  const insurer = insurerIncomeForProductions(activeInRange, { yearContext: allProductions });
   const pnl = campaignPnl({
     premium,
     wageTotal,
     adsTotal,
-    insurerMultiplier,
+    income: insurer.income,
   });
 
   const costRows = (fixedCatalog.data ?? []).filter((row) => {
@@ -253,7 +251,7 @@ export async function getGeneralPlSnapshot(input?: {
       periodLabel,
       rangeDisplay: formatRangeDisplay(preset, range),
       excel: {
-        insurerMultiplier,
+        incomeNote: insurerIncomeNote(insurer),
         agentMultiplierDefault: defaultMultiplier,
         closures: activeInRange.length,
         premium,

@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 
 export function MainRegion({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const salesDashboard =
-    pathname === "/sales-dashboard" || pathname.startsWith("/sales-dashboard/");
+  const salesDashboard = pathname === "/sales-dashboard";
+  const salesExcel = pathname === "/sales-dashboard/excel";
 
   return (
     <main
@@ -14,6 +14,8 @@ export function MainRegion({ children }: { children: React.ReactNode }) {
         "flex-1",
         salesDashboard
           ? "flex min-h-0 flex-col overflow-hidden p-0"
+          : salesExcel
+            ? "flex h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] min-h-0 flex-col overflow-hidden p-0"
           : "flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-8",
       )}
     >

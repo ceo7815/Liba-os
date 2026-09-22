@@ -194,8 +194,6 @@ export function GeneralPlScreen({
   );
 
   useEffect(() => {
-    const key = rangeCacheKey(brand, initialPreset, seedCustom);
-    if (readCacheEntry(key)) return;
     void fetchSnapshot(initialPreset, seedCustom);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brand, fetchSnapshot]);
@@ -213,13 +211,12 @@ export function GeneralPlScreen({
     setCustom(nextCustom);
     const key = rangeCacheKey(brand, nextPreset, nextCustom);
     const entry = readCacheEntry(key);
-    if (entry) {
-      applyCached(entry);
-      return;
+    if (entry) applyCached(entry);
+    else {
+      setSnapshot(null);
+      setCachedAt(null);
+      setShowingSaved(false);
     }
-    setSnapshot(null);
-    setCachedAt(null);
-    setShowingSaved(false);
     void fetchSnapshot(nextPreset, nextCustom);
   }
 
@@ -246,7 +243,7 @@ export function GeneralPlScreen({
         label: "הכנסה מחברות ביטוח",
         excel: x.income,
         strong: true,
-        note: `פרמיה × ${x.insurerMultiplier}`,
+        note: x.incomeNote ?? "לפי חוזה · חברה בלי הסכם = ₪0",
       },
       ...COMMISSION_SPLIT_FIELDS.map((field) => ({
         kind: "line" as const,
@@ -443,7 +440,7 @@ export function GeneralPlScreen({
           <SummaryCube
             label="הכנסה מחברות"
             value={formatIls(x.income)}
-            hint={`פרמיה × ${x.insurerMultiplier}`}
+            hint={x.incomeNote ?? "לפי חוזה"}
             accent="highlight"
           />
           <SummaryCube

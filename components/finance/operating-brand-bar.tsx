@@ -44,10 +44,12 @@ export function OperatingBrandProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    void listShemeshEmployeeNames().then((result) => {
-      if (cancelled || result.error) return;
-      setShemeshEmployeeNames(result.names);
-    });
+    void listShemeshEmployeeNames()
+      .then((result) => {
+        if (cancelled || result.error) return;
+        setShemeshEmployeeNames(result.names);
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };

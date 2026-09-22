@@ -11,11 +11,16 @@ import {
 } from "@/lib/finance/access";
 import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
 import {
+  canAccessAcademy,
+  canLearnAcademy,
+  canManageAcademy,
   canManageUsers,
+  canViewAcademyTeam,
   canViewEmployeeAgreements,
   canViewEmployees,
   hasPermission,
 } from "@/lib/permissions/access";
+import { canViewFormulas } from "@/lib/formulas/access";
 import type { PermissionKey } from "@/lib/permissions/catalog";
 import { normalizePermissionKeys } from "@/lib/permissions/catalog";
 
@@ -135,6 +140,34 @@ export async function requireEmployeeAgreementsAccess(): Promise<Profile> {
   return requirePermission("employees.agreements");
 }
 
+export async function requireFormulasAccess(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!canViewFormulas(profile)) {
+    redirect("/dashboard");
+  }
+  return profile;
+}
+
+export async function requireAcademyAccess(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!canAccessAcademy(profile)) {
+    redirect("/dashboard");
+  }
+  return profile;
+}
+
+export async function requireAcademyLearn(): Promise<Profile> {
+  return requirePermission("academy.learn");
+}
+
+export async function requireAcademyTeam(): Promise<Profile> {
+  return requirePermission("academy.team");
+}
+
+export async function requireAcademyManage(): Promise<Profile> {
+  return requirePermission("academy.manage");
+}
+
 export {
   canAccessFinance,
   canAccessSettledCommissions,
@@ -143,5 +176,10 @@ export {
   canManageUsers,
   canViewEmployees,
   canViewEmployeeAgreements,
+  canViewFormulas,
+  canAccessAcademy,
+  canLearnAcademy,
+  canManageAcademy,
+  canViewAcademyTeam,
   hasPermission,
 };

@@ -1,4 +1,5 @@
 import {
+  canonicalCampaignSource,
   jerusalemYmd,
   type AgentRate,
 } from "@/lib/sales-dashboard/campaign-math";
@@ -8,8 +9,9 @@ import {
 } from "@/lib/sales-dashboard/columns";
 import { excelAgentKey } from "@/lib/employees/excel-sellers";
 import { assignOperatingBrand } from "@/lib/finance/operating-brand";
+import { freelancerLeadCosts, type LeadCplMap } from "@/lib/employees/lead-costs";
 
-export type EmploymentKind = "salaried" | "freelancer" | "unpaid";
+export type EmploymentKind = "salaried" | "freelancer" | "unpaid" | "partnership";
 
 export type SalaryKind = "hourly" | "global" | "salary_only";
 
@@ -126,10 +128,11 @@ export const FREELANCERS_3 = {
   volumePercent: 700,
 } as const;
 
-/** עצמאים 4 אביחי יוסף: ₪5,000 קבועים + היקף ליבה + נפרעים 3% שוטף 60. */
+/** עצמאים 4 אביחי יוסף: ₪5,000 קבועים + היקף ליבה + נפרעים 3% שוטף 60. בלי עלויות לידים. */
 export const FREELANCERS_4 = {
   id: "freelancers_4" as const,
   label: "עצמאים 4 אביחי יוסף",
+  paysLeadCosts: false,
   hubThreshold: 20001,
   highVolumePercent: 75,
   lowVolumePercent: 50,
@@ -161,6 +164,56 @@ export const FREELANCERS_4 = {
   shemeshVolumeToMonth: "2026-05",
 } as const;
 
+/** שיתוף פעולה אורשן משכנתאות: תשלום לפי מקור הפניה, לא לפי שם מוכר. */
+export const PARTNERSHIP = {
+  id: "partnership" as const,
+  label: "שיתוף פעולה",
+  canonicalSource: "אורשן משכנתאות",
+  volumeMultiplier: 4,
+} as const;
+
+export function isPartnershipSource(source: string | null | undefined): boolean {
+  return canonicalCampaignSource(source ?? "") === PARTNERSHIP.canonicalSource;
+}
+
+export function profileUsesPartnershipProductions(
+  profile: { employmentKind?: EmploymentKind | null; agreements?: EmployeeAgreement[] } | null | undefined,
+): boolean {
+  if (!profile) return false;
+  if (profile.employmentKind === "partnership") return true;
+  return (profile.agreements ?? []).some((row) => row.employmentKind === "partnership");
+}
+
+/** סגירה פעילה מהמקור — כולל תאונות אישיות. בלי נפרעים. */
+export function countsForPartnershipVolume(
+  row: Pick<WageInputRow, "status" | "process" | "source" | "premium">,
+): boolean {
+  if (row.status && row.status !== "active") return false;
+  if (!(Number(row.premium) > 0)) return false;
+  if (!isPartnershipSource(row.source)) return false;
+  return sourcePnlKindForProcess(row.process ?? "") === "volume";
+}
+
+export function filterPartnershipProductions<T extends Pick<WageInputRow, "source">>(rows: T[]): T[] {
+  return rows.filter((row) => isPartnershipSource(row.source));
+}
+
+export function partnershipVolumeStats(rows: WageInputRow[]): { count: number; premium: number } {
+  let count = 0;
+  let premium = 0;
+  for (const row of rows) {
+    if (!countsForPartnershipVolume(row)) continue;
+    count += 1;
+    premium += Number(row.premium) || 0;
+  }
+  return { count, premium };
+}
+
+export function partnershipVolumeWage(premium: number): number {
+  if (premium <= 0) return 0;
+  return Math.round(premium * PARTNERSHIP.volumeMultiplier);
+}
+
 export function isFreelancers3(
   contract: { freelancerFormula?: string | null } | null | undefined,
 ): boolean {
@@ -171,6 +224,14 @@ export function isFreelancers4(
   contract: { freelancerFormula?: string | null } | null | undefined,
 ): boolean {
   return contract?.freelancerFormula === "freelancers_4";
+}
+
+/** עצמאים 4 אביחי יוסף לא משלם על לידים. שאר נוסחאות עצמאי כן. */
+export function freelancerPaysLeadCosts(
+  contract: { freelancerFormula?: string | null } | null | undefined,
+): boolean {
+  if (isFreelancers4(contract)) return FREELANCERS_4.paysLeadCosts;
+  return true;
 }
 
 export function usesHubProductions(
@@ -368,6 +429,8 @@ export type EmployeePayProfile = {
   agreements: EmployeeAgreement[];
   hoursByMonth?: Record<string, number>;
   vacationDaysByMonth?: Record<string, number>;
+  /** Alexander leads received in a wage month that were not produced. */
+  alexanderUnproducedByMonth?: Record<string, number>;
 };
 
 export type WageInputRow = {
@@ -882,7 +945,9 @@ export function oneTimePaymentsIncomplete(contract: EmployeePayContract): boolea
 }
 
 export function parseEmploymentKind(value: unknown): EmploymentKind | null {
-  return value === "salaried" || value === "freelancer" || value === "unpaid" ? value : null;
+  return value === "salaried" || value === "freelancer" || value === "unpaid" || value === "partnership"
+    ? value
+    : null;
 }
 
 function looksLikeLegacyContract(row: Record<string, unknown>): boolean {
@@ -923,15 +988,23 @@ export function parsePayAgreements(
       .map((item) => parseAgreementItem(item))
       .filter((item): item is EmployeeAgreement => Boolean(item));
   }
-  if (fallbackKind && looksLikeLegacyContract(row)) {
+  if (looksLikeLegacyContract(row)) {
+    const kind =
+      fallbackKind ??
+      parseEmploymentKind(row.employmentKind) ??
+      (typeof row.volumePercent === "number" ||
+      typeof row.settledPercent === "number" ||
+      Boolean(row.freelancerFormula)
+        ? "freelancer"
+        : "salaried");
     return [
       {
         id: "legacy",
         from: "",
         to: "",
-        employmentKind: fallbackKind,
+        employmentKind: kind,
         contract:
-          fallbackKind === "salaried"
+          kind === "salaried"
             ? withSalariedBenefitDefaults(parsePayContract(row), row)
             : parsePayContract(row),
       },
@@ -998,6 +1071,7 @@ export function toPayProfile(input: {
   agreements?: EmployeeAgreement[];
   hoursByMonth?: Record<string, number>;
   vacationDaysByMonth?: Record<string, number>;
+  alexanderUnproducedByMonth?: Record<string, number>;
 }): EmployeePayProfile {
   const agreements = input.agreements ?? [];
   const current = currentAgreement(agreements);
@@ -1008,6 +1082,7 @@ export function toPayProfile(input: {
     agreements,
     hoursByMonth: input.hoursByMonth,
     vacationDaysByMonth: input.vacationDaysByMonth,
+    alexanderUnproducedByMonth: input.alexanderUnproducedByMonth,
   };
 }
 
@@ -1435,7 +1510,22 @@ function termsForRow(
 ): { employmentKind: EmploymentKind; contract: EmployeePayContract; from: string } | null {
   if (!profile) return null;
   const agreements = profile.agreements ?? [];
-  if (agreements.length === 0) return null;
+  if (agreements.length === 0) {
+    if (!profile.contract) return null;
+    const fromContract =
+      profile.contract.volumePercent > 0 ||
+      profile.contract.settledPercent > 0 ||
+      Boolean(profile.contract.freelancerFormula)
+        ? "freelancer"
+        : profile.contract.hourlyRate > 0
+          ? "salaried"
+          : "unpaid";
+    return {
+      employmentKind: profile.employmentKind ?? fromContract,
+      contract: profile.contract,
+      from: "",
+    };
+  }
   const day = isoDateOnly(date);
   if (day) {
     const match = agreementForDate(agreements, day);
@@ -1608,6 +1698,7 @@ export function buildAgentPremiumTotals(rows: WageInputRow[]): AgentPremiumTotal
   let libaHubVolume = 0;
   for (const row of rows) {
     if (row.status !== "active") continue;
+    if (isPartnershipSource(row.source)) continue;
     const key = excelAgentKey(row.agent);
     if (!key || key === "—") continue;
     const kind = sourcePnlKindForProcess(row.process ?? "");
@@ -1638,6 +1729,8 @@ export function buildMonthlyAgentPremiumTotals(rows: WageInputRow[]): Map<string
 export type WageExplainReason =
   | "inactive"
   | "unpaid"
+  | "partnership"
+  | "partnership_source"
   | "settled_blocked"
   | "personal_accident"
   | "travel"
@@ -1682,6 +1775,32 @@ export function explainWageForProduction(
   const rowKind = sourcePnlKindForProcess(row.process ?? "");
   if (rowKind === "other") return empty;
   if (options.kind !== "all" && rowKind !== options.kind) return empty;
+
+  if (isPartnershipSource(row.source)) {
+    if (rowKind === "settled") {
+      return { ...empty, reason: "partnership_source" };
+    }
+    if (rowKind !== "volume") return empty;
+    const wageMonthKey = productionMonthKey(row);
+    const soloProfile = options.profiles.length === 1 ? options.profiles[0] : null;
+    const soloPartner = Boolean(
+      soloProfile &&
+        (profileUsesPartnershipProductions(soloProfile) ||
+          (wageMonthKey &&
+            termsForRow(soloProfile, `${wageMonthKey}-01`)?.employmentKind === "partnership")),
+    );
+    if (soloProfile && !soloPartner) {
+      return { ...empty, reason: "partnership_source" };
+    }
+    return {
+      wage: Math.round(row.premium * PARTNERSHIP.volumeMultiplier),
+      multiplier: PARTNERSHIP.volumeMultiplier,
+      reason: "partnership",
+      monthProduction: 0,
+      tier: null,
+    };
+  }
+
   if (rowKind === "volume" && isPersonalAccidentProduct(row.product)) {
     return { ...empty, reason: "personal_accident" };
   }
@@ -1713,6 +1832,9 @@ export function explainWageForProduction(
 
   if (!terms) return empty;
   if (terms.employmentKind === "unpaid") return { ...empty, reason: "unpaid" };
+  if (terms.employmentKind === "partnership") {
+    return { ...empty, reason: "partnership_source" };
+  }
   if (terms.employmentKind === "salaried" && rowKind === "settled") {
     return { ...empty, reason: "settled_blocked" };
   }
@@ -1875,6 +1997,9 @@ export type ContractWageTotal = {
   settledWage: number;
   pensionWage: number;
   earned: number;
+  agreementCosts: number;
+  leadCosts: number;
+  leadCount: number;
   employmentKind: EmploymentKind | null;
 };
 
@@ -1885,6 +2010,7 @@ export function contractWageTotals(
     rates: AgentRate[];
     fallback?: number;
     contextRows?: WageInputRow[];
+    leadCpl?: LeadCplMap;
   },
 ): ContractWageTotal[] {
   const context = options.contextRows ?? rows;
@@ -1905,6 +2031,7 @@ export function contractWageTotals(
 
   for (const row of rows) {
     if (row.status !== "active") continue;
+    if (isPartnershipSource(row.source)) continue;
     const agent = excelAgentKey(row.agent);
     if (!agent || agent === "—") continue;
     const current = map.get(agent) ?? {
@@ -1963,6 +2090,8 @@ export function contractWageTotals(
       const profile = profileForAgent(agentName, options.profiles);
       const current = profile ? currentAgreement(profile.agreements ?? []) : null;
       const pensionWage = 0;
+      const asOfMonth = jerusalemYmd().slice(0, 7);
+      const costMonths = new Set<string>();
       let volumeWage = Math.round(item.volumeWage);
       if (profile && (current?.employmentKind === "salaried" || profile.employmentKind === "salaried")) {
         const months = new Set<string>();
@@ -2001,17 +2130,42 @@ export function contractWageTotals(
             { month, agreementFrom: terms.from },
           );
         }
+        for (const month of months) costMonths.add(month);
       } else if (profile) {
         const hub = profileUsesHubProductions(profile);
+        const partnership = profileUsesPartnershipProductions(profile);
         const extraMonths = new Set<string>();
         for (const row of rows) {
-          if (hub ? !countsForFreelancers4Volume(row) : !agentBelongsToEmployee(row.agent, profile.fullName)) {
-            continue;
-          }
+          const match = partnership
+            ? countsForPartnershipVolume(row)
+            : hub
+              ? countsForFreelancers4Volume(row)
+              : agentBelongsToEmployee(row.agent, profile.fullName);
+          if (!match) continue;
           const month = productionMonthKey(row);
           if (month) extraMonths.add(month);
         }
-        if (hub) {
+        if (partnership) {
+          volumeWage = 0;
+          let partnerCount = 0;
+          let partnerPremium = 0;
+          for (const month of extraMonths) {
+            const terms = termsForRow(profile, `${month}-01`);
+            if (!terms || terms.employmentKind !== "partnership") continue;
+            const monthRows = rows.filter((row) => productionMonthKey(row) === month);
+            const stats = partnershipVolumeStats(monthRows);
+            partnerCount += stats.count;
+            partnerPremium += stats.premium;
+            volumeWage += partnershipVolumeWage(stats.premium);
+          }
+          item.volumeCount = partnerCount;
+          item.volumePremium = partnerPremium;
+          item.count = partnerCount;
+          item.premium = partnerPremium;
+          item.settledCount = 0;
+          item.settledPremium = 0;
+          item.settledWage = 0;
+        } else if (hub) {
           volumeWage = 0;
           let hubCount = 0;
           let hubPremium = 0;
@@ -2031,13 +2185,20 @@ export function contractWageTotals(
           item.count = hubCount;
           item.premium = hubPremium;
         }
+        if (!partnership) {
+          for (const month of extraMonths) costMonths.add(month);
+        }
         for (const month of extraMonths) {
+          if (partnership) break;
           const terms = termsForRow(profile, `${month}-01`);
           if (terms?.employmentKind === "freelancer") {
             volumeWage += extrasAmountForMonth(terms.contract, month);
           }
         }
-        const asOfMonth = jerusalemYmd().slice(0, 7);
+        for (const month of Object.keys(profile.hoursByMonth ?? {})) costMonths.add(month);
+        for (const month of freelancers1PayMonthsThrough(profile, rows, asOfMonth)) {
+          costMonths.add(month);
+        }
         for (const agreement of profile.agreements ?? []) {
           if (agreement.employmentKind !== "freelancer") continue;
           for (const month of oneTimeMonthsForContract(agreement.contract)) {
@@ -2056,16 +2217,38 @@ export function contractWageTotals(
             const terms = termsForRow(profile, `${month}-01`);
             if (terms?.employmentKind !== "freelancer") continue;
             volumeWage += oneTimeAmountForMonth(terms.contract, month);
+            costMonths.add(month);
           }
         }
       }
       const f1Settled = profile ? freelancers1SettledLifetime(profile, rows) : null;
       const salariedNow =
         current?.employmentKind === "salaried" || profile?.employmentKind === "salaried";
+      const partnershipNow =
+        current?.employmentKind === "partnership" || profile?.employmentKind === "partnership";
       const formula1 = Boolean(
-        !salariedNow && usesFreelancerSettledBook(current?.contract ?? profile?.contract),
+        !salariedNow &&
+          !partnershipNow &&
+          usesFreelancerSettledBook(current?.contract ?? profile?.contract),
       );
-      const settledWage = salariedNow ? 0 : Math.round(item.settledWage) + (f1Settled?.wage ?? 0);
+      const settledWage =
+        salariedNow || partnershipNow
+          ? 0
+          : formula1
+            ? Math.round(f1Settled?.wage ?? 0)
+            : Math.round(item.settledWage);
+      let agreementCosts = 0;
+      if (profile) {
+        for (const month of costMonths) {
+          if (!isEmployeeWageMonth(month) || month > asOfMonth) continue;
+          const terms = termsForRow(profile, `${month}-01`);
+          if (!terms || terms.employmentKind === "unpaid" || terms.employmentKind === "partnership") continue;
+          agreementCosts += monthlyCostsTotal(terms.contract);
+        }
+      }
+      const leadCharge = profile
+          ? freelancerLeadCosts(profile, rows, options.leadCpl)
+          : { total: 0, count: 0, byMonth: {} };
       return {
         agentName,
         count: item.count,
@@ -2077,7 +2260,10 @@ export function contractWageTotals(
         settledPremium: formula1 ? f1Settled?.premium ?? 0 : Math.round(item.settledPremium),
         settledWage,
         pensionWage,
-        earned: Math.round(volumeWage + settledWage + pensionWage),
+        earned: Math.round(volumeWage + settledWage + pensionWage - agreementCosts - leadCharge.total),
+        agreementCosts: Math.round(agreementCosts),
+        leadCosts: Math.round(leadCharge.total),
+        leadCount: leadCharge.count,
         employmentKind:
           current?.employmentKind ?? profile?.employmentKind ?? null,
       };
@@ -2104,6 +2290,9 @@ export function wageTotalForEmployeeContract(
     settledWage: 0,
     pensionWage: 0,
     earned: 0,
+    agreementCosts: 0,
+    leadCosts: 0,
+    leadCount: 0,
     employmentKind: null,
   };
 }
@@ -2246,6 +2435,97 @@ export function assertContractWagesDoNotMix(): void {
   );
   if (unpaidWage !== 0) {
     throw new Error(`expected unpaid wage 0, got ${unpaidWage}`);
+  }
+
+  const partnerClose: WageInputRow = {
+    status: "active",
+    agent: "ניב קובי",
+    premium: 400,
+    process: "מכירה",
+    product: "תאונות",
+    source: "אושרן משכנתאות",
+    startDate: "2026-03-15",
+  };
+  const partnerSettled: WageInputRow = {
+    ...partnerClose,
+    process: "מינוי סוכן",
+    product: "בריאות",
+    premium: 400,
+  };
+  const partnerProfile: EmployeePayProfile = {
+    fullName: "אושרן משכנתאות",
+    employmentKind: "partnership",
+    contract: emptyPayContract(),
+    agreements: [
+      {
+        id: "osh",
+        from: "",
+        to: "",
+        employmentKind: "partnership",
+        contract: emptyPayContract(),
+      },
+    ],
+  };
+  if (!isPartnershipSource("אורשן משכנתאות") || !isPartnershipSource("אושרן משכנתאות")) {
+    throw new Error("expected אורשן / אושרן משכנתאות to share the partnership source");
+  }
+  const sellerOnPartner = wageForContractProductions([partnerClose], {
+    profiles,
+    rates: [],
+    kind: "volume",
+  });
+  if (sellerOnPartner !== 0) {
+    throw new Error(`expected Liba seller wage 0 on Oshran source, got ${sellerOnPartner}`);
+  }
+  const sourcePnlPartner = wageForContractProductions([partnerClose], {
+    profiles: [],
+    rates: [],
+    kind: "volume",
+  });
+  if (sourcePnlPartner !== 1600) {
+    throw new Error(`expected source P&L 4×400 = 1600 including תאונות, got ${sourcePnlPartner}`);
+  }
+  const partnerWage = wageForContractProductions([partnerClose], {
+    profiles: [partnerProfile],
+    rates: [],
+    kind: "volume",
+  });
+  if (partnerWage !== 1600) {
+    throw new Error(`expected partner wage 1600, got ${partnerWage}`);
+  }
+  const partnerSettledWage = wageForContractProductions([partnerSettled], {
+    profiles: [partnerProfile, ...profiles],
+    rates: [],
+    kind: "settled",
+  });
+  if (partnerSettledWage !== 0) {
+    throw new Error(`expected partnership settled 0, got ${partnerSettledWage}`);
+  }
+  const partnerTotals = wageTotalForEmployeeContract(
+    "אושרן משכנתאות",
+    contractWageTotals([partnerClose, partnerSettled], {
+      profiles: [partnerProfile, ...profiles],
+      rates: [],
+    }),
+  );
+  if (
+    partnerTotals.volumeWage !== 1600 ||
+    partnerTotals.volumeCount !== 1 ||
+    partnerTotals.settledWage !== 0 ||
+    partnerTotals.settledCount !== 0
+  ) {
+    throw new Error(
+      `expected partner cube 1600 / 0 settled, got volume=${partnerTotals.volumeWage} count=${partnerTotals.volumeCount} settled=${partnerTotals.settledWage}`,
+    );
+  }
+  const sellerTotals = wageTotalForEmployeeContract(
+    "ניב קובי",
+    contractWageTotals([partnerClose], { profiles: [...profiles, partnerProfile], rates: [] }),
+  );
+  if (sellerTotals.volumeWage !== 0 || sellerTotals.volumeCount !== 0) {
+    throw new Error(
+      `expected seller cube to skip Oshran source, got wage=${sellerTotals.volumeWage} count=${sellerTotals.volumeCount}`,
+    );
   }
 
   const noAgreement = wageForContractProductions(
@@ -2558,6 +2838,52 @@ export function assertContractWagesDoNotMix(): void {
   ) {
     throw new Error(
       `expected salary-only 3400 with no production bonus, got ${salaryOnlyTotals[0]?.volumeWage}/${salaryOnlyTotals[0]?.settledWage}/${salaryOnlyTotals[0]?.earned}`,
+    );
+  }
+
+  const withStation = {
+    ...emptyPayContract(),
+    volumePercent: 50,
+    stationCost: 2000,
+  };
+  const withStationTotals = contractWageTotals(
+    [
+      {
+        status: "active",
+        agent: "ניב קובי",
+        premium: 10000,
+        process: "מכירה",
+        startDate: "2026-08-15",
+      },
+    ],
+    {
+      profiles: [
+        {
+          fullName: "ניב קובי",
+          employmentKind: "freelancer",
+          contract: withStation,
+          agreements: [
+            {
+              id: "open",
+              from: "",
+              to: "",
+              employmentKind: "freelancer",
+              contract: withStation,
+            },
+          ],
+        },
+      ],
+      rates: [],
+    },
+  );
+  const paidAfterCosts =
+    (withStationTotals[0]?.volumeWage ?? 0) + (withStationTotals[0]?.settledWage ?? 0) - 2000;
+  if (
+    withStationTotals[0]?.agreementCosts !== 2000 ||
+    withStationTotals[0]?.earned !== paidAfterCosts
+  ) {
+    throw new Error(
+      `expected cube wage after station cost 2000, got costs=${withStationTotals[0]?.agreementCosts} earned=${withStationTotals[0]?.earned}`,
     );
   }
 
@@ -3317,6 +3643,9 @@ export function assertContractWagesDoNotMix(): void {
     throw new Error(
       `expected live היקף 21,000 and wage 15,750+5,000+one-time, got premium=${avichaiLive.volumePremium} wage=${avichaiLive.volumeWage}`,
     );
+  }
+  if ((avichaiLive.leadCosts ?? 0) !== 0) {
+    throw new Error(`expected עצמאים 4 with no lead costs, got ${avichaiLive.leadCosts}`);
   }
 
   const paSale: WageInputRow = {
