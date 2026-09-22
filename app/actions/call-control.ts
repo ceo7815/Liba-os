@@ -63,7 +63,7 @@ export async function listCallControlCalls(): Promise<CallControlListResult> {
         rubric_scores: latest?.rubric_scores ?? null,
       });
     })
-    .filter((row) => isSophiaAgent(row.agentName));
+    .filter((row) => isSophiaAgent(row.agentName) && !row.isDemo);
 
   return { error: null, rows };
 }
