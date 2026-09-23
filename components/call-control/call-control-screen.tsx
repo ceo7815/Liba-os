@@ -51,6 +51,7 @@ const STATUS_FILTERS: Array<{ id: "all" | ProcessingStatus; label: string }> = [
   { id: "processing", label: "בעיבוד" },
   { id: "ready", label: "מוכנה" },
   { id: "failed", label: "נכשלה" },
+  { id: "not_analyzed", label: "לא מנתחים" },
 ];
 
 function runnerLabel(status: string | null) {

@@ -50,6 +50,8 @@ export function statusClass(status: ProcessingStatus) {
       return "bg-amber-50 text-amber-950";
     case "failed":
       return "bg-red-50 text-red-800";
+    case "not_analyzed":
+      return "bg-black/[0.05] text-muted-foreground";
     default:
       return "bg-black/[0.05] text-muted-foreground";
   }

@@ -85,17 +85,19 @@ export function AgentOpsPanel({
     processing: rows.filter((r) => r.processingStatus === "processing").length,
     waiting: rows.filter((r) => r.processingStatus === "waiting").length,
     failed: rows.filter((r) => r.processingStatus === "failed").length,
+    not_analyzed: rows.filter((r) => r.processingStatus === "not_analyzed").length,
   };
   const critical = rows.filter((r) => r.hasCritical).length;
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 sm:gap-3">
       {(
         [
           ["ready", counts.ready],
           ["processing", counts.processing],
           ["waiting", counts.waiting],
           ["failed", counts.failed],
+          ["not_analyzed", counts.not_analyzed],
         ] as const
       ).map(([key, n]) => (
         <div

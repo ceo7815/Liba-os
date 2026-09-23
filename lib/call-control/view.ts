@@ -14,6 +14,7 @@ export const PROCESSING_STATUSES = [
   "processing",
   "ready",
   "failed",
+  "not_analyzed",
 ] as const;
 export type ProcessingStatus = (typeof PROCESSING_STATUSES)[number];
 
@@ -28,6 +29,7 @@ export const PROCESSING_LABELS: Record<ProcessingStatus, string> = {
   processing: "בעיבוד",
   ready: "מוכנה",
   failed: "נכשלה",
+  not_analyzed: "לא מנתחים",
 };
 
 export const REGULATION_SECTION_IDS = new Set([
@@ -103,6 +105,8 @@ export function mapProcessingStatus(status: string): ProcessingStatus {
       return "ready";
     case "failed":
       return "failed";
+    case "skipped":
+      return "not_analyzed";
     default:
       return "waiting";
   }
