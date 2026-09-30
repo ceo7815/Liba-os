@@ -124,7 +124,7 @@ async function loadCalls(historyFrom: string, today: string): Promise<CampaignBo
     })
     .sort((a, b) => b.total - a.total || a.number.localeCompare(b.number, "he"))
     .slice(0, 40)
-    .map(({ total: _total, ...line }) => line);
+    .map(({ number, kind, days }) => ({ number, kind, days }));
 
   return {
     days: Array.from(days.values()).sort((a, b) => a.day.localeCompare(b.day)),

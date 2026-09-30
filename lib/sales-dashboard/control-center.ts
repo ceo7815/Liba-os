@@ -348,6 +348,8 @@ export function buildControlCenterSnapshot(
   now = new Date(),
   scope: ControlCenterBrandScope = ALL_BRANDS,
 ): ControlCenterSnapshot | null {
+  // הקוביות הן על כל הסוכנות. מותג ההפעלה לא מסנן אותן.
+  void scope;
   if (!data || data.source !== "live") return null;
 
   const productions = data.marketing?.productions ?? [];
@@ -440,6 +442,7 @@ export function buildControlCenterDetail(
   scope: ControlCenterBrandScope = ALL_BRANDS,
   appointmentPeriod: AgentAppointmentPeriod = { preset: "month" },
 ): ControlCenterDetail | null {
+  void scope;
   if (!data || data.source !== "live") return null;
   const productions = data.marketing?.productions ?? [];
   const window = monthWindow(productions, now);
