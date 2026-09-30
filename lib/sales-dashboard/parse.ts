@@ -8,6 +8,7 @@ import {
   sourcePnlKindForProcess,
 } from "@/lib/sales-dashboard/columns";
 import { canonicalCampaignSource } from "@/lib/sales-dashboard/campaign-math";
+import { excelCalendarDay, excelCalendarIso } from "@/lib/sales-dashboard/excel-date";
 import {
   collectExcelSellerNames,
   excelAgentDisplay,
@@ -170,35 +171,6 @@ function premiumOf(row: ExcelRow): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function toDate(value: unknown): Date | null {
-  if (!value && value !== 0) return null;
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
-  if (typeof value === "number" && Number.isFinite(value)) {
-    const parsed = XLSX.SSF.parse_date_code(value);
-    if (parsed) return new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d));
-  }
-  if (typeof value === "string") {
-    const raw = normalizeExcelText(value);
-    const israeli = parseIsraeliDate(raw);
-    if (israeli) return israeli;
-    const d = new Date(raw);
-    if (!Number.isNaN(d.getTime())) return d;
-  }
-  return null;
-}
-
-/** Managers type dates as 15/08/2026 — `new Date` reads that as US and drops day>12. */
-function parseIsraeliDate(raw: string): Date | null {
-  const match = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})(?:\s|$)/);
-  if (!match) return null;
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  let year = Number(match[3]);
-  if (year < 100) year += 2000;
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
 function jerusalemYearMonth(date: Date): { year: number; month: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: JERUSALEM_TZ,
@@ -221,21 +193,10 @@ function labelForKey(key: string): string {
 }
 
 function isoDate(value: unknown): string {
-  const d = toDate(value);
-  if (!d) {
-    const raw = String(value ?? "").trim();
-    return raw ? raw.slice(0, 10) : "—";
-  }
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: JERUSALEM_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(d);
-  const y = parts.find((p) => p.type === "year")?.value;
-  const m = parts.find((p) => p.type === "month")?.value;
-  const day = parts.find((p) => p.type === "day")?.value;
-  return y && m && day ? `${y}-${m}-${day}` : "—";
+  const iso = excelCalendarIso(value);
+  if (iso) return iso;
+  const raw = String(value ?? "").trim();
+  return raw ? raw.slice(0, 10) : "—";
 }
 
 function isActiveStatus(status: string): boolean {
@@ -317,11 +278,10 @@ function buildSeries(
 
 function saleMonthKey(row: ExcelRow): string | null {
   if (sourcePnlKindForProcess(cell(row, COL.process)) !== "volume") return null;
-  const d = toDate(row[COL.startDate]);
-  if (!d) return null;
-  const { year, month } = jerusalemYearMonth(d);
-  let shiftedMonth = month - 1;
-  let shiftedYear = year;
+  const day = excelCalendarDay(row[COL.startDate]);
+  if (!day) return null;
+  let shiftedMonth = day.m - 1;
+  let shiftedYear = day.y;
   if (shiftedMonth < 1) {
     shiftedMonth = 12;
     shiftedYear -= 1;
@@ -330,10 +290,8 @@ function saleMonthKey(row: ExcelRow): string | null {
 }
 
 function transferMonthKey(row: ExcelRow): string | null {
-  const d = toDate(row[COL.transferDate]);
-  if (!d) return null;
-  const { year, month } = jerusalemYearMonth(d);
-  return monthKey(year, month);
+  const iso = excelCalendarIso(row[COL.transferDate]);
+  return /^\d{4}-\d{2}/.test(iso) ? iso.slice(0, 7) : null;
 }
 
 function numericMonthLabel(key: string): string {
@@ -832,7 +790,7 @@ export function parseSalesWorkbook(
     input instanceof ArrayBuffer
       ? new Uint8Array(input)
       : new Uint8Array(input);
-  const wb = XLSX.read(data, { type: "array", cellDates: true });
+  const wb = XLSX.read(data, { type: "array", cellDates: false });
   if (!wb.SheetNames[0]) {
     return {
       ...emptyDashboard(fileName),
@@ -856,10 +814,9 @@ export function parseSalesWorkbook(
     const proc = cell(row, COL.process);
     const kind = sourcePnlKindForProcess(proc);
     if (kind === "other") continue;
-    const d = toDate(row[COL.transferDate]);
-    if (!d) continue;
-    const { year, month } = jerusalemYearMonth(d);
-    const key = monthKey(year, month);
+    const iso = excelCalendarIso(row[COL.transferDate]);
+    if (!iso) continue;
+    const key = iso.slice(0, 7);
     const bucket = kind === "settled" ? apptMap : salesMap;
     if (!bucket[key]) bucket[key] = { count: 0, sum: 0 };
     bucket[key].count += 1;

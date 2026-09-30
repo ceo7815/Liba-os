@@ -53,7 +53,7 @@ function Split({
           <p className="text-[11px] text-muted-foreground">תשלום לשותף · פרמיה × 4</p>
           <p className="mt-1 font-semibold tabular-nums">{formatIls(bucket.volumeWage)}</p>
           <p className="text-[11px] text-muted-foreground">
-            {bucket.volumeCount} סגירות מהמקור · פרמיה {formatIls(bucket.volumePremium)} · כולל תאונות
+            {bucket.volumeCount} סגירות מהמקור · פרמיה {formatIls(bucket.volumePremium)}
           </p>
         </div>
         <div className="rounded-xl bg-background px-3 py-2.5">
@@ -914,7 +914,7 @@ export function EmployeeReviewPanel({
           {review.unpaid
             ? "עובד ללא שכר: אין הוצאת שכר. הפרמיה שנסגרה היא רווח ישיר לחברה."
             : review.partnership
-              ? "שיתוף פעולה אורשן משכנתאות: תשלום לשותף = פרמיה × 4 על סגירה פעילה מהמקור, כולל תאונות. נפרעים לשותף ₪0 — נשארים בחברה."
+              ? "שיתוף פעולה אורשן משכנתאות: תשלום לשותף = פרמיה × 4 על סגירה פעילה מהמקור. תאונות אישיות לא נספרות. נפרעים לשותף ₪0 — נשארים בחברה."
             : mixedKinds
               ? "כל חודש לפי ההסכם שחל בו: שכיר — משכורת ומדרגות בלי נפרעים; עצמאי — היקף, שוטף 60 ונגרר. עלויות רק לפי הסכם אותו חודש. הפקה ב־1 לחודש נספרת לחודש שלפניו."
               : review.salaried

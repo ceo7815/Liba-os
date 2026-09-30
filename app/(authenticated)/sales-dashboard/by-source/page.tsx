@@ -9,7 +9,7 @@ import { requireSalesDashboardAccess } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "מכירות לפי מקור",
+  title: "פילוח מכירות",
 };
 
 export default async function SalesBySourcePage() {

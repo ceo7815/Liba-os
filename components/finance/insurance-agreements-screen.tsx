@@ -9,11 +9,14 @@ import { SOURCE_PNL_PATH } from "@/lib/finance/access";
 import { FORMULAS_PATH } from "@/lib/formulas/access";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { formatIls } from "@/lib/sales-dashboard/campaign-math";
+import { normalizeExcelText } from "@/lib/sales-dashboard/columns";
+import { isActiveProduction } from "@/lib/sales-dashboard/report-slices";
 import {
   AYALON_MORTGAGE_RATE,
   AYALON_VOLUME_TIERS,
   ayalonIncomeForProductions,
   formatAyalonTierLabel,
+  isAyalonCompany,
 } from "@/lib/finance/ayalon-contract";
 import {
   CLAL_GAMACH_RATE,
@@ -23,6 +26,7 @@ import {
   CLAL_VOLUME_PAY_DELAY_MONTHS,
   clalIncomeForProductions,
   formatClalTierLabel,
+  isClalCompany,
 } from "@/lib/finance/clal-contract";
 import {
   HAREL_PAY_DELAY_MONTHS,
@@ -30,16 +34,19 @@ import {
   HAREL_VOLUME_TIERS,
   formatHarelTierLabel,
   harelIncomeForProductions,
+  isHarelCompany,
 } from "@/lib/finance/harel-contract";
 import {
   PHOENIX_MORTGAGE_WEIGHT,
   PHOENIX_VOLUME_TIERS,
   formatPhoenixTierLabel,
+  isPhoenixCompany,
   phoenixIncomeForProductions,
 } from "@/lib/finance/phoenix-contract";
 import {
   MIGDAL_VOLUME_TIERS,
   formatMigdalTierLabel,
+  isMigdalCompany,
   migdalIncomeForProductions,
 } from "@/lib/finance/migdal-contract";
 import {
@@ -106,6 +113,32 @@ const PAYMENT_ACCENT: Record<
 
 const PHASE_LABELS = { א: "שלב א' — לפני חיבור PnL", ב: "שלב ב' — פנסיה / גמל / היקף", ג: "שלב ג' — כללי" } as const;
 
+function companyOfInsurer(id: string, company: string): boolean {
+  if (id === "migdal") return isMigdalCompany(company);
+  if (id === "clal") return isClalCompany(company);
+  if (id === "ayalon") return isAyalonCompany(company);
+  if (id === "phoenix") return isPhoenixCompany(company);
+  if (id === "harel") return isHarelCompany(company);
+  if (id === "menora") return normalizeExcelText(company).includes("מנורה");
+  if (id === "hachshara") return normalizeExcelText(company).includes("הכשרה");
+  if (id === "meitav") return normalizeExcelText(company).includes("מיטב");
+  return false;
+}
+
+/** הפקה פעילה for this insurer, from the same synced sales rows as the rest of the system. */
+function producedFromSalesReport(
+  productions: { process: string; status: "active" | "pending" | "cancelled" | "other"; company: string; premium: number }[],
+  insurerId: string,
+): { premium: number; count: number } {
+  const rows = productions.filter(
+    (row) => isActiveProduction(row) && companyOfInsurer(insurerId, row.company),
+  );
+  return {
+    premium: Math.round(rows.reduce((sum, row) => sum + (row.premium || 0), 0)),
+    count: rows.length,
+  };
+}
+
 export function InsuranceAgreementsScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
   const { dashboard } = useLiveDashboard();
@@ -130,6 +163,11 @@ export function InsuranceAgreementsScreen() {
     () => harelIncomeForProductions(productions, { yearContext: productions }),
     [productions],
   );
+  const producedByInsurer = useMemo(() => {
+    const out = new Map<string, { premium: number; count: number }>();
+    for (const insurer of INSURERS) out.set(insurer.id, producedFromSalesReport(productions, insurer.id));
+    return out;
+  }, [productions]);
   const open = INSURERS.find((row) => row.id === openId) ?? null;
 
   return (
@@ -140,7 +178,7 @@ export function InsuranceAgreementsScreen() {
           <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
             <Scale className="size-5" />
           </span>
-          <h1 className="text-2xl font-semibold tracking-tight">הסכמים חברות ביטוח</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">הסכמי ביטוח</h1>
         </div>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
           כל חברה בכרטיס משלה — הסכם, נוסחה וחישוב חי. מגדל, כלל, איילון, הפניקס והראל מחוברות לדוח. השאר ₪0 עד שיוזן חוזה.
@@ -185,6 +223,13 @@ export function InsuranceAgreementsScreen() {
               </div>
               <div>
                 <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
+                  פרמיה שהופקה
+                </p>
+                <p className="mt-1 text-lg font-semibold leading-none tracking-tight tabular-nums">
+                  {formatIls(producedByInsurer.get(insurer.id)?.premium ?? 0)}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">הפקה פעילה · דוח המכירות</p>
+                <p className="mt-3 text-[11px] font-medium tracking-wide text-muted-foreground">
                   הכנסה לפי חוזה
                 </p>
                 <p className="mt-1 text-[1.65rem] font-semibold leading-none tracking-tight tabular-nums sm:text-2xl">
@@ -220,6 +265,7 @@ export function InsuranceAgreementsScreen() {
         ayalonLive={ayalonLive}
         phoenixLive={phoenixLive}
         harelLive={harelLive}
+        produced={producedByInsurer.get(open?.id ?? "") ?? { premium: 0, count: 0 }}
       />
     </section>
   );
@@ -236,6 +282,7 @@ function InsurerCardDialog({
   ayalonLive,
   phoenixLive,
   harelLive,
+  produced,
 }: {
   insurer: InsurerAgreement | null;
   open: boolean;
@@ -245,6 +292,7 @@ function InsurerCardDialog({
   ayalonLive: ReturnType<typeof ayalonIncomeForProductions>;
   phoenixLive: ReturnType<typeof phoenixIncomeForProductions>;
   harelLive: ReturnType<typeof harelIncomeForProductions>;
+  produced: { premium: number; count: number };
 }) {
   const [tab, setTab] = useState<InsurerTab>("overview");
   useEffect(() => {
@@ -297,17 +345,17 @@ function InsurerCardDialog({
         <div className="min-h-0 flex-1 overflow-y-auto bg-[#fafafa] px-4 py-4 sm:px-7 sm:py-6">
           {tab === "overview" ? (
             isMigdal ? (
-              <MigdalOverview live={migdalLive} />
+              <MigdalOverview live={migdalLive} producedPremium={produced.premium} producedCount={produced.count} />
             ) : isClal ? (
-              <ClalOverview live={clalLive} />
+              <ClalOverview live={clalLive} producedPremium={produced.premium} producedCount={produced.count} />
             ) : isAyalon ? (
-              <AyalonOverview live={ayalonLive} />
+              <AyalonOverview live={ayalonLive} producedPremium={produced.premium} producedCount={produced.count} />
             ) : isPhoenix ? (
-              <PhoenixOverview live={phoenixLive} />
+              <PhoenixOverview live={phoenixLive} producedPremium={produced.premium} producedCount={produced.count} />
             ) : isHarel ? (
-              <HarelOverview live={harelLive} />
+              <HarelOverview live={harelLive} producedPremium={produced.premium} producedCount={produced.count} />
             ) : (
-              <ComingSoonPanel insurer={insurer} />
+              <ComingSoonPanel insurer={insurer} producedPremium={produced.premium} producedCount={produced.count} />
             )
           ) : null}
           {tab === "formula" ? (
@@ -355,12 +403,21 @@ function InsurerCardDialog({
   );
 }
 
-function ClalOverview({ live }: { live: ReturnType<typeof clalIncomeForProductions> }) {
+function ClalOverview({
+  live,
+  producedPremium,
+  producedCount,
+}: {
+  live: ReturnType<typeof clalIncomeForProductions>;
+  producedPremium: number;
+  producedCount: number;
+}) {
   const ladder = [...live.years].reverse().find((row) => row.track === "ladder") ?? null;
   const mortgage = [...live.years].reverse().find((row) => row.track === "mortgage") ?? null;
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="פרמיה שהופקה" value={formatIls(producedPremium)} hint={`${producedCount} הפקות`} />
         <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
         <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="לפי מדרגה · שוטף 30" />
         <OverviewStat
@@ -448,11 +505,20 @@ function ClalPanel() {
   );
 }
 
-function MigdalOverview({ live }: { live: ReturnType<typeof migdalIncomeForProductions> }) {
+function MigdalOverview({
+  live,
+  producedPremium,
+  producedCount,
+}: {
+  live: ReturnType<typeof migdalIncomeForProductions>;
+  producedPremium: number;
+  producedCount: number;
+}) {
   const current = live.years[live.years.length - 1] ?? null;
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="פרמיה שהופקה" value={formatIls(producedPremium)} hint={`${producedCount} הפקות`} />
         <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
         <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="55%–65% לפי מדרגה" />
         <OverviewStat label="גמ״ח אצל מגדל" value={formatIls(live.gamach)} hint="20% לסוף שנה" />
@@ -484,11 +550,20 @@ function OverviewStat({ label, value, hint }: { label: string; value: string; hi
   );
 }
 
-function AyalonOverview({ live }: { live: ReturnType<typeof ayalonIncomeForProductions> }) {
+function AyalonOverview({
+  live,
+  producedPremium,
+  producedCount,
+}: {
+  live: ReturnType<typeof ayalonIncomeForProductions>;
+  producedPremium: number;
+  producedCount: number;
+}) {
   const current = live.years[live.years.length - 1] ?? null;
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="פרמיה שהופקה" value={formatIls(producedPremium)} hint={`${producedCount} הפקות`} />
         <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
         <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="הכל עכשיו · בלי גמ״ח" />
         <OverviewStat
@@ -584,11 +659,20 @@ function AyalonDocsPanel() {
   );
 }
 
-function PhoenixOverview({ live }: { live: ReturnType<typeof phoenixIncomeForProductions> }) {
+function PhoenixOverview({
+  live,
+  producedPremium,
+  producedCount,
+}: {
+  live: ReturnType<typeof phoenixIncomeForProductions>;
+  producedPremium: number;
+  producedCount: number;
+}) {
   const current = live.years[live.years.length - 1] ?? null;
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="פרמיה שהופקה" value={formatIls(producedPremium)} hint={`${producedCount} הפקות`} />
         <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
         <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="הכל עכשיו · בלי גמ״ח · שוטף 60" />
         <OverviewStat
@@ -666,11 +750,20 @@ function PhoenixPanel() {
   );
 }
 
-function HarelOverview({ live }: { live: ReturnType<typeof harelIncomeForProductions> }) {
+function HarelOverview({
+  live,
+  producedPremium,
+  producedCount,
+}: {
+  live: ReturnType<typeof harelIncomeForProductions>;
+  producedPremium: number;
+  producedCount: number;
+}) {
   const current = live.years[live.years.length - 1] ?? null;
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="פרמיה שהופקה" value={formatIls(producedPremium)} hint={`${producedCount} הפקות`} />
         <OverviewStat label="הכנסה לפי חוזה" value={formatIls(live.income)} hint={`${live.count} שורות`} />
         <OverviewStat label="שוטף" value={formatIls(live.cash)} hint="הכל עכשיו · בלי גמ״ח · שוטף 60" />
         <OverviewStat
@@ -1633,13 +1726,26 @@ function FormulaTableBlock({
   );
 }
 
-function ComingSoonPanel({ insurer }: { insurer: InsurerAgreement }) {
+function ComingSoonPanel({
+  insurer,
+  producedPremium = 0,
+  producedCount = 0,
+}: {
+  insurer: InsurerAgreement;
+  producedPremium?: number;
+  producedCount?: number;
+}) {
   return (
     <div className="app-surface px-5 py-12 text-center sm:px-7">
       <p className="text-lg font-semibold">{insurer.name}</p>
       <p className="mt-2 text-sm text-muted-foreground">
         הסכם ונוסחה יתווספו בהמשך. עד אז ההכנסה מחברה זו בדוח היא ₪0.
       </p>
+      {producedCount > 0 ? (
+        <p className="mt-3 text-sm font-medium tabular-nums">
+          פרמיה שהופקה {formatIls(producedPremium)} · {producedCount.toLocaleString("he-IL")} הפקות
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -336,7 +336,7 @@ export async function syncFacebookAds(): Promise<{
 
     const to = jerusalemYmd();
     const fromDate = new Date(`${to}T00:00:00+03:00`);
-    fromDate.setMonth(fromDate.getMonth() - 24);
+    fromDate.setMonth(fromDate.getMonth() - 36);
     const from = jerusalemYmd(fromDate);
 
     const campaigns: { id: string; name: string; status: string }[] = [];

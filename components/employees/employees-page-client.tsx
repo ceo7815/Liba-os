@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { loadAdsLeadSnapshot, loadMarketingCampaignsState } from "@/app/actions/marketing-campaigns";
 import { listFinanceEmployees, syncEmployeesFromExcel } from "@/app/actions/finance-people";
@@ -145,7 +145,7 @@ export function EmployeesPageClient({
     }
   }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (liveDashboard) applyDashboard(liveDashboard);
     else if (liveReady) setWageLoading(false);
   }, [applyDashboard, liveDashboard, liveReady]);

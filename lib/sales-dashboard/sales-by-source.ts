@@ -46,6 +46,13 @@ export function isSaleProcess(process: string): boolean {
   return matchesSourcePnlKind(process, "volume");
 }
 
+/** Process מכירה that was not cancelled. */
+export function isSaleWithoutAppointment(
+  row: Pick<MarketingProduction, "process" | "status">,
+): boolean {
+  return isSaleProcess(row.process) && row.status !== "cancelled";
+}
+
 export function isCountedStatus(status: MarketingProduction["status"]): boolean {
   return status !== "cancelled";
 }
@@ -227,15 +234,15 @@ export function buildSalesBySourceCube(input: {
   const inRange = input.productions.filter(
     (row) =>
       sourceMatchesCampaignName(namedSalesSource(row.source), input.name) &&
-      inDateRange(saleDateOf(row), input.range),
+      inDateRange(isoDay(row.transferDate), input.range),
   );
   const pending = inRange.filter((row) => isAwaitingProduction(row));
   const activated = inRange.filter((row) => isCompletedSale(row));
   const leaked = inRange.filter((row) => salePipelineStage(row) === "cancelled");
-  const countedRows = sortSalesPipelineRows([...pending, ...activated]);
+  const countedRows = sortSalesPipelineRows(inRange);
   const pendingPremium = pending.reduce((sum, row) => sum + row.premium, 0);
   const activatedPremium = activated.reduce((sum, row) => sum + row.premium, 0);
-  const countedPremium = pendingPremium + activatedPremium;
+  const countedPremium = countedRows.reduce((sum, row) => sum + row.premium, 0);
   const leakedPremium = leaked.reduce((sum, row) => sum + row.premium, 0);
 
   const google = input.includeGoogleAds

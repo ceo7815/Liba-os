@@ -9,6 +9,7 @@ import {
   createFinanceSupplier,
   deleteFinanceEmployee,
   deleteFinanceSupplier,
+  setFinanceEmployeeActive,
   updateFinanceEmployee,
   updateFinanceSupplier,
 } from "@/app/actions/finance-people";
@@ -454,6 +455,7 @@ function EmployeeCube({
 
   function openCard(event?: { target: EventTarget | null }) {
     const target = event?.target as HTMLElement | null;
+    if (target?.closest("[data-employee-status]")) return;
     setFocusLeads(Boolean(target?.closest("[data-lead-costs]")));
     if (emp.id !== SYNTHETIC_OSHRAN_ID) {
       setOpen(true);
@@ -481,14 +483,36 @@ function EmployeeCube({
     });
   }
 
+  function setEmployeeActive(next: boolean) {
+    if (emp.id === SYNTHETIC_OSHRAN_ID || emp.is_active === next) return;
+    startTransition(async () => {
+      const result = await setFinanceEmployeeActive(emp.id, next);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      setCard({ ...card, is_active: next });
+      onChanged(employees.map((row) => (row.id === emp.id ? { ...row, is_active: next } : row)));
+      toast.success(next ? `${emp.full_name} פעיל` : `${emp.full_name} לא פעיל`);
+    });
+  }
+
   return (
     <>
       <button
         type="button"
         onClick={(event) => openCard(event)}
-        className="group relative flex flex-col items-stretch gap-4 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-5 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)]"
+        className={cn(
+          "group relative flex flex-col items-stretch gap-4 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-5 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)]",
+          !emp.is_active && "bg-zinc-50 hover:bg-zinc-50",
+        )}
       >
-        <span className="absolute inset-y-0 start-0 w-1 origin-top scale-y-100 bg-highlight transition-transform duration-300 group-hover:scale-y-110" />
+        <span
+          className={cn(
+            "absolute inset-y-0 start-0 w-1 origin-top scale-y-100 transition-transform duration-300 group-hover:scale-y-110",
+            emp.is_active ? "bg-highlight" : "bg-zinc-300",
+          )}
+        />
 
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
@@ -659,6 +683,48 @@ function EmployeeCube({
         </div>
 
         <div className="mt-auto space-y-1.5 border-t border-black/[0.06] pt-3">
+          {emp.id !== SYNTHETIC_OSHRAN_ID ? (
+            <div className="flex items-center justify-between gap-3" data-employee-status>
+              <span className="text-[13px] text-muted-foreground">סטטוס</span>
+              <span className="inline-flex rounded-full bg-black/[0.04] p-0.5">
+                {(
+                  [
+                    { active: true, label: "פעיל" },
+                    { active: false, label: "לא פעיל" },
+                  ] as const
+                ).map((option) => {
+                  const selected = emp.is_active === option.active;
+                  return (
+                    <span
+                      key={option.label}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={selected}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setEmployeeActive(option.active);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setEmployeeActive(option.active);
+                      }}
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                        selected && option.active && "bg-black text-white",
+                        selected && !option.active && "bg-zinc-600 text-white",
+                        !selected && "text-muted-foreground",
+                        pending && "pointer-events-none opacity-60",
+                      )}
+                    >
+                      {option.label}
+                    </span>
+                  );
+                })}
+              </span>
+            </div>
+          ) : null}
           <div className="flex items-baseline justify-between gap-3 text-[13px]">
             <span className="shrink-0 text-muted-foreground">הסכם</span>
             <span
@@ -674,6 +740,7 @@ function EmployeeCube({
         </div>
       </button>
 
+      {open ? (
       <EmployeeCardDialog
         emp={card}
         open={open}
@@ -727,6 +794,7 @@ function EmployeeCube({
           });
         }}
       />
+      ) : null}
     </>
   );
 }

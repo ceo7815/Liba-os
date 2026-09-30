@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Calculator, Contact, FileSpreadsheet, GraduationCap, KeyRound, Layers3, LayoutDashboard, PieChart, Search, TrendingUp, Users, Wallet, X } from "lucide-react";
+import { Bot, Calculator, Contact, FileSpreadsheet, GraduationCap, KeyRound, Layers3, LayoutDashboard, Megaphone, PieChart, Search, TrendingUp, Users, Wallet, X } from "lucide-react";
 import { agents } from "@/lib/agents.config";
 import { portals } from "@/lib/portals.config";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,7 @@ export function GlobalSearch({
       items.push(
         {
           id: "sales-dashboard",
-          label: "דשבורד מכירות",
+          label: "לוח מכירות",
           description: "מסך מכירות חי מאקסל OneDrive",
           href: "/sales-dashboard",
           icon: TrendingUp,
@@ -120,8 +120,8 @@ export function GlobalSearch({
         },
         {
           id: "sales-by-source",
-          label: "מכירות לפי מקור",
-          description: "צנורת מכירה לפי מקור הפנייה — ממתינות, הופעלו, שיווק",
+          label: "פילוח מכירות",
+          description: "לפי מקור, לפי עובד ולפי חברה",
           href: "/sales-dashboard/by-source",
           icon: PieChart,
           keywords: [
@@ -136,12 +136,30 @@ export function GlobalSearch({
           ],
         },
         {
+          id: "campaigns",
+          label: "קמפיינים",
+          description: "קמפיינים בגוגל ובפייסבוק, מחיר לליד ושיחות נכנסות",
+          href: "/sales-dashboard/campaigns",
+          icon: Megaphone,
+          keywords: [
+            "קמפיינים",
+            "קמפיין",
+            "גוגל",
+            "פייסבוק",
+            "מודעות",
+            "ליד",
+            "שיחות נכנסות",
+            "cpl",
+          ],
+        },
+        {
           id: "sales-excel-report",
-          label: "דוח אקסל מכירות",
-          description: "טבלת דוח המנהלים אחד לאחד — כל הגיליונות והעמודות",
+          label: "שורות מכירה",
+          description: "כל השורות והעמודות מהקובץ, בטבלה לעבודה",
           href: "/sales-dashboard/excel",
           icon: FileSpreadsheet,
           keywords: [
+            "דוח מכירות",
             "דוח אקסל מכירות",
             "אקסל",
             "דוח מנהלים",

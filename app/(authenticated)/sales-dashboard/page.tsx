@@ -12,7 +12,7 @@ const heebo = Heebo({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "דשבורד מכירות",
+  title: "לוח מכירות",
 };
 
 export default async function SalesDashboardPage() {

@@ -8,6 +8,7 @@ import {
 import {
   loadIngestedWorkbook,
   loadParsedDashboardSnapshot,
+  saveIngestedWorkbook,
   saveParsedDashboardSnapshot,
 } from "@/lib/sales-dashboard/ingest-store";
 import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
@@ -95,7 +96,7 @@ async function persist(data: DashboardData, etag: string | null, extra?: {
     fileName: extra?.fileName ?? data.fileName,
     data,
   });
-  await persistWorkbookFromDashboard(data).catch(() => undefined);
+  await persistWorkbookFromDashboard(data);
   return data;
 }
 
@@ -120,6 +121,7 @@ async function refreshFromGraph(force: boolean): Promise<DashboardData> {
   }
 
   const file = await downloadSalesExcel(meta);
+  await saveIngestedWorkbook(Buffer.from(file.buffer), file.fileName);
   const data = parseSalesWorkbook(
     file.buffer,
     file.fileName,

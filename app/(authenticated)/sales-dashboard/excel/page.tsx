@@ -7,7 +7,7 @@ import { resolveSalesExcelWorkbook } from "@/lib/sales-dashboard/workbook-store"
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "דוח אקסל מכירות",
+  title: "שורות מכירה",
 };
 
 export default async function SalesExcelReportPage() {

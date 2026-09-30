@@ -21,6 +21,7 @@ import {
   hasPermission,
 } from "@/lib/permissions/access";
 import { canViewFormulas } from "@/lib/formulas/access";
+import { canViewInterfaces } from "@/lib/interfaces/access";
 import type { PermissionKey } from "@/lib/permissions/catalog";
 import { normalizePermissionKeys } from "@/lib/permissions/catalog";
 
@@ -143,6 +144,14 @@ export async function requireEmployeeAgreementsAccess(): Promise<Profile> {
 export async function requireFormulasAccess(): Promise<Profile> {
   const profile = await requireProfile();
   if (!canViewFormulas(profile)) {
+    redirect("/dashboard");
+  }
+  return profile;
+}
+
+export async function requireInterfacesAccess(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!canViewInterfaces(profile)) {
     redirect("/dashboard");
   }
   return profile;

@@ -336,7 +336,7 @@ export function GeneralPlScreen({
                 <LineChart className="size-5" />
               </span>
               <h1 className="text-3xl font-semibold leading-none tracking-tight">
-                דוח רווח והפסד
+                רווח והפסד
               </h1>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">

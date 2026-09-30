@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpLeft, Bot, ChevronLeft } from "lucide-react";
 import { ControlCenterScreen } from "@/components/dashboard/control-center-screen";
+import { OperatingBrandProvider } from "@/components/finance/operating-brand-bar";
 import { requireProfile } from "@/lib/auth";
 import { canViewAgents } from "@/lib/permissions/access";
 import { agents, getAgentStatusLabel } from "@/lib/agents.config";
@@ -24,23 +25,20 @@ export default async function DashboardPage() {
   }).format(new Date());
 
   return (
-    <section className="mx-auto w-full max-w-[72rem] space-y-4 sm:space-y-6">
+    <section className="mx-auto w-full max-w-[72rem] space-y-3">
       <header className="dash-enter px-0.5 sm:px-0">
-        <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
-          {today}
-        </p>
-        <div className="mt-1 flex items-end justify-between gap-3">
-          <h1 className="text-[1.65rem] font-semibold leading-none tracking-tight sm:text-3xl">
+        <div className="flex items-end justify-between gap-3">
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">
             שלום, {firstName}
           </h1>
-          <p className="hidden max-w-[14rem] text-end text-sm leading-snug text-muted-foreground sm:block">
-            מצב העסק מהסנכרון האחרון
-          </p>
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground">{today}</p>
         </div>
       </header>
 
       <div className="dash-enter" style={{ animationDelay: "60ms" }}>
-        <ControlCenterScreen />
+        <OperatingBrandProvider>
+          <ControlCenterScreen />
+        </OperatingBrandProvider>
       </div>
 
       {agentRows.length > 0 ? (

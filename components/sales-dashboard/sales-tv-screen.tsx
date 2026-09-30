@@ -303,7 +303,7 @@ export function SalesTvScreen({
               <TrendingUp size={18} strokeWidth={2.4} />
             </span>
             <div>
-              <div className="sales-tv-sync-title">דשבורד מכירות</div>
+              <div className="sales-tv-sync-title">לוח מכירות</div>
               <div className="sales-tv-sync-sub">
                 {loadState === "error"
                   ? "לא הצלחנו לטעון את הדוח. נסו רענון."
@@ -365,7 +365,7 @@ export function SalesTvScreen({
             priority
           />
           <div>
-            <div className="sales-tv-logo-name">דשבורד מכירות</div>
+            <div className="sales-tv-logo-name">לוח מכירות</div>
             <div className="sales-tv-logo-sub">ליבה ביטוח ופיננסים</div>
           </div>
         </div>
@@ -448,7 +448,7 @@ export function SalesTvScreen({
               <TrendingUp size={18} strokeWidth={2.4} />
             </span>
             <div>
-              <div className="sales-tv-sync-title">ניטור חי — דוח מכירות</div>
+              <div className="sales-tv-sync-title">ניטור חי — לוח מכירות</div>
               <div className="sales-tv-sync-sub">{syncSub}</div>
               {loadState === "ok" && data.source === "live" ? (
                 <div className="sales-tv-updated">
@@ -656,7 +656,7 @@ export function SalesTvScreen({
       <footer className="sales-tv-footer">
         <strong>ליבה סוכנות לביטוח</strong>
         {" • "}
-        דשבורד מכירות
+        לוח מכירות
         {" • "}© 2026
       </footer>
 

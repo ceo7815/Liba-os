@@ -25,7 +25,9 @@ import {
   listAccessibleCustomerIds,
   listGoogleAdsCampaigns,
   listGoogleAdsDailyMetrics,
+  listGoogleCallDetails,
   refreshAccessToken,
+  type GoogleCallDetail,
 } from "@/lib/google-ads/client";
 
 function isMissingRelation(message: string | undefined): boolean {
@@ -387,7 +389,7 @@ export async function syncGoogleAds(): Promise<{
     const campaigns = await listGoogleAdsCampaigns(accessToken, customerId, loginCustomerId);
     const to = jerusalemYmd();
     const fromDate = new Date(`${to}T00:00:00+03:00`);
-    fromDate.setMonth(fromDate.getMonth() - 24);
+    fromDate.setMonth(fromDate.getMonth() - 36);
     const from = jerusalemYmd(fromDate);
     const metrics = await listGoogleAdsDailyMetrics(
       accessToken,
@@ -474,5 +476,23 @@ export async function syncGoogleAds(): Promise<{
     const message = err instanceof Error ? err.message : "סנכרון גוגל אדס נכשל";
     await writeSettingsError(message);
     return { ok: false, error: message };
+  }
+}
+
+export async function readGoogleCallDetails(from: string, to: string): Promise<GoogleCallDetail[]> {
+  try {
+    const bundle = await readGoogleAdsBundle();
+    if (!bundle.connection.connected || !bundle.connection.customerId) return [];
+    const refreshToken = await resolveRefreshToken();
+    const accessToken = await refreshAccessToken(refreshToken);
+    return await listGoogleCallDetails(
+      accessToken,
+      bundle.connection.customerId,
+      bundle.connection.loginCustomerId,
+      from,
+      to,
+    );
+  } catch {
+    return [];
   }
 }

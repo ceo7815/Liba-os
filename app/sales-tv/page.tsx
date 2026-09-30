@@ -4,7 +4,7 @@ import { authorizeSalesTvPage } from "@/lib/sales-dashboard/kiosk-auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "דשבורד מכירות",
+  title: "לוח מכירות",
 };
 
 type PageProps = {

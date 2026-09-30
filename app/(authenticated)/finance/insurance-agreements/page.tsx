@@ -5,7 +5,7 @@ import { requireFinanceAccess } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "הסכמים חברות ביטוח",
+  title: "הסכמי ביטוח",
 };
 
 export default async function InsuranceAgreementsPage() {

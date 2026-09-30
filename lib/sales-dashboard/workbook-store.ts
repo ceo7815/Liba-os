@@ -96,27 +96,34 @@ export async function persistWorkbookFromDashboard(data: DashboardData): Promise
   });
 }
 
-/** Last synced grid from Postgres. Hydrates once from snapshot / ingested xlsx if empty. */
+/** Last synced grid. A newer snapshot from «סנכרן הכל» always replaces the stored copy. */
 export async function resolveSalesExcelWorkbook(
   snapshot?: DashboardData | null,
 ): Promise<SalesWorkbookPayload> {
   const stored = await loadSalesExcelWorkbook().catch(() => null);
-  if (stored?.sheets.length) return stored;
+  const snapshotSheets = snapshot?.workbook?.sheets ?? [];
+  const snapshotMs = Date.parse(snapshot?.syncedAt || "") || 0;
+  const storedMs = Date.parse(stored?.syncedAt || "") || 0;
 
-  if (snapshot?.workbook?.sheets.length) {
-    await saveSalesExcelWorkbook({
-      fileName: snapshot.fileName ?? snapshot.workbook.fileName,
-      syncedAt: snapshot.syncedAt,
-      lastModified: snapshot.syncedAt,
-      workbook: snapshot.workbook,
-    }).catch(() => undefined);
-    return {
-      fileName: snapshot.fileName ?? snapshot.workbook.fileName,
-      sheets: snapshot.workbook.sheets,
-      syncedAt: snapshot.syncedAt,
+  if (snapshotSheets.length && (!stored?.sheets.length || snapshotMs > storedMs)) {
+    const payload: SalesWorkbookPayload = {
+      fileName: snapshot?.fileName ?? snapshot?.workbook?.fileName ?? null,
+      sheets: snapshotSheets,
+      syncedAt: snapshot?.syncedAt ?? null,
       stored: true,
     };
+    if (snapshot?.workbook) {
+      await saveSalesExcelWorkbook({
+        fileName: payload.fileName,
+        syncedAt: snapshot.syncedAt,
+        lastModified: snapshot.syncedAt,
+        workbook: snapshot.workbook,
+      });
+    }
+    return payload;
   }
+
+  if (stored?.sheets.length) return stored;
 
   const ingested = await loadIngestedWorkbook().catch(() => null);
   if (ingested) {
@@ -128,7 +135,7 @@ export async function resolveSalesExcelWorkbook(
         syncedAt,
         lastModified: ingested.lastModified,
         workbook,
-      }).catch(() => undefined);
+      });
       return {
         fileName: ingested.fileName,
         sheets: workbook.sheets,

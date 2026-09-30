@@ -89,6 +89,11 @@ function monthHe(month: string): string {
 
 export const FORMULA_CATEGORIES: FormulaCategory[] = [
   {
+    id: "report",
+    label: "דוח המכירות",
+    description: "המקור היחיד לכל מספר במערכת: הסנכרון האחרון של דוח המכירות.",
+  },
+  {
     id: "leads",
     label: "לידים",
     description: "מה יורד משכר עצמאי על ליד שהופק — לפי מקור.",
@@ -126,6 +131,130 @@ export const FORMULA_CATEGORIES: FormulaCategory[] = [
 ];
 
 export const CALCULATION_FORMULAS: FormulaDoc[] = [
+  {
+    id: "report-source",
+    category: "report",
+    title: "המקור היחיד",
+    summary: "כל קוביה, עובד, מקור, חברה והסכם קוראים את שורות דוח המכירות מהסנכרון האחרון. אין מקור שני.",
+    equation: "מספר = סכום שורות הדוח אחרי פרוסת החישוב",
+    terms: [
+      { label: "השורות", value: "דוח המכירות אחרי סנכרון" },
+      { label: "אחרי סנכרון", value: "כל המסכים נטענים מחדש מאותו קובץ" },
+    ],
+    notes: [
+      "אם שני מסכים מציגים את אותה פרוסה ואותו חודש, הסכום זהה.",
+      "שכר העובד הוא חישוב על אותן שורות, לפי חודש שכר — לא לפי תאריך המכירה של הקוביות.",
+    ],
+    usedIn: [
+      { label: "לוח בקרה", href: "/dashboard" },
+      { label: "פילוח מכירות", href: "/sales-dashboard/by-source" },
+      { label: "הסכמי ביטוח", href: INSURANCE_AGREEMENTS_PATH },
+    ],
+  },
+  {
+    id: "report-sale-date",
+    category: "report",
+    title: "תאריך מכירה",
+    summary: "מכירות נספרות לפי תאריך העברה ליצרן, בחודש הקלנדרי של התאריך הזה.",
+    equation: "חודש המכירה = החודש של תאריך העברה ליצרן",
+    terms: [
+      { label: "עמודה", value: "תאריך העברה ליצרן" },
+      { label: "חלון", value: "מה־1 עד סוף החודש" },
+    ],
+    notes: ["שורה בלי תאריך העברה לא נכנסת לחודש."],
+    example: {
+      given: "העברה 15.09 והתחלה 01.10",
+      result: "המכירה נספרת בספטמבר",
+    },
+    usedIn: [
+      { label: "לוח בקרה", href: "/dashboard" },
+      { label: "פילוח מכירות", href: "/sales-dashboard/by-source" },
+    ],
+  },
+  {
+    id: "report-production-date",
+    category: "report",
+    title: "תאריך הפקה",
+    summary: "הפקות נספרות לפי תאריך תחילת ביטוח, בחודש הקלנדרי של התאריך הזה.",
+    equation: "חודש ההפקה = החודש של תאריך תחילת ביטוח",
+    terms: [
+      { label: "עמודה", value: "תאריך תחילת ביטוח" },
+      { label: "חלון", value: "מה־1 עד סוף החודש" },
+    ],
+    notes: ["שורה בלי תאריך תחילת ביטוח לא נכנסת לחודש ההפקה."],
+    example: {
+      given: "העברה 15.09 והתחלה 01.10",
+      result: "ההפקה נספרת באוקטובר",
+    },
+    usedIn: [
+      { label: "לוח בקרה — הפקות", href: "/dashboard" },
+      { label: "רווח והפסד לפי מקור", href: SOURCE_PNL_PATH },
+    ],
+  },
+  {
+    id: "report-all",
+    category: "report",
+    title: "הכל",
+    summary: "כל שורה שנכנסה לדוח המכירות מהסנכרון האחרון.",
+    equation: "הכל = כל השורות בדוח",
+    terms: [{ label: "מקור", value: "הסנכרון האחרון" }],
+    usedIn: [{ label: "שורות מכירה", href: "/sales-dashboard/excel" }],
+  },
+  {
+    id: "report-productions",
+    category: "report",
+    title: "הפקה",
+    summary: "הפקה היא הפקה פעילה. תהליך מכירה וסטטוס פעילה, לפי תאריך תחילת ביטוח.",
+    equation: "הפקה = תהליך מכירה ∩ סטטוס פעילה   ·   חודש = תאריך תחילת ביטוח",
+    terms: [
+      { label: "תהליך", value: "מכירה" },
+      { label: "סטטוס", value: "פעילה" },
+      { label: "תאריך", value: "תאריך תחילת ביטוח" },
+    ],
+    usedIn: [
+      { label: "לוח בקרה — הפקות", href: "/dashboard" },
+    ],
+  },
+  {
+    id: "report-sale",
+    category: "report",
+    title: "מכירה",
+    summary: "תהליך מכירה, בכל סטטוס. מינוי לא נכנס. אותו חישוב כמו קוביית המכירות בלוח הבקרה.",
+    equation: "מכירה = תהליך מכירה, כל הסטטוסים",
+    terms: [
+      { label: "תהליך", value: "מכירה" },
+      { label: "סטטוס", value: "הכל, כולל פעילה, בתהליך, נגנז ובוטל" },
+      { label: "יוצא", value: "מינוי" },
+    ],
+    notes: ["התאריך של המכירה הוא תאריך העברה ליצרן. פרמיית העובד בפילוח משתמשת באותו תאריך."],
+    example: {
+      given: "10 שורות תהליך מכירה, מהן 2 בוטלו, ועוד שורת מינוי",
+      result: "10 מכירות",
+    },
+    usedIn: [
+      { label: "לוח בקרה — מכירות", href: "/dashboard" },
+      { label: "פילוח לפי עובד", href: "/sales-dashboard/by-source" },
+      { label: "פילוח לפי מקור", href: "/sales-dashboard/by-source" },
+      { label: "פילוח לפי חברה", href: "/sales-dashboard/by-source" },
+    ],
+  },
+  {
+    id: "report-active",
+    category: "report",
+    title: "הפקה פעילה",
+    summary: "מכירה בסטטוס פעילה. נספרת לפי תאריך תחילת ביטוח, לא לפי תאריך ההעברה.",
+    equation: "הפקה פעילה = מכירה ∩ סטטוס פעילה   ·   חודש = תאריך תחילת ביטוח",
+    terms: [
+      { label: "סטטוס", value: "פעילה או פעיל" },
+      { label: "תהליך", value: "מכירה" },
+      { label: "תאריך", value: "תאריך תחילת ביטוח" },
+    ],
+    notes: ["פרמיה שהופקה בהסכמי הביטוח היא הפקה פעילה מכל התאריכים, לפי חברת הביטוח."],
+    usedIn: [
+      { label: "לוח בקרה — פרמיה פעילה", href: "/dashboard" },
+      { label: "הסכמי ביטוח", href: INSURANCE_AGREEMENTS_PATH },
+    ],
+  },
   {
     id: "leads-google-facebook",
     category: "leads",
@@ -386,12 +515,12 @@ export const CALCULATION_FORMULAS: FormulaDoc[] = [
     category: "partnership",
     title: "שותפים — אורשן משכנתאות",
     summary:
-      "שיתוף פעולה לפי מקור הפניה, לא עובד. תשלום לשותף על כל סגירה פעילה מהמקור, כולל תאונות אישיות. הנפרעים נשארים בחברה. מוכר ליבה לא מקבל עמלה על אותה שורה.",
+      "שיתוף פעולה לפי מקור הפניה, לא עובד. תשלום לשותף על סגירה פעילה מהמקור. תאונות אישיות לא נספרות. הנפרעים נשארים בחברה. מוכר ליבה לא מקבל עמלה על אותה שורה.",
     equation: `תשלום לשותף = פרמיה × ${PARTNERSHIP.volumeMultiplier}   ·   נפרעים לשותף = ₪0   ·   שכר מוכר ליבה = ₪0`,
     terms: [
       { label: "מקור", value: `${PARTNERSHIP.canonicalSource} · גם אושרן משכנתאות` },
       { label: "מכפיל", value: `×${PARTNERSHIP.volumeMultiplier}` },
-      { label: "מה נספר", value: "כל סגירה פעילה מהמקור, כולל תאונות אישיות" },
+      { label: "מה נספר", value: "סגירה פעילה מהמקור, בלי תאונות אישיות" },
       { label: "נפרעים", value: "נשארים בדוח החברה" },
     ],
     notes: [
@@ -418,7 +547,10 @@ export const CALCULATION_FORMULAS: FormulaDoc[] = [
       { label: "מתאריך", value: `טבלאות שכר מ־${monthHe(EMPLOYEE_WAGE_FROM_MONTH)}` },
       { label: "שעות", value: "לא זזות עם כלל ה־1 לחודש" },
     ],
-    notes: ["עלויות לידים מגוגל/פייסבוק רצות לפי חודש העברה, לא לפי חודש מכירה."],
+    notes: [
+      "עלויות לידים מגוגל/פייסבוק רצות לפי חודש העברה, לא לפי חודש מכירה.",
+      "קוביית המכירות סופרת לפי תאריך העברה ליצרן. קוביית ההפקות סופרת לפי תאריך תחילת ביטוח.",
+    ],
     usedIn: [
       { label: "סקירת עובד", href: EMPLOYEES },
       { label: "משכורות", href: PAYROLL },
@@ -435,7 +567,7 @@ export const CALCULATION_FORMULAS: FormulaDoc[] = [
       { label: "גם ללידים", value: "חיוב ליד רק על הפקה שנספרת להיקף" },
     ],
     notes: [
-      "שותף אורשן משכנתאות: תאונות אישיות כן נספרות לתשלום ×4.",
+      "תאונות אישיות לא נספרות להיקף, גם לא לשותף.",
     ],
     usedIn: [
       { label: "סקירת עובד", href: EMPLOYEES },
@@ -499,8 +631,33 @@ export const CALCULATION_FORMULAS: FormulaDoc[] = [
         value: String(DEFAULT_AGENT_MULTIPLIER),
       },
     ],
-    notes: ["בלי הסכם שמור אין שכר מומצא — המכפיל הוא 0."],
+    notes: [
+      "בלי הסכם שמור אין שכר מומצא — המכפיל הוא 0.",
+      "שכר שכיר בקוביה = מדרגות על המכירה + חלק משכר הבסיס והפרשות המעסיק.",
+    ],
     usedIn: [{ label: "שיווק / מקורות", href: SOURCE_PNL_PATH }],
+  },
+  {
+    id: "pnl-source-wage",
+    category: "pnl",
+    title: "שכר עובדים ברווח לפי מקור",
+    summary:
+      "מדרגות נשארות על המכירה. שכר בסיס של שכיר — שעתי או גלובלי, נסיעות, חופשה ופנסיה, פיצויים וקרן השתלמות של המעסיק — מתחלק לפי פרמיית ההיקף של אותו חודש.",
+    equation: "חלק למקור = שכר בסיס × פרמיית המקור ÷ פרמיית החודש",
+    terms: [
+      { label: "בלי מכירה", value: "כל הבסיס בשורה «שכר בלי מקור»" },
+      { label: "היקף / נפרעים", value: "רק המדרגות משתנות. הבסיס אותו סכום" },
+      { label: "לידים", value: "נשארים בשיווק, לא בשכר" },
+    ],
+    notes: [
+      "הפרשת העובד לעצמו לא מתווספת שוב.",
+      "סינון מותג לוקח רק את החלק של מקורות המותג.",
+    ],
+    example: {
+      given: "בסיס ₪4,800. 60% מהפרמיה במקור א׳ ו־40% במקור ב׳",
+      result: "₪2,880 למקור א׳ · ₪1,920 למקור ב׳",
+    },
+    usedIn: [{ label: "רווח והפסד לפי מקור", href: SOURCE_PNL_PATH }],
   },
   {
     id: "pnl-source-settled",
@@ -889,6 +1046,13 @@ export function assertFormulasCatalog(): void {
     }
   }
   for (const required of [
+    "report-source",
+    "report-sale-date",
+    "report-production-date",
+    "report-all",
+    "report-productions",
+    "report-sale",
+    "report-active",
     "leads-google-facebook",
     "leads-roy-azulai",
     "leads-alexander",

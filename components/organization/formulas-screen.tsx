@@ -5,6 +5,13 @@ import Link from "next/link";
 import { Calculator, Search } from "lucide-react";
 import { CALCULATION_FORMULAS, FORMULA_CATEGORIES } from "@/lib/formulas/catalog";
 import type { FormulaCategoryId, FormulaDoc } from "@/lib/formulas/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -27,8 +34,9 @@ function matchesQuery(row: FormulaDoc, query: string): boolean {
 }
 
 export function FormulasScreen() {
-  const [filter, setFilter] = useState<FilterId>("all");
+  const [filter, setFilter] = useState<FilterId>("report");
   const [query, setQuery] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
   const needle = query.trim().toLowerCase();
 
   const visible = useMemo(() => {
@@ -45,6 +53,8 @@ export function FormulasScreen() {
     })).filter((group) => group.rows.length > 0);
   }, [visible]);
 
+  const open = CALCULATION_FORMULAS.find((row) => row.id === openId) ?? null;
+
   return (
     <section className="mx-auto max-w-[72rem] space-y-6" dir="rtl">
       <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
@@ -58,8 +68,7 @@ export function FormulasScreen() {
               <h1 className="text-2xl font-semibold tracking-tight">נוסחאות חישוב</h1>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              כל נוסחת החישוב שרצה במערכת — לידים, שכר עצמאים, שותפים, שכירים ורווח והפסד.
-              המספרים מגיעים מהקוד החי, וכל נוסחה חדשה חייבת להירשם כאן.
+              כל חישוב במערכת, מהדוח המסונכרן. לוחצים על קוביה ורואים את הנוסחה, איפה היא רצה, ומה היא לא כוללת.
             </p>
           </div>
           <div className="shrink-0 rounded-2xl border border-black/[0.05] bg-background/80 px-4 py-3 text-center">
@@ -109,14 +118,15 @@ export function FormulasScreen() {
               <h2 className="text-lg font-semibold">{category.label}</h2>
               <p className="mt-0.5 text-sm text-muted-foreground">{category.description}</p>
             </div>
-            <div className="grid gap-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {rows.map((row) => (
-                <FormulaCard key={row.id} row={row} />
+                <FormulaCube key={row.id} row={row} onOpen={() => setOpenId(row.id)} />
               ))}
             </div>
           </section>
         ))
       )}
+      <FormulaDialog row={open} onOpenChange={(next) => { if (!next) setOpenId(null); }} />
     </section>
   );
 }
@@ -146,55 +156,85 @@ function FilterChip({
   );
 }
 
-function FormulaCard({ row }: { row: FormulaDoc }) {
+function FormulaCube({ row, onOpen }: { row: FormulaDoc; onOpen: () => void }) {
   return (
-    <article className="app-surface space-y-4 px-5 py-5 sm:px-6">
-      <div>
-        <h3 className="text-base font-semibold">{row.title}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{row.summary}</p>
-      </div>
-      <p className="overflow-x-auto rounded-xl bg-[#f4f8ff] px-3 py-2.5 text-sm font-medium tabular-nums leading-relaxed">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="app-surface flex h-full flex-col gap-3 px-4 py-4 text-start transition-shadow hover:shadow-[0_10px_28px_-18px_rgba(17,17,17,0.45)]"
+    >
+      <h3 className="text-sm font-semibold leading-snug">{row.title}</h3>
+      <p className="line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">{row.summary}</p>
+      <p className="mt-auto overflow-hidden rounded-xl bg-[#f4f8ff] px-3 py-2 text-[12px] font-medium leading-relaxed">
         {row.equation}
       </p>
-      {row.terms?.length ? (
-        <dl className="grid gap-2 sm:grid-cols-2">
-          {row.terms.map((term) => (
-            <div key={term.label} className="rounded-xl bg-muted/20 px-3 py-2">
-              <dt className="text-[11px] text-muted-foreground">{term.label}</dt>
-              <dd className="mt-0.5 text-sm font-medium leading-snug">{term.value}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
-      {row.example ? (
-        <p className="text-sm leading-relaxed">
-          <span className="font-medium">דוגמה: </span>
-          {row.example.given}
-          {" → "}
-          <span className="font-semibold">{row.example.result}</span>
-        </p>
-      ) : null}
-      {row.notes?.length ? (
-        <ul className="list-disc space-y-1 ps-5 text-[13px] leading-relaxed text-muted-foreground">
-          {row.notes.map((note) => (
-            <li key={note}>{note}</li>
-          ))}
-        </ul>
-      ) : null}
-      {row.usedIn?.length ? (
-        <p className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
-          <span>בשימוש:</span>
-          {row.usedIn.map((link) => (
-            <Link
-              key={`${link.href}-${link.label}`}
-              href={link.href}
-              className="font-medium text-foreground underline decoration-dotted underline-offset-4 hover:text-black"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </p>
-      ) : null}
-    </article>
+    </button>
+  );
+}
+
+function FormulaDialog({
+  row,
+  onOpenChange,
+}: {
+  row: FormulaDoc | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={Boolean(row)} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90dvh] max-w-[96vw] overflow-y-auto rounded-[1.35rem] sm:max-w-2xl" dir="rtl">
+        {row ? (
+          <>
+            <DialogHeader className="text-start">
+              <DialogTitle className="text-lg font-semibold">{row.title}</DialogTitle>
+              <DialogDescription className="text-sm leading-relaxed text-foreground">
+                {row.summary}
+              </DialogDescription>
+            </DialogHeader>
+            <p className="rounded-xl bg-[#f4f8ff] px-3 py-2.5 text-sm font-medium leading-relaxed">
+              {row.equation}
+            </p>
+            {row.terms?.length ? (
+              <dl className="grid gap-2 sm:grid-cols-2">
+                {row.terms.map((term) => (
+                  <div key={term.label} className="rounded-xl bg-muted/20 px-3 py-2">
+                    <dt className="text-[11px] text-muted-foreground">{term.label}</dt>
+                    <dd className="mt-0.5 text-sm font-medium leading-snug">{term.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
+            {row.example ? (
+              <p className="text-sm leading-relaxed">
+                <span className="font-medium">דוגמה: </span>
+                {row.example.given}
+                {" → "}
+                <span className="font-semibold">{row.example.result}</span>
+              </p>
+            ) : null}
+            {row.notes?.length ? (
+              <ul className="list-disc space-y-1 ps-5 text-[13px] leading-relaxed text-muted-foreground">
+                {row.notes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            ) : null}
+            {row.usedIn?.length ? (
+              <p className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
+                <span>בשימוש:</span>
+                {row.usedIn.map((link) => (
+                  <Link
+                    key={`${link.href}-${link.label}`}
+                    href={link.href}
+                    className="font-medium text-foreground underline decoration-dotted underline-offset-4 hover:text-black"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }

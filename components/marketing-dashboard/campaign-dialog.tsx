@@ -10,6 +10,7 @@ import {
   CHANNEL_LABEL,
   STATUS_LABEL,
   campaignPnl,
+  canonicalAgentName,
   cubeMarketingTotals,
   formatIls,
   formatIlsSigned,
@@ -47,6 +48,7 @@ import {
   type WageExplainReason,
 } from "@/lib/employees/contract";
 import { monthLabel } from "@/lib/employees/review";
+import { employerBaseForWorker } from "@/lib/employees/source-wage";
 import type { SourcePnlKind } from "@/lib/sales-dashboard/columns";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 import { Button } from "@/components/ui/button";
@@ -122,6 +124,7 @@ type Props = {
   payProfiles?: EmployeePayProfile[];
   wageKind?: SourcePnlKind;
   wageContextRows?: MarketingProduction[];
+  employerBaseByWorker?: Map<string, number>;
   insurerYearContext?: MarketingProduction[];
   defaultMultiplier: number;
   googleAds: GoogleAdsConnection;
@@ -147,6 +150,7 @@ export function CampaignDialog({
   payProfiles = [],
   wageKind = "volume",
   wageContextRows,
+  employerBaseByWorker,
   insurerYearContext = [],
   defaultMultiplier,
   googleCampaigns,
@@ -177,12 +181,16 @@ export function CampaignDialog({
   const adsTotal = marketing.adsTotal;
   const workers = useMemo(
     () =>
-      groupWorkers(productions, rates, defaultMultiplier, {
-        profiles: payProfiles,
-        kind: wageKind,
-        contextRows: wageContextRows ?? productions,
-      }),
-    [productions, rates, defaultMultiplier, payProfiles, wageKind, wageContextRows],
+      withEmployerBase(
+        groupWorkers(productions, rates, defaultMultiplier, {
+          profiles: payProfiles,
+          kind: wageKind,
+          contextRows: wageContextRows ?? productions,
+        }),
+        name,
+        employerBaseByWorker,
+      ),
+    [productions, rates, defaultMultiplier, payProfiles, wageKind, wageContextRows, name, employerBaseByWorker],
   );
   const wageTotal = workers.reduce((sum, row) => sum + row.wage, 0);
   const yearContext = insurerYearContext.length ? insurerYearContext : productions;
@@ -497,7 +505,7 @@ function OverviewPanel({
   pendingCount,
   pendingPremium,
 }: {
-  workers: { name: string; count: number; sum: number; multiplier: number; wage: number }[];
+  workers: { name: string; count: number; sum: number; multiplier: number; wage: number; baseWage?: number }[];
   wageTotal: number;
   adsTotal: number;
   income: number;
@@ -529,14 +537,11 @@ function OverviewPanel({
             <ul className="mt-3 max-h-56 space-y-1.5 overflow-y-auto text-sm">
               {workers.map((worker) => (
                 <li key={worker.name} className="flex items-baseline justify-between gap-3">
-                  <span>
-                    {worker.name}
-                    <span className="ms-2 text-xs text-muted-foreground">
-                      {ils(worker.sum)} × {worker.multiplier}
-                    </span>
-                  </span>
-                  <span className="font-semibold">
-                    <Money value={worker.wage} />
+                  <span>{worker.name}</span>
+                  <span className="text-end text-xs text-muted-foreground">
+                    מדרגות {ils(worker.wage - (worker.baseWage ?? 0))}
+                    {" · "}
+                    שעתי {ils(worker.baseWage ?? 0)}
                   </span>
                 </li>
               ))}
@@ -1112,6 +1117,33 @@ function monthGroups(lines: WorkerWageDetailLine[]) {
   return Array.from(map.values());
 }
 
+type WageWorker = {
+  name: string;
+  count: number;
+  sum: number;
+  multiplier: number;
+  wage: number;
+};
+
+function withEmployerBase(
+  workers: WageWorker[],
+  sourceName: string,
+  baseByWorker: Map<string, number> | undefined,
+): (WageWorker & { baseWage: number })[] {
+  const book = baseByWorker ?? new Map<string, number>();
+  const next = workers.map((worker) => {
+    const baseWage = employerBaseForWorker({ byWorkerSource: book }, worker.name, sourceName);
+    return { ...worker, wage: worker.wage + baseWage, baseWage };
+  });
+  const seen = new Set(next.map((worker) => canonicalAgentName(worker.name) || worker.name));
+  for (const [key, amount] of book) {
+    const [workerName, source] = key.split("\n");
+    if (source !== sourceName || !amount || !workerName || seen.has(workerName)) continue;
+    next.push({ name: workerName, count: 0, sum: 0, multiplier: 0, wage: amount, baseWage: amount });
+  }
+  return next.sort((a, b) => b.wage - a.wage || b.sum - a.sum);
+}
+
 function WorkersTable({
   workers,
   productions,
@@ -1121,7 +1153,7 @@ function WorkersTable({
   wageContextRows,
   defaultMultiplier,
 }: {
-  workers: { name: string; count: number; sum: number; multiplier: number; wage: number }[];
+  workers: (WageWorker & { baseWage: number })[];
   productions: MarketingProduction[];
   rates: AgentRate[];
   payProfiles: EmployeePayProfile[];
@@ -1143,12 +1175,12 @@ function WorkersTable({
     return <p className="text-sm text-muted-foreground">אין עובדים עם הפקות פעילות בטווח הזה.</p>;
   }
   const premiumTotal = workers.reduce((sum, row) => sum + row.sum, 0);
-  const wageTotal = workers.reduce((sum, row) => sum + row.wage, 0);
   const countTotal = workers.reduce((sum, row) => sum + row.count, 0);
   if (selected) {
     return (
       <WageFormulaPanel
         breakdown={selected}
+        baseWage={selectedName ? workers.find((row) => row.name === selectedName)?.baseWage ?? 0 : 0}
         blendedMultiplier={
           selectedName ? workers.find((row) => row.name === selectedName)?.multiplier ?? 0 : 0
         }
@@ -1165,7 +1197,8 @@ function WorkersTable({
             <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">עובד</th>
             <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">סגירות</th>
             <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">פרמיה</th>
-            <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">שכר בקמפיין</th>
+            <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">שכר מדרגות</th>
+            <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">שכר שעתי</th>
           </tr>
         </thead>
         <tbody>
@@ -1178,6 +1211,9 @@ function WorkersTable({
               <td className="px-2 py-3 tabular-nums">
                 <span dir="ltr" className="inline-block">{ils(worker.sum)}</span>
               </td>
+              <td className="px-2 py-3 tabular-nums">
+                <span dir="ltr" className="inline-block">{ils(worker.wage - worker.baseWage)}</span>
+              </td>
               <td className="px-2 py-3">
                 <button
                   type="button"
@@ -1185,7 +1221,7 @@ function WorkersTable({
                   className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-black/[0.12] bg-white px-3 py-2 text-start active:scale-95 hover:border-black/40 hover:bg-black/[0.03] sm:min-h-0 sm:rounded-lg sm:px-2.5 sm:py-1.5"
                 >
                   <span dir="ltr" className="font-semibold tabular-nums">
-                    {ils(worker.wage)}
+                    {ils(worker.baseWage)}
                   </span>
                   <span className="text-[11px] font-medium text-muted-foreground">פירוט</span>
                   <ChevronLeft className="size-3.5 text-muted-foreground" />
@@ -1196,13 +1232,16 @@ function WorkersTable({
         </tbody>
         <tfoot>
           <tr className="border-t border-black/[0.12] text-sm font-semibold">
-            <td className="py-3">סה״כ שכר עובדים</td>
+            <td className="py-3">סה״כ</td>
             <td className="py-3 tabular-nums">{countTotal}</td>
             <td className="py-3 tabular-nums">
               <span dir="ltr" className="inline-block">{ils(premiumTotal)}</span>
             </td>
             <td className="py-3 tabular-nums">
-              <span dir="ltr" className="inline-block">{ils(wageTotal)}</span>
+              <span dir="ltr" className="inline-block">{ils(workers.reduce((sum, row) => sum + (row.wage - row.baseWage), 0))}</span>
+            </td>
+            <td className="py-3 tabular-nums">
+              <span dir="ltr" className="inline-block">{ils(workers.reduce((sum, row) => sum + row.baseWage, 0))}</span>
             </td>
           </tr>
         </tfoot>
@@ -1216,10 +1255,12 @@ function WorkersTable({
 
 function WageFormulaPanel({
   breakdown,
+  baseWage,
   blendedMultiplier,
   onBack,
 }: {
   breakdown: WorkerWageBreakdown;
+  baseWage: number;
   blendedMultiplier: number;
   onBack: () => void;
 }) {
@@ -1267,7 +1308,7 @@ function WageFormulaPanel({
       <div className="rounded-xl border border-black/[0.08] bg-muted/40 px-4 py-3">
         <p className="text-xs text-muted-foreground">שכר בקמפיין</p>
         <p dir="ltr" className="mt-1 text-2xl font-semibold tabular-nums">
-          {ils(breakdown.wageTotal)}
+          {ils(breakdown.wageTotal + baseWage)}
         </p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {breakdown.employmentKind === "salaried"
@@ -1353,10 +1394,16 @@ function WageFormulaPanel({
         </table>
       </div>
 
-      {breakdown.employmentKind === "salaried" ? (
-        <p className="text-xs text-muted-foreground">
-          שעות, נסיעות וימי חופש של שכיר לא מוקצים לקמפיין — כאן רק שכר מדרגות על ההפקות האלה. הפירוט המלא בכרטיס העובד.
-        </p>
+      {baseWage > 0 ? (
+        <div className="rounded-lg border border-black/[0.06] px-3 py-2.5 text-sm">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="font-medium">שכר בסיס וסוציאלי</p>
+            <p dir="ltr" className="font-semibold tabular-nums">{ils(baseWage)}</p>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            שעתי או גלובלי, נסיעות, חופשה, פנסיה, פיצויים וקרן השתלמות של המעסיק. החלק של המקור הזה לפי פרמיית החודש.
+          </p>
+        </div>
       ) : null}
     </div>
   );
@@ -1486,7 +1533,7 @@ const LINE_COPY: Record<CampaignLineKind, { title: string; hint: string }> = {
   },
   wage: {
     title: "שכר עובדים",
-    hint: "שכר לפי הסכם העובד. לחצו על «פירוט» ליד הסכום לנוסחה המדויקת.",
+    hint: "מדרגות על המכירה, ובשכיר גם שכר בסיס וסוציאלי לפי פרמיית החודש. לחצו על «פירוט» לנוסחה.",
   },
   marketing: {
     title: "שיווק והוצאות",
@@ -1511,6 +1558,7 @@ export function CampaignLineDialog({
   payProfiles = [],
   wageKind = "volume",
   wageContextRows,
+  employerBaseByWorker,
   insurerYearContext = [],
   defaultMultiplier,
   googleCampaigns,
@@ -1530,6 +1578,7 @@ export function CampaignLineDialog({
   payProfiles?: EmployeePayProfile[];
   wageKind?: SourcePnlKind;
   wageContextRows?: MarketingProduction[];
+  employerBaseByWorker?: Map<string, number>;
   insurerYearContext?: MarketingProduction[];
   defaultMultiplier: number;
   googleAds?: GoogleAdsConnection;
@@ -1556,12 +1605,16 @@ export function CampaignLineDialog({
   const adsTotal = marketing.adsTotal;
   const workers = useMemo(
     () =>
-      groupWorkers(productions, rates, defaultMultiplier, {
-        profiles: payProfiles,
-        kind: wageKind,
-        contextRows: wageContextRows ?? productions,
-      }),
-    [productions, rates, defaultMultiplier, payProfiles, wageKind, wageContextRows],
+      withEmployerBase(
+        groupWorkers(productions, rates, defaultMultiplier, {
+          profiles: payProfiles,
+          kind: wageKind,
+          contextRows: wageContextRows ?? productions,
+        }),
+        name,
+        employerBaseByWorker,
+      ),
+    [productions, rates, defaultMultiplier, payProfiles, wageKind, wageContextRows, name, employerBaseByWorker],
   );
   const wageTotal = workers.reduce((sum, row) => sum + row.wage, 0);
   const yearContext = insurerYearContext.length ? insurerYearContext : productions;

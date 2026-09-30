@@ -284,3 +284,112 @@ export async function listGoogleAdsDailyMetrics(
     };
   }).filter((row) => row.campaignId && /^\d{4}-\d{2}-\d{2}$/.test(row.day));
 }
+
+export type GoogleCallDetail = {
+  at: string;
+  day: string;
+  time: string;
+  durationSec: number;
+  status: string;
+  campaignName: string;
+  area: string;
+  kind: string;
+  place: string;
+};
+
+function nextIsoDay(ymd: string): string {
+  const [year, month, day] = ymd.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function callYearWindows(from: string, to: string): { from: string; to: string }[] {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to) return [];
+  const startYear = Number(from.slice(0, 4));
+  const endYear = Number(to.slice(0, 4));
+  const windows: { from: string; to: string }[] = [];
+  for (let year = startYear; year <= endYear; year += 1) {
+    windows.push({
+      from: year === startYear ? from : `${year}-01-01`,
+      to: year === endYear ? to : `${year}-12-31`,
+    });
+  }
+  return windows;
+}
+
+function callKindLabel(raw: string): string {
+  if (raw === "MANUALLY_DIALED") return "חיוג למספר";
+  if (raw === "HIGH_END_MOBILE_SEARCH") return "לחיצה על שיחה";
+  return "";
+}
+
+function callPlaceLabel(raw: string): string {
+  if (raw === "AD") return "מהמודעה";
+  if (raw === "LANDING_PAGE") return "מדף הנחיתה";
+  return "";
+}
+
+/** Each call Google returned: time and duration. Google does not send the full number. */
+export async function listGoogleCallDetails(
+  accessToken: string,
+  customerId: string,
+  loginCustomerId: string | null | undefined,
+  from: string,
+  to: string,
+): Promise<GoogleCallDetail[]> {
+  const seen = new Set<string>();
+  const details: GoogleCallDetail[] = [];
+  const batches = await Promise.all(
+    callYearWindows(from, to).map(async (window) => {
+      try {
+        return await searchGoogleAds(
+          accessToken,
+          customerId,
+          `SELECT
+            campaign.name,
+            call_view.start_call_date_time,
+            call_view.end_call_date_time,
+            call_view.call_duration_seconds,
+            call_view.call_status,
+            call_view.caller_area_code,
+            call_view.caller_country_code,
+            call_view.type,
+            call_view.call_tracking_display_location
+          FROM call_view
+          WHERE call_view.start_call_date_time >= '${window.from}' AND call_view.start_call_date_time < '${nextIsoDay(window.to)}'`,
+          loginCustomerId,
+        );
+      } catch {
+        return [];
+      }
+    }),
+  );
+  for (const rows of batches) {
+    for (const row of rows) {
+      const call = asRecord(row.callView);
+      const campaign = asRecord(row.campaign);
+      const raw = asString(call.startCallDateTime);
+      const day = raw.slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day < from || day > to) continue;
+      const key = asString(call.resourceName) || `${raw}|${asString(call.callDurationSeconds)}|${asString(campaign.name)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const country = asString(call.callerCountryCode);
+      const area = asString(call.callerAreaCode);
+      details.push({
+        at: raw,
+        day,
+        time: raw.length >= 16 ? raw.slice(11, 16) : "",
+        durationSec: Math.round(asNumber(call.callDurationSeconds)),
+        status: asString(call.callStatus) || "UNKNOWN",
+        campaignName: asString(campaign.name) || "קמפיין בגוגל",
+        area: [country, area].filter(Boolean).join(" "),
+        kind: callKindLabel(asString(call.type)),
+        place: callPlaceLabel(asString(call.callTrackingDisplayLocation)),
+      });
+    }
+  }
+  details.sort((a, b) => a.at.localeCompare(b.at));
+  return details;
+}

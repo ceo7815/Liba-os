@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bot,
+  Cable,
+  Calculator,
   ChevronDown,
   Contact,
   KeyRound,
@@ -12,14 +14,13 @@ import {
   BarChart3,
   TrendingUp,
   Users,
-  BookOpen,
   FileSpreadsheet,
   FileText,
   GraduationCap,
   Building2,
   LineChart,
+  Megaphone,
   PieChart,
-  Receipt,
   Wallet,
 } from "lucide-react";
 import { LogoBadge } from "@/components/brand/logo-badge";
@@ -41,7 +42,10 @@ import {
   canAccessSalesDashboard,
   SALES_BY_SOURCE_PATH,
   SALES_EXCEL_REPORT_PATH,
+  CAMPAIGNS_PATH,
 } from "@/lib/sales-dashboard/access";
+import { canViewFormulas, FORMULAS_PATH } from "@/lib/formulas/access";
+import { canViewInterfaces, INTERFACES_PATH } from "@/lib/interfaces/access";
 import {
   canManageUsers,
   canViewAgents,
@@ -80,6 +84,8 @@ export function Sidebar({ profile, className }: SidebarProps) {
   const showEmployees =
     canViewEmployees(profile) || canViewEmployeeAgreements(profile);
   const showUsers = canManageUsers(profile);
+  const showFormulas = canViewFormulas(profile);
+  const showInterfaces = canViewInterfaces(profile);
   const showPlGeneral = canAccessFinanceSection(profile, "finance.pl_general");
   const showSourcePnl = canAccessFinanceSection(profile, "finance.source_pnl");
   const showFixedExpenses = canAccessFinanceSection(
@@ -88,7 +94,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
   );
   const showInsurance = canAccessFinanceSection(profile, "finance.insurance");
   const showSettled = canAccessSettledCommissions(profile);
-  const showOrganization = showUsers || showVault;
+  const showOrganization = showUsers || showVault || showFormulas;
   const showAcademyLearn = canLearnAcademy(profile);
   const showAcademyTeam = canViewAcademyTeam(profile);
   const showAcademyManage = canManageAcademy(profile);
@@ -115,6 +121,8 @@ export function Sidebar({ profile, className }: SidebarProps) {
   const salesExcelActive =
     pathname === SALES_EXCEL_REPORT_PATH ||
     pathname.startsWith(`${SALES_EXCEL_REPORT_PATH}/`);
+  const campaignsActive =
+    pathname === CAMPAIGNS_PATH || pathname.startsWith(`${CAMPAIGNS_PATH}/`);
   const academyHomeActive = pathname === ACADEMY_PATH;
   const academyCatalogActive =
     pathname === ACADEMY_CATALOG_PATH || pathname.startsWith(`${ACADEMY_CATALOG_PATH}/`);
@@ -154,62 +162,63 @@ export function Sidebar({ profile, className }: SidebarProps) {
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 pb-4">
-        <NavSection title="סקירה">
+        <NavSection title="עבודה">
           <NavItem
             href="/dashboard"
             label="לוח בקרה"
             icon={LayoutDashboard}
             active={pathname === "/dashboard"}
           />
-        </NavSection>
-
-        {showSalesDashboard ? (
-          <NavSection title="מכירות">
+          {showSalesDashboard ? (
+            <>
+              <NavItem
+                href="/sales-dashboard"
+                label="לוח מכירות"
+                icon={TrendingUp}
+                active={salesTvActive}
+              />
+              <NavItem
+                href={SALES_BY_SOURCE_PATH}
+                label="פילוח מכירות"
+                icon={PieChart}
+                active={salesBySourceActive}
+              />
+            </>
+          ) : null}
+          {showSalesDashboard || showSourcePnl ? (
             <NavItem
-              href="/sales-dashboard"
-              label="דשבורד מכירות"
-              icon={TrendingUp}
-              active={salesTvActive}
+              href={CAMPAIGNS_PATH}
+              label="קמפיינים"
+              icon={Megaphone}
+              active={campaignsActive}
             />
-            <NavItem
-              href={SALES_BY_SOURCE_PATH}
-              label="מכירות לפי מקור"
-              icon={PieChart}
-              active={salesBySourceActive}
-            />
+          ) : null}
+          {showSalesDashboard ? (
             <NavItem
               href={SALES_EXCEL_REPORT_PATH}
-              label="דוח אקסל מכירות"
+              label="שורות מכירה"
               icon={FileSpreadsheet}
               active={salesExcelActive}
             />
-          </NavSection>
-        ) : null}
+          ) : null}
+        </NavSection>
 
         {showFinance ? (
-          <NavSection title="חשבונות">
+          <NavSection title="כספים">
             {showPlGeneral ? (
               <NavItem
                 href={GENERAL_PNL_PATH}
-                label="רווח והפסד כללי"
+                label="רווח והפסד"
                 icon={LineChart}
                 active={generalPnlActive}
               />
             ) : null}
-            {showSourcePnl ? (
+            {showSourcePnl || showSettled ? (
               <NavItem
-                href={SOURCE_PNL_PATH}
-                label="לפי מקור · היקף"
+                href={showSourcePnl ? SOURCE_PNL_PATH : SETTLED_COMMISSIONS_PATH}
+                label="רווח לפי מקור"
                 icon={BarChart3}
-                active={sourcePnlActive}
-              />
-            ) : null}
-            {showSettled ? (
-              <NavItem
-                href={SETTLED_COMMISSIONS_PATH}
-                label="לפי מקור · נפרעים"
-                icon={Receipt}
-                active={settledActive}
+                active={sourcePnlActive || settledActive}
               />
             ) : null}
             {showFixedExpenses ? (
@@ -223,7 +232,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
             {showInsurance ? (
               <NavItem
                 href={INSURANCE_AGREEMENTS_PATH}
-                label="הסכמים · חברות ביטוח"
+                label="הסכמי ביטוח"
                 icon={FileText}
                 active={insuranceAgreementsActive}
               />
@@ -231,46 +240,9 @@ export function Sidebar({ profile, className }: SidebarProps) {
           </NavSection>
         ) : null}
 
-        {showAcademy ? (
-          <NavSection title="הדרכה">
-            {showAcademyLearn ? (
-              <>
-                <NavItem
-                  href={ACADEMY_PATH}
-                  label="הדשבורד שלי"
-                  icon={GraduationCap}
-                  active={academyHomeActive || academyCourseActive}
-                />
-                <NavItem
-                  href={ACADEMY_CATALOG_PATH}
-                  label="קטלוג קורסים"
-                  icon={BookOpen}
-                  active={academyCatalogActive}
-                />
-              </>
-            ) : null}
-            {showAcademyTeam ? (
-              <NavItem
-                href={ACADEMY_TEAM_PATH}
-                label="התקדמות צוות"
-                icon={Users}
-                active={academyTeamActive}
-              />
-            ) : null}
-            {showAcademyManage ? (
-              <NavItem
-                href={ACADEMY_MANAGE_PATH}
-                label="ניהול תוכן"
-                icon={FileText}
-                active={academyManageActive}
-              />
-            ) : null}
-          </NavSection>
-        ) : null}
-
-        {showEmployees ? (
-          <NavSection title="עובדים">
-            {canViewEmployees(profile) || canViewEmployeeAgreements(profile) ? (
+        {showEmployees || showAcademy ? (
+          <NavSection title="אנשים">
+            {showEmployees ? (
               <>
                 <NavItem
                   href="/employees"
@@ -286,54 +258,79 @@ export function Sidebar({ profile, className }: SidebarProps) {
                 />
               </>
             ) : null}
+            {showAcademy ? (
+              <NavItem
+                href={
+                  showAcademyLearn
+                    ? ACADEMY_PATH
+                    : showAcademyTeam
+                      ? ACADEMY_TEAM_PATH
+                      : ACADEMY_MANAGE_PATH
+                }
+                label="הדרכה"
+                icon={GraduationCap}
+                active={
+                  academyHomeActive ||
+                  academyCatalogActive ||
+                  academyTeamActive ||
+                  academyManageActive ||
+                  academyCourseActive
+                }
+              />
+            ) : null}
           </NavSection>
         ) : null}
 
-        {showAgents ? (
-          <NavSection title="בינה מלאכותית">
-            <ExpandableNav
-              href="/agents"
-              label="סוכני AI"
-              icon={Bot}
-              sectionActive={agentsActive}
-              overviewActive={pathname === "/agents"}
-              open={openSection === "agents"}
-              onToggle={() => toggleSection("agents")}
-              toggleLabel={
-                openSection === "agents"
-                  ? "סגירת רשימת סוכנים"
-                  : "פתיחת רשימת סוכנים"
-              }
-            >
-              {agents.map((agent) => (
-                <SubNavItem
-                  key={agent.slug}
-                  href={agent.href}
-                  label={agent.name}
-                  active={
-                    pathname === agent.href ||
-                    pathname.startsWith(`${agent.href}/`)
-                  }
-                />
-              ))}
-            </ExpandableNav>
-          </NavSection>
-        ) : null}
-
-        {showOrganization ? (
-          <NavSection title="ארגון">
+        {showAgents || showOrganization ? (
+          <NavSection title="מערכת">
+            {showAgents ? (
+              <ExpandableNav
+                href="/agents"
+                label="סוכני AI"
+                icon={Bot}
+                sectionActive={agentsActive}
+                overviewActive={pathname === "/agents"}
+                open={openSection === "agents"}
+                onToggle={() => toggleSection("agents")}
+                toggleLabel={
+                  openSection === "agents"
+                    ? "סגירת רשימת סוכנים"
+                    : "פתיחת רשימת סוכנים"
+                }
+              >
+                {agents.map((agent) => (
+                  <SubNavItem
+                    key={agent.slug}
+                    href={agent.href}
+                    label={agent.name}
+                    active={
+                      pathname === agent.href ||
+                      pathname.startsWith(`${agent.href}/`)
+                    }
+                  />
+                ))}
+              </ExpandableNav>
+            ) : null}
             {showUsers ? (
               <NavItem
                 href="/dashboard/users"
-                label="ניהול משתמשים"
+                label="משתמשים"
                 icon={Users}
                 active={pathname.startsWith("/dashboard/users")}
+              />
+            ) : null}
+            {showFormulas ? (
+              <NavItem
+                href={FORMULAS_PATH}
+                label="נוסחאות חישוב"
+                icon={Calculator}
+                active={pathname.startsWith(FORMULAS_PATH)}
               />
             ) : null}
             {showVault ? (
               <NavItem
                 href="/vault"
-                label="כספת סיסמאות"
+                label="כספת"
                 icon={KeyRound}
                 active={vaultActive}
               />
@@ -341,6 +338,35 @@ export function Sidebar({ profile, className }: SidebarProps) {
           </NavSection>
         ) : null}
       </nav>
+
+      {showInterfaces ? (
+        <div className="px-3 pb-3">
+          <Link
+            href={INTERFACES_PATH}
+            prefetch
+            className={cn(
+              "block rounded-2xl border px-3.5 py-3 transition-colors",
+              pathname === INTERFACES_PATH || pathname.startsWith(`${INTERFACES_PATH}/`)
+                ? "border-emerald-300 bg-emerald-50"
+                : "border-emerald-200/80 bg-[#f4faf6] hover:border-emerald-300",
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold tracking-[0.14em] text-emerald-800/70">ממשקים</p>
+              <span className="flex items-center gap-1" aria-hidden>
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+              </span>
+            </div>
+            <span className="mt-1.5 flex items-center gap-2 text-[13px] font-medium text-foreground">
+              <Cable className="size-4 text-emerald-800" />
+              ממשקים מחוברים
+            </span>
+          </Link>
+        </div>
+      ) : null}
 
       <div className="border-t border-black/[0.06] px-5 py-4 text-center">
         <p className="text-[11px] font-semibold text-foreground">ליבה OS</p>

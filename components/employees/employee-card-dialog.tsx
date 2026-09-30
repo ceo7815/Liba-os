@@ -256,6 +256,7 @@ export function EmployeeCardDialog({
   );
 
   const live = useMemo(() => {
+    if (!open) return null;
     const totals = contractWageTotals(productions, {
       profiles: [profile],
       rates,
@@ -263,18 +264,17 @@ export function EmployeeCardDialog({
       leadCpl,
     });
     return wageTotalForEmployeeContract(emp.full_name, totals);
-  }, [defaultMultiplier, emp.full_name, leadCpl, productions, profile, rates]);
+  }, [defaultMultiplier, emp.full_name, leadCpl, open, productions, profile, rates]);
 
-  const review = useMemo(
-    () =>
-      buildEmployeeReview(emp.full_name, productions, {
-        profiles: [profile],
-        rates,
-        fallback: 0,
-        leadCpl,
-      }),
-    [defaultMultiplier, emp.full_name, leadCpl, productions, profile, rates],
-  );
+  const review = useMemo(() => {
+    if (!open) return null;
+    return buildEmployeeReview(emp.full_name, productions, {
+      profiles: [profile],
+      rates,
+      fallback: 0,
+      leadCpl,
+    });
+  }, [defaultMultiplier, emp.full_name, leadCpl, open, productions, profile, rates]);
 
   function patchAgreement(id: string, partial: Partial<EmployeeAgreement>) {
     setAgreements((current) =>
@@ -401,6 +401,8 @@ export function EmployeeCardDialog({
     : tab === "agreement" ? (pending ? "שומר הסכם…" : "שמירת הסכם")
     : tab === "hours" ? ""
     : "לעריכת הסכם";
+
+  if (!open || !live || !review) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -774,7 +776,7 @@ export function EmployeeCardDialog({
                     {kind === "unpaid"
                       ? "ללא שכר: הסגירות נכנסות לדוחות בלי הוצאת שכר — רווח ישיר לחברה."
                       : kind === "partnership"
-                        ? "שיתוף פעולה לפי מקור הפניה אורשן משכנתאות: תשלום לשותף = פרמיה × 4 על כל סגירה פעילה, כולל תאונות. הנפרעים נשארים בחברה. מוכר ליבה לא מקבל עמלה על השורות האלה."
+                        ? "שיתוף פעולה לפי מקור הפניה אורשן משכנתאות: תשלום לשותף = פרמיה × 4 על כל סגירה פעילה. תאונות אישיות לא נספרות. הנפרעים נשארים בחברה. מוכר ליבה לא מקבל עמלה על השורות האלה."
                       : kind === "salaried" && isSalaryOnly(contract?.salaryKind)
                         ? "רק משכורת חודשית. אין מדרגות, אין בונוסים, אין נסיעות ואין נפרעים."
                       : kind === "salaried" && usesMonthlySalary(contract?.salaryKind)
@@ -796,7 +798,6 @@ export function EmployeeCardDialog({
                     <dd className="mt-1 font-semibold tabular-nums">{formatIls(live.volumeWage)}</dd>
                     <dd className="text-[11px] text-muted-foreground">
                       {live.volumeCount} סגירות · פרמיה {formatIls(live.volumePremium)}
-                      {kind === "partnership" ? " · כולל תאונות אישיות" : ""}
                     </dd>
                   </div>
                   {kind === "salaried" || kind === "partnership" || (contract && isFreelancers3(contract)) ? null : (
@@ -2019,7 +2020,7 @@ function PartnershipFields() {
       <h3 className="text-sm font-semibold">שיתוף פעולה — לפי מקור, לא לפי מוכר</h3>
       <p className="text-[12px] leading-relaxed text-muted-foreground">
         הכרטיס יושב על מקור ההפניה «אורשן משכנתאות» (גם אם באקסל כתוב אושרן). על כל סגירה
-        פעילה מהמקור משלמים לשותף פרמיה × 4, כולל תאונות אישיות. אין נפרעים לשותף — הם
+        פעילה מהמקור משלמים לשותף פרמיה × 4. תאונות אישיות לא נספרות. אין נפרעים לשותף — הם
         נשארים בדוח החברה. מוכר ליבה לא מקבל היקף ולא נפרעים על אותה שורה.
       </p>
     </section>

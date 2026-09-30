@@ -6,7 +6,7 @@ import type { DatePreset } from "@/lib/sales-dashboard/campaign-math";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "דוח רווח והפסד כללי",
+  title: "רווח והפסד",
 };
 
 type PageProps = {

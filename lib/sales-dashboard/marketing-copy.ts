@@ -9,6 +9,7 @@ import {
   wageForPremium,
   type ProfitStatus,
 } from "@/lib/sales-dashboard/campaign-math";
+import { sourcePnlKindForProcess } from "@/lib/sales-dashboard/columns";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 import {
   PARTNERSHIP,
@@ -16,6 +17,7 @@ import {
   explainWageForProduction,
   formatTierRange,
   isPartnershipSource,
+  isPersonalAccidentProduct,
   productionDateOf,
   productionMonthKey,
   profileUsesPartnershipProductions,
@@ -152,6 +154,12 @@ export function groupWorkers(
     : null;
   for (const row of rows) {
     if (row.status !== "active") continue;
+    if (
+      sourcePnlKindForProcess(row.process ?? "") === "volume" &&
+      isPersonalAccidentProduct(row.product)
+    ) {
+      continue;
+    }
     const partnerRow = isPartnershipSource(row.source);
     const key = partnerRow ? PARTNERSHIP.canonicalSource : canonicalAgentName(row.agent);
     const display = partnerRow ? PARTNERSHIP.canonicalSource : key || row.agent;

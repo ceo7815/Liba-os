@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { excelAgentDisplay, excelAgentKey } from "@/lib/employees/excel-sellers";
 import { normalizeExcelText } from "@/lib/sales-dashboard/columns";
+import { excelCalendarIso } from "@/lib/sales-dashboard/excel-date";
 
 export type AttendanceDay = {
   date: string;
@@ -58,7 +59,7 @@ const HEBREW_MONTH_INDEX: Record<string, string> = {
 
 function cellText(value: unknown): string {
   if (value == null) return "";
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (value instanceof Date) return excelCalendarIso(value);
   return normalizeExcelText(String(value));
 }
 
@@ -147,9 +148,8 @@ export function parseAttendanceDays(value: unknown): AttendanceDay[] {
 
 export function parseMonthKey(value: unknown): string {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, "0");
-    return `${y}-${m}`;
+    const iso = excelCalendarIso(value);
+    return iso ? iso.slice(0, 7) : "";
   }
   if (typeof value === "number" && value > 20000 && value < 80000) {
     const parsed = XLSX.SSF.parse_date_code(value);
@@ -345,7 +345,7 @@ export function parseAttendanceHoursWorkbook(
   input: ArrayBuffer | Uint8Array | Buffer,
   fileName?: string | null,
 ): ParsedHoursLine[] {
-  const wb = XLSX.read(input, { type: "array", cellDates: true });
+  const wb = XLSX.read(input, { type: "array", cellDates: false });
   const fromFile = parseMonthKey(fileName ?? "");
   const totals = new Map<string, ParsedHoursLine>();
 

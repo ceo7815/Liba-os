@@ -212,7 +212,7 @@ function monthRanges(from: string, to: string): { from: string; to: string }[] {
   return out;
 }
 
-/** Website form lead — pixel Lead, else complete registration, else Ads Manager lead. */
+/** One website form. Meta repeats the same fill as pixel lead and onsite_web_lead. */
 export function facebookWebsiteLeadCount(actions: unknown): number {
   if (!Array.isArray(actions)) return 0;
   const byType = new Map<string, number>();
@@ -223,15 +223,18 @@ export function facebookWebsiteLeadCount(actions: unknown): number {
     if (!type || value <= 0) continue;
     byType.set(type, (byType.get(type) ?? 0) + value);
   }
-  let pixel = 0;
-  let complete = 0;
-  let generic = 0;
-  for (const [type, value] of byType) {
-    if (type.includes("fb_pixel_lead") || type === "onsite_web_lead") pixel += value;
-    else if (type.includes("complete_registration")) complete += value;
-    else if (type === "lead" || type === "onsite_conversion.lead_grouped") generic += value;
-  }
-  return pixel || complete || generic;
+  const total = (needle: string, mode: "exact" | "includes") => {
+    let sum = 0;
+    for (const [type, value] of byType) {
+      if (mode === "exact" ? type === needle : type.includes(needle)) sum += value;
+    }
+    return sum;
+  };
+  const pixel = total("fb_pixel_lead", "includes");
+  const onsite = total("onsite_web_lead", "exact");
+  const complete = total("complete_registration", "includes");
+  const generic = total("lead", "exact") + total("onsite_conversion.lead_grouped", "exact");
+  return pixel || onsite || complete || generic;
 }
 
 export async function listFacebookDailyMetrics(

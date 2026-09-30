@@ -184,13 +184,14 @@ export function profileUsesPartnershipProductions(
   return (profile.agreements ?? []).some((row) => row.employmentKind === "partnership");
 }
 
-/** סגירה פעילה מהמקור — כולל תאונות אישיות. בלי נפרעים. */
+/** סגירה פעילה מהמקור. בלי נפרעים ובלי תאונות אישיות. */
 export function countsForPartnershipVolume(
-  row: Pick<WageInputRow, "status" | "process" | "source" | "premium">,
+  row: Pick<WageInputRow, "status" | "process" | "source" | "premium" | "product">,
 ): boolean {
   if (row.status && row.status !== "active") return false;
   if (!(Number(row.premium) > 0)) return false;
   if (!isPartnershipSource(row.source)) return false;
+  if (isPersonalAccidentProduct(row.product)) return false;
   return sourcePnlKindForProcess(row.process ?? "") === "volume";
 }
 
@@ -1450,7 +1451,7 @@ function looksTravel(row: WageInputRow): boolean {
 }
 
 /**
- * פוליסות תאונות אישיות — אין עליהן שכר היקף לכל העובדים (עצמאים ושכירים).
+ * פוליסות תאונות אישיות — אין עליהן היקף בשום מקום: לא פרמיה, לא שכר, לא שותף.
  * נפרעים (מינוי סוכן) לא מושפעים.
  */
 export function isPersonalAccidentProduct(product: string | null | undefined): boolean {
@@ -1792,6 +1793,9 @@ export function explainWageForProduction(
     if (soloProfile && !soloPartner) {
       return { ...empty, reason: "partnership_source" };
     }
+    if (isPersonalAccidentProduct(row.product)) {
+      return { ...empty, reason: "personal_accident" };
+    }
     return {
       wage: Math.round(row.premium * PARTNERSHIP.volumeMultiplier),
       multiplier: PARTNERSHIP.volumeMultiplier,
@@ -2015,6 +2019,30 @@ export function contractWageTotals(
 ): ContractWageTotal[] {
   const context = options.contextRows ?? rows;
   const monthlyTotals = buildMonthlyAgentPremiumTotals(context);
+  const rowsByAgent = new Map<string, WageInputRow[]>();
+  const rowsByMonth = new Map<string, WageInputRow[]>();
+  const partnershipMonths = new Set<string>();
+  const hubMonths = new Set<string>();
+  for (const row of rows) {
+    const agent = excelAgentKey(row.agent);
+    if (agent && agent !== "—") {
+      const list = rowsByAgent.get(agent);
+      if (list) list.push(row);
+      else rowsByAgent.set(agent, [row]);
+    }
+    const month = productionMonthKey(row);
+    if (!month) continue;
+    const monthList = rowsByMonth.get(month);
+    if (monthList) monthList.push(row);
+    else rowsByMonth.set(month, [row]);
+    if (countsForPartnershipVolume(row)) partnershipMonths.add(month);
+    if (countsForFreelancers4Volume(row)) hubMonths.add(month);
+  }
+  const profileByKey = new Map<string, EmployeePayProfile>();
+  for (const profile of options.profiles) {
+    const key = excelAgentKey(profile.fullName);
+    if (key && !profileByKey.has(key)) profileByKey.set(key, profile);
+  }
   const map = new Map<
     string,
     {
@@ -2087,19 +2115,27 @@ export function contractWageTotals(
         settledPremium: 0,
         settledWage: 0,
       };
-      const profile = profileForAgent(agentName, options.profiles);
+      const profile = profileByKey.get(agentName) ?? null;
+      const ownRows = rowsByAgent.get(agentName) ?? [];
       const current = profile ? currentAgreement(profile.agreements ?? []) : null;
       const pensionWage = 0;
       const asOfMonth = jerusalemYmd().slice(0, 7);
       const costMonths = new Set<string>();
       let volumeWage = Math.round(item.volumeWage);
-      if (profile && (current?.employmentKind === "salaried" || profile.employmentKind === "salaried")) {
-        const months = new Set<string>();
-        for (const row of rows) {
-          if (!agentBelongsToEmployee(row.agent, profile.fullName)) continue;
+      const ownByMonth = () => {
+        const grouped = new Map<string, WageInputRow[]>();
+        for (const row of ownRows) {
           const month = productionMonthKey(row);
-          if (month) months.add(month);
+          if (!month) continue;
+          const list = grouped.get(month);
+          if (list) list.push(row);
+          else grouped.set(month, [row]);
         }
+        return grouped;
+      };
+      if (profile && (current?.employmentKind === "salaried" || profile.employmentKind === "salaried")) {
+        const monthsByOwn = ownByMonth();
+        const months = new Set<string>(monthsByOwn.keys());
         for (const month of Object.keys(profile.hoursByMonth ?? {})) months.add(month);
         for (const month of Object.keys(profile.vacationDaysByMonth ?? {})) months.add(month);
         for (const month of salariedMonthlyPayMonths(profile, jerusalemYmd().slice(0, 7))) {
@@ -2107,12 +2143,7 @@ export function contractWageTotals(
         }
         const salesByMonth: Record<string, number> = {};
         for (const month of months) {
-          const monthRows = rows.filter(
-            (row) =>
-              agentBelongsToEmployee(row.agent, profile.fullName) &&
-              productionMonthKey(row) === month,
-          );
-          salesByMonth[month] = wageForContractProductions(monthRows, {
+          salesByMonth[month] = wageForContractProductions(monthsByOwn.get(month) ?? [], {
             ...options,
             kind: "volume",
             profiles: [profile],
@@ -2134,17 +2165,11 @@ export function contractWageTotals(
       } else if (profile) {
         const hub = profileUsesHubProductions(profile);
         const partnership = profileUsesPartnershipProductions(profile);
-        const extraMonths = new Set<string>();
-        for (const row of rows) {
-          const match = partnership
-            ? countsForPartnershipVolume(row)
-            : hub
-              ? countsForFreelancers4Volume(row)
-              : agentBelongsToEmployee(row.agent, profile.fullName);
-          if (!match) continue;
-          const month = productionMonthKey(row);
-          if (month) extraMonths.add(month);
-        }
+        const extraMonths = partnership
+          ? partnershipMonths
+          : hub
+            ? hubMonths
+            : new Set(ownByMonth().keys());
         if (partnership) {
           volumeWage = 0;
           let partnerCount = 0;
@@ -2152,7 +2177,7 @@ export function contractWageTotals(
           for (const month of extraMonths) {
             const terms = termsForRow(profile, `${month}-01`);
             if (!terms || terms.employmentKind !== "partnership") continue;
-            const monthRows = rows.filter((row) => productionMonthKey(row) === month);
+            const monthRows = rowsByMonth.get(month) ?? [];
             const stats = partnershipVolumeStats(monthRows);
             partnerCount += stats.count;
             partnerPremium += stats.premium;
@@ -2174,7 +2199,7 @@ export function contractWageTotals(
             if (!terms || terms.employmentKind !== "freelancer" || !isFreelancers4(terms.contract)) {
               continue;
             }
-            const monthRows = rows.filter((row) => productionMonthKey(row) === month);
+            const monthRows = rowsByMonth.get(month) ?? [];
             const stats = hubVolumeStats(monthRows);
             hubCount += stats.count;
             hubPremium += stats.premium;
@@ -2196,7 +2221,11 @@ export function contractWageTotals(
           }
         }
         for (const month of Object.keys(profile.hoursByMonth ?? {})) costMonths.add(month);
-        for (const month of freelancers1PayMonthsThrough(profile, rows, asOfMonth)) {
+        for (const month of freelancers1PayMonthsThrough(
+          profile,
+          profileUsesHubProductions(profile) ? rows : ownRows,
+          asOfMonth,
+        )) {
           costMonths.add(month);
         }
         for (const agreement of profile.agreements ?? []) {
@@ -2221,7 +2250,6 @@ export function contractWageTotals(
           }
         }
       }
-      const f1Settled = profile ? freelancers1SettledLifetime(profile, rows) : null;
       const salariedNow =
         current?.employmentKind === "salaried" || profile?.employmentKind === "salaried";
       const partnershipNow =
@@ -2231,6 +2259,11 @@ export function contractWageTotals(
           !partnershipNow &&
           usesFreelancerSettledBook(current?.contract ?? profile?.contract),
       );
+      const scopedRows =
+        profile && profileUsesHubProductions(profile) ? rows : ownRows;
+      const f1Settled = profile && formula1
+        ? freelancers1SettledLifetime(profile, scopedRows)
+        : null;
       const settledWage =
         salariedNow || partnershipNow
           ? 0
@@ -2247,7 +2280,7 @@ export function contractWageTotals(
         }
       }
       const leadCharge = profile
-          ? freelancerLeadCosts(profile, rows, options.leadCpl)
+          ? freelancerLeadCosts(profile, scopedRows, options.leadCpl)
           : { total: 0, count: 0, byMonth: {} };
       return {
         agentName,
@@ -2442,7 +2475,7 @@ export function assertContractWagesDoNotMix(): void {
     agent: "ניב קובי",
     premium: 400,
     process: "מכירה",
-    product: "תאונות",
+    product: "בריאות",
     source: "אושרן משכנתאות",
     startDate: "2026-03-15",
   };
@@ -2483,7 +2516,7 @@ export function assertContractWagesDoNotMix(): void {
     kind: "volume",
   });
   if (sourcePnlPartner !== 1600) {
-    throw new Error(`expected source P&L 4×400 = 1600 including תאונות, got ${sourcePnlPartner}`);
+    throw new Error(`expected source P&L 4×400 = 1600, got ${sourcePnlPartner}`);
   }
   const partnerWage = wageForContractProductions([partnerClose], {
     profiles: [partnerProfile],
@@ -2525,6 +2558,25 @@ export function assertContractWagesDoNotMix(): void {
   if (sellerTotals.volumeWage !== 0 || sellerTotals.volumeCount !== 0) {
     throw new Error(
       `expected seller cube to skip Oshran source, got wage=${sellerTotals.volumeWage} count=${sellerTotals.volumeCount}`,
+    );
+  }
+  const partnerAccident = wageForContractProductions(
+    [{ ...partnerClose, product: "תאונות אישיות", premium: 900 }],
+    { profiles: [partnerProfile], rates: [], kind: "volume" },
+  );
+  if (partnerAccident !== 0) {
+    throw new Error(`expected no partnership volume on תאונות אישיות, got ${partnerAccident}`);
+  }
+  const partnerAccidentTotals = wageTotalForEmployeeContract(
+    "אושרן משכנתאות",
+    contractWageTotals([{ ...partnerClose, product: "תאונות אישיות", premium: 900 }], {
+      profiles: [partnerProfile],
+      rates: [],
+    }),
+  );
+  if (partnerAccidentTotals.volumePremium !== 0 || partnerAccidentTotals.volumeCount !== 0) {
+    throw new Error(
+      `expected partnership cube to skip תאונות אישיות, got premium=${partnerAccidentTotals.volumePremium} count=${partnerAccidentTotals.volumeCount}`,
     );
   }
 

@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import { BarChart3, ChevronDown, ChevronLeft, ChevronUp, Receipt, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { type GoogleAdsConnection } from "@/app/actions/google-ads";
@@ -60,7 +61,10 @@ import {
   productionDateOf,
   type EmployeePayProfile,
 } from "@/lib/employees/contract";
+import { allocateSalariedEmployerBase } from "@/lib/employees/source-wage";
+import { SETTLED_COMMISSIONS_PATH, SOURCE_PNL_PATH } from "@/lib/finance/access";
 import { insurerIncomeForProductions } from "@/lib/finance/insurer-income";
+import { productionStartDate } from "@/lib/sales-dashboard/report-slices";
 import {
   matchesSourcePnlKind,
   type SourcePnlKind,
@@ -380,7 +384,13 @@ const SOURCE_PNL_COPY: Record<
   },
 };
 
-export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
+export function SourcePnlScreen({
+  kind = "volume",
+  modes = { volume: true, settled: true },
+}: {
+  kind?: SourcePnlKind;
+  modes?: { volume: boolean; settled: boolean };
+}) {
   const { brand, shemeshEmployeeNames } = useOperatingBrand();
   const { dashboard: liveDashboard } = useLiveDashboard();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -766,6 +776,17 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
       );
     });
   }, [data?.marketing?.productions, range, brand, shemeshEmployeeNames]);
+  const employerBase = useMemo(
+    () =>
+      allocateSalariedEmployerBase({
+        profiles: payProfiles,
+        rows: data?.marketing?.productions ?? [],
+        range,
+        brand,
+        shemeshEmployeeNames,
+      }),
+    [payProfiles, data?.marketing?.productions, range, brand, shemeshEmployeeNames],
+  );
   const sourceNames = useMemo(() => {
     const names = new Set<string>();
     const productionNames = new Set<string>();
@@ -810,7 +831,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
   const dataSpan = useMemo(
     () =>
       spanOfIsoDates([
-        ...productions.map((row) => productionDateOf(row)),
+        ...productions.map((row) => productionStartDate(row)),
         ...(kind === "volume" ? expenses.map((row) => row.occurredAt) : []),
         ...(kind === "volume" ? googleStats.map((row) => row.day) : []),
         ...(kind === "volume" ? facebookStats.map((row) => row.day) : []),
@@ -855,7 +876,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
           const rows = productions.filter(
             (row) =>
               sourceMatchesCampaignName(row.source, name) &&
-              inDateRange(productionDateOf(row), range),
+              inDateRange(productionStartDate(row), range),
           );
           const includeManualAds =
             kind === "volume" &&
@@ -893,13 +914,15 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
             facebook.campaigns.length || (facebookCost > 0 ? 1 : 0),
           );
           const adsTotal = includeGoogleAds || includeManualAds ? marketing.adsTotal : 0;
-          const wageTotal = wageForContractProductions(active, {
+          const tierWage = wageForContractProductions(active, {
             profiles: payProfiles,
             rates,
             fallback: 0,
             kind,
             contextRows: wageContextRows,
           });
+          const baseWage = employerBase.bySource.get(name) ?? 0;
+          const wageTotal = tierWage + baseWage;
           const insurer = insurerIncomeForProductions(active, {
             yearContext: data?.marketing?.productions ?? productions,
           });
@@ -920,6 +943,8 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
             premium,
             adsTotal,
             wageTotal,
+            tierWage,
+            baseWage,
             income: pnl.income,
             expenseTotal: pnl.expenseTotal,
             net: pnl.net,
@@ -949,6 +974,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
       kind,
       brand,
       data,
+      employerBase,
     ],
   );
 
@@ -996,6 +1022,16 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
       ),
     [allCards],
   );
+  const orphanBase = useMemo(() => {
+    const shown = new Set(allCards.map((card) => card.name));
+    let amount = 0;
+    for (const [source, value] of employerBase.bySource) {
+      if (!shown.has(source)) amount += value;
+    }
+    return amount;
+  }, [allCards, employerBase]);
+  const wageTotal = totals.wageTotal + employerBase.unassignedTotal + orphanBase;
+  const netTotal = totals.net - employerBase.unassignedTotal - orphanBase;
 
   const highlightSources = useMemo(() => {
     const active = [...cubeBuckets.profit, ...cubeBuckets.loss];
@@ -1024,17 +1060,43 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
     <section className="mx-auto w-full max-w-[72rem] space-y-3.5 sm:space-y-6">
       <header className="dash-enter px-0.5 sm:px-0">
         <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
-          חשבונות ליבה · {copy.processLabel}
+          כספים · {copy.processLabel}
         </p>
         <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-2xl bg-highlight/35 sm:size-10">
                 <TitleIcon className="size-4 sm:size-5" />
               </span>
               <h1 className="text-[1.45rem] font-semibold leading-tight tracking-tight sm:text-3xl sm:leading-none">
-                {kind === "volume" ? "רווח והפסד לפי מקור" : copy.title}
+                רווח לפי מקור
               </h1>
+              {modes.volume && modes.settled ? (
+                <div className="flex items-center gap-1 rounded-full bg-[#f6f5f1] p-1" role="tablist" aria-label="היקף או נפרעים">
+                  <Link
+                    href={SOURCE_PNL_PATH}
+                    role="tab"
+                    aria-selected={kind === "volume"}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                      kind === "volume" ? "bg-[#1a1a1a] text-white" : "text-muted-foreground hover:bg-white",
+                    )}
+                  >
+                    היקף
+                  </Link>
+                  <Link
+                    href={SETTLED_COMMISSIONS_PATH}
+                    role="tab"
+                    aria-selected={kind === "settled"}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                      kind === "settled" ? "bg-[#1a1a1a] text-white" : "text-muted-foreground hover:bg-white",
+                    )}
+                  >
+                    נפרעים
+                  </Link>
+                </div>
+              ) : null}
             </div>
             <p className="mt-2 hidden max-w-2xl text-sm leading-relaxed text-muted-foreground sm:block">
               {copy.subtitleLead} פרמיה, הכנסה לפי חוזה, שכר ושיווק לפי מותג.
@@ -1207,7 +1269,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
           <SummaryStat label="הכנסה מחברות" value={formatIls(totals.income)} />
           <SummaryStat
             label="שכר"
-            value={financeReady ? formatIls(totals.wageTotal) : "טוען…"}
+            value={financeReady ? formatIls(wageTotal) : "טוען…"}
           />
           <SummaryStat
             label="שיווק"
@@ -1215,11 +1277,43 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
           />
           <SummaryStat
             label="רווח / הפסד"
-            value={financeReady ? formatIls(totals.net) : "טוען…"}
+            value={financeReady ? formatIls(netTotal) : "טוען…"}
             emphasize={
-              financeReady ? (totals.net >= 0 ? "profit" : "loss") : undefined
+              financeReady ? (netTotal >= 0 ? "profit" : "loss") : undefined
             }
           />
+        </div>
+      ) : null}
+
+      {financeReady && employerBase.unassignedTotal + orphanBase > 0 ? (
+        <div className="rounded-2xl border border-black/[0.06] bg-white px-4 py-3.5 sm:px-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-sm font-semibold">שכר שעתי בלי מקור</p>
+            <p className="text-sm font-semibold tabular-nums">{formatIls(employerBase.unassignedTotal + orphanBase)}</p>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            שכיר שלא מכר בחודש. השכר לא הודבק למקור, והוא כן נכנס לרווח למעלה.
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {orphanBase > 0 ? (
+              <li className="flex items-baseline justify-between gap-3">
+                <span>מקור שלא מוצג בקוביות</span>
+                <span className="tabular-nums">{formatIls(orphanBase)}</span>
+              </li>
+            ) : null}
+            {employerBase.unassigned.map((row) => (
+              <li key={row.name} className="flex items-baseline justify-between gap-3">
+                <span>
+                  {row.name}
+                  <span className="text-xs text-muted-foreground">
+                    {" "}
+                    · {row.months.map((month) => `${month.slice(5)}.${month.slice(0, 4)}`).join(", ")}
+                  </span>
+                </span>
+                <span className="tabular-nums">{formatIls(row.amount)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       ) : null}
 
@@ -1298,8 +1392,8 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
                 <li className="flex gap-2">
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-highlight" />
                   <span>
-                    שכר: {payProfiles.length} הסכמים פעילים · עמלת סגירות בקוביה
-                    (שכר חודשי גלובלי לא נכנס כאן)
+                    שכר: {payProfiles.length} הסכמים פעילים · מדרגות על המכירה, ושכר בסיס
+                    (שעתי או גלובלי, כולל הפרשות מעסיק) לפי פרמיית החודש. בלי מכירה — שכר בלי מקור.
                   </span>
                 </li>
                 <li className="flex gap-2">
@@ -1465,10 +1559,21 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
                     onOpen={() => setLineDetail({ name: card.name, kind: "income" })}
                   />
                   <CubeLine
-                    label="שכר עובדים"
+                    label="שכר מדרגות"
                     value={
                       financeReady ? (
-                        <Money value={card.wageTotal} minus className="font-medium tabular-nums" />
+                        <Money value={card.tierWage} minus className="font-medium tabular-nums" />
+                      ) : (
+                        <span className="font-medium text-muted-foreground">טוען…</span>
+                      )
+                    }
+                    onOpen={() => setLineDetail({ name: card.name, kind: "wage" })}
+                  />
+                  <CubeLine
+                    label="שכר שעתי"
+                    value={
+                      financeReady ? (
+                        <Money value={card.baseWage} minus className="font-medium tabular-nums" />
                       ) : (
                         <span className="font-medium text-muted-foreground">טוען…</span>
                       )
@@ -1570,6 +1675,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
         payProfiles={payProfiles}
         wageKind={kind}
         wageContextRows={wageContextRows}
+        employerBaseByWorker={employerBase.byWorkerSource}
         defaultMultiplier={defaultMultiplier}
         insurerYearContext={data?.marketing?.productions ?? []}
         googleAds={googleAds}
@@ -1596,6 +1702,7 @@ export function SourcePnlScreen({ kind = "volume" }: { kind?: SourcePnlKind }) {
         payProfiles={payProfiles}
         wageKind={kind}
         wageContextRows={wageContextRows}
+        employerBaseByWorker={employerBase.byWorkerSource}
         defaultMultiplier={defaultMultiplier}
         insurerYearContext={data?.marketing?.productions ?? []}
         googleAds={googleAds}

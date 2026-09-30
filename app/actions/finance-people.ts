@@ -191,7 +191,7 @@ export async function updateFinanceEmployee(input: {
       wait_circle: input.wait_circle?.trim() || null,
       dialer_type: input.dialer_type?.trim() || null,
       notes: input.notes?.trim() || null,
-      is_active: input.is_active ?? true,
+      ...(input.is_active === undefined ? {} : { is_active: input.is_active }),
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.id);
@@ -201,6 +201,28 @@ export async function updateFinanceEmployee(input: {
   revalidatePath("/employees/payroll");
   revalidatePath("/employees/agreements");
   return { error: null, id: input.id };
+}
+
+export async function setFinanceEmployeeActive(
+  id: string,
+  isActive: boolean,
+): Promise<FinanceMutationResult> {
+  await requireEmployeesAccess();
+  if (!id?.trim()) return { error: "חסר מזהה" };
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("finance_employees")
+    .update({
+      is_active: isActive,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/finance");
+  revalidatePath("/employees");
+  revalidatePath("/employees/payroll");
+  revalidatePath("/employees/agreements");
+  return { error: null, id };
 }
 
 export async function deleteFinanceEmployee(

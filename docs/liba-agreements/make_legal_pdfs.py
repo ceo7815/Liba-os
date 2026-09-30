@@ -58,9 +58,18 @@ def H(text: str, *, size=10.4, face="R", color=INK_HEX, align="start", lh=1.48) 
 
 
 class Deed:
-    def __init__(self, title: str, subtitle: str):
+    def __init__(
+        self,
+        title: str,
+        subtitle: str,
+        *,
+        show_valid_until: bool = True,
+        valid_until_field: str | None = None,
+    ):
         self.title = title
         self.subtitle = subtitle
+        self.show_valid_until = show_valid_until
+        self.valid_until_field = valid_until_field
         self.doc = pymupdf.open()
         self.page = None
         self.y = 0.0
@@ -75,7 +84,10 @@ class Deed:
     def new_page(self):
         self.page = self.doc.new_page(width=A4W, height=A4H)
         self._letterhead()
-        self.y = 126.0 if self.first else 70.0
+        if self.first and self.valid_until_field:
+            self.y = 136.0
+        else:
+            self.y = 126.0 if self.first else 70.0
         self.first = False
 
     def ensure(self, h: float):
@@ -94,19 +106,57 @@ class Deed:
             lw, lh = 148.0, 64.0
             x0 = (A4W - lw) / 2
             p.insert_image(pymupdf.Rect(x0, 14, x0 + lw, 14 + lh), filename=str(LOGO), keep_proportion=True)
-            p.insert_htmlbox(
-                pymupdf.Rect(ML, 78, MR, 112),
-                H("\u200fליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ", size=9.4, face="M", align="center", lh=1.2)
-                + H("\u200fח.פ. 517024733  ·  רישיון תאגידי 51024733  ·  תחום פנסיוני  ·  בתוקף עד 31/12/2026", size=7.3, color=MUTED_HEX, align="center", lh=1.25)
-                + H("\u200fחרושת 10, קריית ביאליק 2641417", size=7.3, color=MUTED_HEX, align="center", lh=1.2),
-                css=CSS,
-                archive=ARCH,
-            )
-            self._rules(114.0, thick=True)
+            if self.valid_until_field:
+                p.insert_htmlbox(
+                    pymupdf.Rect(ML, 76, MR, 104),
+                    H("\u200fליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ", size=9.4, face="M", align="center", lh=1.2)
+                    + H(
+                        "\u200fח.פ. 517024733  ·  רישיון תאגידי 517024733  ·  תחום פנסיוני",
+                        size=7.3,
+                        color=MUTED_HEX,
+                        align="center",
+                        lh=1.25,
+                    )
+                    + H("\u200fחרושת 10, קריית ביאליק 2641417", size=7.3, color=MUTED_HEX, align="center", lh=1.2),
+                    css=CSS,
+                    archive=ARCH,
+                )
+                lab = "בתוקף עד:"
+                lw = tw(lab, 8.2) + 8
+                p.insert_htmlbox(
+                    pymupdf.Rect(MR - lw, 106, MR, 120),
+                    H(lab, size=8.2, face="M", align="start", lh=1.1),
+                    css=CSS,
+                    archive=ARCH,
+                )
+                self.field(
+                    pymupdf.Rect(ML + 180, 106, MR - lw - 6, 120),
+                    name=self.valid_until_field,
+                    size=9,
+                    value="31/12/2026",
+                )
+                self._rules(124.0, thick=True)
+            else:
+                p.insert_htmlbox(
+                    pymupdf.Rect(ML, 78, MR, 112),
+                    H("\u200fליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ", size=9.4, face="M", align="center", lh=1.2)
+                    + H(
+                        "\u200fח.פ. 517024733  ·  רישיון תאגידי 517024733  ·  תחום פנסיוני"
+                        + ("  ·  בתוקף עד 31/12/2026" if self.show_valid_until else ""),
+                        size=7.3,
+                        color=MUTED_HEX,
+                        align="center",
+                        lh=1.25,
+                    )
+                    + H("\u200fחרושת 10, קריית ביאליק 2641417", size=7.3, color=MUTED_HEX, align="center", lh=1.2),
+                    css=CSS,
+                    archive=ARCH,
+                )
+                self._rules(114.0, thick=True)
         else:
             p.insert_htmlbox(
                 pymupdf.Rect(ML, 26, MR, 46),
-                H("\u200fליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ  ·  ח.פ. 517024733  ·  רישיון 51024733", size=7.6, face="M", align="center", lh=1.15),
+                H("\u200fליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ  ·  ח.פ. 517024733  ·  רישיון 517024733", size=7.6, face="M", align="center", lh=1.15),
                 css=CSS,
                 archive=ARCH,
             )
@@ -165,15 +215,16 @@ class Deed:
 
     def title_block(self):
         self.put(H(self.title, size=19, face="B", align="center", lh=1.15), gap=4)
-        self.put(H(self.subtitle, size=9.3, face="M", color=MUTED_HEX, align="center", lh=1.3), gap=6)
+        if (self.subtitle or "").strip():
+            self.put(H(self.subtitle, size=9.3, face="M", color=MUTED_HEX, align="center", lh=1.3), gap=6)
         mid = (ML + MR) / 2
         self.page.draw_line(pymupdf.Point(mid - 46, self.y), pymupdf.Point(mid + 46, self.y), color=YELLOW, width=1.3)
         self.page.draw_line(pymupdf.Point(mid + 28, self.y), pymupdf.Point(mid + 46, self.y), color=RED, width=1.3)
         self.y += 14
 
-    def article(self, text: str):
-        self.ensure(96)
-        self.y += 11
+    def article(self, text: str, *, reserve: float = 96, before: float = 11, after: float = 8):
+        self.ensure(reserve)
+        self.y += before
         h = 16.0
         self.page.draw_rect(
             pymupdf.Rect(MR - 2.4, self.y + 1, MR, self.y + h - 1),
@@ -190,10 +241,10 @@ class Deed:
         yline = self.y + h + 2
         self.page.draw_line(pymupdf.Point(ML, yline), pymupdf.Point(MR, yline), color=INK, width=0.4)
         self.page.draw_line(pymupdf.Point(MR - 70, yline), pymupdf.Point(MR, yline), color=YELLOW, width=1.35)
-        self.y = yline + 8
+        self.y = yline + after
 
-    def p(self, text: str, *, size=10.25, face="R", gap=5.5, bold=False):
-        self.put(H(text, size=size, face="B" if bold else face, align="justify", lh=1.52), gap=gap)
+    def p(self, text: str, *, size=10.25, face="R", gap=5.5, bold=False, lh=1.52):
+        self.put(H(text, size=size, face="B" if bold else face, align="justify", lh=lh), gap=gap)
 
     def center(self, text: str, *, size=10.5, face="M", gap=8.0):
         self.put(H(text, size=size, face=face, align="center", lh=1.4), gap=gap)
@@ -202,7 +253,16 @@ class Deed:
         self.n += 1
         return f"{prefix}{self.n:03d}"
 
-    def field(self, rect: pymupdf.Rect, *, multi=False, name: str | None = None):
+    def field(
+        self,
+        rect: pymupdf.Rect,
+        *,
+        multi=False,
+        name: str | None = None,
+        size=10,
+        value: str | None = None,
+        readonly: bool = False,
+    ):
         w = pymupdf.Widget()
         w.field_type = pymupdf.PDF_WIDGET_TYPE_TEXT
         w.field_name = name or self._fid()
@@ -224,7 +284,15 @@ class Deed:
         w.fill_color = (1, 1, 1)
         self.page.add_widget(w)
 
-    def line_field(self, label: str, *, extra=False, name: str | None = None):
+    def line_field(
+        self,
+        label: str,
+        *,
+        extra=False,
+        name: str | None = None,
+        value: str | None = None,
+        readonly: bool = False,
+    ):
         lab = label.rstrip(":").strip() + ":"
         size = 9.4
         label_w = tw(lab, size) + 10
@@ -238,7 +306,7 @@ class Deed:
             )
             yline = self.y + 28
             self.page.draw_line(pymupdf.Point(ML, yline), pymupdf.Point(MR, yline), color=INK, width=0.5)
-            self.field(pymupdf.Rect(ML, self.y + 14, MR, yline - 0.4), name=name)
+            self.field(pymupdf.Rect(ML, self.y + 14, MR, yline - 0.4), name=name, value=value, readonly=readonly)
             self.y = yline + 5
             return
         h = 18.0
@@ -252,7 +320,7 @@ class Deed:
         x1 = MR - label_w - 5
         yline = self.y + h - 4.5
         self.page.draw_line(pymupdf.Point(ML, yline), pymupdf.Point(x1, yline), color=INK, width=0.5)
-        self.field(pymupdf.Rect(ML, self.y + 2, x1, yline - 0.3), name=name)
+        self.field(pymupdf.Rect(ML, self.y + 2, x1, yline - 0.3), name=name, value=value, readonly=readonly)
         self.y += h
 
     def fields_row(self, labels: list[str], names: list[str] | None = None):
@@ -457,7 +525,7 @@ def build_hanmaka() -> Path:
 
     d.article("א. פרטי בעל הרישיון")
     d.p("שם התאגיד: ליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ", face="M")
-    d.p("ח.פ. 517024733  ·  רישיון תאגידי 51024733  ·  תחום פנסיוני  ·  בתוקף עד 31/12/2026")
+    d.p("ח.פ. 517024733  ·  רישיון תאגידי 517024733  ·  תחום פנסיוני  ·  בתוקף עד 31/12/2026")
     d.p("כתובת: חרושת 10, קריית ביאליק 2641417")
     d.line_field("שם בעל הרישיון היחיד שביצע את הבירור")
     d.line_field("מספר רישיון יחיד")
@@ -655,7 +723,7 @@ def build_withdrawal() -> Path:
     )
     d.title_block()
     meta(d)
-    d.p("נערך ונחתם בין ליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ, ח.פ. 517024733, רישיון תאגידי 51024733, מרחוב חרושת 10 קריית ביאליק (להלן: \"ליבה\" או \"הסוכנות\"), לבין הלקוח שפרטיו נקובים להלן (להלן: \"הלקוח\").")
+    d.p("נערך ונחתם בין ליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ, ח.פ. 517024733, רישיון תאגידי 517024733, מרחוב חרושת 10 קריית ביאליק (להלן: \"ליבה\" או \"הסוכנות\"), לבין הלקוח שפרטיו נקובים להלן (להלן: \"הלקוח\").")
     d.line_field("יום, חודש ושנת חתימה", name="agreement_date")
     d.line_field("שם הלקוח", name="client_name")
     d.line_field("מספר זהות", name="client_id")
@@ -872,7 +940,7 @@ def build_claims() -> Path:
     )
     d.title_block()
     meta(d)
-    d.p("נערך ונחתם בין ליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ, ח.פ. 517024733, רישיון 51024733, מרחוב חרושת 10 קריית ביאליק (להלן: \"ליבה\" או \"החברה\"), לבין הלקוח שפרטיו נקובים להלן (להלן: \"הלקוח\").")
+    d.p("נערך ונחתם בין ליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ, ח.פ. 517024733, רישיון 517024733, מרחוב חרושת 10 קריית ביאליק (להלן: \"ליבה\" או \"החברה\"), לבין הלקוח שפרטיו נקובים להלן (להלן: \"הלקוח\").")
     d.line_field("יום, חודש ושנת חתימה", name="agreement_date")
     d.line_field("שם הלקוח", name="client_name")
     d.line_field("מספר זהות", name="client_id")

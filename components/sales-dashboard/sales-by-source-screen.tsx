@@ -16,6 +16,7 @@ import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
 import { Money } from "@/components/marketing-dashboard/campaign-dialog";
+import { CompanyBreakdown, EmployeeBreakdown, useEmployeePayBundle } from "@/components/sales-dashboard/sales-breakdown-panels";
 import {
   Dialog,
   DialogContent,
@@ -67,7 +68,6 @@ import {
   isEmptySalesCube,
   isSaleProcess,
   namedSalesSource,
-  saleDateOf,
   salePipelineStage,
   SALES_BY_SOURCE_MARGIN_THRESHOLD,
   SALES_STATUS_LABEL,
@@ -101,6 +101,13 @@ const EMPTY_FACEBOOK: FacebookAdsConnection = {
 };
 
 type CubeViewTab = "all" | "green" | "red" | "gray" | "hidden";
+type SplitTab = "source" | "employee" | "company";
+
+const SPLIT_TABS: { id: SplitTab; label: string }[] = [
+  { id: "source", label: "לפי מקור" },
+  { id: "employee", label: "לפי עובד" },
+  { id: "company", label: "לפי חברה" },
+];
 
 const CUBE_VIEW_TABS: { id: CubeViewTab; label: string }[] = [
   { id: "all", label: "הכל" },
@@ -219,8 +226,9 @@ export function SalesBySourceScreen() {
   const { dashboard: liveDashboard, ready: liveReady } = useLiveDashboard();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "ok" | "error">("loading");
-  const [preset, setPreset] = useState<DatePreset>("ytd");
+  const [preset, setPreset] = useState<DatePreset>("month");
   const [custom, setCustom] = useState<DateRange>({ from: null, to: null });
+  const [split, setSplit] = useState<SplitTab>("source");
   const [cubeView, setCubeView] = useState<CubeViewTab>("all");
   const [selected, setSelected] = useState<string | null>(null);
   const [googleAds, setGoogleAds] = useState<GoogleAdsConnection>(EMPTY_GOOGLE);
@@ -245,9 +253,10 @@ export function SalesBySourceScreen() {
   >({});
   const [adsReady, setAdsReady] = useState(false);
   const [quietRefreshing, setQuietRefreshing] = useState(false);
-  const rangeRef = useRef(rangeForPreset("ytd", { from: null, to: null }));
+  const rangeRef = useRef(rangeForPreset("month", { from: null, to: null }));
 
   const range = useMemo(() => rangeForPreset(preset, custom), [preset, custom]);
+  const employeePay = useEmployeePayBundle();
   rangeRef.current = range;
 
   const applyAds = useCallback((bundle: CachedAdsBundle, persist = true) => {
@@ -393,20 +402,24 @@ export function SalesBySourceScreen() {
     };
   }, [data, liveReady]);
 
-  const productions = useMemo(() => {
+  const brandRows = useMemo(() => {
     const rows = data?.marketing?.productions ?? [];
-    return rows.filter((row) => {
-      if (!isSaleProcess(row.process)) return false;
-      return matchesOperatingBrand(
+    return rows.filter((row) =>
+      matchesOperatingBrand(
         assignOperatingBrand({
           agent: row.agent,
           source: row.source,
           shemeshEmployeeNames,
         }),
         brand,
-      );
-    });
+      ),
+    );
   }, [data?.marketing?.productions, brand, shemeshEmployeeNames]);
+
+  const productions = useMemo(
+    () => brandRows.filter((row) => isSaleProcess(row.process)),
+    [brandRows],
+  );
 
   const sourceNames = useMemo(() => {
     const names = new Set<string>();
@@ -557,7 +570,7 @@ export function SalesBySourceScreen() {
   const dataSpan = useMemo(
     () =>
       spanOfIsoDates([
-        ...productions.map((row) => saleDateOf(row)),
+        ...productions.map((row) => isoDay(row.transferDate)),
         ...googleStats.map((row) => row.day),
         ...facebookStats.map((row) => row.day),
       ]),
@@ -578,7 +591,7 @@ export function SalesBySourceScreen() {
     <section className="mx-auto w-full max-w-[72rem] space-y-3.5 sm:space-y-6">
       <header className="dash-enter px-0.5 sm:px-0">
         <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
-          מכירות · צנורת לפי מקור הפנייה
+          מכירות · פילוח
         </p>
         <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
@@ -587,15 +600,30 @@ export function SalesBySourceScreen() {
                 <PieChart className="size-4 sm:size-5" />
               </span>
               <h1 className="text-[1.45rem] font-semibold leading-tight tracking-tight sm:text-3xl sm:leading-none">
-                מכירות לפי מקור
+                פילוח מכירות
               </h1>
             </div>
+            <div className="mt-3 flex gap-1 rounded-full bg-[#f6f5f1] p-1">
+              {SPLIT_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSplit(tab.id)}
+                  className={cn(
+                    "h-8 rounded-full px-3 text-xs font-semibold",
+                    split === tab.id ? "bg-highlight text-[#1a1a1a]" : "text-muted-foreground",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
             <p className="mt-2 hidden max-w-2xl text-sm leading-relaxed text-muted-foreground sm:block">
-              כמה פרמיה נמכרה מול הוצאות השיווק של כל מקור — גם לפני שהופקה.
-              האחוז = פרמיה ÷ שיווק. מתחת ל־50% הפסד באדום, מעל 50% ירוק.
-            </p>
-            <p className="mt-1.5 text-[12px] leading-snug text-muted-foreground sm:hidden">
-              פרמיה ÷ שיווק · מתחת ל־50% הפסד
+              {split === "employee"
+                ? "לכל עובד: השכר לפי ההסכם. המכירות לפי תאריך העברה ליצרן."
+                : split === "company"
+                  ? "לכל חברה: הפרמיה בטווח, והתשלום שמגיע ממנה לפי החוזה."
+                  : "כמה פרמיה נמכרה מול הוצאות השיווק של כל מקור — גם לפני שהופקה. האחוז = פרמיה ÷ שיווק. מתחת ל־50% הפסד באדום, מעל 50% ירוק."}
             </p>
           </div>
           <LastSyncPanel
@@ -729,6 +757,18 @@ export function SalesBySourceScreen() {
         </div>
       </div>
 
+      {split === "employee" ? (
+        <EmployeeBreakdown
+          productions={brandRows}
+          range={range}
+          brand={brand}
+          shemeshEmployeeNames={shemeshEmployeeNames}
+          pay={employeePay}
+        />
+      ) : split === "company" ? (
+        <CompanyBreakdown productions={brandRows} range={range} />
+      ) : (
+      <>
       {allCards.length > 0 ? (
         <div
           className="dash-enter grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-7"
@@ -860,6 +900,8 @@ export function SalesBySourceScreen() {
           if (!open) setSelected(null);
         }}
       />
+      </>
+      )}
     </section>
   );
 }
@@ -997,15 +1039,14 @@ function SalesSourceDialog({
               <h3 className="text-sm font-semibold tracking-tight">איך הקוביה מחושבת</h3>
               <ul className="mt-2 space-y-1.5 text-[13px] leading-relaxed text-muted-foreground">
                 <li>
-                  רק סוג תהליך «מכירה». פרמיה ממתינה = עוד לא הופקה (בתהליך
-                  הפקה, חוסרים, חיתום). פרמיה שהופקה = מכירה שנשלמה (פעילה). לא
-                  מחברים מינוי.
+                  רק סוג תהליך «מכירה», בכל סטטוס. מינוי לא נכנס. פרמיה ממתינה = עוד לא הופקה. פרמיה שהופקה = סטטוס פעילה. נגנז ובוטל נשארים בתוך המכירות.
                 </li>
-                <li>תאריך: העברה ליצרן. אם אין העברה, תחילת ביטוח.</li>
+                <li>תאריך: העברה ליצרן בלבד. שורה בלי תאריך העברה לא נכנסת לחודש.</li>
                 <li>
                   פרמיה {formatIls(card.countedPremium)} = עוד לא הופקה{" "}
-                  {formatIls(card.pendingPremium)} ({card.pendingCount}) + נשלמה{" "}
-                  {formatIls(card.activatedPremium)} ({card.activatedCount}). כל
+                  {formatIls(card.pendingPremium)} ({card.pendingCount}) + פעילה{" "}
+                  {formatIls(card.activatedPremium)} ({card.activatedCount}) + נגנז או בוטל{" "}
+                  {formatIls(card.leakedPremium)} ({card.leakedCount}). כל
                   שורה פעם אחת.
                 </li>
                 <li>
@@ -1126,14 +1167,14 @@ function PipelineRow({ row }: { row: MarketingProduction }) {
   const when = formatSaleDateHe(row);
   const dateHint =
     when.kind === "start" ? "תחילת ביטוח" : when.kind === "transfer" ? "העברה ליצרן" : "";
+  const rawStatus = row.statusRaw && row.statusRaw !== "—" ? row.statusRaw : "";
   const chip =
-    stage === "active"
+    rawStatus ||
+    (stage === "active"
       ? SALES_STATUS_LABEL.active
       : stage === "cancelled"
         ? SALES_STATUS_LABEL.cancelled
-        : row.statusRaw && row.statusRaw !== "—"
-          ? row.statusRaw
-          : SALES_STATUS_LABEL.pending;
+        : SALES_STATUS_LABEL.pending);
   return (
     <li className="flex flex-col gap-1 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
       <div className="min-w-0">
