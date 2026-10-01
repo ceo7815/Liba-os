@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SalesExcelReportScreen } from "@/components/sales-dashboard/sales-excel-report-screen";
 import { requireSalesDashboardAccess } from "@/lib/auth";
@@ -14,5 +15,9 @@ export default async function SalesExcelReportPage() {
   await requireSalesDashboardAccess();
   const snapshot = await getSalesDashboardSnapshot().catch(() => null);
   const initial = await resolveSalesExcelWorkbook(snapshot).catch(() => null);
-  return <SalesExcelReportScreen initial={initial} />;
+  return (
+    <Suspense fallback={null}>
+      <SalesExcelReportScreen initial={initial} />
+    </Suspense>
+  );
 }

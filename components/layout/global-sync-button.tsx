@@ -6,18 +6,35 @@ import { toast } from "sonner";
 import { syncEmployeesFromExcel } from "@/app/actions/finance-people";
 import { syncFacebookAds } from "@/app/actions/facebook-ads";
 import { syncGoogleAds } from "@/app/actions/google-ads";
+import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { publishLiveDashboard } from "@/lib/sales-dashboard/client-snapshot";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
 import { cn } from "@/lib/utils";
 
 export const GLOBAL_SYNC_EVENT = "liba-global-sync-done";
 
-type SyncStep = "idle" | "excel" | "google" | "facebook";
-
 type StepStatus = "pending" | "active" | "done";
 
 const GOOGLE_SYNC_TIMEOUT_MS = 120_000;
 const FACEBOOK_SYNC_TIMEOUT_MS = 180_000;
+
+function formatSyncStamp(iso: string | null | undefined): string {
+  if (!iso) return "טרם סונכרן";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "טרם סונכרן";
+  const day = date.toLocaleDateString("he-IL", {
+    timeZone: "Asia/Jerusalem",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const time = date.toLocaleTimeString("he-IL", {
+    timeZone: "Asia/Jerusalem",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${day} · ${time}`;
+}
 
 function notifyGlobalSyncDone() {
   if (typeof window === "undefined") return;
@@ -43,8 +60,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }) {
+  const { dashboard } = useLiveDashboard();
   const [busy, setBusy] = useState(false);
-  const [step, setStep] = useState<SyncStep>("idle");
   const [excelStatus, setExcelStatus] = useState<StepStatus>("pending");
   const [googleStatus, setGoogleStatus] = useState<StepStatus>("pending");
   const [facebookStatus, setFacebookStatus] = useState<StepStatus>("pending");
@@ -52,7 +69,6 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
   const syncAll = useCallback(async () => {
     if (busy) return;
     setBusy(true);
-    setStep("excel");
     setExcelStatus("active");
     setGoogleStatus("pending");
     setFacebookStatus("pending");
@@ -82,7 +98,6 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
       }
 
       if (canSyncAds) {
-        setStep("google");
         setGoogleStatus("active");
         toast.message("מסנכרן גוגל אדס…");
         try {
@@ -101,7 +116,6 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
         }
         setGoogleStatus("done");
 
-        setStep("facebook");
         setFacebookStatus("active");
         toast.message("מסנכרן פייסבוק…");
         try {
@@ -133,20 +147,12 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
       setFacebookStatus((s) => (s === "active" || s === "pending" ? "done" : s));
       notifyGlobalSyncDone();
     } finally {
-      setStep("idle");
       setBusy(false);
     }
   }, [busy, canSyncAds]);
 
-  const label = !busy
-    ? "סנכרן הכל · אקסל · גוגל · פייסבוק"
-    : step === "excel"
-      ? "מסנכרן אקסל…"
-      : step === "google"
-        ? "מסנכרן גוגל אדס…"
-        : step === "facebook"
-          ? "מסנכרן פייסבוק…"
-          : "מסנכרן…";
+  const syncedStamp = formatSyncStamp(dashboard?.syncedAt);
+  const statusLine = `סנכרון אחרון · ${syncedStamp}`;
 
   return (
     <div className="relative flex items-center">
@@ -154,13 +160,17 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
         type="button"
         disabled={busy}
         onClick={() => void syncAll()}
-        className="inline-flex size-10 items-center justify-center rounded-xl bg-black text-white transition-transform active:scale-95 disabled:opacity-70 sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-full sm:px-3 sm:py-1.5"
-        aria-label="סנכרון מלא של המערכת"
+        aria-label={`סנכרון מערכת. ${statusLine}`}
+        className="inline-flex h-10 items-center gap-2 rounded-2xl border border-white/10 bg-black py-1 pe-3 ps-1 text-white shadow-[0_10px_24px_-16px_rgba(0,0,0,0.8)] transition-transform active:scale-[0.98] disabled:opacity-80 sm:h-11 sm:gap-2.5 sm:rounded-full sm:pe-4 sm:ps-1.5"
       >
-        <RefreshCw className={cn("size-4 shrink-0 sm:size-3.5", busy && "animate-spin")} />
-        <span className="hidden whitespace-nowrap text-xs font-semibold xl:inline">{label}</span>
-        <span className="hidden whitespace-nowrap text-xs font-semibold sm:inline xl:hidden">
-          {busy ? label.replace("מסנכרן ", "") : "סנכרן הכל"}
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight text-black sm:size-8 sm:rounded-full">
+          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+        </span>
+        <span className="flex min-w-0 flex-col items-start text-start leading-none">
+          <span className="text-[12px] font-semibold tracking-tight sm:text-[13px]">סנכרון מערכת</span>
+          <span className="mt-1 whitespace-nowrap text-[10px] font-medium text-white/60">
+            {statusLine}
+          </span>
         </span>
       </button>
 

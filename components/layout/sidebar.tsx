@@ -12,7 +12,6 @@ import {
   KeyRound,
   LayoutDashboard,
   BarChart3,
-  TrendingUp,
   Users,
   FileSpreadsheet,
   FileText,
@@ -114,7 +113,6 @@ export function Sidebar({ profile, className }: SidebarProps) {
   const payrollActive =
     pathname === EMPLOYEE_PAYROLL_PATH || pathname.startsWith(`${EMPLOYEE_PAYROLL_PATH}/`);
   const employeesActive = pathname === "/employees";
-  const salesTvActive = pathname === "/sales-dashboard";
   const salesBySourceActive =
     pathname === SALES_BY_SOURCE_PATH ||
     pathname.startsWith(`${SALES_BY_SOURCE_PATH}/`);
@@ -170,20 +168,12 @@ export function Sidebar({ profile, className }: SidebarProps) {
             active={pathname === "/dashboard"}
           />
           {showSalesDashboard ? (
-            <>
-              <NavItem
-                href="/sales-dashboard"
-                label="לוח מכירות"
-                icon={TrendingUp}
-                active={salesTvActive}
-              />
-              <NavItem
-                href={SALES_BY_SOURCE_PATH}
-                label="פילוח מכירות"
-                icon={PieChart}
-                active={salesBySourceActive}
-              />
-            </>
+            <NavItem
+              href={SALES_BY_SOURCE_PATH}
+              label="פילוח מכירות"
+              icon={PieChart}
+              active={salesBySourceActive}
+            />
           ) : null}
           {showSalesDashboard || showSourcePnl ? (
             <NavItem

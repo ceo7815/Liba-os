@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Database, Rows3, Search, X } from "lucide-react";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
@@ -96,12 +97,13 @@ async function fetchWorkbook(): Promise<SalesWorkbookPayload> {
 
 export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPayload | null }) {
   const { dashboard } = useLiveDashboard();
+  const urlQuery = useSearchParams().get("q") ?? "";
   const [remote, setRemote] = useState<SalesWorkbookPayload | null>(initial ?? null);
   const [loadState, setLoadState] = useState<"loading" | "ok" | "error">(
     initial?.sheets.length ? "ok" : "loading",
   );
   const [sheetIndex, setSheetIndex] = useState(0);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(urlQuery);
   const deferredQuery = useDeferredValue(query);
   const [sort, setSort] = useState<SortState>(null);
   const [filters, setFilters] = useState<Record<number, string[]>>({});
@@ -158,7 +160,15 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
 
   const sheet: WorkbookSheet | null = workbook.sheets[sheetIndex] ?? workbook.sheets[0] ?? null;
 
+  const skipSheetReset = useRef(true);
   useEffect(() => {
+    setQuery(urlQuery);
+  }, [urlQuery]);
+  useEffect(() => {
+    if (skipSheetReset.current) {
+      skipSheetReset.current = false;
+      return;
+    }
     setSort(null);
     setFilters({});
     setQuery("");
@@ -168,7 +178,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
     setDateTo("");
     setSelectedId(null);
     setPage(0);
-  }, [sheetIndex, sheet?.name]);
+  }, [sheetIndex]);
 
   const statusCol = sheet ? findHeaderIndex(sheet.headers, "סטאטוס", "סטטוס") : -1;
   const processCol = sheet ? findHeaderIndex(sheet.headers, "סוג תהליך", "תהליך") : -1;
