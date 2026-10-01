@@ -1,14 +1,6 @@
 import type { Metadata } from "next";
-import { Rubik } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
-
-const rubik = Rubik({
-  subsets: ["hebrew", "latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-rubik",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -25,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" dir="rtl">
-      <body className={`${rubik.variable} font-sans min-h-screen bg-background text-foreground`}>
+      <body className="font-sans min-h-screen bg-background text-foreground">
         {children}
         <Toaster dir="rtl" theme="light" position="top-center" />
       </body>
