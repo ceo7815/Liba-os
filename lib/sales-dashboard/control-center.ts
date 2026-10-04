@@ -44,9 +44,16 @@ export type ControlCenterSnapshot = {
   monthRows: number;
   /** Premium on every row dated this month. */
   monthPremium: number;
-  /** מכירה rows this calendar month, excluding cancellations. */
+  /** מכירות החודש לפי העברה, ועוד נגררות שהתחילו ב־1 לחודש. */
   salesCount: number;
   salesPremium: number;
+  /** תהליך מכירה, כל סטטוס, העברה ליצרן בחודש הנצפה. */
+  salesMonthCount: number;
+  salesMonthPremium: number;
+  /** תהליך מכירה שעדיין לא פעיל, וההעברה בשלושת החודשים שלפני החודש הנצפה. */
+  salesCarriedCount: number;
+  salesCarriedPremium: number;
+  salesCarriedRangeLabel: string;
   /** מינוי סוכן: process מינוי in the report, by transfer date. Sales excluded. */
   agentAppointmentCount: number;
   agentAppointmentPremium: number;
@@ -120,6 +127,8 @@ export type ControlCenterDetail = {
   subtitle: string;
   explanation: string;
   monthLabel: string;
+  /** Calendar month the detail was built for, when the slice is the viewed month. */
+  monthKey?: string;
   count: number;
   premium: number;
   premiumLabel: string;
@@ -256,6 +265,12 @@ function monthWindow(productions: MarketingProduction[], now: Date) {
   const carriedRows = upcomingRows.filter((row) =>
     carriedMonths.has(saleTransferDate(row).slice(0, 7)),
   );
+  const salesCarriedRows = productions.filter(
+    (row) =>
+      isReportSale(row) &&
+      row.status === "pending" &&
+      carriedMonths.has(saleTransferDate(row).slice(0, 7)),
+  );
   return {
     monthKey,
     rangeLabel: monthLabelHe(monthKey),
@@ -263,6 +278,7 @@ function monthWindow(productions: MarketingProduction[], now: Date) {
       (row) => inSaleTransferRange(row, range) || inProductionStartRange(row, range),
     ),
     salesRows,
+    salesCarriedRows,
     agentAppointmentRows,
     activeRows,
     upcomingDate,
@@ -373,8 +389,13 @@ export function buildControlCenterSnapshot(
     cancelled: window.cancelledRows.length,
     monthRows: window.inMonth.length,
     monthPremium: sumPremium(window.inMonth),
-    salesCount: window.salesRows.length,
-    salesPremium: sumPremium(window.salesRows),
+    salesMonthCount: window.salesRows.length,
+    salesMonthPremium: sumPremium(window.salesRows),
+    salesCarriedCount: window.salesCarriedRows.length,
+    salesCarriedPremium: sumPremium(window.salesCarriedRows),
+    salesCarriedRangeLabel: window.carriedRangeLabel,
+    salesCount: window.salesRows.length + window.salesCarriedRows.length,
+    salesPremium: sumPremium(window.salesRows) + sumPremium(window.salesCarriedRows),
     agentAppointmentCount: window.agentAppointmentRows.length,
     agentAppointmentPremium: sumPremium(window.agentAppointmentRows),
     agentAppointmentPremiumLabel: formatIls(sumPremium(window.agentAppointmentRows)),
@@ -529,16 +550,22 @@ export function buildControlCenterDetail(
         saleTransferDate,
       );
     case "monthSales":
-      return detailFromRows(
-        kind,
-        "מכירות ללא מינוי",
-        monthLabel,
-        "כל שורת תהליך מכירה, בכל סטטוס. מינוי לא נכנס. התאריך הוא תאריך העברה ליצרן.",
-        monthLabel,
-        window.salesRows,
-        saleLeaders,
-        saleTransferDate,
-      );
+      return {
+        ...detailFromRows(
+          kind,
+          "מכירות ללא מינוי",
+          monthLabel,
+          `מכירות החודש הן כל תהליך מכירה שהועבר ליצרן ב${monthLabel}, בכל סטטוס. נגררות הן תהליך מכירה שהועבר ליצרן ב${window.carriedRangeLabel} ועדיין לא עבר לסטטוס פעילה. מינוי, גניזה וביטול לא נכנסים לנגררות.`,
+          monthLabel,
+          [...window.salesRows, ...window.salesCarriedRows],
+          leadersFrom(
+            [...window.salesRows, ...window.salesCarriedRows],
+            (row) => excelAgentKey(row.agent) || "—",
+          ),
+          saleTransferDate,
+        ),
+        monthKey: window.monthKey,
+      };
     case "agentAppointment": {
       const slice = appointmentSlice(productions, now, appointmentPeriod);
       return detailFromRows(

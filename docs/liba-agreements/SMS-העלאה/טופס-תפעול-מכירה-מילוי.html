@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>טופס תפעול מכירה — ליבה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #111111;
+      --muted: #5a5a5a;
+      --line: #c4c4c4;
+      --yellow: #ffd400;
+      --red: #c41e3a;
+      --hair: #9e9e9e;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: #f3f3f1;
+      color: var(--ink);
+      font-family: Rubik, "Segoe UI", "Arial Hebrew", Tahoma, sans-serif;
+      direction: rtl;
+    }
+    .bar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 20px;
+      background: #111;
+      color: #fff;
+    }
+    .bar p { margin: 0; font-size: 14px; font-weight: 500; }
+    .bar button {
+      border: 0;
+      background: var(--yellow);
+      color: #111;
+      font: 700 15px Rubik, sans-serif;
+      padding: 10px 18px;
+      cursor: pointer;
+    }
+    main {
+      max-width: 980px;
+      margin: 18px auto 48px;
+      background: #fff;
+      padding: 28px 32px 40px;
+      box-shadow: 0 2px 18px rgba(0,0,0,.08);
+    }
+    .brand { text-align: center; margin-bottom: 18px; }
+    .brand h1 { margin: 0 0 6px; font-size: 28px; }
+    .brand h2 { margin: 0; font-size: 15px; font-weight: 500; color: var(--muted); }
+    .rule {
+      height: 4px;
+      background: linear-gradient(90deg, var(--red) 8%, var(--yellow) 8%);
+      margin: 14px 0 20px;
+    }
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 16px;
+      border-bottom: 2px solid #111;
+      padding-bottom: 4px;
+    }
+    .row { display: grid; gap: 12px; margin-bottom: 10px; }
+    .c2 { grid-template-columns: 1fr 1fr; }
+    .c3 { grid-template-columns: 1fr 1fr 1fr; }
+    .c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .c5 { grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
+    .fld label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      background: #fff;
+      color: var(--ink);
+      font: 700 16px/1.45 Rubik, "Segoe UI", "Arial Hebrew", Tahoma, sans-serif;
+      padding: 7px 8px;
+      direction: rtl;
+      text-align: right;
+      unicode-bidi: plaintext;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    input[type="text"]:focus, textarea:focus {
+      outline: 2px solid #111;
+      border-color: #111;
+    }
+    .flags { display: flex; flex-wrap: wrap; gap: 14px 22px; margin: 8px 0 12px; }
+    .chk {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .chk input { width: 15px; height: 15px; accent-color: #111; }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .card {
+      border: 1px solid #111;
+      margin: 14px 0;
+      break-inside: avoid;
+    }
+    .head {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr .9fr 1.2fr 1.2fr;
+      background: #111;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .head > div, .body > div { padding: 8px; }
+    .body {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr .9fr 1.2fr 1.2fr;
+      min-height: 220px;
+    }
+    .body > div { border-inline-start: 1px solid var(--hair); }
+    .body > div:first-child { border-inline-start: 0; }
+    .prods { display: flex; flex-direction: column; gap: 5px; }
+    .lines { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .line { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 6px; }
+    .line span { font-size: 12px; font-weight: 700; }
+    .cmp { display: flex; flex-direction: column; gap: 8px; }
+    .cmp-box { border: 1px solid var(--hair); padding: 6px; }
+    .cmp-box b { display: block; font-size: 12px; margin-bottom: 4px; }
+    .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sig {
+      border: 1px solid #111;
+      min-height: 110px;
+      padding: 10px;
+    }
+    .sig .top {
+      height: 4px;
+      margin: -10px -10px 8px;
+      background: linear-gradient(90deg, var(--red) 12%, var(--yellow) 12%);
+    }
+    .sig h4 { margin: 0 0 8px; text-align: center; font-size: 14px; }
+    @media print {
+      body { background: #fff; }
+      .bar { display: none; }
+      main { box-shadow: none; margin: 0; max-width: none; padding: 0; }
+      input, textarea { border-color: transparent; border-bottom: 1px solid #111; }
+      .card, .sig { break-inside: avoid; }
+    }
+    @page { size: A4; margin: 12mm; }
+    @media (max-width: 800px) {
+      .c2, .c3, .c4, .c5, .head, .body, .sig-grid { grid-template-columns: 1fr; }
+      .head { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <p>מילוי ב־Chrome — העברית נכתבת מימין לשמאל כמו בוורד. בסוף: הדפסה ← שמירה כ־PDF</p>
+    <button type="button" onclick="window.print()">הדפס / שמור כ-PDF</button>
+  </div>
+  <main>
+    <div class="brand">
+      <h1>טופס תפעול מכירה</h1>
+      <h2>סגירת עסקה והצהרת סוכן לפי חוזר צירוף לביטוח</h2>
+    </div>
+    <div class="rule"></div>
+
+    <h3>א. פרטי תיק ומנהל פנייה</h3>
+    <div class="row c2">
+      <div class="fld"><label>תאריך</label><input type="text" name="Date" /></div>
+      <div class="fld"><label>בעל רישיון יחיד</label><input type="text" name="license_holder" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>קוד הנחה</label><input type="text" name="DiscountCode" /></div>
+      <div class="fld"><label>הסכם הנחה</label><input type="text" name="DiscountAgreement" /></div>
+      <div class="fld"><label>תאריך תחילת ביטוח</label><input type="text" name="InsuranceBegin" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>מקור ליד</label><input type="text" name="LeadSource" /></div>
+      <div class="fld"><label>שם מנהל הפנייה</label><input type="text" name="ReferralManager" /></div>
+      <div class="fld"><label>מספר סוכן כללי</label><input type="text" name="AgentNumber" /></div>
+    </div>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="WaitingPeriodCancelYes" /><span>ביטול תקופת הכשרה</span></label>
+      <label class="chk"><input type="checkbox" name="WaitingPeriodCancelNo" /><span>ללא ביטול הכשרה</span></label>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>הראל</label><input type="text" name="AgentNoHarel" /></div>
+      <div class="fld"><label>הפניקס</label><input type="text" name="AgentNoPhoenix" /></div>
+      <div class="fld"><label>מגדל</label><input type="text" name="AgentNoMigdal" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>כלל</label><input type="text" name="AgentNoClal" /></div>
+      <div class="fld"><label>מנורה</label><input type="text" name="AgentNoMenora" /></div>
+      <div class="fld"><label>איילון</label><input type="text" name="AgentNoAyalon" /></div>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>חברה אחרת</label><input type="text" name="AgentNoOtherCo" /></div>
+      <div class="fld"><label>מספר סוכן אחר</label><input type="text" name="AgentNoOther" /></div>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>שם הסוכן</label><input type="text" name="AgentName" /></div>
+      <div class="fld"><label>שם הסוכנות</label><input type="text" name="AgencyName" /></div>
+    </div>
+
+    <h3>ב. מבוטח ראשי</h3>
+    <div class="row c2">
+      <div class="fld"><label>שם מלא</label><input type="text" name="FullName" /></div>
+      <div class="fld"><label>ת.ז.</label><input type="text" name="PID" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>תאריך לידה</label><input type="text" name="BithDate" /></div>
+      <div class="fld"><label>מין</label><input type="text" name="GenderText" /></div>
+      <div class="fld"><label>מצב משפחתי</label><input type="text" name="FamilyStatusText" /></div>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>טלפון</label><input type="text" name="CellPhoneNumber" /></div>
+      <div class="fld"><label>דוא״ל</label><input type="text" name="EmailAddress" /></div>
+    </div>
+    <div class="row"><div class="fld"><label>כתובת</label><input type="text" name="Address" /></div></div>
+    <div class="row c3">
+      <div class="fld"><label>עיסוק</label><input type="text" name="OccupationCode" /></div>
+      <div class="fld"><label>קופ״ח</label><input type="text" name="HMO" /></div>
+      <div class="fld"><label>שב״ן</label><input type="text" name="Shaban" /></div>
+    </div>
+    <div class="row c4">
+      <div class="fld"><label>גובה</label><input type="text" name="Hight" /></div>
+      <div class="fld"><label>משקל</label><input type="text" name="Weight" /></div>
+      <div class="fld"><label>עישון</label><input type="text" name="ClientSmokeNum" /></div>
+      <div class="fld"><label>תאריך הנפקת ת.ז.</label><input type="text" name="PIDIssueDate" /></div>
+    </div>
+
+    <h3>ג. מבוטח משני</h3>
+    <div class="row c2">
+      <div class="fld"><label>שם מלא</label><input type="text" name="FullNameSpouse" /></div>
+      <div class="fld"><label>ת.ז.</label><input type="text" name="PIDSpouse" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>תאריך לידה</label><input type="text" name="BirthDateSpouse" /></div>
+      <div class="fld"><label>מין</label><input type="text" name="GenderTextSpouse" /></div>
+      <div class="fld"><label>מצב משפחתי</label><input type="text" name="FamilyStatusSpouse" /></div>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>טלפון</label><input type="text" name="PhoneSpouse" /></div>
+      <div class="fld"><label>דוא״ל</label><input type="text" name="EmailSpouse" /></div>
+    </div>
+    <div class="row"><div class="fld"><label>כתובת</label><input type="text" name="AddressSpouse" /></div></div>
+    <div class="row c3">
+      <div class="fld"><label>עיסוק</label><input type="text" name="OccupationCodeSpouse" /></div>
+      <div class="fld"><label>קופ״ח</label><input type="text" name="HMOSpouse" /></div>
+      <div class="fld"><label>שב״ן</label><input type="text" name="ShabanSpouse" /></div>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>גובה</label><input type="text" name="HightSpouse" /></div>
+      <div class="fld"><label>משקל</label><input type="text" name="WeightSpouse" /></div>
+    </div>
+
+    <h3>ד. ילדים</h3>
+    <div id="children"></div>
+
+    <h3>ה. אמצעי תשלום</h3>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="PayStandingOrder" /><span>הוראת קבע</span></label>
+      <label class="chk"><input type="checkbox" name="PayCreditCard" /><span>כרטיס אשראי</span></label>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>בנק</label><input type="text" name="BankName" /></div>
+      <div class="fld"><label>סניף</label><input type="text" name="BankBranchCode" /></div>
+      <div class="fld"><label>מספר חשבון</label><input type="text" name="BankAccountNumber" /></div>
+    </div>
+    <fieldset style="border:1px solid #111;border-radius:12px;padding:12px 14px;margin:8px 0 14px">
+      <legend style="padding:0 6px;font-weight:700">כרטיס אשראי</legend>
+      <div class="row c2">
+        <div class="fld"><label>שם בעל הכרטיס</label><input type="text" name="FullNameCreditCardHolder" /></div>
+        <div class="fld"><label>ת.ז. בעל הכרטיס</label><input type="text" name="PIDCreditCardHolder" /></div>
+      </div>
+      <div class="row"><div class="fld"><label>מספר כרטיס</label><input type="text" name="CardNumber" /></div></div>
+      <div class="row c3">
+        <div class="fld"><label>תוקף חודש</label><input type="text" name="MonthDigit" /></div>
+        <div class="fld"><label>תוקף שנה</label><input type="text" name="YearDigit" /></div>
+        <div class="fld"><label>CVV</label><input type="text" name="CardCvv" /></div>
+      </div>
+    </fieldset>
+
+    <h3>ו. שעבוד</h3>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="PledgeYes" /><span>יש שעבוד</span></label>
+      <label class="chk"><input type="checkbox" name="PledgeNo" /><span>אין שעבוד</span></label>
+    </div>
+    <div class="row c4">
+      <div class="fld"><label>בנק</label><input type="text" name="PledgeBank" /></div>
+      <div class="fld"><label>סניף</label><input type="text" name="PledgeBranch" /></div>
+      <div class="fld"><label>מספר הלוואה</label><input type="text" name="PledgeLoan" /></div>
+      <div class="fld"><label>סכום משועבד ₪</label><input type="text" name="PledgeAmount" /></div>
+    </div>
+    <div class="fld"><label>מלל חופשי</label><textarea name="FreeText" rows="5"></textarea></div>
+
+    <h3>ז. פוליסות</h3>
+    <div id="policies"></div>
+    <h4>הנחה אחידה בריאות / מחלות</h4>
+    <div class="row c5">
+      <div class="fld"><label>בריאות — חברה</label><select name="HlthCo"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+      <div class="fld"><label>בריאות — לפני הנחה</label><input type="text" name="HlthBefore" /></div>
+      <div class="fld"><label>אחרי הנחה</label><input type="text" name="HlthAfter" /></div>
+      <div class="fld"><label>הנחה</label><input type="text" name="HlthDisc" /></div>
+      <div class="fld"><label>שנים בהנחה</label><input type="text" name="HlthYears" /></div>
+    </div>
+    <div class="row c5">
+      <div class="fld"><label>מחלות קשות 1 — חברה</label><select name="Ci1Co"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+      <div class="fld"><label>מחלות קשות 1 — לפני הנחה</label><input type="text" name="Ci1Before" /></div>
+      <div class="fld"><label>אחרי הנחה</label><input type="text" name="Ci1After" /></div>
+      <div class="fld"><label>הנחה</label><input type="text" name="Ci1Disc" /></div>
+      <div class="fld"><label>שנים בהנחה</label><input type="text" name="Ci1Years" /></div>
+    </div>
+    <div class="row c5">
+      <div class="fld"><label>מחלות קשות 2 — חברה</label><select name="Ci2Co"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+      <div class="fld"><label>מחלות קשות 2 — לפני הנחה</label><input type="text" name="Ci2Before" /></div>
+      <div class="fld"><label>אחרי הנחה</label><input type="text" name="Ci2After" /></div>
+      <div class="fld"><label>הנחה</label><input type="text" name="Ci2Disc" /></div>
+      <div class="fld"><label>שנים בהנחה</label><input type="text" name="Ci2Years" /></div>
+    </div>
+    <h4>הנחה מדורגת לפי שנה — ריסק / משכנתא</h4>
+    <div id="tiered-discounts"></div>
+    <div class="row"><div class="fld"><label>סה״כ פרמיה חודשית חדשה</label><input type="text" name="TotalNewMonthly" /></div></div>
+    <div class="row c3">
+      <div class="fld"><label>סה״כ קיים ₪</label><input type="text" name="TotalExisting" /></div>
+      <div class="fld"><label>סה״כ לפני הנחה ₪</label><input type="text" name="TotalBefore" /></div>
+      <div class="fld"><label>סה״כ אחרי הנחה ₪</label><input type="text" name="TotalAfter" /></div>
+    </div>
+    <div class="fld"><label>הערות</label><textarea name="OpenNotes"></textarea></div>
+
+    <h3>ח. הצהרת הסוכן</h3>
+    <p class="note">אני מאשר כי במסגרת הליך המכירה למוצרים המפורטים בטופס זה, עמדתי בכל הוראות חוזרי המפקח על הביטוח לעניין צירוף לביטוח ועריכת תכנית לביטוח, ובפרט ביררתי את צורכי המועמד/ת, הצעתי ביטוח ו/או הוספת כיסוי, הרחבה או כתב שירות לפוליסת ביטוח קיימת התואם לצרכיו/ה, ומסרתי לו/ה את כל המידע המהותי הנדרש וכן קיבלתי הסכמתו לרכישת הפוליסה.</p>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="RecReplace" /><span>ממליץ לעבור</span></label>
+      <label class="chk"><input type="checkbox" name="RecNew" /><span>צירוף חדש</span></label>
+      <label class="chk"><input type="checkbox" name="RecStay" /><span>להישאר בקיים</span></label>
+    </div>
+    <div class="fld"><label>נימוק</label><textarea name="RecNote"></textarea></div>
+
+    <h3>ט. חתימות</h3>
+    <div class="sig-grid" id="sigs"></div>
+  </main>
+  <script>
+    const tieredHost = document.getElementById("tiered-discounts");
+    if (tieredHost) {
+      const lines = [
+        ["Risk1", "ריסק 1"],
+        ["Risk2", "ריסק 2"],
+        ["Mort1", "משכנתא 1"],
+        ["Mort2", "משכנתא 2"],
+      ];
+      for (const [key, label] of lines) {
+        const years = Array.from({ length: 8 }, (_, i) =>
+          `<div class="fld"><label>שנה ${i + 1}</label><input type="text" name="${key}Y${i + 1}" /></div>`
+        ).join("");
+        tieredHost.insertAdjacentHTML("beforeend", `
+          <p style="margin:10px 0 4px;font-weight:700">${label}</p>
+          <div class="row c5">
+            <div class="fld"><label>חברה</label><select name="${key}Co"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+            <div class="fld"><label>לפני</label><input type="text" name="${key}Before" /></div>
+            <div class="fld"><label>אחרי</label><input type="text" name="${key}After" /></div>
+            ${years}
+          </div>`);
+      }
+    }
+    const PRODUCTS = [
+      ["health", "בריאות"],
+      ["ci", "מחלות קשות"],
+      ["health_ci", "בריאות + מחלות קשות"],
+      ["risk", "ריסק"],
+      ["pledged_risk", "ריסק משועבד"],
+      ["mortgage", "משכנתא"],
+      ["ltc", "סיעודי"],
+      ["pa", "תאונות אישיות"],
+      ["other", "אחר"],
+    ];
+    const COMPARE = [
+      ["prem", "פרמיה", "נמוכה יותר", "ללא הבדל", "אחר"],
+      ["scope", "כיסוי", "רחב יותר", "ללא הבדל", "אחר"],
+      ["sums", "סכומים", "גבוהים יותר", "ללא הבדל", "אחר"],
+      ["service", "שירות", "טובה יותר", "ללא הבדל", "אחר"],
+    ];
+
+    const kids = document.getElementById("children");
+    for (let i = 1; i <= 4; i++) {
+      kids.insertAdjacentHTML("beforeend", `
+        <h4 style="margin:16px 0 8px">ילד ${i}</h4>
+        <div class="row c4">
+          <div class="fld"><label>שם</label><input type="text" name="FullNameChild${i}" /></div>
+          <div class="fld"><label>ת.ז.</label><input type="text" name="PIDChild${i}" /></div>
+          <div class="fld"><label>תאריך לידה</label><input type="text" name="BirthDateChild${i}" /></div>
+          <div class="fld"><label>מין</label><input type="text" name="GenderChildText${i}" /></div>
+        </div>
+        <div class="row c5">
+          <div class="fld"><label>עיסוק</label><input type="text" name="OccupationChild${i}" /></div>
+          <div class="fld"><label>משקל</label><input type="text" name="WeightChild${i}" /></div>
+          <div class="fld"><label>גובה</label><input type="text" name="HightChild${i}" /></div>
+          <div class="fld"><label>שב״ן</label><input type="text" name="ShabanChild${i}" /></div>
+          <div class="fld"><label>קופ״ח</label><input type="text" name="HMOChild${i}" /></div>
+        </div>`);
+    }
+
+    const policies = document.getElementById("policies");
+    for (let n = 1; n <= 10; n++) {
+      const pfx = "p" + String(n).padStart(2, "0");
+      const prods = PRODUCTS.map(([k, lab]) =>
+        `<label class="chk"><input type="checkbox" name="${pfx}_prod_${k}" /><span>${lab}</span></label>`
+      ).join("");
+      const cmp = COMPARE.map(([k, topic, a, b, c]) => `
+        <div class="cmp-box">
+          <b>${topic}</b>
+          <div class="flags">
+            <label class="chk"><input type="checkbox" name="${pfx}_cmp_${k}_a" /><span>${a}</span></label>
+            <label class="chk"><input type="checkbox" name="${pfx}_cmp_${k}_b" /><span>${b}</span></label>
+            <label class="chk"><input type="checkbox" name="${pfx}_cmp_${k}_c" /><span>${c}</span></label>
+          </div>
+        </div>`).join("");
+      policies.insertAdjacentHTML("beforeend", `
+        <section class="card">
+          <div class="head">
+            <div>סוג מוצר</div><div>מצב קיים</div><div>מצב חדש</div><div>נימוקים להחלטה</div><div>השוואה</div>
+          </div>
+          <div class="body">
+            <div class="prods">${prods}</div>
+            <div>
+              <textarea name="${pfx}_existing" placeholder="מצב קיים"></textarea>
+              <div class="lines">
+                <div class="line"><span>מבוטחים:</span><input type="text" name="${pfx}_existing_insureds" /></div>
+                <div class="line"><span>עלות:</span><input type="text" name="${pfx}_existing_cost" /></div>
+                <div class="line"><span>כיסויים:</span><input type="text" name="${pfx}_existing_covers" /></div>
+              </div>
+            </div>
+            <div>
+              <textarea name="${pfx}_new" placeholder="מצב חדש"></textarea>
+              <div class="lines">
+                <div class="line"><span>מבוטחים:</span><input type="text" name="${pfx}_new_insureds" /></div>
+                <div class="line"><span>עלות:</span><input type="text" name="${pfx}_new_cost" /></div>
+                <div class="line"><span>כיסויים:</span><input type="text" name="${pfx}_new_covers" /></div>
+              </div>
+            </div>
+            <div><textarea name="${pfx}_reason" placeholder="נימוקים"></textarea></div>
+            <div class="cmp">
+              <div class="flags">
+                <label class="chk"><input type="checkbox" name="${pfx}_is_replace" /><span>החלפה</span></label>
+                <label class="chk"><input type="checkbox" name="${pfx}_is_new" /><span>צירוף חדש</span></label>
+              </div>
+              ${cmp}
+              <input type="text" name="${pfx}_cmp_note" placeholder="הערה" />
+            </div>
+          </div>
+        </section>`);
+    }
+
+    const sigs = [
+      ["בעל רישיון / סוכן מטעם ליבה", "agent"],
+      ["מבוטח ראשי", "client"],
+      ["מבוטח משני", "spouse"],
+      ["מעסיק", "employer"],
+      ["ילד מעל גיל 18", "child18_1"],
+      ["ילד מעל גיל 18", "child18_2"],
+      ["ילד מעל גיל 18", "child18_3"],
+      ["ילד מעל גיל 18", "child18_4"],
+    ];
+    document.getElementById("sigs").innerHTML = sigs.map(([t, s]) => `
+      <div class="sig">
+        <div class="top"></div>
+        <h4>${t}</h4>
+        <div class="fld"><label>חתימה</label><input type="text" name="sig_${s}" /></div>
+        <div class="fld"><label>תאריך</label><input type="text" name="sig_${s}_date" /></div>
+      </div>`).join("");
+  </script>
+</body>
+</html>

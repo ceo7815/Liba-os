@@ -232,9 +232,11 @@ export function ControlCenterScreen() {
             <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
               {formatIls(snap.salesPremium)}
             </p>
-            <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
-              <span>{snap.salesCount.toLocaleString("he-IL")} מכירות</span>
-              <ChevronLeft className="size-3.5 opacity-40 transition-transform group-hover:-translate-x-0.5" />
+            <p className="mt-2 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+              <span className="min-w-0 truncate">
+                {snap.salesCount.toLocaleString("he-IL")} מכירות · מהחודש {snap.salesMonthCount.toLocaleString("he-IL")} · נגררות {snap.salesCarriedCount.toLocaleString("he-IL")}
+              </span>
+              <ChevronLeft className="size-3.5 shrink-0 opacity-40 transition-transform group-hover:-translate-x-0.5" />
             </p>
           </button>
 
@@ -366,6 +368,21 @@ function shiftMonthKey(monthKey: string, delta: number): string {
   return `${nextYear}-${String(nextMonth).padStart(2, "0")}`;
 }
 
+function splitSalesRows(
+  rows: ControlCenterDetailRow[],
+  monthKey: string,
+): { monthRows: ControlCenterDetailRow[]; carriedRows: ControlCenterDetailRow[] } {
+  const carriedMonths = new Set([1, 2, 3].map((back) => shiftMonthKey(monthKey, -back)));
+  const carriedRows = rows.filter(
+    (row) => row.status === "pending" && carriedMonths.has(row.transferDate.slice(0, 7)),
+  );
+  const carriedKeys = new Set(carriedRows.map((row) => row.key));
+  return {
+    monthRows: rows.filter((row) => !carriedKeys.has(row.key)),
+    carriedRows,
+  };
+}
+
 function splitUpcomingRows(rows: ControlCenterDetailRow[]): {
   monthRows: ControlCenterDetailRow[];
   carriedRows: ControlCenterDetailRow[];
@@ -395,11 +412,16 @@ function ControlCenterDetailDialog({
   appointmentMonths: string[];
   onAppointmentPeriod: (period: AgentAppointmentPeriod) => void;
 }) {
-  const upcoming = detail?.kind === "upcoming" ? splitUpcomingRows(detail.rows) : null;
-  const sections = upcoming
+  const grouped =
+    detail?.kind === "upcoming"
+      ? splitUpcomingRows(detail.rows)
+      : detail?.kind === "monthSales" && detail.monthKey
+        ? splitSalesRows(detail.rows, detail.monthKey)
+        : null;
+  const sections = grouped
     ? [
-        { label: "מהחודש", rows: upcoming.monthRows },
-        { label: "נגררות", rows: upcoming.carriedRows },
+        { label: "מהחודש", rows: grouped.monthRows },
+        { label: "נגררות", rows: grouped.carriedRows },
       ]
     : [{ label: "", rows: detail?.rows ?? [] }];
 
@@ -480,18 +502,18 @@ function ControlCenterDetailDialog({
               <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
                 {detail.explanation}
               </p>
-              {upcoming ? (
+              {grouped ? (
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   {[
                     {
                       label: "מהחודש",
-                      count: upcoming.monthRows.length,
-                      premium: upcoming.monthRows.reduce((sum, row) => sum + row.premium, 0),
+                      count: grouped.monthRows.length,
+                      premium: grouped.monthRows.reduce((sum, row) => sum + row.premium, 0),
                     },
                     {
                       label: "נגררות",
-                      count: upcoming.carriedRows.length,
-                      premium: upcoming.carriedRows.reduce((sum, row) => sum + row.premium, 0),
+                      count: grouped.carriedRows.length,
+                      premium: grouped.carriedRows.reduce((sum, row) => sum + row.premium, 0),
                     },
                     {
                       label: "סה״כ",

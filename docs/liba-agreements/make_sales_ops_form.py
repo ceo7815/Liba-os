@@ -37,6 +37,7 @@ FORM_TTF = FONTS / "Rubik-Bold.ttf"
 
 N_CARDS = 10
 N_CHILDREN = 4
+INSURERS = ["הראל", "הפניקס", "מגדל", "כלל", "מנורה", "איילון", "אחר"]
 ROW_H = 160.0
 HEAD_H = 16.0
 LINE_H = 15.0
@@ -302,7 +303,7 @@ class OpsDeed(Deed):
             self.doc.xref_set_key(w.xref, "V", "/Yes")
             self.doc.xref_set_key(w.xref, "AS", "/Yes")
 
-    def combo(self, rect: pymupdf.Rect, name: str, choices: list[str], *, value: str = "סוג מוצר"):
+    def combo(self, rect: pymupdf.Rect, name: str, choices: list[str], *, value: str = "סוג מוצר", size: float = 11):
         try:
             self.page.insert_font(fontname=FORM_FONT, fontfile=str(FORM_TTF))
         except Exception:
@@ -314,11 +315,11 @@ class OpsDeed(Deed):
         w.rect = rect
         w.choice_values = [f"\u200f{c}" for c in items]
         w.field_value = f"\u200f{value}"
-        w.text_fontsize = 11
+        w.text_fontsize = size
         w.text_color = INK
         w.fill_color = (1, 1, 1)
         w.border_color = INK
-        w.border_width = 0.7
+        w.border_width = 0.4 if size < 10 else 0.7
         w.field_flags = 131072 | 4194304
         try:
             w.text_font = FORM_FONT
@@ -446,6 +447,147 @@ class OpsDeed(Deed):
                 self.y = row_y + h + 10
         if len(items) % 2:
             self.y = row_y + h + 10
+
+    def credit_card_box(self):
+        title_h = 20.0
+        self.ensure(title_h + 24.0 * 3 + 12)
+        top = self.y
+        self.page.draw_rect(pymupdf.Rect(ML, top, MR, top + 3.2), color=YELLOW, fill=YELLOW, width=0)
+        self.page.draw_rect(pymupdf.Rect(MR - 36, top, MR, top + 3.2), color=RED, fill=RED, width=0)
+        self.page.insert_htmlbox(
+            pymupdf.Rect(ML + 6, top + 5, MR - 6, top + title_h),
+            H("כרטיס אשראי", size=9.2, face="M", align="start", lh=1.15),
+            css=CSS,
+            archive=ARCH,
+        )
+        self.y = top + title_h
+        self.fields_row(
+            ["שם בעל הכרטיס", "ת.ז. בעל הכרטיס"],
+            names=["FullNameCreditCardHolder", "PIDCreditCardHolder"],
+        )
+        self.fields_row(["מספר כרטיס"], names=["CardNumber"])
+        self.fields_row(
+            ["תוקף חודש", "תוקף שנה", "CVV"],
+            names=["MonthDigit", "YearDigit", "CardCvv"],
+        )
+        self.page.draw_rect(pymupdf.Rect(ML, top, MR, self.y + 2), color=INK, width=0.7)
+        self.y += 8
+
+    def discount_rubrics(self):
+        self._band("מחירים והנחות")
+        self._price_table(
+            "הנחה אחידה בריאות / מחלות",
+            ["כיסוי", "לפני הנחה", "אחרי הנחה", "הנחה", "שנים בהנחה"],
+            [
+                ("בריאות", "HlthCo", ["HlthBefore", "HlthAfter", "HlthDisc", "HlthYears"]),
+                ("מחלות קשות", "Ci1Co", ["Ci1Before", "Ci1After", "Ci1Disc", "Ci1Years"]),
+                ("מחלות קשות", "Ci2Co", ["Ci2Before", "Ci2After", "Ci2Disc", "Ci2Years"]),
+            ],
+            label_w=128,
+        )
+        self._price_table(
+            "הנחה מדורגת לפי שנה ריסק / משכנתא",
+            ["כיסוי", "לפני", "אחרי", *[f"שנה {n}" for n in range(1, 9)]],
+            [
+                ("ריסק", "Risk1Co", ["Risk1Before", "Risk1After", *[f"Risk1Y{n}" for n in range(1, 9)]]),
+                ("ריסק", "Risk2Co", ["Risk2Before", "Risk2After", *[f"Risk2Y{n}" for n in range(1, 9)]]),
+                ("משכנתא", "Mort1Co", ["Mort1Before", "Mort1After", *[f"Mort1Y{n}" for n in range(1, 9)]]),
+                ("משכנתא", "Mort2Co", ["Mort2Before", "Mort2After", *[f"Mort2Y{n}" for n in range(1, 9)]]),
+            ],
+            label_w=112,
+        )
+        self._monthly_total()
+
+    def _band(self, text: str):
+        h = 16.0
+        self.ensure(h + 4)
+        y = self.y
+        self.page.draw_rect(pymupdf.Rect(ML, y, MR, y + h), color=INK, fill=INK, width=0)
+        self.page.insert_htmlbox(
+            pymupdf.Rect(ML + 6, y + 1, MR - 6, y + h - 1),
+            H(text, size=8.4, face="M", color="#ffffff", align="start", lh=1.1),
+            css=CSS,
+            archive=ARCH,
+        )
+        self.y = y + h + 5
+
+    def _price_table(
+        self,
+        title: str,
+        headers: list[str],
+        rows: list[tuple[str, str, list[str]]],
+        *,
+        label_w: float,
+    ):
+        title_h, head_h, row_h = 13.0, 13.0, 16.5
+        self.ensure(title_h + head_h + row_h * len(rows) + 6)
+        self.page.insert_htmlbox(
+            pymupdf.Rect(ML, self.y, MR, self.y + title_h),
+            H(title, size=8.0, face="M", align="start", lh=1.05),
+            css=CSS,
+            archive=ARCH,
+        )
+        y = self.y + title_h
+        n_fields = len(headers) - 1
+        col_w = (self.iw - label_w) / n_fields
+        xs: list[tuple[float, float]] = []
+        x = MR
+        xs.append((x - label_w, x))
+        x -= label_w
+        for _ in range(n_fields):
+            xs.append((x - col_w, x))
+            x -= col_w
+        for (x0, x1), lab in zip(xs, headers):
+            self.page.draw_rect(pymupdf.Rect(x0, y, x1, y + head_h), color=INK, fill=(0.94, 0.94, 0.94), width=0.3)
+            self.page.insert_htmlbox(
+                pymupdf.Rect(x0 + 1, y + 0.5, x1 - 1, y + head_h - 0.5),
+                H(lab, size=5.7, face="M", align="center", lh=1.0),
+                css=CSS,
+                archive=ARCH,
+            )
+        y += head_h
+        for label, company, names in rows:
+            x0, x1 = xs[0]
+            self.page.draw_rect(pymupdf.Rect(x0, y, x1, y + row_h), color=HAIR, width=0.3)
+            name_w = min(tw(label, 6.2) + 8, (x1 - x0) * 0.46)
+            self.page.insert_htmlbox(
+                pymupdf.Rect(x1 - name_w, y + 1, x1 - 2, y + row_h - 1),
+                H(label, size=6.2, face="M", align="start", lh=1.0),
+                css=CSS,
+                archive=ARCH,
+            )
+            self.combo(
+                pymupdf.Rect(x0 + 1.4, y + 1.6, x1 - name_w - 2, y + row_h - 1.6),
+                company,
+                INSURERS,
+                value="חברה",
+                size=7,
+            )
+            for i, name in enumerate(names):
+                fx0, fx1 = xs[i + 1]
+                self.page.draw_rect(pymupdf.Rect(fx0, y, fx1, y + row_h), color=HAIR, width=0.3)
+                self.field(pymupdf.Rect(fx0 + 1.2, y + 1.2, fx1 - 1.2, y + row_h - 1.2), name=name, size=7)
+            y += row_h
+        self.y = y + 6
+
+    def _monthly_total(self):
+        h = 18.0
+        self.ensure(h + 6)
+        y = self.y
+        self.page.draw_rect(pymupdf.Rect(ML, y, MR, y + h), color=INK, fill=INK, width=0)
+        label_w = 148.0
+        self.page.insert_htmlbox(
+            pymupdf.Rect(MR - label_w, y + 2, MR - 6, y + h - 1),
+            H("סה״כ פרמיה חודשית חדשה:", size=8.0, face="M", color="#ffffff", align="start", lh=1.05),
+            css=CSS,
+            archive=ARCH,
+        )
+        self.field(
+            pymupdf.Rect(ML + 4, y + 2.2, MR - label_w - 8, y + h - 2.2),
+            name="TotalNewMonthly",
+            size=9,
+        )
+        self.y = y + h + 8
 
     def policy_cols(self) -> list[tuple[float, float]]:
         usable = self.iw
@@ -819,8 +961,9 @@ def build() -> Path:
             ],
         )
 
-    d.article("ה. תשלום")
+    d.article("ה. אמצעי תשלום")
     d.flag([("הוראת קבע", "PayStandingOrder"), ("כרטיס אשראי", "PayCreditCard")])
+    d.credit_card_box()
     d.flag([("יש שעבוד", "PledgeYes"), ("אין שעבוד", "PledgeNo")])
     d.fields_row(
         ["בנק", "סניף", "מספר הלוואה", "סכום משועבד ₪"],
@@ -834,6 +977,7 @@ def build() -> Path:
     for n in range(1, N_CARDS + 1):
         d.policy_row(n)
 
+    d.discount_rubrics()
     d.fields_row(
         ["סה״כ קיים ₪", "סה״כ לפני הנחה ₪", "סה״כ אחרי הנחה ₪"],
         names=["TotalExisting", "TotalBefore", "TotalAfter"],
@@ -877,7 +1021,7 @@ def main():
     sms_dir = HERE / "SMS-העלאה"
     sms_dir.mkdir(parents=True, exist_ok=True)
     DOWNLOADS.mkdir(parents=True, exist_ok=True)
-    name = "מעודכן2309.pdf"
+    name = "טופס תפעול מכירה מעודכן 04.10.2026.pdf"
     for dest_dir in (sms_dir, DOWNLOADS):
         dest = dest_dir / name
         shutil.copy2(src, dest)
