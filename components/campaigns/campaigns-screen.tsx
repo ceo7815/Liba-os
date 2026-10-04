@@ -150,9 +150,13 @@ export function CampaignsScreen({ initial }: { initial: CampaignBoard }) {
 
   useEffect(() => {
     let cancel = false;
-    void loadGoogleCallLines(from, to).then((rows) => {
+    void loadGoogleCallLines(from, to).then((result) => {
       if (cancel) return;
-      setBoard((current) => ({ ...current, googleCalls: rows }));
+      setBoard((current) => ({
+        ...current,
+        googleCalls: result.error ? current.googleCalls : result.rows,
+        googleCallsError: result.error,
+      }));
     });
     return () => {
       cancel = true;
@@ -349,7 +353,9 @@ export function CampaignsScreen({ initial }: { initial: CampaignBoard }) {
         </p>
       ) : null}
 
-      {channel !== "facebook" ? <GoogleCallDays rows={googleCallRows} /> : null}
+      {channel !== "facebook" ? (
+        <GoogleCallDays rows={googleCallRows} error={board.googleCallsError} />
+      ) : null}
       {channel !== "google" ? (
         <DayTable
           title="פייסבוק לפי יום"
@@ -497,7 +503,7 @@ function Metric({ label, value, onClick }: { label: string; value: string; onCli
   );
 }
 
-function GoogleCallDays({ rows }: { rows: GoogleCallLine[] }) {
+function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string | null }) {
   const [day, setDay] = useState<string | null>(null);
   const groups = useMemo(() => {
     const map = new Map<string, GoogleCallLine[]>();
@@ -531,7 +537,9 @@ function GoogleCallDays({ rows }: { rows: GoogleCallLine[] }) {
         <p className="text-xs text-muted-foreground">
           {totalCount > 0
             ? `${totalCount.toLocaleString("he-IL")} שיחות בטווח. לחיצה על יום פותחת כל שיחה, ובסוף את הממוצע של אותו יום.`
-            : "גוגל לא החזירה שיחות בטווח הזה."}
+            : error
+              ? error
+              : "גוגל לא החזירה שיחות בטווח הזה."}
           {totalCount > 0 ? ` משך כולל ${durationWords(totalDuration)}.` : ""}
         </p>
       </header>

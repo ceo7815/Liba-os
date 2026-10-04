@@ -192,12 +192,13 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
   const historyFrom = historyStart(today);
   const monthFrom = `${today.slice(0, 7)}-01`;
   await refreshGoogleAdsWindow(monthFrom, today).catch(() => undefined);
-  const [google, facebook, calls, googleCalls] = await Promise.all([
+  const [google, facebook, calls, googleCallResult] = await Promise.all([
     readGoogleAdsBundle(),
     readFacebookAdsBundle(),
     loadCalls(historyFrom, today),
     readGoogleCallDetails(monthFrom, today),
   ]);
+  const googleCalls = googleCallResult.rows;
 
   const googlePoints = bucketPoints(
     google.stats.map((row) => ({
@@ -263,12 +264,20 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
     },
     calls,
     googleCalls,
+    googleCallsError: googleCallResult.error,
   };
 }
 
-export async function loadGoogleCallLines(from: string, to: string): Promise<CampaignBoard["googleCalls"]> {
+export async function loadGoogleCallLines(
+  from: string,
+  to: string,
+): Promise<{ rows: CampaignBoard["googleCalls"]; error: string | null }> {
   const profile = await requireProfile();
-  if (!canAccessSalesDashboard(profile) && !canAccessSourcePnl(profile)) return [];
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to) return [];
+  if (!canAccessSalesDashboard(profile) && !canAccessSourcePnl(profile)) {
+    return { rows: [], error: "אין הרשאה לקמפיינים" };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to) {
+    return { rows: [], error: null };
+  }
   return readGoogleCallDetails(from, to);
 }

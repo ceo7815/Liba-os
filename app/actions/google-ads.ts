@@ -519,20 +519,27 @@ export async function syncGoogleAds(): Promise<{
   }
 }
 
-export async function readGoogleCallDetails(from: string, to: string): Promise<GoogleCallDetail[]> {
+export async function readGoogleCallDetails(
+  from: string,
+  to: string,
+): Promise<{ rows: GoogleCallDetail[]; error: string | null }> {
   try {
     const bundle = await readGoogleAdsBundle();
-    if (!bundle.connection.connected || !bundle.connection.customerId) return [];
+    if (!bundle.connection.connected || !bundle.connection.customerId) {
+      return { rows: [], error: "גוגל אדס לא מחובר" };
+    }
     const refreshToken = await resolveRefreshToken();
     const accessToken = await refreshAccessToken(refreshToken);
-    return await listGoogleCallDetails(
+    const rows = await listGoogleCallDetails(
       accessToken,
       bundle.connection.customerId,
       bundle.connection.loginCustomerId,
       from,
       to,
     );
-  } catch {
-    return [];
+    return { rows, error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "גוגל לא החזיר את רשימת השיחות";
+    return { rows: [], error: message };
   }
 }

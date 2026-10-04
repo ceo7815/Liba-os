@@ -346,7 +346,7 @@ export async function listGoogleCallDetails(
   const details: GoogleCallDetail[] = [];
   const batches = await mapInBatches(monthRanges(from, to), 3, async (window) => {
     try {
-      return await searchGoogleAds(
+      const rows = await searchGoogleAds(
         accessToken,
         customerId,
         `SELECT
@@ -363,12 +363,18 @@ export async function listGoogleCallDetails(
           WHERE call_view.start_call_date_time >= '${window.from}' AND call_view.start_call_date_time < '${nextIsoDay(window.to)}'`,
         loginCustomerId,
       );
-    } catch {
-      return [] as AdsJson[];
+      return { rows, error: null as string | null };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "גוגל לא החזיר את השיחות";
+      return { rows: [] as AdsJson[], error: message };
     }
   });
-  for (const rows of batches) {
-    for (const row of rows) {
+  const failures = batches.map((batch) => batch.error).filter((message): message is string => Boolean(message));
+  if (failures.length > 0 && failures.length === batches.length) {
+    throw new Error(failures[0]);
+  }
+  for (const batch of batches) {
+    for (const row of batch.rows) {
       const call = asRecord(row.callView);
       const campaign = asRecord(row.campaign);
       const raw = asString(call.startCallDateTime);

@@ -74,6 +74,7 @@ export type CampaignBoard = {
   facebook: ChannelBoard;
   calls: InboundCalls;
   googleCalls: GoogleCallLine[];
+  googleCallsError: string | null;
 };
 
 const CALLER_KEYS = [
