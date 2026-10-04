@@ -9,7 +9,7 @@ import {
   jerusalemYmd,
 } from "@/lib/sales-dashboard/campaign-math";
 import { readFacebookAdsBundle } from "@/app/actions/facebook-ads";
-import { readGoogleAdsBundle, readGoogleCallDetails } from "@/app/actions/google-ads";
+import { readGoogleAdsBundle, readGoogleCallDetails, refreshGoogleAdsWindow } from "@/app/actions/google-ads";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JERUSALEM_TZ } from "@/lib/sales-dashboard/columns";
 import {
@@ -190,11 +190,13 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
   }
   const today = jerusalemYmd();
   const historyFrom = historyStart(today);
+  const monthFrom = `${today.slice(0, 7)}-01`;
+  await refreshGoogleAdsWindow(monthFrom, today).catch(() => undefined);
   const [google, facebook, calls, googleCalls] = await Promise.all([
     readGoogleAdsBundle(),
     readFacebookAdsBundle(),
     loadCalls(historyFrom, today),
-    readGoogleCallDetails(historyFrom, today),
+    readGoogleCallDetails(monthFrom, today),
   ]);
 
   const googlePoints = bucketPoints(
@@ -262,4 +264,11 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
     calls,
     googleCalls,
   };
+}
+
+export async function loadGoogleCallLines(from: string, to: string): Promise<CampaignBoard["googleCalls"]> {
+  const profile = await requireProfile();
+  if (!canAccessSalesDashboard(profile) && !canAccessSourcePnl(profile)) return [];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to) return [];
+  return readGoogleCallDetails(from, to);
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Megaphone, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { loadCampaignBoard } from "@/app/actions/campaigns-board";
+import { loadCampaignBoard, loadGoogleCallLines } from "@/app/actions/campaigns-board";
 import { syncFacebookAds } from "@/app/actions/facebook-ads";
 import { syncGoogleAds } from "@/app/actions/google-ads";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -147,6 +147,17 @@ export function CampaignsScreen({ initial }: { initial: CampaignBoard }) {
   const range = boundsFor(preset, board.today, earliest, customFrom, customTo);
   const from = range.from <= range.to ? range.from : range.to;
   const to = range.to;
+
+  useEffect(() => {
+    let cancel = false;
+    void loadGoogleCallLines(from, to).then((rows) => {
+      if (cancel) return;
+      setBoard((current) => ({ ...current, googleCalls: rows }));
+    });
+    return () => {
+      cancel = true;
+    };
+  }, [from, to]);
 
   const tagged = useMemo(() => {
     const google = board.google.campaigns.map((row) => ({ ...row, channel: "google" as const }));

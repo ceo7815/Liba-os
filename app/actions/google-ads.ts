@@ -361,6 +361,44 @@ export async function disconnectGoogleAds(): Promise<{ ok: boolean; error?: stri
   return { ok: true };
 }
 
+/** Pull one date window and save it, so today's calls update even if the long history sync stalls. */
+export async function refreshGoogleAdsWindow(from: string, to: string): Promise<void> {
+  const bundle = await readGoogleAdsBundle();
+  if (!bundle.connection.connected || !bundle.connection.customerId) return;
+  const refreshToken = await resolveRefreshToken();
+  const accessToken = await refreshAccessToken(refreshToken);
+  const customerId = bundle.connection.customerId;
+  const loginCustomerId = bundle.connection.loginCustomerId || customerId;
+  const metrics = await listGoogleAdsDailyMetrics(
+    accessToken,
+    customerId,
+    from,
+    to,
+    loginCustomerId,
+  );
+  if (metrics.length === 0) return;
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const statRows = metrics.map((row) => ({
+    google_campaign_id: row.campaignId,
+    day: row.day,
+    cost: Math.round(row.cost * 100) / 100,
+    clicks: row.clicks,
+    impressions: row.impressions,
+    leads: Math.max(0, Math.round(row.leads || 0)),
+  }));
+  const { error } = await admin
+    .from("google_ads_daily_stats")
+    .upsert(statRows, { onConflict: "google_campaign_id,day" });
+  if (error) throw new Error(error.message);
+  await admin.from("google_ads_settings").upsert({
+    id: 1,
+    last_synced_at: now,
+    last_error: null,
+    updated_at: now,
+  });
+}
+
 export async function syncGoogleAds(): Promise<{
   ok: boolean;
   skipped?: boolean;
@@ -386,8 +424,10 @@ export async function syncGoogleAds(): Promise<{
     const customerId = bundle.connection.customerId;
     const loginCustomerId = bundle.connection.loginCustomerId || customerId;
 
-    const campaigns = await listGoogleAdsCampaigns(accessToken, customerId, loginCustomerId);
     const to = jerusalemYmd();
+    await refreshGoogleAdsWindow(`${to.slice(0, 7)}-01`, to);
+
+    const campaigns = await listGoogleAdsCampaigns(accessToken, customerId, loginCustomerId);
     const fromDate = new Date(`${to}T00:00:00+03:00`);
     fromDate.setMonth(fromDate.getMonth() - 36);
     const from = jerusalemYmd(fromDate);

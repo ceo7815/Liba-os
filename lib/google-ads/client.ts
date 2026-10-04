@@ -304,18 +304,22 @@ function nextIsoDay(ymd: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-function callYearWindows(from: string, to: string): { from: string; to: string }[] {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to) return [];
-  const startYear = Number(from.slice(0, 4));
-  const endYear = Number(to.slice(0, 4));
-  const windows: { from: string; to: string }[] = [];
-  for (let year = startYear; year <= endYear; year += 1) {
-    windows.push({
-      from: year === startYear ? from : `${year}-01-01`,
-      to: year === endYear ? to : `${year}-12-31`,
-    });
-  }
-  return windows;
+async function mapInBatches<T, R>(
+  items: T[],
+  limit: number,
+  run: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      out[index] = await run(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return out;
 }
 
 function callKindLabel(raw: string): string {
@@ -340,13 +344,12 @@ export async function listGoogleCallDetails(
 ): Promise<GoogleCallDetail[]> {
   const seen = new Set<string>();
   const details: GoogleCallDetail[] = [];
-  const batches = await Promise.all(
-    callYearWindows(from, to).map(async (window) => {
-      try {
-        return await searchGoogleAds(
-          accessToken,
-          customerId,
-          `SELECT
+  const batches = await mapInBatches(monthRanges(from, to), 3, async (window) => {
+    try {
+      return await searchGoogleAds(
+        accessToken,
+        customerId,
+        `SELECT
             campaign.name,
             call_view.start_call_date_time,
             call_view.end_call_date_time,
@@ -358,13 +361,12 @@ export async function listGoogleCallDetails(
             call_view.call_tracking_display_location
           FROM call_view
           WHERE call_view.start_call_date_time >= '${window.from}' AND call_view.start_call_date_time < '${nextIsoDay(window.to)}'`,
-          loginCustomerId,
-        );
-      } catch {
-        return [];
-      }
-    }),
-  );
+        loginCustomerId,
+      );
+    } catch {
+      return [] as AdsJson[];
+    }
+  });
   for (const rows of batches) {
     for (const row of rows) {
       const call = asRecord(row.callView);
