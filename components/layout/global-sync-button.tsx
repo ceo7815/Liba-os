@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 export const GLOBAL_SYNC_EVENT = "liba-global-sync-done";
 
-type StepStatus = "pending" | "active" | "done";
+type StepStatus = "pending" | "active" | "done" | "failed";
 
 const GOOGLE_SYNC_TIMEOUT_MS = 120_000;
 const FACEBOOK_SYNC_TIMEOUT_MS = 180_000;
@@ -97,6 +97,7 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
         );
       }
 
+      let adsFailed = false;
       if (canSyncAds) {
         setGoogleStatus("active");
         toast.message("מסנכרן גוגל אדס…");
@@ -107,14 +108,18 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
             "סנכרון גוגל",
           );
           if (!google.ok) {
+            adsFailed = true;
+            setGoogleStatus("failed");
             toast.error(google.error ?? "סנכרון גוגל נכשל");
-          } else if (!google.skipped) {
-            toast.success("גוגל עודכן");
+          } else {
+            setGoogleStatus("done");
+            if (!google.skipped) toast.success("גוגל עודכן");
           }
         } catch (err: unknown) {
+          adsFailed = true;
+          setGoogleStatus("failed");
           toast.error(err instanceof Error ? err.message : "סנכרון גוגל נכשל");
         }
-        setGoogleStatus("done");
 
         setFacebookStatus("active");
         toast.message("מסנכרן פייסבוק…");
@@ -125,26 +130,34 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
             "סנכרון פייסבוק",
           );
           if (!facebook.ok) {
+            adsFailed = true;
+            setFacebookStatus("failed");
             toast.error(facebook.error ?? "סנכרון פייסבוק נכשל");
-          } else if (!facebook.skipped) {
-            toast.success("פייסבוק עודכן");
+          } else {
+            setFacebookStatus("done");
+            if (!facebook.skipped) toast.success("פייסבוק עודכן");
           }
         } catch (err: unknown) {
+          adsFailed = true;
+          setFacebookStatus("failed");
           toast.error(err instanceof Error ? err.message : "סנכרון פייסבוק נכשל");
         }
-        setFacebookStatus("done");
       } else {
         setGoogleStatus("done");
         setFacebookStatus("done");
       }
 
       notifyGlobalSyncDone();
-      toast.success("הסנכרון הסתיים — מוצג העדכון האחרון");
+      if (adsFailed) {
+        toast.error("האקסל עודכן. גוגל או פייסבוק לא הושלמו");
+      } else {
+        toast.success("הסנכרון הסתיים — מוצג העדכון האחרון");
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "שגיאה בסנכרון");
-      setExcelStatus((s) => (s === "active" ? "done" : s));
-      setGoogleStatus((s) => (s === "active" || s === "pending" ? "done" : s));
-      setFacebookStatus((s) => (s === "active" || s === "pending" ? "done" : s));
+      setExcelStatus((s) => (s === "active" ? "failed" : s));
+      setGoogleStatus((s) => (s === "active" || s === "pending" ? "failed" : s));
+      setFacebookStatus((s) => (s === "active" || s === "pending" ? "failed" : s));
       notifyGlobalSyncDone();
     } finally {
       setBusy(false);
@@ -201,12 +214,17 @@ function SyncStepRow({
         "flex items-center gap-2 rounded-lg px-1.5 py-1 text-xs",
         status === "active" && "bg-highlight/25 text-foreground",
         status === "done" && "text-muted-foreground",
+        status === "failed" && "text-red-700",
         status === "pending" && "text-muted-foreground/50",
       )}
     >
       {status === "done" ? (
         <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white">
           ✓
+        </span>
+      ) : status === "failed" ? (
+        <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white">
+          !
         </span>
       ) : status === "active" ? (
         <RefreshCw className="size-3.5 shrink-0 animate-spin" />

@@ -1,8 +1,8 @@
 import {
-  digitsOnly,
-  googleAdsApiVersion,
-  googleAdsDeveloperToken,
-} from "@/lib/google-ads/config";
+  resolveGoogleDeveloperToken,
+  resolveGoogleOAuthClient,
+} from "@/lib/google-ads/credentials";
+import { digitsOnly, googleAdsApiVersion } from "@/lib/google-ads/config";
 
 export type GoogleAdsCampaign = {
   id: string;
@@ -40,11 +40,7 @@ function asNumber(value: unknown): number {
 export async function refreshAccessToken(
   refreshToken: string,
 ): Promise<string> {
-  const clientId = process.env.GOOGLE_ADS_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET?.trim();
-  if (!clientId || !clientSecret) {
-    throw new Error("חסרים GOOGLE_ADS_CLIENT_ID / GOOGLE_ADS_CLIENT_SECRET");
-  }
+  const { clientId, clientSecret } = await resolveGoogleOAuthClient();
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -68,11 +64,7 @@ export async function refreshAccessToken(
 }
 
 export async function exchangeAuthCode(code: string, redirectUri: string) {
-  const clientId = process.env.GOOGLE_ADS_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET?.trim();
-  if (!clientId || !clientSecret) {
-    throw new Error("חסרים GOOGLE_ADS_CLIENT_ID / GOOGLE_ADS_CLIENT_SECRET");
-  }
+  const { clientId, clientSecret } = await resolveGoogleOAuthClient();
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -104,10 +96,7 @@ async function adsFetch(
   accessToken: string,
   init: { method?: string; body?: AdsJson; loginCustomerId?: string | null },
 ): Promise<AdsJson> {
-  const developerToken = googleAdsDeveloperToken();
-  if (!developerToken) {
-    throw new Error("חסר GOOGLE_ADS_DEVELOPER_TOKEN בשרת");
-  }
+  const developerToken = await resolveGoogleDeveloperToken();
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
     "developer-token": developerToken,
