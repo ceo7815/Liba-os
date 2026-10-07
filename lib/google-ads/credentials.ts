@@ -46,6 +46,25 @@ function readStored(): Promise<StoredGoogleApp> {
   return storedPromise;
 }
 
+/** True when the Google app keys exist in env or in the saved connection. */
+export async function googleAdsAppReady(): Promise<{
+  oauthReady: boolean;
+  developerTokenReady: boolean;
+}> {
+  const envOauth = Boolean(
+    process.env.GOOGLE_ADS_CLIENT_ID?.trim() && process.env.GOOGLE_ADS_CLIENT_SECRET?.trim(),
+  );
+  const envDeveloper = Boolean(process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim());
+  if (envOauth && envDeveloper) {
+    return { oauthReady: true, developerTokenReady: true };
+  }
+  const stored = await readStored();
+  return {
+    oauthReady: envOauth || Boolean(stored.clientId && stored.clientSecret),
+    developerTokenReady: envDeveloper || Boolean(stored.developerToken),
+  };
+}
+
 /** Env wins. The saved copy is used when the server process has no Google app env. */
 export async function resolveGoogleOAuthClient(): Promise<{
   clientId: string;

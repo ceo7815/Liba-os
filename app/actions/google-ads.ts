@@ -21,6 +21,7 @@ import {
   googleAdsDeveloperToken,
   googleAdsOAuthConfigured,
 } from "@/lib/google-ads/config";
+import { googleAdsAppReady } from "@/lib/google-ads/credentials";
 import {
   listAccessibleCustomerIds,
   listGoogleAdsCampaigns,
@@ -171,11 +172,12 @@ export async function readGoogleAdsBundle(statsRange?: DateRange): Promise<Googl
   const customerId = envCustomerId() || row?.customer_id || null;
   const loginCustomerId = envLoginCustomerId() || row?.login_customer_id || null;
   const connected = Boolean(envToken || dbToken);
+  const appReady = await googleAdsAppReady();
 
   return {
     connection: {
-      oauthReady: googleAdsOAuthConfigured(),
-      developerTokenReady: Boolean(googleAdsDeveloperToken()),
+      oauthReady: appReady.oauthReady,
+      developerTokenReady: appReady.developerTokenReady,
       connected,
       customerId,
       loginCustomerId,

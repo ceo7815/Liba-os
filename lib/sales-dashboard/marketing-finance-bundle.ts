@@ -32,6 +32,7 @@ import {
   googleAdsDeveloperToken,
   googleAdsOAuthConfigured,
 } from "@/lib/google-ads/config";
+import { googleAdsAppReady } from "@/lib/google-ads/credentials";
 import {
   envFacebookAccessToken,
   envFacebookAdAccountId,
@@ -180,6 +181,7 @@ async function loadGoogleAds(admin: ReturnType<typeof createAdminClient>, range?
   const dbToken = Boolean(row?.refresh_token_encrypted);
   const customerId = envCustomerId() || row?.customer_id || null;
   const loginCustomerId = envLoginCustomerId() || row?.login_customer_id || null;
+  const appReady = await googleAdsAppReady();
 
   const campaigns: GoogleAdsCampaignRow[] = (maps.data ?? []).map((item) => ({
     googleCampaignId: String(item.google_campaign_id),
@@ -199,8 +201,8 @@ async function loadGoogleAds(admin: ReturnType<typeof createAdminClient>, range?
 
   return {
     connection: {
-      oauthReady: googleAdsOAuthConfigured(),
-      developerTokenReady: Boolean(googleAdsDeveloperToken()),
+      oauthReady: appReady.oauthReady,
+      developerTokenReady: appReady.developerTokenReady,
       connected: Boolean(envToken || dbToken),
       customerId,
       loginCustomerId,

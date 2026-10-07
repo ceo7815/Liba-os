@@ -51,7 +51,7 @@ export function GoogleAdsPanel({
     });
   }
 
-  if (!connection.developerTokenReady || !connection.oauthReady) {
+  if (!connection.connected && (!connection.developerTokenReady || !connection.oauthReady)) {
     return (
       <div className="rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
         <p className="font-semibold">גוגל אדס</p>
