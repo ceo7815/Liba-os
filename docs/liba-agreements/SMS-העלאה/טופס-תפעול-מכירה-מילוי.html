@@ -71,6 +71,7 @@
     .c3 { grid-template-columns: 1fr 1fr 1fr; }
     .c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
     .c5 { grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
+    .c6 { grid-template-columns: 1.1fr 1fr 1fr 1fr 1fr 1fr; }
     .fld label {
       display: block;
       font-size: 12px;
@@ -113,7 +114,7 @@
     }
     .head {
       display: grid;
-      grid-template-columns: 1.1fr .9fr .9fr 1.2fr 1.2fr;
+      grid-template-columns: 1.6fr .85fr .85fr 1.05fr 1.05fr;
       background: #111;
       color: #fff;
       font-size: 13px;
@@ -122,12 +123,14 @@
     .head > div, .body > div { padding: 8px; }
     .body {
       display: grid;
-      grid-template-columns: 1.1fr .9fr .9fr 1.2fr 1.2fr;
+      grid-template-columns: 1.6fr .85fr .85fr 1.05fr 1.05fr;
       min-height: 220px;
     }
     .body > div { border-inline-start: 1px solid var(--hair); }
     .body > div:first-child { border-inline-start: 0; }
-    .prods { display: flex; flex-direction: column; gap: 5px; }
+    .prods { display: flex; flex-direction: column; gap: 4px; }
+    .prod-line { display: flex; align-items: center; gap: 6px; }
+    .prod-line input[type="text"] { flex: 1; min-width: 0; height: 22px; }
     .lines { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .line { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 6px; }
     .line span { font-size: 12px; font-weight: 700; }
@@ -155,7 +158,7 @@
     }
     @page { size: A4; margin: 12mm; }
     @media (max-width: 800px) {
-      .c2, .c3, .c4, .c5, .head, .body, .sig-grid { grid-template-columns: 1fr; }
+      .c2, .c3, .c4, .c5, .c6, .head, .body, .sig-grid { grid-template-columns: 1fr; }
       .head { display: none; }
     }
   </style>
@@ -300,31 +303,45 @@
       <div class="fld"><label>מספר הלוואה</label><input type="text" name="PledgeLoan" /></div>
       <div class="fld"><label>סכום משועבד ₪</label><input type="text" name="PledgeAmount" /></div>
     </div>
+    <div class="row">
+      <div class="fld"><label>לכמה שנים משועבד</label><input type="text" name="PledgeYears" /></div>
+    </div>
     <div class="fld"><label>מלל חופשי</label><textarea name="FreeText" rows="5"></textarea></div>
 
     <h3>ז. פוליסות</h3>
     <div id="policies"></div>
     <h4>הנחה אחידה בריאות / מחלות</h4>
-    <div class="row c5">
+    <div class="row c6">
       <div class="fld"><label>בריאות — חברה</label><select name="HlthCo"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+      <div class="fld"><label>בריאות — שם מבוטח</label><input type="text" name="HlthName" /></div>
       <div class="fld"><label>בריאות — לפני הנחה</label><input type="text" name="HlthBefore" /></div>
       <div class="fld"><label>אחרי הנחה</label><input type="text" name="HlthAfter" /></div>
       <div class="fld"><label>הנחה</label><input type="text" name="HlthDisc" /></div>
       <div class="fld"><label>שנים בהנחה</label><input type="text" name="HlthYears" /></div>
     </div>
-    <div class="row c5">
+    <div class="row c6">
       <div class="fld"><label>מחלות קשות 1 — חברה</label><select name="Ci1Co"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+      <div class="fld"><label>מחלות קשות 1 — שם מבוטח</label><input type="text" name="Ci1Name" /></div>
       <div class="fld"><label>מחלות קשות 1 — לפני הנחה</label><input type="text" name="Ci1Before" /></div>
       <div class="fld"><label>אחרי הנחה</label><input type="text" name="Ci1After" /></div>
       <div class="fld"><label>הנחה</label><input type="text" name="Ci1Disc" /></div>
       <div class="fld"><label>שנים בהנחה</label><input type="text" name="Ci1Years" /></div>
     </div>
-    <div class="row c5">
+    <div class="row c6">
       <div class="fld"><label>מחלות קשות 2 — חברה</label><select name="Ci2Co"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+      <div class="fld"><label>מחלות קשות 2 — שם מבוטח</label><input type="text" name="Ci2Name" /></div>
       <div class="fld"><label>מחלות קשות 2 — לפני הנחה</label><input type="text" name="Ci2Before" /></div>
       <div class="fld"><label>אחרי הנחה</label><input type="text" name="Ci2After" /></div>
       <div class="fld"><label>הנחה</label><input type="text" name="Ci2Disc" /></div>
       <div class="fld"><label>שנים בהנחה</label><input type="text" name="Ci2Years" /></div>
+    </div>
+    <div class="row c6">
+      <div class="fld"><label>מרפא סרטן — חברה</label><select name="CancCo"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+      <div class="fld"><label>מרפא סרטן — שם מבוטח</label><input type="text" name="CancName" /></div>
+      <div class="fld"><label>מרפא סרטן — לפני הנחה</label><input type="text" name="CancBefore" /></div>
+      <div class="fld"><label>אחרי הנחה</label><input type="text" name="CancAfter" /></div>
+      <div class="fld"><label>הנחה</label><input type="text" name="CancDisc" /></div>
+      <div class="fld"><label>שנים בהנחה</label><input type="text" name="CancYears" /></div>
     </div>
     <h4>הנחה מדורגת לפי שנה — ריסק / משכנתא</h4>
     <div id="tiered-discounts"></div>
@@ -363,8 +380,9 @@
         ).join("");
         tieredHost.insertAdjacentHTML("beforeend", `
           <p style="margin:10px 0 4px;font-weight:700">${label}</p>
-          <div class="row c5">
+          <div class="row c6">
             <div class="fld"><label>חברה</label><select name="${key}Co"><option value="">חברה</option><option>הראל</option><option>הפניקס</option><option>מגדל</option><option>כלל</option><option>מנורה</option><option>איילון</option><option>אחר</option></select></div>
+            <div class="fld"><label>שם מבוטח</label><input type="text" name="${key}Name" /></div>
             <div class="fld"><label>לפני</label><input type="text" name="${key}Before" /></div>
             <div class="fld"><label>אחרי</label><input type="text" name="${key}After" /></div>
             ${years}
@@ -412,7 +430,7 @@
     for (let n = 1; n <= 10; n++) {
       const pfx = "p" + String(n).padStart(2, "0");
       const prods = PRODUCTS.map(([k, lab]) =>
-        `<label class="chk"><input type="checkbox" name="${pfx}_prod_${k}" /><span>${lab}</span></label>`
+        `<div class="prod-line"><label class="chk"><input type="checkbox" name="${pfx}_prod_${k}" /><span>${lab}</span></label><input type="text" name="${pfx}_prod_${k}_name" placeholder="שם מבוטח" /></div>`
       ).join("");
       const cmp = COMPARE.map(([k, topic, a, b, c]) => `
         <div class="cmp-box">
@@ -426,7 +444,7 @@
       policies.insertAdjacentHTML("beforeend", `
         <section class="card">
           <div class="head">
-            <div>סוג מוצר</div><div>מצב קיים</div><div>מצב חדש</div><div>נימוקים להחלטה</div><div>השוואה</div>
+            <div>סוג מוצר / שם מבוטח</div><div>מצב קיים</div><div>מצב חדש</div><div>נימוקים להחלטה</div><div>השוואה</div>
           </div>
           <div class="body">
             <div class="prods">${prods}</div>

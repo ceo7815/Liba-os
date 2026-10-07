@@ -14,6 +14,7 @@ sys.path.insert(0, str(HERE))
 
 from make_legal_pdfs import (  # noqa: E402
     A4H,
+    A4W,
     ARCH,
     BOT,
     CSS,
@@ -25,6 +26,7 @@ from make_legal_pdfs import (  # noqa: E402
     ML,
     MR,
     MUTED_HEX,
+    LOGO,
     RED,
     YELLOW,
     Deed,
@@ -184,6 +186,26 @@ def _emit_cid_widths(widths: dict[int, int]) -> str:
 
 
 class OpsDeed(Deed):
+    def new_page(self):
+        self.page = self.doc.new_page(width=A4W, height=A4H)
+        p = self.page
+        p.insert_htmlbox(
+            pymupdf.Rect(ML, 10, MR, 28),
+            H("טופס תפעול ליבה", size=15, face="B", align="center", lh=1.0),
+            css=CSS,
+            archive=ARCH,
+        )
+        p.insert_htmlbox(
+            pymupdf.Rect(ML, 27, MR, 40),
+            H("השוואה והתאמת צרכים", size=9, face="M", color=MUTED_HEX, align="center", lh=1.0),
+            css=CSS,
+            archive=ARCH,
+        )
+        self._rules(44.0, thick=False)
+        p.draw_line(pymupdf.Point(ML, A4H - 36), pymupdf.Point(MR, A4H - 36), color=INK, width=0.4)
+        self.y = 52.0
+        self.first = False
+
     def field(
         self,
         rect: pymupdf.Rect,
@@ -477,24 +499,25 @@ class OpsDeed(Deed):
         self._band("מחירים והנחות")
         self._price_table(
             "הנחה אחידה בריאות / מחלות",
-            ["כיסוי", "לפני הנחה", "אחרי הנחה", "הנחה", "שנים בהנחה"],
+            ["כיסוי / שם מבוטח", "לפני הנחה", "אחרי הנחה", "הנחה", "שנים בהנחה"],
             [
                 ("בריאות", "HlthCo", ["HlthBefore", "HlthAfter", "HlthDisc", "HlthYears"]),
                 ("מחלות קשות", "Ci1Co", ["Ci1Before", "Ci1After", "Ci1Disc", "Ci1Years"]),
                 ("מחלות קשות", "Ci2Co", ["Ci2Before", "Ci2After", "Ci2Disc", "Ci2Years"]),
+                ("מרפא סרטן", "CancCo", ["CancBefore", "CancAfter", "CancDisc", "CancYears"]),
             ],
-            label_w=128,
+            label_w=198,
         )
         self._price_table(
             "הנחה מדורגת לפי שנה ריסק / משכנתא",
-            ["כיסוי", "לפני", "אחרי", *[f"שנה {n}" for n in range(1, 9)]],
+            ["כיסוי / שם מבוטח", "לפני", "אחרי", *[f"שנה {n}" for n in range(1, 9)]],
             [
                 ("ריסק", "Risk1Co", ["Risk1Before", "Risk1After", *[f"Risk1Y{n}" for n in range(1, 9)]]),
                 ("ריסק", "Risk2Co", ["Risk2Before", "Risk2After", *[f"Risk2Y{n}" for n in range(1, 9)]]),
                 ("משכנתא", "Mort1Co", ["Mort1Before", "Mort1After", *[f"Mort1Y{n}" for n in range(1, 9)]]),
                 ("משכנתא", "Mort2Co", ["Mort2Before", "Mort2After", *[f"Mort2Y{n}" for n in range(1, 9)]]),
             ],
-            label_w=112,
+            label_w=172,
         )
         self._monthly_total()
 
@@ -549,18 +572,29 @@ class OpsDeed(Deed):
         for label, company, names in rows:
             x0, x1 = xs[0]
             self.page.draw_rect(pymupdf.Rect(x0, y, x1, y + row_h), color=HAIR, width=0.3)
-            name_w = min(tw(label, 6.2) + 8, (x1 - x0) * 0.46)
+            prod_w = min(tw(label, 6.2) + 6, 62)
+            co_w = 54
+            prod_r = x1 - 2
+            prod_l = prod_r - prod_w
+            co_r = prod_l - 1.2
+            co_l = co_r - co_w
             self.page.insert_htmlbox(
-                pymupdf.Rect(x1 - name_w, y + 1, x1 - 2, y + row_h - 1),
+                pymupdf.Rect(prod_l, y + 1, prod_r, y + row_h - 1),
                 H(label, size=6.2, face="M", align="start", lh=1.0),
                 css=CSS,
                 archive=ARCH,
             )
             self.combo(
-                pymupdf.Rect(x0 + 1.4, y + 1.6, x1 - name_w - 2, y + row_h - 1.6),
+                pymupdf.Rect(co_l, y + 1.6, co_r, y + row_h - 1.6),
                 company,
                 INSURERS,
                 value="חברה",
+                size=6.4,
+            )
+            insured = company[:-2] + "Name" if company.endswith("Co") else company + "Name"
+            self.field(
+                pymupdf.Rect(x0 + 1.4, y + 1.6, co_l - 1.4, y + row_h - 1.6),
+                name=insured,
                 size=7,
             )
             for i, name in enumerate(names):
@@ -593,7 +627,7 @@ class OpsDeed(Deed):
         usable = self.iw
         # RTL from the right: product, existing, new, reasons, compare.
         # Product is only a combo — keep just enough width for the longest name.
-        fracs = (0.22, 0.14, 0.14, 0.25, 0.25)
+        fracs = (0.32, 0.13, 0.13, 0.21, 0.21)
         xs = []
         x = MR
         for f in fracs:
@@ -604,7 +638,7 @@ class OpsDeed(Deed):
 
     def policy_header(self):
         xs = self.policy_cols()
-        labels = ["סוג מוצר", "מצב קיים", "מצב חדש", "נימוקים להחלטה", "השוואה"]
+        labels = ["סוג מוצר / שם מבוטח", "מצב קיים", "מצב חדש", "נימוקים להחלטה", "השוואה"]
         y = self.y
         for (x0, x1), lab in zip(xs, labels):
             cell = pymupdf.Rect(x0, y, x1, y + HEAD_H)
@@ -647,18 +681,26 @@ class OpsDeed(Deed):
         self.y = y1
 
     def _product_cell(self, x0: float, x1: float, y0: float, y1: float, pfx: str):
-        pad = 3.0
+        pad = 2.2
         n = len(PRODUCTS)
         row_h = (y1 - y0 - pad * 2) / n
-        chk = 7.5
+        chk = 7.0
+        label_w = min(max(tw(lab, 5.6) + 3 for _, lab in PRODUCTS), (x1 - x0) * 0.52)
         for i, (key, lab) in enumerate(PRODUCTS):
             yy = y0 + pad + i * row_h
-            self.named_chk(x1 - pad - chk, yy + 1.6, f"{pfx}_prod_{key}", size=chk)
+            self.named_chk(x1 - pad - chk, yy + (row_h - chk) / 2, f"{pfx}_prod_{key}", size=chk)
+            lab_r = x1 - pad - chk - 1.2
+            lab_l = lab_r - label_w
             self.page.insert_htmlbox(
-                pymupdf.Rect(x0 + 2, yy, x1 - pad - chk - 2, yy + row_h),
-                H(lab, size=6.1, face="M", align="start", lh=1.05),
+                pymupdf.Rect(lab_l, yy, lab_r, yy + row_h),
+                H(lab, size=5.6, face="M", align="start", lh=1.0),
                 css=CSS,
                 archive=ARCH,
+            )
+            self.field(
+                pymupdf.Rect(x0 + 1.4, yy + 1.1, lab_l - 1.2, yy + row_h - 1.1),
+                name=f"{pfx}_prod_{key}_name",
+                size=6.2,
             )
 
     def _reason_cell(self, x0: float, x1: float, y0: float, y1: float, name: str):
@@ -871,148 +913,14 @@ def person_block(d: OpsDeed, title: str, names: dict[str, str]):
 
 
 def build() -> Path:
+    from ops_liba_layout import compose
+
     d = OpsDeed(
-        "טופס תפעול מכירה",
-        "סגירת עסקה והצהרת סוכן לפי חוזר צירוף לביטוח",
+        "השוואה והתאמת צרכים",
+        "טופס תפעול ליבה",
         show_valid_until=False,
     )
-    d.title_block()
-
-    d.article("א. פרטי תיק ומנהל פנייה")
-    d.fields_row(
-        ["תאריך", "בעל רישיון יחיד"],
-        names=["Date", "license_holder"],
-    )
-    d.fields_row(
-        ["קוד הנחה", "הסכם הנחה", "תאריך תחילת ביטוח"],
-        names=["DiscountCode", "DiscountAgreement", "InsuranceBegin"],
-    )
-    d.fields_row(
-        ["מקור ליד", "שם מנהל הפנייה", "מספר סוכן כללי"],
-        names=["LeadSource", "ReferralManager", "AgentNumber"],
-    )
-    d.flag([("ביטול תקופת הכשרה", "WaitingPeriodCancelYes"), ("ללא ביטול הכשרה", "WaitingPeriodCancelNo")])
-    d.fields_row(
-        ["הראל", "הפניקס", "מגדל"],
-        names=["AgentNoHarel", "AgentNoPhoenix", "AgentNoMigdal"],
-    )
-    d.fields_row(
-        ["כלל", "מנורה", "איילון"],
-        names=["AgentNoClal", "AgentNoMenora", "AgentNoAyalon"],
-    )
-    d.fields_row(["חברה אחרת", "מספר סוכן אחר"], names=["AgentNoOtherCo", "AgentNoOther"])
-    d.fields_row(["שם הסוכן", "שם הסוכנות"], names=["AgentName", "AgencyName"])
-
-    person_block(
-        d,
-        "ב. מבוטח ראשי",
-        {
-            "name": "FullName",
-            "id": "PID",
-            "dob": "BithDate",
-            "gender": "GenderText",
-            "family": "FamilyStatusText",
-            "phone": "CellPhoneNumber",
-            "email": "EmailAddress",
-            "address": "Address",
-            "job": "OccupationCode",
-            "hmo": "HMO",
-            "shaban": "Shaban",
-            "height": "Hight",
-            "weight": "Weight",
-            "smoke": "ClientSmokeNum",
-            "id_issue": "PIDIssueDate",
-        },
-    )
-    person_block(
-        d,
-        "ג. מבוטח משני",
-        {
-            "name": "FullNameSpouse",
-            "id": "PIDSpouse",
-            "dob": "BirthDateSpouse",
-            "gender": "GenderTextSpouse",
-            "family": "FamilyStatusSpouse",
-            "phone": "PhoneSpouse",
-            "email": "EmailSpouse",
-            "address": "AddressSpouse",
-            "job": "OccupationCodeSpouse",
-            "hmo": "HMOSpouse",
-            "shaban": "ShabanSpouse",
-            "height": "HightSpouse",
-            "weight": "WeightSpouse",
-        },
-    )
-
-    d.article("ד. ילדים")
-    for i in range(1, N_CHILDREN + 1):
-        d.fields_row(
-            ["שם", "ת.ז.", "תאריך לידה", "מין"],
-            names=[f"FullNameChild{i}", f"PIDChild{i}", f"BirthDateChild{i}", f"GenderChildText{i}"],
-        )
-        d.fields_row(
-            ["עיסוק", "משקל", "גובה", "שב״ן", "קופ״ח"],
-            names=[
-                f"OccupationChild{i}",
-                f"WeightChild{i}",
-                f"HightChild{i}",
-                f"ShabanChild{i}",
-                f"HMOChild{i}",
-            ],
-        )
-
-    d.article("ה. אמצעי תשלום")
-    d.flag([("הוראת קבע", "PayStandingOrder"), ("כרטיס אשראי", "PayCreditCard")])
-    d.credit_card_box()
-    d.flag([("יש שעבוד", "PledgeYes"), ("אין שעבוד", "PledgeNo")])
-    d.fields_row(
-        ["בנק", "סניף", "מספר הלוואה", "סכום משועבד ₪"],
-        names=["PledgeBank", "PledgeBranch", "PledgeLoan", "PledgeAmount"],
-    )
-    d.fill_page_memo("מלל חופשי", "FreeText")
-
-    d.new_page()
-    d.article("ז. פוליסות")
-    d.policy_header()
-    for n in range(1, N_CARDS + 1):
-        d.policy_row(n)
-
-    d.discount_rubrics()
-    d.fields_row(
-        ["סה״כ קיים ₪", "סה״כ לפני הנחה ₪", "סה״כ אחרי הנחה ₪"],
-        names=["TotalExisting", "TotalBefore", "TotalAfter"],
-    )
-    d.named_memo("הערות", 2, "OpenNotes")
-
-    d.article("ח. הצהרת הסוכן")
-    d.p(
-        "אני מאשר כי במסגרת הליך המכירה למוצרים המפורטים בטופס זה, עמדתי בכל הוראות חוזרי המפקח על הביטוח "
-        "לעניין צירוף לביטוח ועריכת תכנית לביטוח, ובפרט ביררתי את צורכי המועמד/ת, הצעתי ביטוח ו/או הוספת כיסוי, "
-        "הרחבה או כתב שירות לפוליסת ביטוח קיימת התואם לצרכיו/ה, ומסרתי לו/ה את כל המידע המהותי הנדרש "
-        "וכן קיבלתי הסכמתו לרכישת הפוליסה."
-    )
-    d.flag(
-        [
-            ("ממליץ לעבור", "RecReplace"),
-            ("צירוף חדש", "RecNew"),
-            ("להישאר בקיים", "RecStay"),
-        ]
-    )
-    d.named_memo("נימוק", 2, "RecNote")
-
-    d.article("ט. חתימות")
-    d.sig_quad(
-        [
-            ("בעל רישיון / סוכן מטעם ליבה", "agent"),
-            ("מבוטח ראשי", "client"),
-            ("מבוטח משני", "spouse"),
-            ("מעסיק", "employer"),
-            ("ילד מעל גיל 18", "child18_1"),
-            ("ילד מעל גיל 18", "child18_2"),
-            ("ילד מעל גיל 18", "child18_3"),
-            ("ילד מעל גיל 18", "child18_4"),
-        ]
-    )
+    compose(d)
     return d.finish(HERE / "4-טופס-תפעול-מכירה-ליבה.pdf")
 
 
@@ -1021,7 +929,7 @@ def main():
     sms_dir = HERE / "SMS-העלאה"
     sms_dir.mkdir(parents=True, exist_ok=True)
     DOWNLOADS.mkdir(parents=True, exist_ok=True)
-    name = "טופס תפעול מכירה מעודכן 04.10.2026.pdf"
+    name = "השוואה והתאמת צרכים מעודכן סופי לאחר אישור שי ואסף.pdf"
     for dest_dir in (sms_dir, DOWNLOADS):
         dest = dest_dir / name
         shutil.copy2(src, dest)

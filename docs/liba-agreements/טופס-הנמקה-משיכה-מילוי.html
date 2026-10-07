@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מסמך הנמקה — משיכת כספים</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --ink:#111; --muted:#5a5a5a; --line:#c4c4c4; --yellow:#ffd400; --red:#c41e3a; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; background:#f3f3f1; color:var(--ink); font-family:Rubik,"Segoe UI","Arial Hebrew",Tahoma,sans-serif; direction:rtl; }
+    .bar { position:sticky; top:0; z-index:20; display:flex; justify-content:space-between; align-items:center; gap:16px; padding:12px 20px; background:#111; color:#fff; }
+    .bar p { margin:0; font-size:14px; font-weight:500; }
+    .bar button { border:0; background:var(--yellow); color:#111; font:700 15px Rubik,sans-serif; padding:10px 18px; cursor:pointer; }
+    main { max-width:980px; margin:18px auto 48px; background:#fff; padding:28px 32px 40px; box-shadow:0 2px 18px rgba(0,0,0,.08); }
+    .brand { text-align:center; margin-bottom:18px; }
+    .brand h1 { margin:0 0 6px; font-size:26px; }
+    .brand h2 { margin:0; font-size:14px; font-weight:500; color:var(--muted); }
+    .rule { height:4px; background:linear-gradient(90deg,var(--red) 8%,var(--yellow) 8%); margin:14px 0 20px; }
+    h3 { margin:26px 0 10px; font-size:16px; border-bottom:2px solid #111; padding-bottom:4px; }
+    h4 { margin:14px 0 8px; font-size:14px; }
+    .row { display:grid; gap:12px; margin-bottom:10px; }
+    .c2 { grid-template-columns:1fr 1fr; }
+    .c3 { grid-template-columns:1fr 1fr 1fr; }
+    .c4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+    .fld label { display:block; font-size:12px; font-weight:500; color:var(--muted); margin-bottom:3px; }
+    input[type=text], textarea {
+      width:100%; border:1px solid var(--line); background:#fff; color:var(--ink);
+      font:700 16px/1.45 Rubik,"Segoe UI","Arial Hebrew",Tahoma,sans-serif;
+      padding:7px 8px; direction:rtl; text-align:right; unicode-bidi:plaintext;
+    }
+    textarea { min-height:84px; resize:vertical; }
+    .flags { display:flex; flex-wrap:wrap; gap:12px 20px; margin:8px 0 12px; }
+    .chk { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:500; }
+    .note, .fixed { font-size:14px; line-height:1.6; }
+    .fixed { background:#fafafa; border:1px solid #ddd; padding:12px 14px; margin:8px 0 14px; }
+    .warn { border-color:var(--red); }
+    .box { border:1px solid #ddd; padding:12px; margin:10px 0; }
+    .sig-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .sig { border:1px solid #111; padding:10px; }
+    .sig .top { height:4px; margin:-10px -10px 8px; background:linear-gradient(90deg,var(--red) 12%,var(--yellow) 12%); }
+    @media print {
+      body { background:#fff; } .bar { display:none; }
+      main { box-shadow:none; margin:0; max-width:none; padding:0; }
+      .box, .sig { break-inside:avoid; }
+    }
+    @page { size:A4; margin:12mm; }
+    @media (max-width:800px) { .c2,.c3,.c4,.sig-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <p>מסמך הנמקה למשיכה — מילוי ב־Chrome. בסוף: הדפסה ← שמירה כ־PDF להעלאה עם החוזים</p>
+    <button type="button" onclick="window.print()">הדפס / שמור כ-PDF</button>
+  </div>
+  <main>
+    <div class="brand">
+      <h1>מסמך הנמקה — משיכת כספים</h1>
+      <h2>נספח להסכם שיווק פנסיוני · הסבר להמלצות ולפעולת המשיכה</h2>
+    </div>
+    <div class="rule"></div>
+    <div class="row c3">
+      <div class="fld"><label>תאריך</label><input type="text" name="Date" /></div>
+      <div class="fld"><label>מספר תיק</label><input type="text" name="FileNumber" /></div>
+      <div class="fld"><label>בעל רישיון יחיד</label><input type="text" name="license_holder" /></div>
+    </div>
+    <p class="note">מסמך זה הוא סיכום תהליך בחינת החיסכון הפנסיוני ופעולת המשיכה. כאן מרוכז המידע שמסרת לסוכן, ומפורטים הנימוקים להמלצה. חשוב שתקרא ותבין. רק לאחר שקראת — והבנת — תחתום. מומלץ לשמור ולבדוק אחת לכמה שנים ובעת שינויים אישיים.</p>
+    <div class="fixed warn">אזהרה: משיכת פיצויים ו/או משיכת כספי התגמולים לפני גיל הפרישה עלולה להקטין את הקצבה באופן משמעותי, או לביטולה, ולגרום להפסד של הטבות מס רבות. מומלץ לשקול חלופות אחרות לפני משיכת כספים אלה. מידע: www.mof.gov.il</div>
+
+    <h3>א. פרטי הלקוח</h3>
+    <div class="row c2">
+      <div class="fld"><label>שם מלא</label><input type="text" name="FullName" /></div>
+      <div class="fld"><label>ת.ז.</label><input type="text" name="PID" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>תאריך לידה / גיל</label><input type="text" name="BirthAge" /></div>
+      <div class="fld"><label>מצב משפחתי</label><input type="text" name="FamilyStatus" /></div>
+      <div class="fld"><label>מצב תעסוקתי</label><input type="text" name="EmploymentStatus" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>טלפון</label><input type="text" name="Phone" /></div>
+      <div class="fld"><label>טלפון נייד</label><input type="text" name="Mobile" /></div>
+      <div class="fld"><label>דוא״ל</label><input type="text" name="Email" /></div>
+    </div>
+    <div class="fld"><label>כתובת</label><input type="text" name="Address" /></div>
+    <div class="row c3">
+      <div class="fld"><label>הכנסה חודשית ברוטו</label><input type="text" name="MonthlyIncome" /></div>
+      <div class="fld"><label>הכנסה אחרת קבועה</label><input type="text" name="OtherIncome" /></div>
+      <div class="fld"><label>תלויים</label><input type="text" name="Dependents" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>קופת חולים</label><input type="text" name="HMO" /></div>
+      <div class="fld"><label>עישון</label><input type="text" name="Smoke" /></div>
+      <div class="fld"><label>גובה / משקל</label><input type="text" name="HeightWeight" /></div>
+    </div>
+    <div class="fld"><label>מטרות הביטוח / פירוט בריאות</label><input type="text" name="HealthGoals" /></div>
+
+    <h3>ב. חברות ביטוח ומספרי קופה — מקורות המשיכה</h3>
+    <p class="note">אפשר לרשום כמה חברות וכמה מספרי קופה. משיכות מתבצעות לעיתים מכמה מקומות.</p>
+    <div id="sources"></div>
+
+    <h3>ג. הלוואה וקיזוז הלוואה</h3>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="LoanYes" /><span>קיימת הלוואה במוצר</span></label>
+      <label class="chk"><input type="checkbox" name="LoanNo" /><span>אין הלוואה</span></label>
+      <label class="chk"><input type="checkbox" name="LoanOffsetYes" /><span>מתבצע קיזוז הלוואה</span></label>
+      <label class="chk"><input type="checkbox" name="LoanOffsetNo" /><span>לא מתבצע קיזוז</span></label>
+    </div>
+    <div class="row c4">
+      <div class="fld"><label>גוף המלווה</label><input type="text" name="LoanBody" /></div>
+      <div class="fld"><label>יתרת הלוואה ₪</label><input type="text" name="LoanBalance" /></div>
+      <div class="fld"><label>סכום קיזוז ₪</label><input type="text" name="LoanOffset" /></div>
+      <div class="fld"><label>יתרה לאחר קיזוז ₪</label><input type="text" name="LoanAfter" /></div>
+    </div>
+    <div class="fld"><label>פירוט הלוואה / קיזוז</label><textarea name="LoanNote"></textarea></div>
+
+    <h3>ד. איזה כספים נמשכים</h3>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="MoneySeverance" /><span>פיצויים</span></label>
+      <label class="chk"><input type="checkbox" name="MoneyBenefits" /><span>תגמולים</span></label>
+      <label class="chk"><input type="checkbox" name="MoneyOther" /><span>אחר</span></label>
+    </div>
+    <div class="row c4">
+      <div class="fld"><label>סכום פיצויים ₪</label><input type="text" name="AmtSeverance" /></div>
+      <div class="fld"><label>סכום תגמולים ₪</label><input type="text" name="AmtBenefits" /></div>
+      <div class="fld"><label>סכום אחר ₪</label><input type="text" name="AmtOther" /></div>
+      <div class="fld"><label>סה״כ ברוטו ₪</label><input type="text" name="AmtGross" /></div>
+    </div>
+    <div class="fld"><label>פירוט כספים אחרים</label><input type="text" name="MoneyOtherNote" /></div>
+
+    <h3>ה. המס שיורד — פיצויים ותגמולים</h3>
+    <p class="note">אומדן בלבד. אינו ייעוץ מס ואינו התחייבות.</p>
+    <div class="row c4">
+      <div class="fld"><label>מס תגמולים %</label><input type="text" name="TaxBenPct" /></div>
+      <div class="fld"><label>סכום מס תגמולים ₪</label><input type="text" name="TaxBenAmt" /></div>
+      <div class="fld"><label>מס פיצויים %</label><input type="text" name="TaxSevPct" /></div>
+      <div class="fld"><label>סכום מס פיצויים ₪</label><input type="text" name="TaxSevAmt" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>סה״כ מס ₪</label><input type="text" name="TaxTotal" /></div>
+      <div class="fld"><label>נטו משוער ₪</label><input type="text" name="TaxNet" /></div>
+      <div class="fld"><label>תיאום מס / אישור</label><input type="text" name="TaxCert" /></div>
+    </div>
+    <div class="fld"><label>הסבר מס שהוסבר ללקוח</label><textarea name="TaxNote"></textarea></div>
+
+    <h3>ו. למה הלקוח מבצע את המשיכה</h3>
+    <div class="fld"><label>סיבת המשיכה בניסוח הלקוח</label><textarea name="ClientReason"></textarea></div>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="BeforeRetire" /><span>לפני גיל פרישה</span></label>
+      <label class="chk"><input type="checkbox" name="AtRetire" /><span>בגיל פרישה / קצבה</span></label>
+      <label class="chk"><input type="checkbox" name="LegalOk" /><span>משיכה מותרת לפי דין</span></label>
+      <label class="chk"><input type="checkbox" name="LegalRisk" /><span>עלולה להיות שלא כדין</span></label>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>סכום נדרש ₪</label><input type="text" name="NeedAmount" /></div>
+      <div class="fld"><label>מועד נדרש</label><input type="text" name="NeedWhen" /></div>
+      <div class="fld"><label>חלופת מימון שנבחנה</label><input type="text" name="AltFinance" /></div>
+    </div>
+
+    <h3>ז. המלצת הסוכן למשיכת הכספים</h3>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="RecWithdraw" /><span>ממליץ למשוך</span></label>
+      <label class="chk"><input type="checkbox" name="RecNo" /><span>ממליץ שלא למשוך</span></label>
+      <label class="chk"><input type="checkbox" name="RecDelay" /><span>ממליץ לדחות / חלופה</span></label>
+      <label class="chk"><input type="checkbox" name="RecPartial" /><span>ממליץ משיכה חלקית</span></label>
+      <label class="chk"><input type="checkbox" name="RecAgainst" /><span>הלקוח עומד על ביצוע בניגוד להמלצה</span></label>
+    </div>
+    <div class="fld"><label>נימוק מלא להמלצה — חובה</label><textarea name="RecNote"></textarea></div>
+    <div class="fld"><label>השיקולים העיקריים למתן ההמלצה</label><textarea name="RecReasons"></textarea></div>
+
+    <h3>ח. המוצרים שנבדקו</h3>
+    <div id="products"></div>
+
+    <h3>ט. מאפייני הלקוח שלפיהם נקבעו ההמלצות</h3>
+    <div class="row c3">
+      <div class="fld"><label>גיל</label><input type="text" name="CharAge" /></div>
+      <div class="fld"><label>מצב משפחתי</label><input type="text" name="CharFamily" /></div>
+      <div class="fld"><label>מצב תעסוקתי</label><input type="text" name="CharWork" /></div>
+    </div>
+    <div class="fld"><label>הכנסה קבועה אחרת לאחר פרישה</label><input type="text" name="CharOtherInc" /></div>
+    <div class="row c3">
+      <div class="fld"><label>מידת הסיכון המועדפת</label><input type="text" name="CharRisk" /></div>
+      <div class="fld"><label>מטרת החיסכון</label><input type="text" name="CharSaveGoal" /></div>
+      <div class="fld"><label>מטרות הביטוח</label><input type="text" name="CharInsGoal" /></div>
+    </div>
+    <div class="fld"><label>הערות למאפיינים</label><textarea name="CharNotes"></textarea></div>
+
+    <h3>י. הכר את סוכן הביטוח הפנסיוני</h3>
+    <p class="note">ליבה ג.א. סוכנות לביטוח פנסיוני (2024) בע״מ · ח.פ. 517024733 · רישיון 51024733 · חרושת 10, קריית ביאליק · 077-2376103</p>
+    <div class="row c3">
+      <div class="fld"><label>שם בעל הרישיון</label><input type="text" name="AgentName" /></div>
+      <div class="fld"><label>מספר רישיון יחיד</label><input type="text" name="AgentLicense" /></div>
+      <div class="fld"><label>טלפון / דוא״ל</label><input type="text" name="AgentContact" /></div>
+    </div>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="AgentForCoYes" /><span>פועל במסגרת החברה</span></label>
+      <label class="chk"><input type="checkbox" name="AgentForCoNo" /><span>אינו פועל במסגרת חברה</span></label>
+    </div>
+
+    <h3>יא. גילוי נאות — שכר ועמלות</h3>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="PayAgent" /><span>סוכן ביטוח פנסיוני</span></label>
+      <label class="chk"><input type="checkbox" name="PaySalaryInst" /><span>מקבל שכר מהגוף המוסדי שבו אני עובד</span></label>
+      <label class="chk"><input type="checkbox" name="PayCommission" /><span>מקבל עמלה מהגופים שאני משווק</span></label>
+      <label class="chk"><input type="checkbox" name="PayAgencySalary" /><span>שכיר בסוכנות — מקבל שכר ממנה</span></label>
+    </div>
+    <p class="note">דירוג גופים לפי עמלה 2025, מהגבוה לנמוך (מקום 1 = עמלה גבוהה ביותר):</p>
+    <div class="row c2">
+      <div class="fld"><label>קרנות פנסיה</label><input type="text" name="RankPension" /></div>
+      <div class="fld"><label>חברות ביטוח</label><input type="text" name="RankInsure" /></div>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>קופות גמל</label><input type="text" name="RankGemel" /></div>
+      <div class="fld"><label>קרנות השתלמות</label><input type="text" name="RankHishtalmut" /></div>
+    </div>
+    <div class="fld"><label>מוצרים שנמכרו בפגישה — סוג, עלות, גורם משלם</label><textarea name="SoldProducts"></textarea></div>
+
+    <h3>יב. טבלת סיכום</h3>
+    <div class="fld"><label>מצב קיים</label><textarea name="StateExisting"></textarea></div>
+    <div class="fld"><label>מצב חדש</label><textarea name="StateNew"></textarea></div>
+
+    <h3>יג. מידע לתיעוד</h3>
+    <div class="row c3">
+      <div class="fld"><label>רחוב</label><input type="text" name="DocStreet" /></div>
+      <div class="fld"><label>מס׳ בית</label><input type="text" name="DocHouse" /></div>
+      <div class="fld"><label>ישוב</label><input type="text" name="DocCity" /></div>
+    </div>
+    <div class="row c4">
+      <div class="fld"><label>מיקוד</label><input type="text" name="DocZip" /></div>
+      <div class="fld"><label>טלפון</label><input type="text" name="DocPhone" /></div>
+      <div class="fld"><label>נייד</label><input type="text" name="DocMobile" /></div>
+      <div class="fld"><label>דוא״ל</label><input type="text" name="DocEmail" /></div>
+    </div>
+    <div class="row c3">
+      <div class="fld"><label>מקצוע</label><input type="text" name="DocJob" /></div>
+      <div class="fld"><label>שכר</label><input type="text" name="DocWage" /></div>
+      <div class="fld"><label>הכנסה נוספת</label><input type="text" name="DocExtraInc" /></div>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>התחייבויות</label><input type="text" name="DocDebts" /></div>
+      <div class="fld"><label>תלויים כספיים</label><input type="text" name="DocDepend" /></div>
+    </div>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="GoalRights" /><span>להבין זכויות</span></label>
+      <label class="chk"><input type="checkbox" name="GoalReport" /><span>דוח פנסיוני</span></label>
+      <label class="chk"><input type="checkbox" name="GoalRisk" /><span>התאמת רמת סיכון</span></label>
+      <label class="chk"><input type="checkbox" name="GoalYield" /><span>מקסום תשואה</span></label>
+      <label class="chk"><input type="checkbox" name="GoalMof" /><span>בדיקה מול האוצר</span></label>
+      <label class="chk"><input type="checkbox" name="GoalSave" /><span>התאמת חיסכון</span></label>
+      <label class="chk"><input type="checkbox" name="GoalOngoing" /><span>ליווי מתמשך</span></label>
+      <label class="chk"><input type="checkbox" name="GoalTax" /><span>ניצול הטבות מס</span></label>
+      <label class="chk"><input type="checkbox" name="GoalClientChoice" /><span>הבחירה לפי דרישת הלקוח</span></label>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>מטרות החיסכון</label><input type="text" name="DocSaveGoal" /></div>
+      <div class="fld"><label>מטרות הביטוח</label><input type="text" name="DocInsGoal" /></div>
+    </div>
+    <div class="row c2">
+      <div class="fld"><label>מצב כספי כללי</label><input type="text" name="DocMoney" /></div>
+      <div class="fld"><label>חיסכון קיים</label><input type="text" name="DocExistingSave" /></div>
+    </div>
+
+    <h3>יד. משפטים קבועים — חובה במסמך</h3>
+    <div class="fixed">ידוע לי כי פעולת משיכת הכספים ניתנת לביצוע באופן עצמאי מול חברות הביטוח והגופים המוסדיים, לרבות באמצעות אתר הגוף המוסדי או המסלקה הפנסיונית, בחינם או בעלות נמוכה, וללא תיווך ליבה.</div>
+    <p class="note"><b>התחייבות והצהרות הלקוח</b></p>
+    <div class="fixed">ידוע לי שבעת משיכת כספים מהמוצר הפנסיוני, כספי פיצויים ו/או כספי תגמולים, לפני גיל הפרישה, עלולה המשיכה להקטין את הקצבה שאקבל באופן משמעותי ו/או לפגוע בכיסוי הביטוחי הקיים לי במוצר. כן קיים מס בשיעור 35% על כספי התגמולים בעת המשיכה, ויכול להיות מס של עד 47% בעת המשיכה על כספי הפיצויים. כמו כן ידוע לי שמשיכת כספים מהמוצר הפנסיוני לפני גיל הפרישה תפגע בהטבות המס בגיל הפרישה.</div>
+
+    <h3>טו. הצהרות וחתימות</h3>
+    <p class="note">הצהרת בעל הרישיון: המידע שנמסר יישמר בסודיות ויעבור רק לגורמים לעניין השיווק הפנסיוני.</p>
+    <p class="note">הצהרת הלקוח: אם לא נמסר מידע או שנמסר מידע חלקי — ההמלצה עלולה שלא להתאים.</p>
+    <p class="note">אני מצהיר כי מסמך ההנמקה נמסר לי, קראתי את האמור בו וחתמתי.</p>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" name="DeclGot" /><span>הלקוח קיבל והבין</span></label>
+      <label class="chk"><input type="checkbox" name="DeclSelf" /><span>הוסברה אפשרות לפעול לבד</span></label>
+      <label class="chk"><input type="checkbox" name="DeclTax" /><span>הוסברו מס, קצבה וכיסוי</span></label>
+    </div>
+    <div class="sig-grid">
+      <div class="sig"><div class="top"></div><h4>הלקוח</h4>
+        <div class="fld"><label>חתימה</label><input type="text" name="sig_client" /></div>
+        <div class="fld"><label>תאריך</label><input type="text" name="sig_client_date" /></div>
+      </div>
+      <div class="sig"><div class="top"></div><h4>בעל רישיון יחיד מטעם ליבה</h4>
+        <div class="fld"><label>חתימה</label><input type="text" name="sig_agent" /></div>
+        <div class="fld"><label>תאריך</label><input type="text" name="sig_agent_date" /></div>
+      </div>
+    </div>
+
+    <h3>טז. בירור צרכים — מידע נוסף</h3>
+    <div class="fld"><label>לאחר בירור צרכים הקשור במשיכה</label><textarea name="NeedsExtra" rows="8"></textarea></div>
+  </main>
+  <script>
+    const sources = document.getElementById("sources");
+    for (let i = 1; i <= 6; i++) {
+      sources.insertAdjacentHTML("beforeend", `
+        <div class="box">
+          <h4>מקור ${i}</h4>
+          <div class="row c2">
+            <div class="fld"><label>חברת ביטוח / גוף מוסדי</label><input type="text" name="SrcCo${i}" /></div>
+            <div class="fld"><label>מספר קופה / חשבון / פוליסה</label><input type="text" name="SrcFund${i}" /></div>
+          </div>
+          <div class="row c4">
+            <div class="fld"><label>סוג מוצר</label><input type="text" name="SrcType${i}" /></div>
+            <div class="fld"><label>מסלול</label><input type="text" name="SrcTrack${i}" /></div>
+            <div class="fld"><label>יתרה ₪</label><input type="text" name="SrcBalance${i}" /></div>
+            <div class="fld"><label>סכום למשיכה ₪</label><input type="text" name="SrcAmount${i}" /></div>
+          </div>
+        </div>`);
+    }
+    const products = document.getElementById("products");
+    for (let i = 1; i <= 4; i++) {
+      products.insertAdjacentHTML("beforeend", `
+        <div class="box">
+          <h4>מוצר ${i}</h4>
+          <div class="row c3">
+            <div class="fld"><label>המלצה</label><input type="text" name="PrRec${i}" /></div>
+            <div class="fld"><label>סוג מוצר</label><input type="text" name="PrType${i}" /></div>
+            <div class="fld"><label>שם הגוף המוסדי</label><input type="text" name="PrCo${i}" /></div>
+          </div>
+          <div class="row c3">
+            <div class="fld"><label>מספר חשבון / פוליסה</label><input type="text" name="PrAcc${i}" /></div>
+            <div class="fld"><label>מסלול</label><input type="text" name="PrTrack${i}" /></div>
+            <div class="fld"><label>יתרת חיסכון ₪</label><input type="text" name="PrBal${i}" /></div>
+          </div>
+          <div class="row c3">
+            <div class="fld"><label>תשואה שנתית ממוצעת %</label><input type="text" name="PrYield${i}" /></div>
+            <div class="fld"><label>דמי ניהול הפקדה %</label><input type="text" name="PrFeeDep${i}" /></div>
+            <div class="fld"><label>דמי ניהול צבירה %</label><input type="text" name="PrFeeAcc${i}" /></div>
+          </div>
+          <div class="row c3">
+            <div class="fld"><label>רמת סיכון</label><input type="text" name="PrRisk${i}" /></div>
+            <div class="fld"><label>סכום פדיון משוער ₪</label><input type="text" name="PrRedeem${i}" /></div>
+            <div class="fld"><label>יעד פדיון / תאריך</label><input type="text" name="PrWhen${i}" /></div>
+          </div>
+        </div>`);
+    }
+  </script>
+</body>
+</html>
