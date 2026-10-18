@@ -72,6 +72,7 @@ import {
 import {
   adsSourceBrand,
   assignOperatingBrand,
+  filterFacebookCampaignsForBrand,
   matchesOperatingBrand,
   sourceNameVisibleInBrand,
 } from "@/lib/finance/operating-brand";
@@ -179,13 +180,17 @@ function normalizeFacebookCampaigns(rows: unknown[]): FacebookAdsCampaignRow[] {
       ).trim();
       if (!facebookCampaignId) return null;
       const source = row.sourceName ?? row.source_name;
+      const accountId = row.adAccountId ?? row.ad_account_id;
+      const accountName = row.adAccountName ?? row.ad_account_name;
       return {
         facebookCampaignId,
         facebookCampaignName: String(row.facebookCampaignName ?? row.facebook_campaign_name ?? ""),
         status: String(row.status ?? ""),
         sourceName: source == null || source === "" ? null : String(source),
         enabled: row.enabled !== false,
-      } satisfies FacebookAdsCampaignRow;
+        adAccountId: accountId == null || accountId === "" ? null : String(accountId),
+        adAccountName: accountName == null || accountName === "" ? null : String(accountName),
+      };
     })
     .filter((row): row is FacebookAdsCampaignRow => Boolean(row));
 }
@@ -787,6 +792,18 @@ export function SourcePnlScreen({
       }),
     [payProfiles, data?.marketing?.productions, range, brand, shemeshEmployeeNames],
   );
+  const scopedFacebookCampaigns = useMemo(
+    () => filterFacebookCampaignsForBrand(facebookCampaigns, brand),
+    [facebookCampaigns, brand],
+  );
+  const scopedFacebookIds = useMemo(
+    () => new Set(scopedFacebookCampaigns.map((row) => row.facebookCampaignId)),
+    [scopedFacebookCampaigns],
+  );
+  const scopedFacebookStats = useMemo(
+    () => facebookStats.filter((row) => scopedFacebookIds.has(row.facebookCampaignId)),
+    [facebookStats, scopedFacebookIds],
+  );
   const sourceNames = useMemo(() => {
     const names = new Set<string>();
     const productionNames = new Set<string>();
@@ -813,14 +830,14 @@ export function SourcePnlScreen({
       if (brand === "all" || brand === "shemesh") {
         names.add(GOOGLE_ADS_SHEMESH_CUBE_SOURCE);
       }
-      for (const row of facebookCampaigns) consider(row.sourceName ?? "");
+      for (const row of scopedFacebookCampaigns) consider(row.sourceName ?? "");
     }
     return Array.from(names);
   }, [
     productions,
     data?.marketing?.sources,
     data?.marketing?.sourceCatalog,
-    facebookCampaigns,
+    scopedFacebookCampaigns,
     kind,
     brand,
   ]);
@@ -834,23 +851,23 @@ export function SourcePnlScreen({
         ...productions.map((row) => productionStartDate(row)),
         ...(kind === "volume" ? expenses.map((row) => row.occurredAt) : []),
         ...(kind === "volume" ? googleStats.map((row) => row.day) : []),
-        ...(kind === "volume" ? facebookStats.map((row) => row.day) : []),
+        ...(kind === "volume" ? scopedFacebookStats.map((row) => row.day) : []),
       ]),
-    [productions, expenses, googleStats, facebookStats, kind],
+    [productions, expenses, googleStats, scopedFacebookStats, kind],
   );
 
   const unmappedFacebookCount = useMemo(
     () =>
-      facebookCampaigns.filter((row) => row.enabled && !row.sourceName?.trim()).length,
-    [facebookCampaigns],
+      scopedFacebookCampaigns.filter((row) => row.enabled && !row.sourceName?.trim()).length,
+    [scopedFacebookCampaigns],
   );
   const facebookSpendInRange = useMemo(
     () =>
-      facebookStats.reduce(
+      scopedFacebookStats.reduce(
         (sum, row) => sum + (inDateRange(row.day, range) ? row.cost : 0),
         0,
       ),
-    [facebookStats, range],
+    [scopedFacebookStats, range],
   );
   const googleSpendInRange = useMemo(
     () =>
@@ -865,9 +882,9 @@ export function SourcePnlScreen({
     return Object.keys(computed).length > 0 ? computed : googleSpendBySource;
   }, [googleCampaigns, googleStats, range, googleSpendBySource]);
   const facebookSpendResolved = useMemo(() => {
-    const computed = rollupFacebookSpendBySource(facebookCampaigns, facebookStats, range);
+    const computed = rollupFacebookSpendBySource(scopedFacebookCampaigns, scopedFacebookStats, range);
     return Object.keys(computed).length > 0 ? computed : facebookSpendBySource;
-  }, [facebookCampaigns, facebookStats, range, facebookSpendBySource]);
+  }, [scopedFacebookCampaigns, scopedFacebookStats, range, facebookSpendBySource]);
 
   const allCards = useMemo(
     () =>
@@ -897,7 +914,7 @@ export function SourcePnlScreen({
             ? googleAdsRollup(name, googleCampaigns, googleStats, range)
             : { cost: 0, clicks: 0, impressions: 0, campaigns: [] };
           const facebook = includeManualAds
-            ? facebookAdsRollup(name, facebookCampaigns, facebookStats, range)
+            ? facebookAdsRollup(name, scopedFacebookCampaigns, scopedFacebookStats, range)
             : { cost: 0, clicks: 0, impressions: 0, campaigns: [] };
           const googleCost = includeGoogleAds
             ? spendForSource(googleSpendResolved, name) || google.cost
@@ -964,8 +981,8 @@ export function SourcePnlScreen({
       googleCampaigns,
       googleStats,
       googleSpendResolved,
-      facebookCampaigns,
-      facebookStats,
+      scopedFacebookCampaigns,
+      scopedFacebookStats,
       facebookSpendResolved,
       rates,
       payProfiles,
@@ -1376,7 +1393,7 @@ export function SourcePnlScreen({
               <p className="mt-0.5 text-[11px] text-muted-foreground">
                 שכר {payProfiles.length} · גוגל {googleCampaigns.length}/{googleStats.length}
                 {googleSpendInRange > 0 ? ` · ${formatIls(googleSpendInRange)}` : ""}
-                {" · "}פייסבוק {facebookCampaigns.length}/{facebookStats.length}
+                {" · "}פייסבוק {scopedFacebookCampaigns.length}/{scopedFacebookStats.length}
                 {facebookSpendInRange > 0 ? ` · ${formatIls(facebookSpendInRange)}` : ""}
               </p>
             </div>
@@ -1410,7 +1427,7 @@ export function SourcePnlScreen({
                   <span>
                     פייסבוק:{" "}
                     {facebookAds.connected
-                      ? `מחובר · ${formatLastUpdatedAt(facebookAds.lastSyncedAt) ?? "—"} · ${facebookCampaigns.length} קמפיינים · ${formatIls(facebookSpendInRange)}`
+                      ? `מחובר · ${formatLastUpdatedAt(facebookAds.lastSyncedAt) ?? "—"} · ${scopedFacebookCampaigns.length} קמפיינים · ${formatIls(facebookSpendInRange)}`
                       : "לא מחובר"}
                     {unmappedFacebookCount > 0
                       ? ` · ${unmappedFacebookCount} בלי שיוך`
@@ -1425,7 +1442,7 @@ export function SourcePnlScreen({
               ) : null}
               {facebookAds.connected &&
               facebookSpendInRange <= 0 &&
-              facebookCampaigns.length > 0 ? (
+              scopedFacebookCampaigns.length > 0 ? (
                 <p className="mt-2.5 font-medium text-amber-800">
                   אין הוצאות פייסבוק בטווח — בדקו טווח או סנכרנו שוב.
                 </p>
@@ -1649,7 +1666,7 @@ export function SourcePnlScreen({
               cubeNames={campaignNames}
               range={range}
               connection={facebookAds}
-              campaigns={facebookCampaigns}
+              campaigns={scopedFacebookCampaigns}
               stats={facebookStats}
               onChanged={() => void loadStateRow(range)}
             />
@@ -1681,8 +1698,8 @@ export function SourcePnlScreen({
         googleAds={googleAds}
         googleCampaigns={googleCampaigns}
         googleStats={googleStats}
-        facebookCampaigns={facebookCampaigns}
-        facebookStats={facebookStats}
+        facebookCampaigns={scopedFacebookCampaigns}
+        facebookStats={scopedFacebookStats}
         onChanged={() => {
           void loadStateRow(range);
         }}
@@ -1708,8 +1725,8 @@ export function SourcePnlScreen({
         googleAds={googleAds}
         googleCampaigns={googleCampaigns}
         googleStats={googleStats}
-        facebookCampaigns={facebookCampaigns}
-        facebookStats={facebookStats}
+        facebookCampaigns={scopedFacebookCampaigns}
+        facebookStats={scopedFacebookStats}
         onChanged={() => {
           void loadStateRow(range);
         }}

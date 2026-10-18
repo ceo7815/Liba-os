@@ -29,18 +29,25 @@ type OperatingBrandContextValue = {
 
 const OperatingBrandContext = createContext<OperatingBrandContextValue | null>(null);
 
-export function OperatingBrandProvider({ children }: { children: ReactNode }) {
-  const [brand, setBrandState] = useState<OperatingBrandId>(DEFAULT_OPERATING_BRAND);
+export function OperatingBrandProvider({
+  children,
+  lockedBrand,
+}: {
+  children: ReactNode;
+  lockedBrand?: OperatingBrandId;
+}) {
+  const [brand, setBrandState] = useState<OperatingBrandId>(lockedBrand ?? DEFAULT_OPERATING_BRAND);
   const [shemeshEmployeeNames, setShemeshEmployeeNames] = useState<string[]>([]);
 
   useLayoutEffect(() => {
+    if (lockedBrand) return;
     try {
       const saved = parseOperatingBrand(localStorage.getItem(OPERATING_BRAND_STORAGE_KEY));
       if (saved) setBrandState(saved);
     } catch {
       /* private mode */
     }
-  }, []);
+  }, [lockedBrand]);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,17 +63,18 @@ export function OperatingBrandProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setBrand = useCallback((next: OperatingBrandId) => {
+    if (lockedBrand) return;
     setBrandState(next);
     try {
       localStorage.setItem(OPERATING_BRAND_STORAGE_KEY, next);
     } catch {
       /* quota / private mode */
     }
-  }, []);
+  }, [lockedBrand]);
 
   const value = useMemo(
-    () => ({ brand, setBrand, shemeshEmployeeNames }),
-    [brand, setBrand, shemeshEmployeeNames],
+    () => ({ brand: lockedBrand ?? brand, setBrand, shemeshEmployeeNames }),
+    [lockedBrand, brand, setBrand, shemeshEmployeeNames],
   );
 
   return (

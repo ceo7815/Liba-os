@@ -7,7 +7,13 @@ import { authButtonClass, authFieldClass } from "@/components/auth/auth-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-export function LoginForm({ disabledError }: { disabledError?: boolean }) {
+export function LoginForm({
+  disabledError,
+  redirectTo = "/dashboard",
+}: {
+  disabledError?: boolean;
+  redirectTo?: string;
+}) {
   const [error, setError] = useState<string | null>(
     disabledError ? "החשבון הושבת. פנו למנהל המערכת." : null,
   );
@@ -51,7 +57,7 @@ export function LoginForm({ disabledError }: { disabledError?: boolean }) {
       }
 
       // Full navigation is faster than soft RSC refresh after setting auth cookies.
-      window.location.assign("/dashboard");
+      window.location.assign(redirectTo);
     } catch {
       setError("אין חיבור לשרת. רעננו את העמוד ונסו שוב.");
       setPending(false);

@@ -59,7 +59,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   });
 }
 
-export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }) {
+export function GlobalSyncButton({
+  canSyncAds = true,
+  includeExcel = true,
+  excelTarget = "liba",
+}: {
+  canSyncAds?: boolean;
+  includeExcel?: boolean;
+  excelTarget?: "liba" | "shemesh";
+}) {
   const { dashboard } = useLiveDashboard();
   const [busy, setBusy] = useState(false);
   const [excelStatus, setExcelStatus] = useState<StepStatus>("pending");
@@ -69,32 +77,57 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
   const syncAll = useCallback(async () => {
     if (busy) return;
     setBusy(true);
-    setExcelStatus("active");
+    setExcelStatus(includeExcel ? "active" : "done");
     setGoogleStatus("pending");
     setFacebookStatus("pending");
 
     try {
-      toast.message("מסנכרן אקסל…");
-      const excelRes = await fetch(`/api/sales-dashboard?force=1&t=${Date.now()}`, {
-        cache: "no-store",
-        credentials: "include",
-      });
-      if (!excelRes.ok) {
-        throw new Error(
-          excelRes.status === 401 ? "אין הרשאה לסנכרון אקסל" : "סנכרון אקסל נכשל",
-        );
-      }
-      const excelData = (await excelRes.json()) as DashboardData;
-      publishLiveDashboard(excelData);
-      setExcelStatus("done");
+      if (includeExcel && excelTarget === "shemesh") {
+        toast.message("מסנכרן אקסל שמש…");
+        const excelRes = await fetch(`/api/shemesh/sales-excel?t=${Date.now()}`, {
+          method: "POST",
+          cache: "no-store",
+          credentials: "include",
+        });
+        const excelBody = (await excelRes.json().catch(() => null)) as {
+          error?: string;
+          skipped?: boolean;
+          rowCount?: number;
+        } | null;
+        if (!excelRes.ok) {
+          throw new Error(
+            excelRes.status === 401
+              ? "אין הרשאה לסנכרון אקסל"
+              : excelBody?.error || "סנכרון אקסל נכשל",
+          );
+        }
+        setExcelStatus("done");
+        if (!excelBody?.skipped && typeof excelBody?.rowCount === "number") {
+          toast.success(`דוח שמש עודכן · ${excelBody.rowCount.toLocaleString("he-IL")} שורות`);
+        }
+      } else if (includeExcel) {
+        toast.message("מסנכרן אקסל…");
+        const excelRes = await fetch(`/api/sales-dashboard?force=1&t=${Date.now()}`, {
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (!excelRes.ok) {
+          throw new Error(
+            excelRes.status === 401 ? "אין הרשאה לסנכרון אקסל" : "סנכרון אקסל נכשל",
+          );
+        }
+        const excelData = (await excelRes.json()) as DashboardData;
+        publishLiveDashboard(excelData);
+        setExcelStatus("done");
 
-      const people = await syncEmployeesFromExcel();
-      if (people.error) {
-        toast.error(people.error);
-      } else if (people.added > 0) {
-        toast.success(
-          `עודכנו ${people.added} כרטיסי עובדים מהאקסל (${people.found} משווקים)`,
-        );
+        const people = await syncEmployeesFromExcel();
+        if (people.error) {
+          toast.error(people.error);
+        } else if (people.added > 0) {
+          toast.success(
+            `עודכנו ${people.added} כרטיסי עובדים מהאקסל (${people.found} משווקים)`,
+          );
+        }
       }
 
       let adsFailed = false;
@@ -149,7 +182,7 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
 
       notifyGlobalSyncDone();
       if (adsFailed) {
-        toast.error("האקסל עודכן. גוגל או פייסבוק לא הושלמו");
+        toast.error(includeExcel ? "האקסל עודכן. גוגל או פייסבוק לא הושלמו" : "גוגל או פייסבוק לא הושלמו");
       } else {
         toast.success("הסנכרון הסתיים — מוצג העדכון האחרון");
       }
@@ -162,10 +195,14 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
     } finally {
       setBusy(false);
     }
-  }, [busy, canSyncAds]);
+  }, [busy, canSyncAds, includeExcel, excelTarget]);
 
   const syncedStamp = formatSyncStamp(dashboard?.syncedAt);
-  const statusLine = `סנכרון אחרון · ${syncedStamp}`;
+  const statusLine = !includeExcel
+    ? "גוגל ופייסבוק"
+    : excelTarget === "shemesh"
+      ? "אקסל, גוגל ופייסבוק"
+      : `סנכרון אחרון · ${syncedStamp}`;
 
   return (
     <div className="relative flex items-center">
@@ -176,7 +213,7 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
         aria-label={`סנכרון מערכת. ${statusLine}`}
         className="inline-flex h-10 items-center gap-2 rounded-2xl border border-white/10 bg-black py-1 pe-3 ps-1 text-white shadow-[0_10px_24px_-16px_rgba(0,0,0,0.8)] transition-transform active:scale-[0.98] disabled:opacity-80 sm:h-11 sm:gap-2.5 sm:rounded-full sm:pe-4 sm:ps-1.5"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight text-black sm:size-8 sm:rounded-full">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight text-highlight-foreground sm:size-8 sm:rounded-full">
           <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
         </span>
         <span className="flex min-w-0 flex-col items-start text-start leading-none">
@@ -191,7 +228,7 @@ export function GlobalSyncButton({ canSyncAds = true }: { canSyncAds?: boolean }
         <div className="absolute end-0 top-[calc(100%+0.5rem)] z-50 w-[min(16.5rem,calc(100vw-1.5rem))] rounded-2xl border border-black/[0.08] bg-white/95 p-3 shadow-[0_18px_40px_-18px_rgba(17,17,17,0.45)] backdrop-blur-md">
           <p className="text-[11px] font-semibold text-foreground">סנכרון מערכת…</p>
           <div className="mt-2 space-y-1.5">
-            <SyncStepRow label="אקסל" status={excelStatus} />
+            {includeExcel ? <SyncStepRow label="אקסל" status={excelStatus} /> : null}
             <SyncStepRow label="גוגל אדס" status={googleStatus} />
             <SyncStepRow label="פייסבוק" status={facebookStatus} />
           </div>

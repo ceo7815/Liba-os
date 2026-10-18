@@ -31,7 +31,16 @@ const COLORS = [
 /** Fixed size tiers so the 12 balls look clearly different */
 const SIZES = [28, 36, 44, 52, 60, 70, 82, 94, 48, 66, 38, 76];
 
-function createBalls(width: number, height: number, count: number): Ball[] {
+function createBalls(
+  width: number,
+  height: number,
+  count: number,
+  tone: "liba" | "shemesh" = "liba",
+): Ball[] {
+  const palette =
+    tone === "shemesh"
+      ? COLORS.map((color) => color.replace("255, 212, 0", "24, 90, 148"))
+      : COLORS;
   return Array.from({ length: count }, (_, i) => {
     const r = SIZES[i % SIZES.length] / 2 + Math.random() * 6;
     const speed = 0.85 + Math.random() * 1.5;
@@ -42,7 +51,7 @@ function createBalls(width: number, height: number, count: number): Ball[] {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       r,
-      color: COLORS[i % COLORS.length],
+      color: palette[i % palette.length],
     };
   });
 }
@@ -144,7 +153,7 @@ function readObstacle(canvas: HTMLCanvasElement): Rect | null {
 /**
  * Animated colliding circles that also bounce off the login card frame.
  */
-export function AuthAtmosphere() {
+export function AuthAtmosphere({ tone = "liba" }: { tone?: "liba" | "shemesh" }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -166,7 +175,7 @@ export function AuthAtmosphere() {
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       obstacle = readObstacle(canvas);
-      balls = createBalls(w, h, reduceMotion ? 8 : 12);
+      balls = createBalls(w, h, reduceMotion ? 8 : 12, tone);
       // Keep balls outside the card on spawn
       if (obstacle) {
         for (const ball of balls) {
@@ -268,7 +277,7 @@ export function AuthAtmosphere() {
       window.removeEventListener("resize", resize);
       ro.disconnect();
     };
-  }, []);
+  }, [tone]);
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">

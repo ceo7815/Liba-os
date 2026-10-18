@@ -1,29 +1,55 @@
+import Image from "next/image";
 import { AuthAtmosphere } from "@/components/auth/auth-atmosphere";
 import { LogoBadge } from "@/components/brand/logo-badge";
+import { cn } from "@/lib/utils";
 
 export function AuthCard({
   title,
   description,
+  footer = "© ליבה ביטוח ופנסיוני · מערכת פנימית",
+  brand = "liba",
   children,
 }: {
   title: string;
   description?: string;
+  footer?: string;
+  brand?: "liba" | "shemesh" | "chooser";
   children: React.ReactNode;
 }) {
+  const isShemesh = brand === "shemesh";
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:py-12">
-      <AuthAtmosphere />
+    <div
+      className={cn(
+        "relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:py-12",
+        isShemesh && "shemesh-os",
+      )}
+    >
+      <AuthAtmosphere tone={isShemesh ? "shemesh" : "liba"} />
 
       <div className="relative z-10 w-full max-w-[440px] animate-auth-rise">
+        {brand === "chooser" ? null : (
         <div className="mb-7 flex justify-center px-2">
           <div className="relative w-full max-w-[300px]">
             <div
               aria-hidden
               className="pointer-events-none absolute left-1/2 top-1/2 h-[70%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/50 blur-2xl"
             />
-            <LogoBadge full href="/login" className="relative z-10" />
+            {isShemesh ? (
+              <Image
+                src="/brand/shemesh-logo.png"
+                alt="שמש מימוש זכויות"
+                width={605}
+                height={782}
+                priority
+                className="relative z-10 mx-auto h-auto max-h-36 w-auto object-contain"
+              />
+            ) : (
+              <LogoBadge full href="/login" className="relative z-10" />
+            )}
           </div>
         </div>
+        )}
 
         <div
           data-auth-obstacle
@@ -43,7 +69,7 @@ export function AuthCard({
         </div>
 
         <p className="mt-6 text-center text-xs font-extrabold tracking-wide text-[#5c5c5c]">
-          © ליבה ביטוח ופנסיוני · מערכת פנימית
+          {footer}
         </p>
       </div>
     </div>

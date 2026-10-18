@@ -19,6 +19,7 @@ import {
 } from "@/lib/finance/operating-brand";
 import { formatIls } from "@/lib/sales-dashboard/campaign-math";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
+import { presentShemeshWorkbook, shemeshSheetHint } from "@/lib/shemesh/sales-excel-view";
 import {
   findHeaderIndex,
   formatWorkbookDateDisplay,
@@ -89,13 +90,20 @@ function uniqueSorted(rows: WorkbookRow[], col: number): string[] {
   return Array.from(values).sort((a, b) => a.localeCompare(b, "he", { numeric: true, sensitivity: "base" }));
 }
 
-async function fetchWorkbook(): Promise<SalesWorkbookPayload> {
-  const res = await fetch("/api/sales-dashboard/workbook", { cache: "no-store" });
+async function fetchWorkbook(company: "liba" | "shemesh"): Promise<SalesWorkbookPayload> {
+  const path = company === "shemesh" ? "/api/shemesh/sales-excel" : "/api/sales-dashboard/workbook";
+  const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) throw new Error("workbook");
   return (await res.json()) as SalesWorkbookPayload;
 }
 
-export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPayload | null }) {
+export function SalesExcelReportScreen({
+  initial,
+  company = "liba",
+}: {
+  initial?: SalesWorkbookPayload | null;
+  company?: "liba" | "shemesh";
+}) {
   const { dashboard } = useLiveDashboard();
   const urlQuery = useSearchParams().get("q") ?? "";
   const [remote, setRemote] = useState<SalesWorkbookPayload | null>(initial ?? null);
@@ -122,7 +130,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
     if (initial?.sheets.length) {
       setLoadState("ok");
     }
-    fetchWorkbook()
+    fetchWorkbook(company)
       .then((data) => {
         if (cancelled) return;
         setRemote(data);
@@ -132,7 +140,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
         if (!cancelled && !initial?.sheets.length) setLoadState("error");
       });
     const onSync = () => {
-      void fetchWorkbook()
+      void fetchWorkbook(company)
         .then((data) => {
           if (!cancelled) {
             setRemote(data);
@@ -146,17 +154,25 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
       cancelled = true;
       window.removeEventListener(GLOBAL_SYNC_EVENT, onSync);
     };
-  }, [initial]);
+  }, [initial, company]);
 
   const workbook = useMemo(() => {
-    if (remote?.sheets?.length) return remote;
-    const fromDash = workbookFromDashboard(dashboard);
-    return {
-      ...fromDash,
-      syncedAt: dashboard?.syncedAt ?? remote?.syncedAt ?? null,
-      stored: Boolean(remote?.stored),
-    } satisfies SalesWorkbookPayload;
-  }, [remote, dashboard]);
+    const raw = remote?.sheets?.length
+      ? remote
+      : company === "shemesh"
+        ? ({
+            fileName: initial?.fileName ?? null,
+            sheets: initial?.sheets ?? [],
+            syncedAt: initial?.syncedAt ?? null,
+            stored: Boolean(initial?.stored),
+          } satisfies SalesWorkbookPayload)
+        : ({
+            ...workbookFromDashboard(dashboard),
+            syncedAt: dashboard?.syncedAt ?? remote?.syncedAt ?? null,
+            stored: Boolean(remote?.stored),
+          } satisfies SalesWorkbookPayload);
+    return company === "shemesh" ? presentShemeshWorkbook(raw) : raw;
+  }, [remote, dashboard, company, initial]);
 
   const sheet: WorkbookSheet | null = workbook.sheets[sheetIndex] ?? workbook.sheets[0] ?? null;
 
@@ -182,7 +198,9 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
 
   const statusCol = sheet ? findHeaderIndex(sheet.headers, "סטאטוס", "סטטוס") : -1;
   const processCol = sheet ? findHeaderIndex(sheet.headers, "סוג תהליך", "תהליך") : -1;
-  const agentCol = sheet ? findHeaderIndex(sheet.headers, "משווק") : -1;
+  const agentCol = sheet
+    ? findHeaderIndex(sheet.headers, "משווק", ...(company === "shemesh" ? ["שם נציג", "נציג"] : []))
+    : -1;
   const sourceCol = sheet ? findHeaderIndex(sheet.headers, "מקור") : -1;
   const premiumCol = sheet ? premiumColumnIndex(sheet.headers) : -1;
   const policyCol = sheet ? sheet.headers.findIndex((header) => isPolicyHeader(header)) : -1;
@@ -411,7 +429,9 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
           <Rows3 className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-semibold tracking-tight">שורות מכירה</h1>
+          <h1 className="text-lg font-semibold tracking-tight">
+            {company === "shemesh" ? "דוח מכירות" : "שורות מכירה"}
+          </h1>
           <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
             {workbook.stored ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-800">
@@ -420,6 +440,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
               </span>
             ) : null}
             <span>{syncedLabel ? `עודכן · ${syncedLabel}` : "ממתינים לסנכרון"}</span>
+            {company === "shemesh" && sheet ? <span>· {shemeshSheetHint(sheet.name)}</span> : null}
             {sheet ? (
               <span>
                 · {sheet.rows.length.toLocaleString("he-IL")} שורות · {columnCount.toLocaleString("he-IL")} עמודות
@@ -441,8 +462,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
 
       <div className="mx-3 mb-3 space-y-2 sm:mx-5">
         {workbook.sheets.length ? (
-          <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
-            <span className="shrink-0 text-xs font-medium text-muted-foreground">גיליונות</span>
+          <div className="flex flex-wrap items-center gap-2">
             {workbook.sheets.map((item, index) => {
               const active = index === sheetIndex;
               return (
@@ -453,7 +473,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
                   className={cn(
                     "inline-flex shrink-0 items-center gap-2 rounded-full border py-1 pe-1.5 ps-3 text-sm transition-colors",
                     active
-                      ? "border-transparent bg-highlight font-medium text-[#1a1a1a]"
+                      ? "border-transparent bg-highlight font-medium text-highlight-foreground"
                       : "border-black/[0.06] bg-white text-foreground hover:bg-[#fafaf8]",
                   )}
                 >
@@ -461,7 +481,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums",
-                      active ? "bg-black/10 text-[#1a1a1a]" : "bg-[#f3f2ee] text-[#5c5c56]",
+                      active ? "bg-black/10 text-highlight-foreground" : "bg-[#f3f2ee] text-[#5c5c56]",
                     )}
                   >
                     {item.rows.length.toLocaleString("he-IL")} שורות
@@ -474,7 +494,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
 
         {sheet?.kind === "report" ? (
           <div className="space-y-2.5 rounded-2xl border border-black/[0.06] bg-white px-3 py-2.5">
-            {agentCol >= 0 || sourceCol >= 0 ? (
+            {company !== "shemesh" && (agentCol >= 0 || sourceCol >= 0) ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">מותג</span>
                 <div className="flex items-center gap-1 rounded-full bg-[#f6f5f1] p-1" role="tablist" aria-label="ליבה או שמש">
@@ -493,7 +513,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
                           "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs transition-colors",
                           selected && id === "shemesh" && "bg-amber-700 font-medium text-white",
                           selected && id === "liba" && "bg-[#1a1a1a] font-medium text-white",
-                          selected && id === "all" && "bg-highlight font-medium text-[#1a1a1a]",
+                          selected && id === "all" && "bg-highlight font-medium text-highlight-foreground",
                           !selected && "text-muted-foreground hover:bg-white",
                         )}
                       >
@@ -536,7 +556,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
                       className={cn(
                         "h-7 rounded-full px-2.5 text-xs transition-colors",
                         activePreset === id
-                          ? "bg-highlight font-medium text-[#1a1a1a]"
+                          ? "bg-highlight font-medium text-highlight-foreground"
                           : "text-muted-foreground hover:bg-white",
                       )}
                     >
@@ -609,7 +629,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
                   onChange={(event) => setQuick((current) => ({ ...current, agent: event.target.value }))}
                   aria-label="משווק"
                 >
-                  <option value="">כל המשווקים</option>
+                  <option value="">{company === "shemesh" ? "כל הנציגים" : "כל המשווקים"}</option>
                   {agents.map((value) => (
                     <option key={value} value={value}>
                       {value}
@@ -632,10 +652,14 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
 
       {!sheet || (loadState === "loading" && !sheet.rows.length) ? (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          {loadState === "loading" ? "טוען את הדוח…" : "אין נתונים — סנכרנו את דוח המנהלים"}
+          {loadState === "loading"
+            ? "טוען את הדוח…"
+            : company === "shemesh"
+              ? "אין נתונים — סנכרנו את דוח המכירות"
+              : "אין נתונים — סנכרנו את דוח המנהלים"}
         </div>
       ) : (
-        <div className="mx-3 mb-2 flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-5">
+        <div className="mx-3 mb-2 flex min-h-[28rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-5">
           <SalesExcelGrid
             sheet={sheet}
             rows={pageRows}
@@ -664,7 +688,7 @@ export function SalesExcelReportScreen({ initial }: { initial?: SalesWorkbookPay
           {premiumCol >= 0 ? ` · פרמיה ${formatIls(Math.round(premiumSum))}` : ""}
         </p>
         <div className="flex items-center gap-2">
-          <SalesEntryAudit sheets={workbook.sheets} />
+          {company === "liba" ? <SalesEntryAudit sheets={workbook.sheets} /> : null}
           <Button
             type="button"
             variant="outline"

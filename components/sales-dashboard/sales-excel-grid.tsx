@@ -56,7 +56,17 @@ function uniqueColumnValues(rows: WorkbookRow[], col: number): [string, number][
 }
 
 function isNumericHeader(header: string): boolean {
-  return /תאריך|פרמיה|פוליסה|ת\.ז|נייד|טלפון/.test(header);
+  return /תאריך|פרמיה|פוליסה|ת\.ז|תז|נייד|טלפון|סכום|יתרה|עמלה/.test(header);
+}
+
+function displayCell(header: string, value: string): string {
+  if (isDateHeader(header)) return formatWorkbookDateDisplay(value);
+  if (!/סכום|יתרה|פרמיה|עמלה|תגמול/.test(header)) return value;
+  const raw = value.replace(/,/g, "").trim();
+  if (!/^-?\d+(\.\d+)?$/.test(raw)) return value;
+  const amount = Number(raw);
+  if (!Number.isFinite(amount)) return value;
+  return amount.toLocaleString("he-IL", { maximumFractionDigits: amount % 1 === 0 ? 0 : 2 });
 }
 
 const ExcelRow = memo(function ExcelRow({
@@ -77,7 +87,7 @@ const ExcelRow = memo(function ExcelRow({
   onSelect: (row: WorkbookRow) => void;
 }) {
   const zebra = index % 2 === 1;
-  const surface = selected ? "bg-[#fff6cc]" : zebra ? "bg-[#fafaf8]" : "bg-white";
+  const surface = selected ? "bg-highlight/20" : zebra ? "bg-[#fafaf8]" : "bg-white";
 
   return (
     <div
@@ -92,7 +102,7 @@ const ExcelRow = memo(function ExcelRow({
         className={cn(
           "pin sticky right-0 z-10 flex shrink-0 items-center justify-center border-b border-black/[0.04] text-[11px] tabular-nums text-[#9a9a94]",
           surface,
-          !selected && "group-hover:bg-[#fffbea]",
+          !selected && "group-hover:bg-highlight/10",
         )}
         style={{ width: GUTTER, minWidth: GUTTER }}
       >
@@ -100,7 +110,7 @@ const ExcelRow = memo(function ExcelRow({
       </div>
       {row.cells.map((value, col) => {
         const header = headers[col] ?? "";
-        const shown = isDateHeader(header) ? formatWorkbookDateDisplay(value) : value;
+        const shown = displayCell(header, value);
         const tone = cellTone(header, shown);
         const pinned = col === 0;
         return (
@@ -111,7 +121,7 @@ const ExcelRow = memo(function ExcelRow({
             className={cn(
               "flex shrink-0 items-center overflow-hidden border-b border-black/[0.04] px-3 whitespace-nowrap",
               surface,
-              !selected && "group-hover:bg-[#fffbea]",
+              !selected && "group-hover:bg-highlight/10",
               isPolicyHeader(header) && value && "font-medium tabular-nums",
               isNotesHeader(header) && "text-[#6f6f68]",
               isNumericHeader(header) && "tabular-nums",
@@ -465,12 +475,28 @@ export const SalesExcelGrid = memo(function SalesExcelGrid({
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [widths, setWidths] = useState<number[]>(() => sheet.headers.map((header) => excelColumnWidth(header)));
+  const [viewWidth, setViewWidth] = useState(0);
 
   useEffect(() => {
     setWidths(sheet.headers.map((header) => excelColumnWidth(header)));
   }, [sheet.name, sheet.headers]);
 
-  const totalWidth = GUTTER + widths.reduce((sum, width) => sum + width, 0);
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const measure = () => setViewWidth(el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [sheet.name]);
+
+  const baseTotal = GUTTER + widths.reduce((sum, width) => sum + width, 0);
+  const extra = Math.max(0, viewWidth - baseTotal);
+  const weight = Math.max(1, baseTotal - GUTTER);
+  const displayWidths =
+    extra > 12 ? widths.map((width) => width + extra * (width / weight)) : widths;
+  const totalWidth = GUTTER + displayWidths.reduce((sum, width) => sum + width, 0);
 
   useEffect(() => {
     const el = scroller.current;
@@ -544,7 +570,7 @@ export const SalesExcelGrid = memo(function SalesExcelGrid({
       <div style={{ width: totalWidth }}>
         <GridHeader
           sheet={sheet}
-          widths={widths}
+          widths={displayWidths}
           totalWidth={totalWidth}
           sort={sort}
           filters={filters}
@@ -559,7 +585,7 @@ export const SalesExcelGrid = memo(function SalesExcelGrid({
             row={row}
             index={index}
             selected={row.id === selectedId}
-            widths={widths}
+            widths={displayWidths}
             headers={sheet.headers}
             totalWidth={totalWidth}
             onSelect={onSelect}

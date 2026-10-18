@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import {
   adsSourceBrand,
   assignOperatingBrand,
+  filterFacebookCampaignsForBrand,
   matchesOperatingBrand,
   sourceNameVisibleInBrand,
 } from "@/lib/finance/operating-brand";
@@ -178,6 +179,8 @@ function normalizeFacebookCampaigns(rows: unknown[]): FacebookAdsCampaignRow[] {
       ).trim();
       if (!facebookCampaignId) return null;
       const source = row.sourceName ?? row.source_name;
+      const accountId = row.adAccountId ?? row.ad_account_id;
+      const accountName = row.adAccountName ?? row.ad_account_name;
       return {
         facebookCampaignId,
         facebookCampaignName: String(
@@ -186,7 +189,9 @@ function normalizeFacebookCampaigns(rows: unknown[]): FacebookAdsCampaignRow[] {
         status: String(row.status ?? ""),
         sourceName: source == null || source === "" ? null : String(source),
         enabled: row.enabled !== false,
-      } satisfies FacebookAdsCampaignRow;
+        adAccountId: accountId == null || accountId === "" ? null : String(accountId),
+        adAccountName: accountName == null || accountName === "" ? null : String(accountName),
+      };
     })
     .filter((row): row is FacebookAdsCampaignRow => Boolean(row));
 }
@@ -421,6 +426,19 @@ export function SalesBySourceScreen() {
     [brandRows],
   );
 
+  const scopedFacebookCampaigns = useMemo(
+    () => filterFacebookCampaignsForBrand(facebookCampaigns, brand),
+    [facebookCampaigns, brand],
+  );
+  const scopedFacebookIds = useMemo(
+    () => new Set(scopedFacebookCampaigns.map((row) => row.facebookCampaignId)),
+    [scopedFacebookCampaigns],
+  );
+  const scopedFacebookStats = useMemo(
+    () => facebookStats.filter((row) => scopedFacebookIds.has(row.facebookCampaignId)),
+    [facebookStats, scopedFacebookIds],
+  );
+
   const sourceNames = useMemo(() => {
     const names = new Set<string>();
     const productionNames = new Set<string>();
@@ -440,13 +458,13 @@ export function SalesBySourceScreen() {
     for (const name of data?.marketing?.sourceCatalog ?? []) consider(name);
     if (brand === "all" || brand === "liba") names.add(GOOGLE_ADS_CUBE_SOURCE);
     if (brand === "all" || brand === "shemesh") names.add(GOOGLE_ADS_SHEMESH_CUBE_SOURCE);
-    for (const row of facebookCampaigns) consider(row.sourceName ?? "");
+    for (const row of scopedFacebookCampaigns) consider(row.sourceName ?? "");
     return Array.from(names);
   }, [
     productions,
     data?.marketing?.sources,
     data?.marketing?.sourceCatalog,
-    facebookCampaigns,
+    scopedFacebookCampaigns,
     brand,
   ]);
 
@@ -462,12 +480,12 @@ export function SalesBySourceScreen() {
 
   const facebookSpendResolved = useMemo(() => {
     const computed = rollupFacebookSpendBySource(
-      facebookCampaigns,
-      facebookStats,
+      scopedFacebookCampaigns,
+      scopedFacebookStats,
       range,
     );
     return Object.keys(computed).length > 0 ? computed : facebookSpendBySource;
-  }, [facebookCampaigns, facebookStats, range, facebookSpendBySource]);
+  }, [scopedFacebookCampaigns, scopedFacebookStats, range, facebookSpendBySource]);
 
   const allCards = useMemo(
     () =>
@@ -485,8 +503,8 @@ export function SalesBySourceScreen() {
             googleCampaigns,
             googleStats,
             googleSpendBySource: googleSpendResolved,
-            facebookCampaigns,
-            facebookStats,
+            facebookCampaigns: scopedFacebookCampaigns,
+            facebookStats: scopedFacebookStats,
             facebookSpendBySource: facebookSpendResolved,
             includeGoogleAds,
             includeFacebookAds,
@@ -505,8 +523,8 @@ export function SalesBySourceScreen() {
       googleCampaigns,
       googleStats,
       googleSpendResolved,
-      facebookCampaigns,
-      facebookStats,
+      scopedFacebookCampaigns,
+      scopedFacebookStats,
       facebookSpendResolved,
       brand,
     ],
@@ -572,16 +590,16 @@ export function SalesBySourceScreen() {
       spanOfIsoDates([
         ...productions.map((row) => isoDay(row.transferDate)),
         ...googleStats.map((row) => row.day),
-        ...facebookStats.map((row) => row.day),
+        ...scopedFacebookStats.map((row) => row.day),
       ]),
-    [productions, googleStats, facebookStats],
+    [productions, googleStats, scopedFacebookStats],
   );
 
   const unmappedFacebookCount = useMemo(
     () =>
-      facebookCampaigns.filter((row) => row.enabled && !row.sourceName?.trim())
+      scopedFacebookCampaigns.filter((row) => row.enabled && !row.sourceName?.trim())
         .length,
-    [facebookCampaigns],
+    [scopedFacebookCampaigns],
   );
 
   const selectedCard = allCards.find((card) => card.name === selected) ?? null;

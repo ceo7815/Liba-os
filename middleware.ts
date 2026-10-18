@@ -25,5 +25,7 @@ export const config = {
     "/academy",
     "/academy/:path*",
     "/sales-tv",
+    "/shemesh",
+    "/shemesh/:path*",
   ],
 };

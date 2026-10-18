@@ -8,7 +8,8 @@
     "start": "node scripts/next-with-env.mjs start",
     "lint": "next lint",
     "mcp:e2e": "node scripts/mcp-e2e.mjs",
-    "sales:watch": "node scripts/watch-sales-excel.mjs"
+    "sales:watch": "node scripts/watch-sales-excel.mjs",
+    "shemesh:sales:watch": "node scripts/watch-shemesh-excel.mjs"
   },
   "dependencies": {
     "@hebcal/core": "^6.9.2",

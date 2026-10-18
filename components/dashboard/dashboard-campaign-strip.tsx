@@ -50,7 +50,7 @@ export function DashboardCampaignStrip() {
     <section className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]">
       <div className="flex items-baseline justify-between gap-3 border-b border-black/[0.06] px-4 py-2 sm:px-5">
         <div>
-          <h2 className="text-sm font-semibold tracking-tight">קמפיינים החודש</h2>
+          <h2 className="text-sm font-semibold tracking-tight">קמפיינים של ליבה</h2>
           <p className="text-[11px] text-muted-foreground">
             {dayLabel(pulse.from)} עד {dayLabel(pulse.to)}
             {synced ? ` · עודכן ${synced}` : ""}
@@ -62,7 +62,7 @@ export function DashboardCampaignStrip() {
         </Link>
       </div>
       <div className="grid grid-cols-2 gap-px bg-black/[0.06] sm:grid-cols-4">
-        <PulseCell label="הוצאה" value={money(pulse.spend)} hint="גוגל ופייסבוק" onClick={() => setOpen("spend")} />
+        <PulseCell label="הוצאה" value={money(pulse.spend)} hint="גוגל ופייסבוק של ליבה" onClick={() => setOpen("spend")} />
         <PulseCell label="שיחות גוגל" value={pulse.googleCalls.toLocaleString("he-IL")} hint={callPrice == null ? "אין שיחות" : `${money(callPrice)} לשיחה`} onClick={() => setOpen("calls")} />
         <PulseCell label="טפסי פייסבוק" value={pulse.facebookForms.toLocaleString("he-IL")} hint={formPrice == null ? "אין טפסים" : `${money(formPrice)} לטופס`} onClick={() => setOpen("forms")} />
         <PulseCell
@@ -126,7 +126,7 @@ function CampaignExplain({
         ? "כמה טפסים פייסבוק ספרה. טופס אחד נספר פעם אחת."
         : id === "today"
           ? "רק היום, מאותם נתונים שמורים."
-          : "סכום מה ששולם בגוגל ובפייסבוק מתחילת החודש עד היום.";
+          : "הוצאת הקמפיינים של ליבה מתחילת החודש עד היום, אותו חישוב כמו במסך הקמפיינים. שמש נספרת רק במערכת של שמש.";
   return (
     <>
       <DialogHeader>

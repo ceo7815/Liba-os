@@ -220,6 +220,20 @@
     --sidebar-ring: 50 100% 50%;
   }
 
+  /* Shemesh accent: the logo's blue, light enough to read as blue on white. */
+  .shemesh-os {
+    --accent: 208 72% 34%;
+    --accent-foreground: 0 0% 100%;
+    --highlight: 208 72% 34%;
+    --highlight-foreground: 0 0% 100%;
+    --ring: 208 72% 34%;
+    --chart-1: 208 72% 34%;
+    --chart-4: 208 48% 48%;
+    --sidebar-primary: 208 72% 34%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 208 72% 34%;
+  }
+
   * {
     @apply border-border;
   }
@@ -382,5 +396,32 @@
 
   .agent-tool-cube:hover {
     transform: none !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm 10mm 12mm;
+  }
+
+  .report-preview,
+  .report-stage,
+  .report-sheet {
+    background: white !important;
+    box-shadow: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    width: auto !important;
+  }
+
+  .report-sheet {
+    position: static !important;
+    transform: none !important;
+  }
+
+  .report-block {
+    break-inside: avoid;
   }
 }

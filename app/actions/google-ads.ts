@@ -222,7 +222,12 @@ async function resolveRefreshToken(): Promise<string> {
   return decryptVaultSecret(encrypted);
 }
 
+function isTransientSyncError(message: string): boolean {
+  return /fetch failed|failed to fetch|network|econnreset|etimedout|socket|abort|timeout/i.test(message);
+}
+
 async function writeSettingsError(message: string) {
+  if (isTransientSyncError(message)) return;
   const admin = createAdminClient();
   await admin.from("google_ads_settings").upsert({
     id: 1,
@@ -515,8 +520,11 @@ export async function syncGoogleAds(): Promise<{
     revalidatePath(SOURCE_PNL_PATH);
     return { ok: true, campaigns: campaigns.length, days: statRows.length };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "סנכרון גוגל אדס נכשל";
-    await writeSettingsError(message);
+    const raw = err instanceof Error ? err.message : "סנכרון גוגל אדס נכשל";
+    const message = isTransientSyncError(raw)
+      ? "גוגל לא הגיב בסנכרון. החיבור תקין, נסו שוב."
+      : raw;
+    await writeSettingsError(raw);
     return { ok: false, error: message };
   }
 }

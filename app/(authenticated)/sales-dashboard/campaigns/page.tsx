@@ -18,5 +18,5 @@ export default async function CampaignsPage() {
     redirect("/dashboard");
   }
   const initial = await loadCampaignBoard();
-  return <CampaignsScreen initial={initial} />;
+  return <CampaignsScreen initial={initial} brand="liba" />;
 }

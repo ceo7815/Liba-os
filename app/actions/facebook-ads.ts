@@ -136,7 +136,9 @@ export async function readFacebookAdsBundle(statsRange?: DateRange): Promise<Fac
       .maybeSingle(),
     admin
       .from("facebook_ads_campaign_map")
-      .select("facebook_campaign_id, facebook_campaign_name, status, source_name, enabled")
+      .select(
+        "facebook_campaign_id, facebook_campaign_name, status, source_name, enabled, ad_account_id, ad_account_name",
+      )
       .order("facebook_campaign_name"),
     fetchFacebookDailyStats(admin, statsRange),
   ]);
@@ -172,6 +174,8 @@ export async function readFacebookAdsBundle(statsRange?: DateRange): Promise<Fac
       status: item.status,
       sourceName: item.source_name,
       enabled: item.enabled !== false,
+      adAccountId: item.ad_account_id,
+      adAccountName: item.ad_account_name,
     })),
     stats: statsRows.map((item) => ({
       facebookCampaignId: String(item.facebook_campaign_id),
@@ -202,7 +206,12 @@ async function resolveAccessToken(): Promise<string> {
   return decryptVaultSecret(encrypted);
 }
 
+function isTransientSyncError(message: string): boolean {
+  return /fetch failed|failed to fetch|network|econnreset|etimedout|socket|abort|timeout/i.test(message);
+}
+
 async function writeSettingsError(message: string) {
+  if (isTransientSyncError(message)) return;
   const admin = createAdminClient();
   await admin.from("facebook_ads_settings").upsert({
     id: 1,
@@ -339,7 +348,13 @@ export async function syncFacebookAds(): Promise<{
     fromDate.setMonth(fromDate.getMonth() - 36);
     const from = jerusalemYmd(fromDate);
 
-    const campaigns: { id: string; name: string; status: string }[] = [];
+    const campaigns: {
+      id: string;
+      name: string;
+      status: string;
+      adAccountId: string;
+      adAccountName: string;
+    }[] = [];
     const metrics: {
       campaignId: string;
       campaignName: string;
@@ -356,11 +371,16 @@ export async function syncFacebookAds(): Promise<{
           id: row.id,
           name: row.name,
           status: row.status,
+          adAccountId: account.id,
+          adAccountName: account.name,
         });
       }
       const daily = await listFacebookDailyMetrics(accessToken, account.id, from, to);
       metrics.push(...daily);
     }
+    const accountByCampaign = new Map(
+      campaigns.map((row) => [row.id, { id: row.adAccountId, name: row.adAccountName }]),
+    );
 
     const existingById = new Map(
       bundle.campaigns.map((row) => [row.facebookCampaignId, row]),
@@ -373,6 +393,8 @@ export async function syncFacebookAds(): Promise<{
         facebook_campaign_name: row.name,
         status: row.status,
         source_name: prev?.sourceName ?? null,
+        ad_account_id: row.adAccountId,
+        ad_account_name: row.adAccountName,
         mapped_at: prev?.sourceName ? now : null,
         mapped_by: profile.id,
         updated_at: now,
@@ -381,11 +403,14 @@ export async function syncFacebookAds(): Promise<{
     for (const extra of metrics) {
       if (mapRows.some((row) => row.facebook_campaign_id === extra.campaignId)) continue;
       const prev = existingById.get(extra.campaignId);
+      const account = accountByCampaign.get(extra.campaignId);
       mapRows.push({
         facebook_campaign_id: extra.campaignId,
         facebook_campaign_name: extra.campaignName,
         status: prev?.status || "UNKNOWN",
         source_name: prev?.sourceName ?? null,
+        ad_account_id: account?.id || "",
+        ad_account_name: account?.name || "",
         mapped_at: prev?.sourceName ? now : null,
         mapped_by: profile.id,
         updated_at: now,
@@ -427,8 +452,11 @@ export async function syncFacebookAds(): Promise<{
     revalidatePath(SOURCE_PNL_PATH);
     return { ok: true, campaigns: campaigns.length, days: statRows.length };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "סנכרון פייסבוק נכשל";
-    await writeSettingsError(message);
+    const raw = err instanceof Error ? err.message : "סנכרון פייסבוק נכשל";
+    const message = isTransientSyncError(raw)
+      ? "פייסבוק לא הגיב בסנכרון. החיבור תקין, נסו שוב."
+      : raw;
+    await writeSettingsError(raw);
     return { ok: false, error: message };
   }
 }

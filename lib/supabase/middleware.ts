@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/env";
+import { isOsSystem, osSystemHome, OS_SYSTEM_COOKIE } from "@/lib/systems";
 
 const PUBLIC_PREFIXES = [
   "/login",
@@ -27,7 +28,8 @@ function isProtectedPath(pathname: string) {
     pathname.startsWith("/employees") ||
     pathname.startsWith("/sales-dashboard") ||
     pathname.startsWith("/marketing-dashboard") ||
-    pathname.startsWith("/academy")
+    pathname.startsWith("/academy") ||
+    pathname.startsWith("/shemesh")
   );
 }
 
@@ -78,9 +80,13 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  if (pathname === "/login" || pathname === "/") {
+  const pickingSystem =
+    pathname === "/login" && request.nextUrl.searchParams.get("pick") === "1";
+
+  if ((pathname === "/login" || pathname === "/") && !pickingSystem) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    const system = request.cookies.get(OS_SYSTEM_COOKIE)?.value;
+    url.pathname = osSystemHome(isOsSystem(system) ? system : "liba");
     url.search = "";
     return NextResponse.redirect(url);
   }

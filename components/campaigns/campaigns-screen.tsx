@@ -9,6 +9,8 @@ import { syncGoogleAds } from "@/app/actions/google-ads";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
+  campaignMatchesBrand,
+  scopeCampaignBoard,
   sumPoints,
   type CampaignBoard,
   type CampaignPoint,
@@ -22,6 +24,22 @@ import { cn } from "@/lib/utils";
 type Channel = "all" | "google" | "facebook";
 type Preset = "today" | "month" | "d30" | "year" | "all" | "custom";
 type ListMode = "spent" | "active" | "every";
+
+function visibleConnectionError(message: string | null): string | null {
+  if (!message) return null;
+  if (/fetch failed|failed to fetch/i.test(message)) return null;
+  return message;
+}
+
+function connectionNotice(
+  channel: Channel,
+  googleError: string | null,
+  facebookError: string | null,
+): string | null {
+  const google = channel === "facebook" ? null : visibleConnectionError(googleError);
+  const facebook = channel === "google" ? null : visibleConnectionError(facebookError);
+  return [google, facebook].filter(Boolean).join(" · ") || null;
+}
 
 function formatDuration(seconds: number | null): string {
   if (seconds == null || seconds <= 0) return "—";
@@ -120,8 +138,14 @@ function priceLabel(channel: Channel): string {
   return "מחיר לליד";
 }
 
-export function CampaignsScreen({ initial }: { initial: CampaignBoard }) {
-  const [board, setBoard] = useState(initial);
+export function CampaignsScreen({
+  initial,
+  brand,
+}: {
+  initial: CampaignBoard;
+  brand?: "liba" | "shemesh";
+}) {
+  const [board, setBoard] = useState(() => scopeCampaignBoard(initial, brand));
   const [channel, setChannel] = useState<Channel>("all");
   const [preset, setPreset] = useState<Preset>("month");
   const [customFrom, setCustomFrom] = useState(initial.today.slice(0, 8) + "01");
@@ -154,14 +178,18 @@ export function CampaignsScreen({ initial }: { initial: CampaignBoard }) {
       if (cancel) return;
       setBoard((current) => ({
         ...current,
-        googleCalls: result.error ? current.googleCalls : result.rows,
+        googleCalls: result.error
+          ? current.googleCalls
+          : result.rows.filter(
+              (row) => !brand || campaignMatchesBrand({ name: row.campaignName, channel: "google" }, brand),
+            ),
         googleCallsError: result.error,
       }));
     });
     return () => {
       cancel = true;
     };
-  }, [from, to]);
+  }, [from, to, brand]);
 
   const tagged = useMemo(() => {
     const google = board.google.campaigns.map((row) => ({ ...row, channel: "google" as const }));
@@ -225,7 +253,9 @@ export function CampaignsScreen({ initial }: { initial: CampaignBoard }) {
         } else {
           toast.success("נמשכו 36 החודשים האחרונים מהחשבונות");
         }
-        void loadCampaignBoard().then(setBoard).catch(() => undefined);
+        void loadCampaignBoard()
+          .then((next) => setBoard(scopeCampaignBoard(next, brand)))
+          .catch(() => undefined);
       });
     });
   }
@@ -300,7 +330,7 @@ export function CampaignsScreen({ initial }: { initial: CampaignBoard }) {
               onClick={() => setPreset(id)}
               className={cn(
                 "h-8 rounded-full px-3 text-sm transition-colors",
-                preset === id ? "bg-highlight font-medium text-[#1a1a1a]" : "text-muted-foreground hover:bg-white",
+                preset === id ? "bg-highlight font-medium text-highlight-foreground" : "text-muted-foreground hover:bg-white",
               )}
             >
               {label}
@@ -333,11 +363,9 @@ export function CampaignsScreen({ initial }: { initial: CampaignBoard }) {
         </div>
       </div>
 
-      {(board.google.lastError || board.facebook.lastError) && (channel === "all" || (channel === "google" && board.google.lastError) || (channel === "facebook" && board.facebook.lastError)) ? (
+      {connectionNotice(channel, board.google.lastError, board.facebook.lastError) ? (
         <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {channel !== "facebook" ? board.google.lastError : null}
-          {channel === "all" && board.google.lastError && board.facebook.lastError ? " · " : ""}
-          {channel !== "google" ? board.facebook.lastError : null}
+          {connectionNotice(channel, board.google.lastError, board.facebook.lastError)}
         </p>
       ) : null}
 

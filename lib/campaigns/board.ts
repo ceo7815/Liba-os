@@ -1,3 +1,8 @@
+import {
+  adsSourceBrand,
+  facebookAccountBrand,
+  googleCampaignOperatingBrand,
+} from "@/lib/finance/operating-brand";
 import { GOOGLE_ADS_CUBE_SOURCE } from "@/lib/sales-dashboard/campaign-math";
 
 export type CampaignPoint = {
@@ -14,6 +19,8 @@ export type CampaignRow = {
   status: string;
   active: boolean;
   sourceName: string | null;
+  adAccountId?: string | null;
+  adAccountName?: string | null;
   inbound: boolean;
   points: CampaignPoint[];
 };
@@ -100,6 +107,51 @@ const DIALED_KEYS = [
   "called_number",
   "callee",
 ];
+
+/**
+ * Google follows the campaign name: «פיננסים» is Shemesh, «ביטוחים» is Liba.
+ * Facebook follows the ad account: «חשבון המודעות של שמש» is Shemesh, Liba's account stays on Liba.
+ */
+export function campaignMatchesBrand(
+  row: {
+    name: string;
+    sourceName?: string | null;
+    channel?: "google" | "facebook";
+    adAccountName?: string | null;
+  },
+  brand: "liba" | "shemesh",
+): boolean {
+  if (row.channel === "facebook") {
+    const accountBrand = facebookAccountBrand(row.adAccountName);
+    if (accountBrand) return accountBrand === brand;
+    return brand === "liba";
+  }
+  if (googleCampaignOperatingBrand(row.name) === "shemesh") return brand === "shemesh";
+  if (row.sourceName?.trim() && adsSourceBrand(row.sourceName) === "shemesh") return brand === "shemesh";
+  return brand === "liba";
+}
+
+export function scopeCampaignBoard(board: CampaignBoard, brand?: "liba" | "shemesh"): CampaignBoard {
+  if (!brand) return board;
+  return {
+    ...board,
+    google: {
+      ...board.google,
+      campaigns: board.google.campaigns.filter((row) =>
+        campaignMatchesBrand({ ...row, channel: "google" }, brand),
+      ),
+    },
+    facebook: {
+      ...board.facebook,
+      campaigns: board.facebook.campaigns.filter((row) =>
+        campaignMatchesBrand({ ...row, channel: "facebook" }, brand),
+      ),
+    },
+    googleCalls: board.googleCalls.filter((row) =>
+      campaignMatchesBrand({ name: row.campaignName, channel: "google" }, brand),
+    ),
+  };
+}
 
 export function isInboundCampaign(name: string, sourceName: string | null): boolean {
   const source = (sourceName ?? "").replace(/\s+/g, " ").trim();

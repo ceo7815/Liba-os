@@ -9,7 +9,7 @@ import {
   jerusalemYmd,
 } from "@/lib/sales-dashboard/campaign-math";
 import { readFacebookAdsBundle } from "@/app/actions/facebook-ads";
-import { readGoogleAdsBundle, readGoogleCallDetails, refreshGoogleAdsWindow } from "@/app/actions/google-ads";
+import { readGoogleAdsBundle, readGoogleCallDetails } from "@/app/actions/google-ads";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JERUSALEM_TZ } from "@/lib/sales-dashboard/columns";
 import {
@@ -190,15 +190,12 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
   }
   const today = jerusalemYmd();
   const historyFrom = historyStart(today);
-  const monthFrom = `${today.slice(0, 7)}-01`;
-  await refreshGoogleAdsWindow(monthFrom, today).catch(() => undefined);
-  const [google, facebook, calls, googleCallResult] = await Promise.all([
+  const [google, facebook, calls] = await Promise.all([
     readGoogleAdsBundle(),
     readFacebookAdsBundle(),
     loadCalls(historyFrom, today),
-    readGoogleCallDetails(monthFrom, today),
   ]);
-  const googleCalls = googleCallResult.rows;
+  const googleCalls: CampaignBoard["googleCalls"] = [];
 
   const googlePoints = bucketPoints(
     google.stats.map((row) => ({
@@ -229,6 +226,8 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
       status: googleAdsStatusLabel(status),
       active: status === "ENABLED",
       sourceName: row.sourceName,
+      adAccountId: null,
+      adAccountName: null,
       inbound: isInboundCampaign(row.googleCampaignName, row.sourceName),
       points: googlePoints.get(row.googleCampaignId) ?? [],
     };
@@ -241,6 +240,8 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
       status: facebookAdsStatusLabel(status),
       active: status === "ACTIVE",
       sourceName: row.sourceName,
+      adAccountId: row.adAccountId ?? null,
+      adAccountName: row.adAccountName ?? null,
       inbound: false,
       points: facebookPoints.get(row.facebookCampaignId) ?? [],
     };
@@ -264,7 +265,7 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
     },
     calls,
     googleCalls,
-    googleCallsError: googleCallResult.error,
+    googleCallsError: null,
   };
 }
 

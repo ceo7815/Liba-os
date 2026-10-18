@@ -36,7 +36,7 @@ export default async function DashboardPage() {
       </header>
 
       <div className="dash-enter" style={{ animationDelay: "60ms" }}>
-        <OperatingBrandProvider>
+        <OperatingBrandProvider lockedBrand="liba">
           <ControlCenterScreen />
         </OperatingBrandProvider>
       </div>

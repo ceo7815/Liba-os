@@ -510,6 +510,8 @@ export type FacebookAdsCampaignRow = {
   status: string;
   sourceName: string | null;
   enabled: boolean;
+  adAccountId: string | null;
+  adAccountName: string | null;
 };
 
 export type FacebookAdsDailyStat = {

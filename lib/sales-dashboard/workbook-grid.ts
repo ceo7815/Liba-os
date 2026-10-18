@@ -187,10 +187,11 @@ export function cellTone(header: string, value: string): CellTone {
   if (!v) return "none";
   const h = normalizeExcelText(header);
   if (h === COL.status || h.includes("סטאטוס") || h.includes("סטטוס")) {
-    if (v === "פעילה" || v === "פעיל") return "active";
     if (v.includes("גניז") || v.includes("בוטל") || v.includes("דחי") || v.includes("נדח")) {
       return "cancelled";
     }
+    if (v.includes("חלקי") || v.includes("טרם")) return "pending";
+    if (v === "פעילה" || v === "פעיל" || v === "שולם") return "active";
     return "pending";
   }
   if (h === COL.process || h.includes("תהליך")) {
@@ -202,13 +203,14 @@ export function cellTone(header: string, value: string): CellTone {
 
 export function excelColumnWidth(header: string): number {
   const h = normalizeExcelText(header);
-  if (h.includes("הערות")) return 280;
-  if (h.includes("שם לקוח")) return 170;
-  if (h === COL.agent || h === "משווק") return 148;
+  if (h.includes("הערות") || h.includes("כללי") || h === "טיפול") return 280;
+  if (h.includes("שם לקוח") || h.includes("שם מלא")) return 180;
+  if (h === COL.agent || h === "משווק" || h.includes("נציג")) return 148;
   if (h === COL.source || h.includes("מקור")) return 160;
-  if (h.includes("פרמיה")) return 88;
+  if (h.includes("פרמיה") || h.includes("סכום") || h.includes("יתרה") || h.includes("עמלה")) return 118;
   if (h.includes("תאריך") || h.includes("תחילת")) return 132;
-  if (h.includes("נייד") || h.includes("ת.ז")) return 118;
+  if (h.includes("נייד") || h.includes("טלפון") || h.includes("ת.ז") || h === "תז" || h.includes("תעודת")) return 132;
+  if (h.includes("סטטוס") || h.includes("סטאטוס")) return 156;
   if (h.includes("פוליסה")) return 130;
   if (h.includes("שיקוף")) return 120;
   if (!h) return 72;

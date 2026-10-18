@@ -142,18 +142,29 @@ export function filterGoogleCampaignsForBrand<
   );
 }
 
-/** Mapping table only: assigned cubes stay on their brand tab. Unmapped stay on every tab. */
+/** Shemesh ad account names contain «שמש». Every other connected account stays on Liba. */
+export function facebookAccountBrand(
+  accountName: string | null | undefined,
+): AssignedOperatingBrand | null {
+  const name = normalizeExcelText(accountName ?? "");
+  if (!name) return null;
+  return textHasShemeshToken(name) ? "shemesh" : "liba";
+}
+
+/** Ad account decides the company. A mapped cube is only a fallback before the account is known. */
 export function facebookCampaignVisibleInBrand(
-  campaign: { sourceName: string | null },
+  campaign: { sourceName: string | null; adAccountName?: string | null },
   brand: OperatingBrandId,
 ): boolean {
   if (brand === "all") return true;
+  const accountBrand = facebookAccountBrand(campaign.adAccountName);
+  if (accountBrand) return accountBrand === brand;
   if (!campaign.sourceName) return true;
   return matchesOperatingBrand(adsSourceBrand(campaign.sourceName), brand);
 }
 
 export function filterFacebookCampaignsForBrand<
-  T extends { sourceName: string | null },
+  T extends { sourceName: string | null; adAccountName?: string | null },
 >(campaigns: T[], brand: OperatingBrandId): T[] {
   if (brand === "all") return campaigns;
   return campaigns.filter((row) => facebookCampaignVisibleInBrand(row, brand));

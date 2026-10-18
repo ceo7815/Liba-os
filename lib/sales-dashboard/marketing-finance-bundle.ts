@@ -227,7 +227,9 @@ async function loadFacebookAds(admin: ReturnType<typeof createAdminClient>, rang
       .maybeSingle(),
     admin
       .from("facebook_ads_campaign_map")
-      .select("facebook_campaign_id, facebook_campaign_name, status, source_name, enabled")
+      .select(
+      "facebook_campaign_id, facebook_campaign_name, status, source_name, enabled, ad_account_id, ad_account_name",
+    )
       .order("facebook_campaign_name"),
     fetchDailyStats(admin, "facebook_ads_daily_stats", "facebook_campaign_id", range),
   ]);
@@ -255,6 +257,8 @@ async function loadFacebookAds(admin: ReturnType<typeof createAdminClient>, rang
     status: item.status,
     sourceName: item.source_name,
     enabled: item.enabled !== false,
+    adAccountId: item.ad_account_id,
+    adAccountName: item.ad_account_name,
   }));
   const stats: FacebookAdsDailyStat[] = statsRows.map((item) => ({
     facebookCampaignId: item.id,
