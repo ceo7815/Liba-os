@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { executeMcpTool } from "@/lib/mcp/tools";
 import type { AuthenticatedAgent } from "@/lib/mcp/auth";
-import { parseCdr, type CdrRecord } from "@/lib/voicenter/cdr";
+import { parseCdr, SOFIA_EXTENSION, type CdrRecord } from "@/lib/voicenter/cdr";
 
 const BRIDGE_AGENT: AuthenticatedAgent = {
   agentId: "00000000-0000-0000-0000-000000000000",
@@ -63,7 +63,9 @@ export async function ingestVoicenterCdr(
     voicenter_call_id: parsed.callId,
     agent_name: "סופיה",
     rep_name: parsed.representativeName ?? "סופיה",
-    extension: "LvMpqlBj",
+    extension: SOFIA_EXTENSION,
+    received_via: "webhook",
+    received_at: new Date().toISOString(),
   };
   if (parsed.callerPhone) metadata.caller_phone = parsed.callerPhone;
   if (parsed.recordUrl) metadata.record_url = parsed.recordUrl;

@@ -55,35 +55,72 @@ function parseJsonObject(value: unknown): CdrRecord | null {
   return asRecord(value);
 }
 
-export function parseCdrBody(raw: unknown): CdrRecord | null {
-  let value = raw;
-  if (typeof value === "string") {
-    try {
-      value = JSON.parse(value);
-    } catch {
-      return null;
-    }
+function parsedBody(raw: unknown): unknown {
+  if (typeof raw !== "string") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
   }
-  if (Array.isArray(value)) value = value[0];
-  return asRecord(value);
+}
+
+function recordsOf(value: unknown): CdrRecord[] {
+  if (Array.isArray(value)) {
+    return value.map(asRecord).filter((row): row is CdrRecord => row != null);
+  }
+  const record = asRecord(value);
+  return record ? [record] : [];
+}
+
+/** One POST may be a single CDR, a list, or a wrapper around either. */
+export function listCdrRecords(raw: unknown): CdrRecord[] {
+  const value = parsedBody(raw);
+  if (Array.isArray(value)) return recordsOf(value);
+  const record = asRecord(value);
+  if (!record) return [];
+  for (const key of ["cdr", "CDR", "data", "calls", "records", "items"]) {
+    const rows = recordsOf(parsedBody(record[key]) ?? record[key]);
+    if (rows.some((row) => callIdOf(row))) return rows.filter((row) => callIdOf(row));
+  }
+  return [record];
+}
+
+export function parseCdrBody(raw: unknown): CdrRecord | null {
+  return listCdrRecords(raw)[0] ?? null;
+}
+
+function isSofiaExtension(value: string | null): boolean {
+  return value?.toLowerCase() === SOFIA_EXTENSION.toLowerCase();
 }
 
 export function isSofiaCall(cdr: CdrRecord): boolean {
   const extensionFields = [
-    field(cdr, ["extenUser", "ExtenUser"]),
+    field(cdr, ["extenUser", "ExtenUser", "extension", "Extension"]),
     field(cdr, ["targetextension", "targetExtension", "TargetExtension"]),
     field(cdr, ["callerextension", "callerExtension", "CallerExtension"]),
     field(cdr, ["target", "Target"]),
     field(cdr, ["caller", "Caller"]),
   ];
-  if (extensionFields.some((value) => value === SOFIA_EXTENSION)) return true;
+  if (extensionFields.some(isSofiaExtension)) return true;
   const userId = field(cdr, [
     "representative_code",
     "representativeCode",
     "UserId",
     "userId",
+    "userID",
+    "UserID",
   ]);
-  return userId === SOFIA_USER_ID;
+  if (userId === SOFIA_USER_ID) return true;
+  const name = field(cdr, [
+    "representative_name",
+    "representativeName",
+    "targetextension_name",
+    "callerextension_name",
+    "UserName",
+    "userName",
+    "extenName",
+  ]);
+  return Boolean(name && name.includes("סופיה"));
 }
 
 function callIdOf(cdr: CdrRecord): string | null {

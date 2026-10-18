@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashAgentApiKey } from "@/lib/agents/api-key";
-import { parseCdrBody } from "@/lib/voicenter/cdr";
+import { listCdrRecords, parseCdr } from "@/lib/voicenter/cdr";
 import { ingestVoicenterCdr } from "@/lib/voicenter/ingest";
 
 export const dynamic = "force-dynamic";
@@ -79,22 +79,59 @@ export async function POST(
     return json({ status: "ERROR", message: "expected JSON" }, 400);
   }
 
-  const cdr = parseCdrBody(payload);
-  if (!cdr) return json({ status: "ERROR", message: "expected JSON" }, 400);
+  const records = listCdrRecords(payload);
+  if (records.length === 0) return json({ status: "ERROR", message: "expected JSON" }, 400);
 
-  try {
-    const result = await ingestVoicenterCdr(createAdminClient(), cdr);
-    console.info(
-      "voicenter cdr",
-      JSON.stringify({
+  const admin = createAdminClient();
+  let stored = 0;
+  let errors = 0;
+  for (const cdr of records) {
+    const parsed = parseCdr(cdr);
+    try {
+      if (!parsed) {
+        await rememberReceipt(admin, { callId: null, sofia: false, stored: false, transcript: false, outcome: "missing_call_id" });
+        continue;
+      }
+      const result = await ingestVoicenterCdr(admin, cdr);
+      if (result.stored) stored += 1;
+      await rememberReceipt(admin, {
+        callId: result.callId,
+        sofia: parsed.sofia,
         stored: result.stored,
         transcript: result.transcript,
-      }),
-    );
-    return json({ status: "OK" });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "ingest failed";
-    console.error("voicenter cdr failed", message);
-    return json({ status: "ERROR" }, 500);
+        outcome: result.stored ? "stored" : "other_extension",
+      });
+    } catch (err) {
+      errors += 1;
+      const message = err instanceof Error ? err.message : "ingest failed";
+      console.error("voicenter cdr failed", message);
+      await rememberReceipt(admin, {
+        callId: parsed?.callId ?? null,
+        sofia: parsed?.sofia ?? false,
+        stored: false,
+        transcript: false,
+        outcome: "error",
+      });
+    }
+  }
+
+  console.info("voicenter cdr", JSON.stringify({ received: records.length, stored, errors }));
+  if (errors > 0 && stored === 0) return json({ status: "ERROR" }, 500);
+  return json({ status: "OK" });
+}
+
+async function rememberReceipt(
+  admin: ReturnType<typeof createAdminClient>,
+  row: { callId: string | null; sofia: boolean; stored: boolean; transcript: boolean; outcome: string },
+) {
+  const { error } = await admin.from("voicenter_cdr_receipts").insert({
+    call_id: row.callId,
+    sofia: row.sofia,
+    stored: row.stored,
+    has_transcript: row.transcript,
+    outcome: row.outcome,
+  });
+  if (error && !/does not exist|schema cache|could not find the table/i.test(error.message)) {
+    console.error("voicenter receipt", error.message);
   }
 }
