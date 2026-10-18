@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Calculator, Contact, FileSpreadsheet, GraduationCap, KeyRound, Layers3, LayoutDashboard, Megaphone, PieChart, Search, UserRound, Users, Wallet, X } from "lucide-react";
+import { Bot, Calculator, Contact, FileSpreadsheet, GraduationCap, KeyRound, Layers3, LayoutDashboard, ListChecks, Megaphone, PieChart, Search, UserRound, Users, Wallet, X } from "lucide-react";
 import { agents } from "@/lib/agents.config";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { portals } from "@/lib/portals.config";
@@ -121,6 +121,24 @@ export function GlobalSearch({
 
     if (canAccessSalesDashboard) {
       items.push(
+        {
+          id: "lead-control",
+          label: "בקרת לידים",
+          description: "סטטוסים של לידים ותהליכים, ושעון הזמן של כל אחד",
+          href: "/lead-control",
+          icon: ListChecks,
+          keywords: [
+            "בקרת לידים",
+            "לידים",
+            "תהליכים",
+            "סטטוס",
+            "סופיה",
+            "משי",
+            "מינוי סוכן",
+            "שיקוף",
+            "הפקה",
+          ],
+        },
         {
           id: "sales-by-source",
           label: "פילוח מכירות",

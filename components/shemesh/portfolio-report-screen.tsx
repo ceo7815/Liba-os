@@ -102,7 +102,7 @@ export function PortfolioReportScreen() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex w-full flex-col">
       <div className="no-print shrink-0 space-y-4 print:hidden">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -174,7 +174,7 @@ export function PortfolioReportScreen() {
             </Field>
             <div className="flex flex-wrap items-center gap-3">
               <Button type="button" onClick={buildFromDocuments} disabled={busy || files.length === 0 || !brief.trim()}>
-                {busy ? "קורא את הפוליסות…" : "בניית הדוח"}
+                {busy ? "המודל בונה את הדוח…" : "בניית הדוח"}
               </Button>
               {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
             </div>
@@ -288,7 +288,7 @@ function ReportPreview({ report }: { report: PortfolioReport }) {
     <div
       ref={frameRef}
       dir="ltr"
-      className="report-preview -mx-3 mt-4 min-h-0 flex-1 overflow-auto bg-[#d5d5d2] px-6 py-8 sm:-mx-6 print:m-0 print:overflow-visible print:bg-white print:p-0"
+      className="report-preview -mx-3 mt-4 bg-[#d5d5d2] px-6 py-8 sm:-mx-6 print:m-0 print:bg-white print:p-0"
     >
       <div
         className="report-stage relative mx-auto"

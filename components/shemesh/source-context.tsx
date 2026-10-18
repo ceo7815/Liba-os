@@ -14,7 +14,7 @@ export function ShemeshSourceProvider({
 }) {
   return (
     <ShemeshSourceContext.Provider value={sources}>
-      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      <div className="flex w-full flex-col">{children}</div>
     </ShemeshSourceContext.Provider>
   );
 }

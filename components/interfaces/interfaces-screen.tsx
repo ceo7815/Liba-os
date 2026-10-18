@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Cable, ChevronLeft, FileSpreadsheet, Megaphone, Phone, Share2 } from "lucide-react";
+import { Cable, ChevronLeft, FileSpreadsheet, ListChecks, Megaphone, Phone, Share2 } from "lucide-react";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
 import type { ConnectedInterface } from "@/lib/interfaces/status";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ const ICONS = {
   "google-ads": Megaphone,
   facebook: Share2,
   "sales-excel": FileSpreadsheet,
+  surense: ListChecks,
 } as const;
 
 export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {

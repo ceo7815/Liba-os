@@ -4,10 +4,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth";
-import { buildPortfolioFromDocuments, type PolicyDocument } from "@/lib/shemesh/portfolio-from-documents";
+import type { PolicyDocument } from "@/lib/shemesh/portfolio-from-documents";
+import { buildPortfolioWithModel } from "@/lib/shemesh/portfolio-from-model";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -35,8 +37,11 @@ export async function POST(request: Request) {
       paths.push(target);
     }
     const documents = await extractPolicyText(paths);
-    const report = buildPortfolioFromDocuments(documents, brief, manager);
-    return NextResponse.json(report, { headers: NO_STORE });
+    const model = await buildPortfolioWithModel(documents, brief, manager);
+    if ("error" in model) {
+      return NextResponse.json({ error: model.error }, { status: 502, headers: NO_STORE });
+    }
+    return NextResponse.json(model.report, { headers: NO_STORE });
   } catch (error) {
     const message = error instanceof Error ? error.message : "הקריאה מהפוליסות נכשלה";
     return NextResponse.json({ error: message }, { status: 500, headers: NO_STORE });

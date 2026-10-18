@@ -15,6 +15,7 @@ import {
   Users,
   FileSpreadsheet,
   FileText,
+  ListChecks,
   GraduationCap,
   Building2,
   LineChart,
@@ -44,6 +45,7 @@ import {
   CAMPAIGNS_PATH,
 } from "@/lib/sales-dashboard/access";
 import { canViewFormulas, FORMULAS_PATH } from "@/lib/formulas/access";
+import { LEAD_CONTROL_PATH } from "@/lib/lead-control/rules";
 import { canViewInterfaces, INTERFACES_PATH } from "@/lib/interfaces/access";
 import {
   canManageUsers,
@@ -121,6 +123,8 @@ export function Sidebar({ profile, className }: SidebarProps) {
     pathname.startsWith(`${SALES_EXCEL_REPORT_PATH}/`);
   const campaignsActive =
     pathname === CAMPAIGNS_PATH || pathname.startsWith(`${CAMPAIGNS_PATH}/`);
+  const leadControlActive =
+    pathname === LEAD_CONTROL_PATH || pathname.startsWith(`${LEAD_CONTROL_PATH}/`);
   const academyHomeActive = pathname === ACADEMY_PATH;
   const academyCatalogActive =
     pathname === ACADEMY_CATALOG_PATH || pathname.startsWith(`${ACADEMY_CATALOG_PATH}/`);
@@ -167,6 +171,14 @@ export function Sidebar({ profile, className }: SidebarProps) {
             icon={LayoutDashboard}
             active={pathname === "/dashboard"}
           />
+          {showSalesDashboard ? (
+            <NavItem
+              href={LEAD_CONTROL_PATH}
+              label="בקרת לידים"
+              icon={ListChecks}
+              active={leadControlActive}
+            />
+          ) : null}
           {showSalesDashboard ? (
             <NavItem
               href={SALES_BY_SOURCE_PATH}

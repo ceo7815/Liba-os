@@ -2,9 +2,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { envFacebookAccessToken } from "@/lib/facebook-ads/config";
 import { envRefreshToken } from "@/lib/google-ads/config";
 import { CAMPAIGNS_PATH, SALES_EXCEL_REPORT_PATH } from "@/lib/sales-dashboard/access";
+import { LEAD_CONTROL_PATH } from "@/lib/lead-control/rules";
+import { surenseConfigured } from "@/lib/surense/client";
 
 export type ConnectedInterface = {
-  id: "voicenter" | "google-ads" | "facebook" | "sales-excel";
+  id: "voicenter" | "google-ads" | "facebook" | "sales-excel" | "surense";
   name: string;
   description: string;
   href: string;
@@ -38,6 +40,12 @@ const CATALOG: Omit<ConnectedInterface, "connected" | "syncedAt" | "note">[] = [
     description: "דוח המנהלים המסונכרן. ממנו נספרות המכירות וההפקות.",
     href: SALES_EXCEL_REPORT_PATH,
   },
+  {
+    id: "surense",
+    name: "שורנס",
+    description: "לידים, תהליכים ומינוי סוכן נכנסים לבקרת הלידים.",
+    href: LEAD_CONTROL_PATH,
+  },
 ];
 
 function text(value: unknown): string | null {
@@ -48,7 +56,7 @@ function text(value: unknown): string | null {
 
 export async function loadConnectedInterfaces(): Promise<ConnectedInterface[]> {
   const admin = createAdminClient();
-  const [google, facebook, workbook, call, tools] = await Promise.all([
+  const [google, facebook, workbook, call, tools, surense] = await Promise.all([
     admin
       .from("google_ads_settings")
       .select("customer_id, connected_email, refresh_token_encrypted, last_synced_at")
@@ -78,6 +86,7 @@ export async function loadConnectedInterfaces(): Promise<ConnectedInterface[]> {
       .order("last_checked_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    admin.from("lead_control_snapshots").select("synced_at").eq("id", 1).maybeSingle(),
   ]);
 
   const googleRow = google.data;
@@ -85,6 +94,7 @@ export async function loadConnectedInterfaces(): Promise<ConnectedInterface[]> {
   const workbookRow = workbook.data;
   const callRow = call.data;
   const toolRow = tools.data;
+  const surenseRow = surense.data;
 
   const googleConnected = Boolean(envRefreshToken() || googleRow?.refresh_token_encrypted);
   const facebookConnected = Boolean(envFacebookAccessToken() || facebookRow?.access_token_encrypted);
@@ -112,6 +122,11 @@ export async function loadConnectedInterfaces(): Promise<ConnectedInterface[]> {
       connected: excelConnected,
       syncedAt: text(workbookRow?.synced_at),
       note: text(workbookRow?.file_name),
+    },
+    surense: {
+      connected: surenseConfigured() || Boolean(surenseRow?.synced_at),
+      syncedAt: text(surenseRow?.synced_at),
+      note: "Surense",
     },
   };
 

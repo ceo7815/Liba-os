@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { syncLeadControl } from "@/app/actions/lead-control";
 import { syncEmployeesFromExcel } from "@/app/actions/finance-people";
 import { syncFacebookAds } from "@/app/actions/facebook-ads";
 import { syncGoogleAds } from "@/app/actions/google-ads";
@@ -73,6 +74,7 @@ export function GlobalSyncButton({
   const [excelStatus, setExcelStatus] = useState<StepStatus>("pending");
   const [googleStatus, setGoogleStatus] = useState<StepStatus>("pending");
   const [facebookStatus, setFacebookStatus] = useState<StepStatus>("pending");
+  const [leadsStatus, setLeadsStatus] = useState<StepStatus>("pending");
 
   const syncAll = useCallback(async () => {
     if (busy) return;
@@ -80,6 +82,7 @@ export function GlobalSyncButton({
     setExcelStatus(includeExcel ? "active" : "done");
     setGoogleStatus("pending");
     setFacebookStatus("pending");
+    setLeadsStatus(excelTarget === "liba" ? "pending" : "done");
 
     try {
       if (includeExcel && excelTarget === "shemesh") {
@@ -180,9 +183,32 @@ export function GlobalSyncButton({
         setFacebookStatus("done");
       }
 
+      let leadsFailed = false;
+      if (excelTarget === "liba") {
+        setLeadsStatus("active");
+        toast.message("מסנכרן שורנס…");
+        try {
+          const leads = await syncLeadControl();
+          if (!leads.ok) {
+            leadsFailed = true;
+            setLeadsStatus("failed");
+            toast.error(leads.error ?? "סנכרון שורנס נכשל");
+          } else {
+            setLeadsStatus("done");
+            toast.success("שורנס עודכן");
+          }
+        } catch (err: unknown) {
+          leadsFailed = true;
+          setLeadsStatus("failed");
+          toast.error(err instanceof Error ? err.message : "סנכרון שורנס נכשל");
+        }
+      }
+
       notifyGlobalSyncDone();
       if (adsFailed) {
         toast.error(includeExcel ? "האקסל עודכן. גוגל או פייסבוק לא הושלמו" : "גוגל או פייסבוק לא הושלמו");
+      } else if (leadsFailed) {
+        toast.error("הסנכרון הסתיים. שורנס לא הושלם");
       } else {
         toast.success("הסנכרון הסתיים — מוצג העדכון האחרון");
       }
@@ -191,6 +217,7 @@ export function GlobalSyncButton({
       setExcelStatus((s) => (s === "active" ? "failed" : s));
       setGoogleStatus((s) => (s === "active" || s === "pending" ? "failed" : s));
       setFacebookStatus((s) => (s === "active" || s === "pending" ? "failed" : s));
+      setLeadsStatus((s) => (s === "active" || s === "pending" ? "failed" : s));
       notifyGlobalSyncDone();
     } finally {
       setBusy(false);
@@ -231,6 +258,7 @@ export function GlobalSyncButton({
             {includeExcel ? <SyncStepRow label="אקסל" status={excelStatus} /> : null}
             <SyncStepRow label="גוגל אדס" status={googleStatus} />
             <SyncStepRow label="פייסבוק" status={facebookStatus} />
+            {excelTarget === "liba" ? <SyncStepRow label="שורנס" status={leadsStatus} /> : null}
           </div>
         </div>
       ) : null}
