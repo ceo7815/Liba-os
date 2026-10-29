@@ -21,7 +21,7 @@ export default async function EmployeesPage() {
 
   return (
     <OperatingBrandProvider>
-      <section className="mx-auto w-full max-w-[72rem] space-y-4 sm:space-y-6">
+      <section className="w-full space-y-4 sm:space-y-6">
         <header className="dash-enter px-0.5 sm:px-0">
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
             עובדים · הסכמים ונוכחות
@@ -30,7 +30,7 @@ export default async function EmployeesPage() {
             <h1 className="text-[1.65rem] font-semibold leading-none tracking-tight sm:text-3xl">
               עובדים
             </h1>
-            <div className="shrink-0 rounded-2xl border border-black/[0.06] bg-white px-3.5 py-2 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)]">
+            <div className="shrink-0 rounded-2xl border border-border bg-card px-3.5 py-2 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)]">
               <p className="text-lg font-semibold tabular-nums leading-none sm:text-xl">
                 {activeCount}
               </p>

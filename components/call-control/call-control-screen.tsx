@@ -233,7 +233,7 @@ export function CallControlScreen({
   ];
 
   return (
-    <section className="mx-auto w-full max-w-[88rem] space-y-5 sm:space-y-6" dir="rtl">
+    <section className="w-full space-y-5 sm:space-y-6" dir="rtl">
       <header className="dash-enter px-0.5 sm:px-0">
         <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
           בקרה רגולטורית · שיחות שיקוף · סופיה · Voicenter
@@ -292,7 +292,7 @@ export function CallControlScreen({
           "rounded-xl px-4 py-3 text-sm",
           management.cdrStale
             ? "border border-amber-300 bg-amber-50 text-amber-950"
-            : "border border-black/[0.06] bg-white",
+            : "border border-border bg-card",
         )}
       >
         <p>
@@ -317,7 +317,7 @@ export function CallControlScreen({
         </p>
       </div>
 
-      <div className="dash-enter flex gap-1 border-b border-black/[0.08]" style={{ animationDelay: "30ms" }}>
+      <div className="dash-enter flex gap-1 border-b border-border" style={{ animationDelay: "30ms" }}>
         {tabs
           .filter((t) => !t.hidden)
           .map((item) => (
@@ -357,7 +357,7 @@ export function CallControlScreen({
           />
 
           <div className="app-surface overflow-hidden">
-            <div className="flex flex-wrap items-end gap-3 border-b border-black/[0.06] px-4 py-3 sm:px-5">
+            <div className="flex flex-wrap items-end gap-3 border-b border-border px-4 py-3 sm:px-5">
               <div className="flex flex-wrap gap-1.5">
                 {STATUS_FILTERS.map((opt) => (
                   <FilterChip
@@ -381,7 +381,7 @@ export function CallControlScreen({
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="mt-1 block h-9 w-full rounded-xl border border-black/[0.08] bg-background px-3 text-sm sm:w-36"
+                  className="mt-1 block h-9 w-full rounded-xl border border-border bg-background px-3 text-sm sm:w-36"
                 />
               </label>
               <label className="text-[11px] font-medium text-muted-foreground">
@@ -390,7 +390,7 @@ export function CallControlScreen({
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="mt-1 block h-9 w-full rounded-xl border border-black/[0.08] bg-background px-3 text-sm sm:w-36"
+                  className="mt-1 block h-9 w-full rounded-xl border border-border bg-background px-3 text-sm sm:w-36"
                 />
               </label>
               <p className="ms-auto pb-1 text-xs text-muted-foreground">
@@ -412,7 +412,7 @@ export function CallControlScreen({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[52rem] text-right text-sm">
                   <thead className="text-[11px] text-muted-foreground">
-                    <tr className="border-b border-black/[0.06]">
+                    <tr className="border-b border-border">
                       <th className="px-4 py-3 font-medium">תאריך</th>
                       <th className="px-4 py-3 font-medium">לקוח</th>
                       <th className="px-4 py-3 font-medium">נציג</th>
@@ -504,7 +504,7 @@ export function CallControlScreen({
       >
         <DialogContent
           dir="rtl"
-          className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-[1.25rem] border-black/[0.08] bg-white p-0 shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] data-[state=closed]:slide-out-to-left-0 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-[min(94dvh,calc(100dvh-1.5rem))] sm:max-h-[min(94dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,80rem)] sm:max-w-[80rem] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[1.5rem] sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]"
+          className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-lg border-border bg-card p-0 shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] data-[state=closed]:slide-out-to-left-0 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-[min(94dvh,calc(100dvh-1.5rem))] sm:max-h-[min(94dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,80rem)] sm:max-w-[80rem] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]"
         >
           <DialogTitle className="sr-only">
             {selectedRow?.customerName ?? "כרטיס שיחה"}

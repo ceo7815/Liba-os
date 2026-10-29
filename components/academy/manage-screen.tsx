@@ -16,14 +16,14 @@ export function AcademyManageScreen({ lessons }: { lessons: AcademyManageLesson[
       </header>
       <div className="space-y-6">
         {lessons.length === 0 ? (
-          <p className="rounded-2xl border border-black/[0.06] bg-white p-5 text-sm text-muted-foreground">
+          <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
             אין שיעורים לעריכה.
           </p>
         ) : null}
         {lessons.map((item) => (
           <article
             key={item.lesson.id}
-            className="rounded-2xl border border-black/[0.06] bg-white p-4"
+            className="rounded-2xl border border-border bg-card p-4"
           >
             <h2 className="font-semibold">{item.lesson.title}</h2>
             <div className="mt-3 space-y-3">
@@ -74,7 +74,7 @@ function BlockEditor({
         value={body}
         onChange={(event) => setBody(event.target.value)}
         rows={5}
-        className="w-full rounded-xl border border-black/[0.08] px-3 py-2 text-sm leading-relaxed"
+        className="w-full rounded-xl border border-border px-3 py-2 text-sm leading-relaxed"
       />
       <div className="mt-2 flex items-center gap-2">
         <button

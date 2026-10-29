@@ -38,7 +38,7 @@ export function DashboardCampaignStrip() {
   }, []);
 
   if (pulse === undefined) {
-    return <div className="h-24 animate-pulse rounded-[1.25rem] border border-black/[0.06] bg-white" />;
+    return <div className="h-24 animate-pulse rounded-lg border border-border bg-card" />;
   }
   if (!pulse) return null;
 
@@ -47,8 +47,8 @@ export function DashboardCampaignStrip() {
   const formPrice = pulse.facebookForms > 0 ? pulse.facebookSpend / pulse.facebookForms : null;
 
   return (
-    <section className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]">
-      <div className="flex items-baseline justify-between gap-3 border-b border-black/[0.06] px-4 py-2 sm:px-5">
+    <section className="overflow-hidden rounded-lg border border-border bg-card sm:rounded-[var(--radius)]">
+      <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2 sm:px-5">
         <div>
           <h2 className="text-sm font-semibold tracking-tight">קמפיינים של ליבה</h2>
           <p className="text-[11px] text-muted-foreground">
@@ -61,7 +61,7 @@ export function DashboardCampaignStrip() {
           <ArrowUpLeft className="size-3.5" />
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-px bg-black/[0.06] sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
         <PulseCell label="הוצאה" value={money(pulse.spend)} hint="גוגל ופייסבוק של ליבה" onClick={() => setOpen("spend")} />
         <PulseCell label="שיחות גוגל" value={pulse.googleCalls.toLocaleString("he-IL")} hint={callPrice == null ? "אין שיחות" : `${money(callPrice)} לשיחה`} onClick={() => setOpen("calls")} />
         <PulseCell label="טפסי פייסבוק" value={pulse.facebookForms.toLocaleString("he-IL")} hint={formPrice == null ? "אין טפסים" : `${money(formPrice)} לטופס`} onClick={() => setOpen("forms")} />
@@ -93,7 +93,7 @@ function PulseCell({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="bg-white px-4 py-2.5 text-start hover:bg-[#fffcf0]">
+    <button type="button" onClick={onClick} className="bg-card px-4 py-2.5 text-start hover:bg-highlight/15">
       <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
       <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{hint}</p>
@@ -103,7 +103,7 @@ function PulseCell({
 
 function Line({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-3 border-t border-black/[0.06] py-2 text-sm">
+    <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-3 border-t border-border py-2 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="tabular-nums">{value}</span>
     </div>

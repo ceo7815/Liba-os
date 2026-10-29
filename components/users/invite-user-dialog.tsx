@@ -181,7 +181,7 @@ export function InviteUserDialog({
             </div>
           </div>
 
-          <div className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-black/[0.08] p-3">
+          <div className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-border p-3">
             {PERMISSION_CATEGORIES.map((cat) => (
               <div key={cat.id}>
                 <p className="mb-1.5 text-[11px] font-semibold text-muted-foreground">

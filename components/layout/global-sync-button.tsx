@@ -283,21 +283,21 @@ export function GlobalSyncButton({
         disabled={busy}
         onClick={() => void syncAll()}
         aria-label={`סנכרון מערכת. ${statusLine}`}
-        className="inline-flex h-10 items-center gap-2 rounded-2xl border border-white/10 bg-black py-1 pe-3 ps-1 text-white shadow-[0_10px_24px_-16px_rgba(0,0,0,0.8)] transition-transform active:scale-[0.98] disabled:opacity-80 sm:h-11 sm:gap-2.5 sm:rounded-full sm:pe-4 sm:ps-1.5"
+        className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-primary/10 bg-primary py-1 pe-3 ps-1 text-primary-foreground shadow-lift transition-transform duration-rise ease-out hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-80 sm:h-11 sm:gap-2.5 sm:pe-4 sm:ps-1.5"
       >
         <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight text-highlight-foreground sm:size-8 sm:rounded-full">
           <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
         </span>
         <span className="flex min-w-0 flex-col items-start text-start leading-none">
           <span className="text-[12px] font-semibold tracking-tight sm:text-[13px]">סנכרון מערכת</span>
-          <span className="mt-1 whitespace-nowrap text-[10px] font-medium text-white/60">
+          <span className="mt-1 whitespace-nowrap text-[10px] font-medium text-primary-foreground/70">
             {statusLine}
           </span>
         </span>
       </button>
 
       {busy ? (
-        <div className="absolute end-0 top-[calc(100%+0.5rem)] z-50 w-[min(16.5rem,calc(100vw-1.5rem))] rounded-2xl border border-black/[0.08] bg-white/95 p-3 shadow-[0_18px_40px_-18px_rgba(17,17,17,0.45)] backdrop-blur-md">
+        <div className="absolute end-0 top-[calc(100%+0.5rem)] z-50 w-[min(16.5rem,calc(100vw-1.5rem))] rounded-lg border border-border bg-popover/95 p-3 text-popover-foreground shadow-pop backdrop-blur-md">
           <p className="text-[11px] font-semibold text-foreground">סנכרון מערכת…</p>
           <div className="mt-2 space-y-1.5">
             {includeExcel ? <SyncStepRow label="אקסל" status={excelStatus} /> : null}

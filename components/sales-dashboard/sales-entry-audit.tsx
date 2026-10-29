@@ -135,7 +135,7 @@ export function SalesEntryAudit({ sheets }: { sheets: WorkbookSheet[] }) {
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="flex max-h-[min(92dvh,52rem)] w-[min(96vw,72rem)] max-w-none flex-col gap-0 overflow-hidden p-0">
-          <DialogHeader className="space-y-1 border-b border-black/[0.06] px-5 py-4 pe-14 text-start">
+          <DialogHeader className="space-y-1 border-b border-border px-5 py-4 pe-14 text-start">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <DialogTitle>בקרת הזנה</DialogTitle>
@@ -195,7 +195,7 @@ export function SalesEntryAudit({ sheets }: { sheets: WorkbookSheet[] }) {
                     resetSlice();
                   }}
                   aria-label="מתאריך"
-                  className="h-8 rounded-full border border-black/[0.08] bg-white px-3 text-[13px]"
+                  className="h-8 rounded-full border border-border bg-card px-3 text-[13px]"
                 />
                 <span className="text-xs text-muted-foreground">עד</span>
                 <input
@@ -207,7 +207,7 @@ export function SalesEntryAudit({ sheets }: { sheets: WorkbookSheet[] }) {
                     resetSlice();
                   }}
                   aria-label="עד תאריך"
-                  className="h-8 rounded-full border border-black/[0.08] bg-white px-3 text-[13px]"
+                  className="h-8 rounded-full border border-border bg-card px-3 text-[13px]"
                 />
               </div>
               {months.length > 0 ? (
@@ -224,7 +224,7 @@ export function SalesEntryAudit({ sheets }: { sheets: WorkbookSheet[] }) {
                       setCustomTo(month.to);
                       resetSlice();
                     }}
-                    className="h-8 max-w-xs rounded-full border border-black/[0.08] bg-white px-3 text-xs"
+                    className="h-8 max-w-xs rounded-full border border-border bg-card px-3 text-xs"
                   >
                     <option value="">בחרו חודש</option>
                     {months.map((month) => (
@@ -247,7 +247,7 @@ export function SalesEntryAudit({ sheets }: { sheets: WorkbookSheet[] }) {
                     aria-label="משווק"
                     value={agent ?? ""}
                     onChange={(event) => setAgent(event.target.value || null)}
-                    className="h-8 max-w-xs rounded-full border border-black/[0.08] bg-white px-3 text-xs"
+                    className="h-8 max-w-xs rounded-full border border-border bg-card px-3 text-xs"
                   >
                     <option value="">כל המשווקים · {(fieldId ? ranged.matched.filter(hasField).length : ranged.matched.length).toLocaleString("he-IL")}</option>
                     {agentSummary.byAgent.map((item) => (
@@ -284,10 +284,10 @@ export function SalesEntryAudit({ sheets }: { sheets: WorkbookSheet[] }) {
             {rows.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">אין שורות להשלמה בטווח הזה.</p>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-black/[0.06]">
+              <div className="overflow-hidden rounded-2xl border border-border">
                 <table className="w-full min-w-[42rem] text-sm">
                   <thead className="bg-[#fafaf8]">
-                    <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+                    <tr className="border-b border-border text-[11px] text-muted-foreground">
                       <th className="px-3 py-2 text-start font-medium">לקוח</th>
                       <th className="w-32 px-3 py-2 text-start font-medium">משווק</th>
                       <th className="w-28 px-3 py-2 text-start font-medium">העברה</th>

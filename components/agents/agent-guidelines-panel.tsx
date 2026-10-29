@@ -165,7 +165,7 @@ export function AgentGuidelinesPanel() {
                   {section.items.length} סעיפים
                 </span>
               </summary>
-              <ul className="divide-y divide-black/[0.05] border-t border-black/[0.06]">
+              <ul className="divide-y divide-black/[0.05] border-t border-border">
                 {section.items.map((item) => (
                   <li
                     key={item.id}

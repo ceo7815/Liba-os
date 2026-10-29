@@ -226,8 +226,8 @@ export function CampaignDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-[1.25rem] border-black/[0.08] p-0 shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] data-[state=closed]:slide-out-to-left-0 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-auto sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,72rem)] sm:max-w-[72rem] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[1.5rem] sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]">
-        <DialogHeader className="relative shrink-0 space-y-0 overflow-hidden border-b border-black/[0.06] bg-white px-4 pb-4 pt-5 text-start sm:px-7 sm:pb-6 sm:pt-6">
+      <DialogContent className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-lg border-border p-0 shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] data-[state=closed]:slide-out-to-left-0 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-auto sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,72rem)] sm:max-w-[72rem] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]">
+        <DialogHeader className="relative shrink-0 space-y-0 overflow-hidden border-b border-border bg-card px-4 pb-4 pt-5 text-start sm:px-7 sm:pb-6 sm:pt-6">
           <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
           <div className="flex flex-col gap-3 pe-10 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4 sm:pe-8">
             <div className="min-w-0">
@@ -434,7 +434,7 @@ function Mini({
   emphasize?: "profit" | "loss";
 }) {
   return (
-    <div className="rounded-2xl border border-black/[0.06] bg-[#fafafa] px-2.5 py-2 shadow-[0_1px_0_rgba(17,17,17,0.02)] sm:px-3 sm:py-2.5">
+    <div className="rounded-2xl border border-border bg-[#fafafa] px-2.5 py-2 shadow-[0_1px_0_rgba(17,17,17,0.02)] sm:px-3 sm:py-2.5">
       <p className="truncate text-[10px] font-medium text-muted-foreground sm:text-[11px]">
         {label}
       </p>
@@ -523,7 +523,7 @@ function OverviewPanel({
   return (
     <div className="space-y-5">
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-[1.25rem] border border-black/[0.06] bg-white p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:p-5">
+        <section className="rounded-lg border border-border bg-card p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold tracking-tight">שכר עובדים</h3>
             <Money value={wageTotal} className="text-sm font-semibold" />
@@ -549,7 +549,7 @@ function OverviewPanel({
           )}
         </section>
 
-        <section className="rounded-[1.25rem] border border-black/[0.06] bg-white p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:p-5">
+        <section className="rounded-lg border border-border bg-card p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:p-5">
           <h3 className="text-sm font-semibold tracking-tight">רווח מדויק</h3>
           <ul className="mt-3 space-y-2 text-sm">
             <li className="flex justify-between gap-3">
@@ -581,7 +581,7 @@ function OverviewPanel({
               <span className="text-muted-foreground">הוצאות משויכות</span>
               <Money value={byChannel.manual} minus />
             </li>
-            <li className="flex justify-between gap-3 border-t border-black/[0.06] pt-2 font-semibold">
+            <li className="flex justify-between gap-3 border-t border-border pt-2 font-semibold">
               <span>רווח / הפסד</span>
               <Money value={net} signed />
             </li>
@@ -600,7 +600,7 @@ function OverviewPanel({
         </section>
       </div>
 
-      <section className="rounded-[1.25rem] border border-black/[0.06] bg-white p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:p-5">
+      <section className="rounded-lg border border-border bg-card p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold tracking-tight">הוצאות משויכות למקור</h3>
@@ -611,7 +611,7 @@ function OverviewPanel({
           </div>
           <Link
             href={EXPENSES_PATH}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-black/[0.08] bg-[#fafafa] px-3 py-2 text-xs font-semibold transition-colors hover:bg-muted active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[#fafafa] px-3 py-2 text-xs font-semibold transition-colors hover:bg-muted active:scale-95"
           >
             לעריכת הוצאות
             <ExternalLink className="size-3.5" />
@@ -625,7 +625,7 @@ function OverviewPanel({
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+                <tr className="border-b border-border text-[11px] text-muted-foreground">
                   <th className="py-2 text-start font-semibold">תאריך</th>
                   <th className="py-2 text-start font-semibold">סוג</th>
                   <th className="py-2 text-start font-semibold">פירוט</th>
@@ -673,7 +673,7 @@ function ExpensesReadonlyPanel({
         <Mini label="פייסבוק" value={<Money value={byChannel.facebook || facebookCost} minus />} />
         <Mini label="משויכות" value={<Money value={byChannel.manual} minus />} />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-black/[0.06] bg-background px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-background px-4 py-3">
         <p className="text-sm text-muted-foreground">
           הוצאות נרשמות ונערכות רק בקטגוריית «הוצאות» עם שיוך למקור. כאן תצוגה בלבד.
         </p>
@@ -688,10 +688,10 @@ function ExpensesReadonlyPanel({
       {expenses.length === 0 ? (
         <p className="text-sm text-muted-foreground">אין הוצאות משויכות בטווח הזה.</p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-black/[0.06]">
+        <div className="overflow-x-auto rounded-2xl border border-border">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/[0.06] bg-background text-[11px] text-muted-foreground">
+              <tr className="border-b border-border bg-background text-[11px] text-muted-foreground">
                 <th className="px-4 py-2.5 text-start font-semibold">תאריך</th>
                 <th className="px-4 py-2.5 text-start font-semibold">סוג</th>
                 <th className="px-4 py-2.5 text-start font-semibold">פירוט</th>
@@ -758,10 +758,10 @@ function AdsCampaignReadonlyTable({
         </div>
         <Money value={totalCost} minus className="text-sm font-semibold" />
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-black/[0.06]">
+      <div className="overflow-x-auto rounded-2xl border border-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-black/[0.06] bg-background text-[11px] text-muted-foreground">
+            <tr className="border-b border-border bg-background text-[11px] text-muted-foreground">
               <th className="px-4 py-2.5 text-start font-semibold">קמפיין</th>
               <th className="px-4 py-2.5 text-start font-semibold">סטטוס</th>
               <th className="px-4 py-2.5 text-start font-semibold">קליקים</th>
@@ -893,7 +893,7 @@ function ProductionsTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-[1.25rem] border border-black/[0.06] bg-white px-3.5 py-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:px-5">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card px-3.5 py-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:px-5">
         <div className="min-w-0">
           <p className="text-sm font-semibold tracking-tight">שורות מהאקסל</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -931,14 +931,14 @@ function ProductionsTable({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-[1.25rem] border border-black/[0.06] bg-white p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:p-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:p-4">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="חיפוש לקוח, עובד, מוצר…"
-            className="h-11 rounded-2xl border-black/[0.06] bg-[#fafafa] ps-10 text-start focus-visible:ring-highlight/40"
+            className="h-11 rounded-2xl border-border bg-[#fafafa] ps-10 text-start focus-visible:ring-highlight/40"
           />
         </div>
         <div className="min-w-0">
@@ -963,10 +963,10 @@ function ProductionsTable({
         </div>
       </div>
 
-      <div className="-mx-1 max-h-[min(28rem,50dvh)] overflow-auto rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-0 sm:max-h-[28rem]">
+      <div className="-mx-1 max-h-[min(28rem,50dvh)] overflow-auto rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-0 sm:max-h-[28rem]">
         <table className="w-max min-w-full text-sm">
           <thead className="sticky top-0 z-10 bg-[#f7f7f7]/backdrop-blur">
-            <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <tr className="border-b border-border text-[11px] text-muted-foreground">
               {cols.map((header) => (
                 <th
                   key={header}
@@ -1033,7 +1033,7 @@ function ProductionsTable({
         </table>
       </div>
       {visible.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-black/[0.08] bg-white px-4 py-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-2xl border border-dashed border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
           אין שורות שמתאימות לסינון.
         </p>
       ) : null}
@@ -1193,7 +1193,7 @@ function WorkersTable({
     <div className="-mx-1 overflow-x-auto overscroll-x-contain sm:mx-0">
       <table className="w-max min-w-full text-sm">
         <thead>
-          <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+          <tr className="border-b border-border text-[11px] text-muted-foreground">
             <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">עובד</th>
             <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">סגירות</th>
             <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">פרמיה</th>
@@ -1218,7 +1218,7 @@ function WorkersTable({
                 <button
                   type="button"
                   onClick={() => setSelectedName(worker.name)}
-                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-black/[0.12] bg-white px-3 py-2 text-start active:scale-95 hover:border-black/40 hover:bg-black/[0.03] sm:min-h-0 sm:rounded-lg sm:px-2.5 sm:py-1.5"
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-start active:scale-95 hover:border-black/40 hover:bg-muted sm:min-h-0 sm:rounded-lg sm:px-2.5 sm:py-1.5"
                 >
                   <span dir="ltr" className="font-semibold tabular-nums">
                     {ils(worker.baseWage)}
@@ -1231,7 +1231,7 @@ function WorkersTable({
           ))}
         </tbody>
         <tfoot>
-          <tr className="border-t border-black/[0.12] text-sm font-semibold">
+          <tr className="border-t border-border text-sm font-semibold">
             <td className="py-3">סה״כ</td>
             <td className="py-3 tabular-nums">{countTotal}</td>
             <td className="py-3 tabular-nums">
@@ -1305,7 +1305,7 @@ function WageFormulaPanel({
         </p>
       </div>
 
-      <div className="rounded-xl border border-black/[0.08] bg-muted/40 px-4 py-3">
+      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
         <p className="text-xs text-muted-foreground">שכר בקמפיין</p>
         <p dir="ltr" className="mt-1 text-2xl font-semibold tabular-nums">
           {ils(breakdown.wageTotal + baseWage)}
@@ -1329,7 +1329,7 @@ function WageFormulaPanel({
           {groups.map((group) => (
             <div
               key={`${group.month}|${group.multiplier}|${group.reason}|${group.tierLabel}`}
-              className="rounded-lg border border-black/[0.06] bg-muted/40 px-3 py-2.5 text-sm"
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm"
             >
               <p className="font-medium">
                 {group.month ? monthLabel(group.month) : "בלי חודש שכר"}
@@ -1359,7 +1359,7 @@ function WageFormulaPanel({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <tr className="border-b border-border text-[11px] text-muted-foreground">
               <th className="py-2 text-start font-semibold">תאריך</th>
               <th className="py-2 text-start font-semibold">לקוח</th>
               <th className="py-2 text-start font-semibold">פרמיה</th>
@@ -1383,7 +1383,7 @@ function WageFormulaPanel({
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-black/[0.12] text-sm font-semibold">
+            <tr className="border-t border-border text-sm font-semibold">
               <td className="py-3" colSpan={2}>סה״כ</td>
               <td dir="ltr" className="py-3 tabular-nums">{ils(breakdown.premiumTotal)}</td>
               <td />
@@ -1395,7 +1395,7 @@ function WageFormulaPanel({
       </div>
 
       {baseWage > 0 ? (
-        <div className="rounded-lg border border-black/[0.06] px-3 py-2.5 text-sm">
+        <div className="rounded-lg border border-border px-3 py-2.5 text-sm">
           <div className="flex items-baseline justify-between gap-3">
             <p className="font-medium">שכר בסיס וסוציאלי</p>
             <p dir="ltr" className="font-semibold tabular-nums">{ils(baseWage)}</p>
@@ -1451,8 +1451,8 @@ export function QuickExpenseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(92dvh,calc(100dvh-1.25rem))] w-[calc(100%-1.25rem)] max-w-md overflow-y-auto overscroll-contain rounded-[1.25rem] border-black/[0.08] p-0 shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] sm:rounded-[1.5rem]">
-        <DialogHeader className="relative space-y-0 border-b border-black/[0.06] px-4 py-5 pe-12 text-start sm:px-6 sm:pe-6">
+      <DialogContent className="max-h-[min(92dvh,calc(100dvh-1.25rem))] w-[calc(100%-1.25rem)] max-w-md overflow-y-auto overscroll-contain rounded-lg border-border p-0 shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] sm:rounded-lg">
+        <DialogHeader className="relative space-y-0 border-b border-border px-4 py-5 pe-12 text-start sm:px-6 sm:pe-6">
           <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
           <DialogTitle className="text-xl font-semibold tracking-tight">
             הוצאה לקמפיין
@@ -1464,7 +1464,7 @@ export function QuickExpenseDialog({
             <Label htmlFor="expense-amount">סכום</Label>
             <Input
               id="expense-amount"
-              className="h-11 rounded-xl border-black/[0.06]"
+              className="h-11 rounded-xl border-border"
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -1476,7 +1476,7 @@ export function QuickExpenseDialog({
             <Label htmlFor="expense-date">תאריך</Label>
             <Input
               id="expense-date"
-              className="h-11 rounded-xl border-black/[0.06]"
+              className="h-11 rounded-xl border-border"
               type="date"
               value={occurredAt}
               onChange={(e) => setOccurredAt(e.target.value)}
@@ -1489,7 +1489,7 @@ export function QuickExpenseDialog({
               value={channel}
               onValueChange={(value) => setChannel(value as ExpenseChannel)}
             >
-              <SelectTrigger className="h-11 rounded-xl border-black/[0.06]">
+              <SelectTrigger className="h-11 rounded-xl border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1503,7 +1503,7 @@ export function QuickExpenseDialog({
             <Label htmlFor="expense-note">הערה</Label>
             <Input
               id="expense-note"
-              className="h-11 rounded-xl border-black/[0.06]"
+              className="h-11 rounded-xl border-border"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="חשבונית / פייסבוק / גוגל"
@@ -1629,8 +1629,8 @@ export function CampaignLineDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-[1.25rem] border-black/[0.08] p-0 shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] data-[state=closed]:slide-out-to-left-0 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-auto sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,48rem)] sm:max-w-3xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[1.5rem] sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]">
-        <DialogHeader className="relative shrink-0 space-y-0 overflow-hidden border-b border-black/[0.06] bg-white px-4 pb-4 pt-5 text-start sm:px-7 sm:pb-6 sm:pt-6">
+      <DialogContent className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-lg border-border p-0 shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] data-[state=closed]:slide-out-to-left-0 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-auto sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,48rem)] sm:max-w-3xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]">
+        <DialogHeader className="relative shrink-0 space-y-0 overflow-hidden border-b border-border bg-card px-4 pb-4 pt-5 text-start sm:px-7 sm:pb-6 sm:pt-6">
           <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
           <div className="pe-10 sm:pe-8">
             <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -1738,7 +1738,7 @@ function LineProductions({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <tr className="border-b border-border text-[11px] text-muted-foreground">
               <th className="py-2 text-start font-semibold">לקוח</th>
               <th className="py-2 text-start font-semibold">עובד</th>
               <th className="py-2 text-start font-semibold">מוצר</th>
@@ -1762,7 +1762,7 @@ function LineProductions({
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-black/[0.12] text-sm font-semibold">
+            <tr className="border-t border-border text-sm font-semibold">
               <td className="py-3" colSpan={5}>
                 סה״כ {rows.length} סגירות
               </td>
@@ -1806,7 +1806,7 @@ function LineIncome({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+          <tr className="border-b border-border text-[11px] text-muted-foreground">
             <th className="py-2 text-start font-semibold">לקוח</th>
             <th className="py-2 text-start font-semibold">עובד</th>
             <th className="py-2 text-start font-semibold">מוצר</th>
@@ -1837,7 +1837,7 @@ function LineIncome({
           })}
         </tbody>
         <tfoot>
-          <tr className="border-t border-black/[0.12] text-sm font-semibold">
+          <tr className="border-t border-border text-sm font-semibold">
             <td className="py-3" colSpan={4}>
               סה״כ
             </td>
@@ -1866,14 +1866,14 @@ function LineMarketing({
 }) {
   return (
     <div className="space-y-4">
-      <ul className="space-y-1.5 rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
+      <ul className="space-y-1.5 rounded-xl border border-border bg-background p-4 text-sm">
         {(Object.keys(CHANNEL_LABEL) as ExpenseChannel[]).map((channel) => (
           <li key={channel} className="flex items-baseline justify-between gap-3">
             <span className="text-muted-foreground">{CHANNEL_LABEL[channel]}</span>
             <Money value={byChannel[channel]} minus />
           </li>
         ))}
-        <li className="flex items-baseline justify-between gap-3 border-t border-black/[0.06] pt-2 font-semibold">
+        <li className="flex items-baseline justify-between gap-3 border-t border-border pt-2 font-semibold">
           <span>סה״כ שיווק והוצאות</span>
           <Money value={adsTotal} minus />
         </li>
@@ -1883,7 +1883,7 @@ function LineMarketing({
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <tr className="border-b border-border text-[11px] text-muted-foreground">
               <th className="py-2 text-start font-semibold">תאריך</th>
               <th className="py-2 text-start font-semibold">ערוץ</th>
               <th className="py-2 text-start font-semibold">הערה</th>
@@ -1929,7 +1929,7 @@ function LineNet({
 }) {
   return (
     <div className="space-y-4">
-      <ul className="space-y-2 rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
+      <ul className="space-y-2 rounded-xl border border-border bg-background p-4 text-sm">
         <li className="flex items-baseline justify-between gap-3">
           <span className="text-muted-foreground">פרמיה שנסגרה</span>
           <Money value={premium} />
@@ -1947,7 +1947,7 @@ function LineNet({
           <span className="text-muted-foreground">שיווק והוצאות</span>
           <Money value={adsTotal} minus />
         </li>
-        <li className="flex items-baseline justify-between gap-3 border-t border-black/[0.08] pt-2 text-base font-semibold">
+        <li className="flex items-baseline justify-between gap-3 border-t border-border pt-2 text-base font-semibold">
           <span>רווח / הפסד</span>
           <Money
             value={net}

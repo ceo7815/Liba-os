@@ -102,7 +102,7 @@ export function AgentOpsPanel({
       ).map(([key, n]) => (
         <div
           key={key}
-          className="rounded-[1.15rem] border border-black/[0.06] bg-white px-4 py-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)]"
+          className="rounded-[1.15rem] border border-border bg-card px-4 py-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)]"
         >
           <p className="text-[11px] font-medium text-muted-foreground">
             {PROCESSING_LABELS[key]}
@@ -112,7 +112,7 @@ export function AgentOpsPanel({
           </p>
         </div>
       ))}
-      <div className="rounded-[1.15rem] border border-black/[0.06] bg-white px-4 py-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)]">
+      <div className="rounded-[1.15rem] border border-border bg-card px-4 py-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)]">
         <p className="text-[11px] font-medium text-muted-foreground">קריטי</p>
         <p
           className={cn(

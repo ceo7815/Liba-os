@@ -212,7 +212,7 @@ function TranscriptViewer({
         dir="rtl"
         className="flex max-h-[min(90vh,44rem)] w-[calc(100%-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-2xl"
       >
-        <DialogHeader className="shrink-0 space-y-1 border-b border-black/[0.06] px-5 py-4 pe-12 text-right sm:text-right">
+        <DialogHeader className="shrink-0 space-y-1 border-b border-border px-5 py-4 pe-12 text-right sm:text-right">
           <DialogTitle className="text-base">תמלול שיחה</DialogTitle>
           {metaBits.length > 0 ? (
             <DialogDescription className="text-xs">
@@ -520,7 +520,7 @@ export function CallQaReport({
             return (
               <div
                 key={section.section_id}
-                className="overflow-hidden rounded-xl border border-black/[0.06]"
+                className="overflow-hidden rounded-xl border border-border"
               >
                 <div className="bg-background px-3 py-2 text-xs font-semibold">
                   {section.section_id}. {sectionTitle}

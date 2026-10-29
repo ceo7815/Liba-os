@@ -34,7 +34,7 @@ export function UsersTable({
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-black/[0.06] hover:bg-transparent">
+            <TableRow className="border-b border-border hover:bg-transparent">
               <TableHead className="h-11 min-w-[16rem] px-5 text-start text-[11px] font-semibold tracking-wide text-muted-foreground">
                 משתמש
               </TableHead>
@@ -129,7 +129,7 @@ function UserRow({ user, isSelf }: { user: Profile; isSelf: boolean }) {
             onValueChange={onRoleChange}
             disabled={pending}
           >
-            <SelectTrigger className="h-9 w-[7.5rem] rounded-lg border-black/[0.08] bg-white text-sm">
+            <SelectTrigger className="h-9 w-[7.5rem] rounded-lg border-border bg-card text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -145,7 +145,7 @@ function UserRow({ user, isSelf }: { user: Profile; isSelf: boolean }) {
             className={
               user.is_active
                 ? "rounded-full border-0 bg-highlight/40 px-2.5 py-0.5 font-medium text-foreground hover:bg-highlight/40"
-                : "rounded-full border-0 bg-black/[0.06] px-2.5 py-0.5 font-medium text-muted-foreground hover:bg-black/[0.06]"
+                : "rounded-full border-0 bg-border px-2.5 py-0.5 font-medium text-muted-foreground hover:bg-border"
             }
           >
             {user.is_active ? "פעיל" : "מושבת"}
@@ -159,7 +159,7 @@ function UserRow({ user, isSelf }: { user: Profile; isSelf: boolean }) {
             variant="outline"
             disabled={pending || (isSelf && user.is_active)}
             onClick={onToggleActive}
-            className="h-9 rounded-lg border-black/[0.08] px-3 text-sm font-medium"
+            className="h-9 rounded-lg border-border px-3 text-sm font-medium"
           >
             {user.is_active ? "השבתה" : "הפעלה"}
           </Button>

@@ -33,7 +33,7 @@ export function AuthCard({
           <div className="relative w-full max-w-[300px]">
             <div
               aria-hidden
-              className="pointer-events-none absolute left-1/2 top-1/2 h-[70%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/50 blur-2xl"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[70%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-card/50 blur-2xl"
             />
             {isShemesh ? (
               <Image
@@ -53,14 +53,15 @@ export function AuthCard({
 
         <div
           data-auth-obstacle
-          className="rounded-[2rem] border-[3px] border-highlight bg-white/93 p-8 shadow-[0_40px_100px_-28px_rgba(17,17,17,0.35)] backdrop-blur-xl sm:p-10"
+          className="relative overflow-hidden rounded-lg border border-border bg-card/95 p-8 shadow-pop backdrop-blur-xl sm:p-10"
         >
+          <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-highlight" />
           <div className="mb-7 text-center">
-            <h1 className="text-[1.75rem] font-extrabold leading-tight tracking-tight text-black sm:text-3xl">
+            <h1 className="text-[1.65rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
               {title}
             </h1>
             {description && (
-              <p className="mt-2 text-sm font-semibold leading-relaxed text-[#5c5c5c]">
+              <p className="mt-2 text-sm font-medium leading-relaxed text-muted-foreground">
                 {description}
               </p>
             )}
@@ -68,7 +69,7 @@ export function AuthCard({
           {children}
         </div>
 
-        <p className="mt-6 text-center text-xs font-extrabold tracking-wide text-[#5c5c5c]">
+        <p className="mt-6 text-center text-xs font-medium tracking-wide text-muted-foreground">
           {footer}
         </p>
       </div>

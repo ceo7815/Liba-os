@@ -143,7 +143,7 @@ export function ProductionLeadersPanel({
       : null;
 
   return (
-    <div className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5">
+    <div className="relative overflow-hidden rounded-lg border border-border bg-card p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5">
       <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -244,7 +244,7 @@ export function ProductionLeadersPanel({
               onOpen={() => onOpenEmployee(leader.emp)}
             />
           ) : (
-            <div className="relative overflow-hidden rounded-[1.25rem] border border-dashed border-black/[0.08] bg-[#fafafa] px-4 py-4 sm:rounded-[var(--radius)] sm:px-5">
+            <div className="relative overflow-hidden rounded-lg border border-dashed border-border bg-[#fafafa] px-4 py-4 sm:rounded-[var(--radius)] sm:px-5">
               <p className="text-[11px] font-medium text-muted-foreground">
                 עובד מוביל בהפקות
               </p>
@@ -263,7 +263,7 @@ export function ProductionLeadersPanel({
               onOpen={() => onOpenEmployee(trailer.emp)}
             />
           ) : (
-            <div className="relative overflow-hidden rounded-[1.25rem] border border-dashed border-black/[0.08] bg-[#fafafa] px-4 py-4 sm:rounded-[var(--radius)] sm:px-5">
+            <div className="relative overflow-hidden rounded-lg border border-dashed border-border bg-[#fafafa] px-4 py-4 sm:rounded-[var(--radius)] sm:px-5">
               <p className="text-[11px] font-medium text-muted-foreground">
                 הכי פחות הפקות
               </p>
@@ -300,7 +300,7 @@ function LeaderCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white px-4 py-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:px-5"
+      className="group relative overflow-hidden rounded-lg border border-border bg-card px-4 py-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:px-5"
     >
       <span
         className={cn(
@@ -333,7 +333,7 @@ function LeaderCard({
       <p className="mt-1.5 text-[11px] tabular-nums text-muted-foreground">
         פרמיה {formatIls(premium)} · {periodLabel}
       </p>
-      <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-black/35">
+      <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
         פתיחת כרטיס
         <ChevronLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
       </p>

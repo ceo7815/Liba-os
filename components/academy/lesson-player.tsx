@@ -164,7 +164,7 @@ export function LessonPlayer({ data }: { data: AcademyLessonDetail }) {
                 ? `/academy/lessons/${data.prevLesson.id}`
                 : `/academy/courses/${data.course.id}`
             }
-            className="rounded-xl border border-black/[0.08] px-3.5 py-2 text-sm"
+            className="rounded-xl border border-border px-3.5 py-2 text-sm"
           >
             {data.prevLesson ? "הקודם" : "לקורס"}
           </Link>
@@ -176,7 +176,7 @@ export function LessonPlayer({ data }: { data: AcademyLessonDetail }) {
               setCheckResult(null);
               setIndex((value) => Math.max(0, value - 1));
             }}
-            className="rounded-xl border border-black/[0.08] px-3.5 py-2 text-sm"
+            className="rounded-xl border border-border px-3.5 py-2 text-sm"
           >
             חזרה
           </button>
@@ -244,8 +244,8 @@ function BlockBeat({ block }: { block: AcademyBlock }) {
     <article
       className={
         block.kind === "callout"
-          ? "rounded-3xl bg-black/[0.04] px-5 py-6"
-          : "rounded-3xl bg-white px-1 py-2"
+          ? "rounded-3xl bg-muted px-5 py-6"
+          : "rounded-3xl bg-card px-1 py-2"
       }
     >
       {block.kind === "callout" ? (
@@ -296,8 +296,8 @@ function CheckBeat({
                   : chosen && result && !result.correct
                     ? "w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-right text-sm"
                     : chosen
-                      ? "w-full rounded-2xl border border-foreground bg-white px-4 py-3 text-right text-sm"
-                      : "w-full rounded-2xl border border-black/[0.08] bg-white px-4 py-3 text-right text-sm"
+                      ? "w-full rounded-2xl border border-foreground bg-card px-4 py-3 text-right text-sm"
+                      : "w-full rounded-2xl border border-border bg-card px-4 py-3 text-right text-sm"
               }
             >
               {option.body}
@@ -341,7 +341,7 @@ function CloseBeat({
   examReady: boolean;
 }) {
   return (
-    <article className="rounded-3xl bg-white py-4">
+    <article className="rounded-3xl bg-card py-4">
       <p className="text-[11px] font-medium text-muted-foreground">המשמרת הסתיימה</p>
       <h2 className="mt-2 text-2xl font-semibold tracking-tight">{lessonTitle}</h2>
       <p className="mt-4 text-sm text-muted-foreground">

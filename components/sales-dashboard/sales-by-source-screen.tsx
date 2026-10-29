@@ -606,7 +606,7 @@ export function SalesBySourceScreen() {
   const rangeLabel = formatRangeDisplay(preset, range, dataSpan);
 
   return (
-    <section className="mx-auto w-full max-w-[72rem] space-y-3.5 sm:space-y-6">
+    <section className="w-full space-y-3.5 sm:space-y-6">
       <header className="dash-enter px-0.5 sm:px-0">
         <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
           מכירות · פילוח
@@ -670,7 +670,7 @@ export function SalesBySourceScreen() {
       </header>
 
       <div
-        className="dash-enter relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5"
+        className="dash-enter relative overflow-hidden rounded-lg border border-border bg-card p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5"
         style={{ animationDelay: "40ms" }}
       >
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
@@ -706,7 +706,7 @@ export function SalesBySourceScreen() {
           <div className="mt-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <Input
               type="date"
-              className="h-11 w-full rounded-xl border-black/[0.06] sm:h-10 sm:w-40"
+              className="h-11 w-full rounded-xl border-border sm:h-10 sm:w-40"
               value={custom.from ?? ""}
               onChange={(e) =>
                 setCustom((prev) => ({ ...prev, from: e.target.value || null }))
@@ -715,7 +715,7 @@ export function SalesBySourceScreen() {
             <span className="hidden text-xs text-muted-foreground sm:inline">עד</span>
             <Input
               type="date"
-              className="h-11 w-full rounded-xl border-black/[0.06] sm:h-10 sm:w-40"
+              className="h-11 w-full rounded-xl border-border sm:h-10 sm:w-40"
               value={custom.to ?? ""}
               onChange={(e) =>
                 setCustom((prev) => ({ ...prev, to: e.target.value || null }))
@@ -841,14 +841,14 @@ export function SalesBySourceScreen() {
       ) : null}
 
       {!adsReady && data?.source === "live" ? (
-        <div className="rounded-[1.25rem] border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-[var(--radius)]">
+        <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-[var(--radius)]">
           טוענים הוצאות גוגל ופייסבוק. הצנורת מהאקסל כבר מוצגת — אל תסתמכו על ₪0
           בשיווק עד שהמספר מתעדכן.
         </div>
       ) : null}
 
       {unmappedFacebookCount > 0 ? (
-        <div className="rounded-[1.25rem] border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-[var(--radius)]">
+        <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-[var(--radius)]">
           {unmappedFacebookCount} קמפיינים בפייסבוק בלי שיוך למקור — השיוך נעשה
           ברווח והפסד לפי מקור.
         </div>
@@ -884,7 +884,7 @@ export function SalesBySourceScreen() {
       ) : null}
 
       {allCards.length === 0 ? (
-        <div className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-10 text-center text-sm text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+        <div className="rounded-lg border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
           {loadState === "error" && !data
             ? "לא ניתן לטעון את דוח המנהלים."
             : data
@@ -892,7 +892,7 @@ export function SalesBySourceScreen() {
               : "טוען מכירות מהאקסל…"}
         </div>
       ) : visibleCards.length === 0 ? (
-        <div className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-10 text-center text-sm text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+        <div className="rounded-lg border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
           אין מקורות בתצוגה הזו.
         </div>
       ) : (
@@ -953,11 +953,11 @@ function SourceCube({
         }
       }}
       className={cn(
-        "group relative flex cursor-pointer flex-col overflow-hidden rounded-[1.25rem] border p-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:p-5",
+        "group relative flex cursor-pointer flex-col overflow-hidden rounded-lg border p-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:p-5",
         adsReady && card.tone === "green" && "border-emerald-300 bg-emerald-50 hover:border-emerald-400",
         adsReady && card.tone === "red" && "border-red-300 bg-red-50 hover:border-red-400",
         (!adsReady || card.tone === "gray") &&
-          "border-black/[0.06] bg-white hover:border-black/10 hover:bg-[#fffcf0]",
+          "border-border bg-card hover:border-black/10 hover:bg-highlight/15",
       )}
     >
       <span
@@ -1009,7 +1009,7 @@ function SourceCube({
         />
       </div>
 
-      <div className="mt-auto flex min-h-12 w-full items-end justify-between gap-3 border-t border-black/[0.06] pt-3">
+      <div className="mt-auto flex min-h-12 w-full items-end justify-between gap-3 border-t border-border pt-3">
         <p className="text-[11px] font-medium text-muted-foreground">% פרמיה מול שיווק</p>
         <p
           className={cn(
@@ -1053,7 +1053,7 @@ function SalesSourceDialog({
         </DialogHeader>
         {card ? (
           <div className="space-y-5">
-            <section className="rounded-2xl border border-black/[0.06] bg-[#fffcf0]/50 px-4 py-3.5">
+            <section className="rounded-2xl border border-border bg-highlight/15/50 px-4 py-3.5">
               <h3 className="text-sm font-semibold tracking-tight">איך הקוביה מחושבת</h3>
               <ul className="mt-2 space-y-1.5 text-[13px] leading-relaxed text-muted-foreground">
                 <li>
@@ -1101,7 +1101,7 @@ function SalesSourceDialog({
             {adsReady && card.adsLines.length > 0 ? (
               <section>
                 <h3 className="text-sm font-semibold tracking-tight">קמפיינים שיווקיים</h3>
-                <ul className="mt-2 divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-black/[0.06]">
+                <ul className="mt-2 divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-border">
                   {card.adsLines.map((line) => (
                     <li
                       key={`${line.channel}-${line.name}`}
@@ -1126,7 +1126,7 @@ function SalesSourceDialog({
             {card.agents.length > 0 ? (
               <section>
                 <h3 className="text-sm font-semibold tracking-tight">מי מכר</h3>
-                <ul className="mt-2 divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-black/[0.06]">
+                <ul className="mt-2 divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-border">
                   {card.agents.map((agent) => (
                     <li
                       key={agent.agent}
@@ -1156,11 +1156,11 @@ function SalesSourceDialog({
             <section>
               <h3 className="text-sm font-semibold tracking-tight">מה ומתי</h3>
               {card.rows.length === 0 ? (
-                <p className="mt-2 rounded-xl border border-dashed border-black/[0.08] px-4 py-6 text-center text-sm text-muted-foreground">
+                <p className="mt-2 rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
                   אין שורות בטווח.
                 </p>
               ) : (
-                <ul className="mt-2 divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-black/[0.06]">
+                <ul className="mt-2 divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-border">
                   {card.rows.map((row) => (
                     <PipelineRow key={row.key} row={row} />
                   ))}
@@ -1232,7 +1232,7 @@ function CubeRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-[#fffcf0]/40 px-3 py-2">
+    <div className="rounded-xl border border-border bg-highlight/15/40 px-3 py-2">
       <p className="text-[10px] font-medium text-muted-foreground">{label}</p>
       <p className="mt-0.5 text-sm font-semibold tabular-nums">{value}</p>
     </div>
@@ -1249,7 +1249,7 @@ function SummaryStat({
   emphasize?: "profit" | "loss";
 }) {
   return (
-    <div className="relative overflow-hidden rounded-[1.15rem] border border-black/[0.06] bg-white px-2.5 py-2.5 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:px-3.5 sm:py-3.5">
+    <div className="relative overflow-hidden rounded-[1.15rem] border border-border bg-card px-2.5 py-2.5 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:px-3.5 sm:py-3.5">
       <p className="truncate text-[10px] font-medium text-muted-foreground sm:text-[11px]">
         {label}
       </p>
@@ -1280,7 +1280,7 @@ function LastSyncPanel({
   showingCached: boolean;
 }) {
   return (
-    <div className="w-full rounded-[1.25rem] border border-black/[0.06] bg-white px-3 py-2.5 text-xs shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:min-w-[18rem] sm:rounded-[var(--radius)] sm:px-3.5 sm:py-3">
+    <div className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-xs shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:min-w-[18rem] sm:rounded-[var(--radius)] sm:px-3.5 sm:py-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-semibold tracking-wide text-foreground">
           עדכון אחרון

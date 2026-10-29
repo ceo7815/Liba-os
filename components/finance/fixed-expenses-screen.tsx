@@ -237,7 +237,7 @@ export function FixedExpensesScreen({
     <div
       className={cn(
         "flex w-full flex-col gap-5",
-        !embedded && "mx-auto max-w-6xl px-4 py-6 sm:px-6",
+        !embedded && "w-full px-4 py-6 sm:px-6",
       )}
     >
       {!embedded ? (
@@ -344,7 +344,7 @@ export function FixedExpensesScreen({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[44rem] text-sm">
               <thead>
-                <tr className="border-b border-black/[0.08] bg-black/[0.02] text-start text-xs font-semibold text-muted-foreground">
+                <tr className="border-b border-border bg-black/[0.02] text-start text-xs font-semibold text-muted-foreground">
                   <th className="px-4 py-3 font-semibold">שם הוצאה</th>
                   <th className="px-3 py-3 font-semibold">ספק</th>
                   <th className="px-3 py-3 font-semibold">סכום ששולם</th>
@@ -789,7 +789,7 @@ function ExpenseEditorDialog({
           showPreview ? "max-w-6xl" : "max-w-2xl",
         )}
       >
-        <DialogHeader className="border-b border-black/[0.06] px-6 py-4 text-start">
+        <DialogHeader className="border-b border-border px-6 py-4 text-start">
           <DialogTitle>{isEdit ? "עריכת הוצאה" : "הוצאה ששולמה"}</DialogTitle>
           <DialogDescription>
             העלו חשבונית · אשרו פרטים · בחרו קבועה או משתנה · ואז שמרו.
@@ -811,7 +811,7 @@ function ExpenseEditorDialog({
               showPreview && "lg:overflow-y-auto",
             )}
           >
-            <div className="space-y-2 rounded-2xl border border-dashed border-black/[0.12] p-3">
+            <div className="space-y-2 rounded-2xl border border-dashed border-border p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-semibold">חשבונית</p>
                 <div className="flex gap-2">
@@ -936,7 +936,7 @@ function ExpenseEditorDialog({
 
             <div
               ref={kindSectionRef}
-              className="space-y-2 rounded-2xl border border-black/[0.08] bg-black/[0.02] p-3"
+              className="space-y-2 rounded-2xl border border-border bg-black/[0.02] p-3"
             >
               <p className="text-sm font-semibold">סוג הוצאה</p>
               <div className="grid grid-cols-2 gap-2">
@@ -947,7 +947,7 @@ function ExpenseEditorDialog({
                     "rounded-xl border px-3 py-2.5 text-sm font-bold",
                     expenseKind === "fixed"
                       ? "border-emerald-800 bg-emerald-800 text-white"
-                      : "border-transparent bg-white text-foreground hover:border-black/10",
+                      : "border-transparent bg-card text-foreground hover:border-black/10",
                   )}
                 >
                   הוצאה קבועה
@@ -962,7 +962,7 @@ function ExpenseEditorDialog({
                     "rounded-xl border px-3 py-2.5 text-sm font-bold",
                     expenseKind === "variable"
                       ? "border-amber-800 bg-amber-700 text-white"
-                      : "border-transparent bg-white text-foreground hover:border-black/10",
+                      : "border-transparent bg-card text-foreground hover:border-black/10",
                   )}
                 >
                   הוצאה משתנה
@@ -1056,7 +1056,7 @@ function ExpenseEditorDialog({
               </div>
             </div>
 
-            <div className="space-y-2 rounded-2xl border border-black/[0.06] p-3">
+            <div className="space-y-2 rounded-2xl border border-border p-3">
               <p className="text-sm font-semibold">שיוך</p>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -1106,7 +1106,7 @@ function ExpenseEditorDialog({
                         <button
                           key={name}
                           type="button"
-                          className="rounded-full bg-white px-2.5 py-1 text-xs font-medium hover:bg-violet-50"
+                          className="rounded-full bg-card px-2.5 py-1 text-xs font-medium hover:bg-violet-50"
                           onClick={() => {
                             const nextNames = [
                               ...allocations.map((a) => a.source_name),
@@ -1125,7 +1125,7 @@ function ExpenseEditorDialog({
                       {allocations.map((row) => (
                         <div
                           key={row.source_name}
-                          className="flex items-center gap-2 rounded-xl border border-black/[0.06] px-3 py-2"
+                          className="flex items-center gap-2 rounded-xl border border-border px-3 py-2"
                         >
                           <span className="min-w-0 flex-1 truncate text-sm font-medium">
                             {row.source_name}
@@ -1185,7 +1185,7 @@ function ExpenseEditorDialog({
               ) : null}
             </div>
 
-            <DialogFooter className="gap-2 border-t border-black/[0.06] px-0 pb-1 pt-4 sm:justify-between">
+            <DialogFooter className="gap-2 border-t border-border px-0 pb-1 pt-4 sm:justify-between">
               {isEdit ? (
                 <Button
                   type="button"
@@ -1230,8 +1230,8 @@ function ExpenseEditorDialog({
           </div>
 
           {showPreview ? (
-            <aside className="flex min-h-[18rem] flex-col border-t border-black/[0.06] bg-black/[0.02] lg:border-s lg:border-t-0">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] px-4 py-2.5">
+            <aside className="flex min-h-[18rem] flex-col border-t border-border bg-black/[0.02] lg:border-s lg:border-t-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-muted-foreground">
                     תצוגה מקדימה · חשבונית
@@ -1287,7 +1287,7 @@ function ExpenseEditorDialog({
                   <iframe
                     title={invoiceName ?? "חשבונית"}
                     src={previewUrl!}
-                    className="h-[70vh] w-full rounded-xl border border-black/[0.06] bg-white"
+                    className="h-[70vh] w-full rounded-xl border border-border bg-card"
                   />
                 )}
               </div>
@@ -1371,7 +1371,7 @@ function InvoicePreviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[92vh] max-w-4xl flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl">
-        <DialogHeader className="border-b border-black/[0.06] px-6 py-4 text-start">
+        <DialogHeader className="border-b border-border px-6 py-4 text-start">
           <DialogTitle>תצוגה מקדימה — חשבונית</DialogTitle>
           <DialogDescription className="truncate">
             {displayName}
@@ -1421,7 +1421,7 @@ function InvoicePreviewDialog({
             <iframe
               title={displayName}
               src={url}
-              className="h-[70vh] w-full rounded-xl border border-black/[0.06] bg-white"
+              className="h-[70vh] w-full rounded-xl border border-border bg-card"
             />
           )}
         </div>

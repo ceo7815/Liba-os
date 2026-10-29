@@ -152,14 +152,14 @@ export function Sidebar({ profile, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-e border-black/[0.08] bg-white",
+        "flex w-64 shrink-0 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground",
         className,
       )}
     >
       <div className="flex flex-col items-center px-5 pb-5 pt-7">
         <LogoBadge centered className="w-full" />
-        <div className="mt-5 h-px w-full bg-black/[0.06]">
-          <div className="mx-auto h-px w-10 bg-highlight" />
+        <div className="mt-5 h-px w-full bg-sidebar-border">
+          <div className="mx-auto h-px w-10 bg-module" />
         </div>
       </div>
 
@@ -169,7 +169,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
             href="/dashboard"
             label="לוח בקרה"
             icon={LayoutDashboard}
-            active={pathname === "/dashboard"}
+            active={pathname === "/dashboard" || pathname === "/design-lab"}
           />
           {showSalesDashboard ? (
             <NavItem
@@ -370,7 +370,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
         </div>
       ) : null}
 
-      <div className="border-t border-black/[0.06] px-5 py-4 text-center">
+      <div className="border-t border-sidebar-border px-5 py-4 text-center">
         <p className="text-[11px] font-semibold text-foreground">ליבה OS</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">
           מערכת ניהול פנימית
@@ -407,19 +407,19 @@ function ExpandableNav({
         <Link
           href={href}
           className={cn(
-            "relative flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+            "relative flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors duration-rise ease-out",
             sectionActive
-              ? "bg-background text-foreground"
-              : "text-black/55 hover:bg-background/80 hover:text-foreground",
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
           )}
         >
           {overviewActive && (
-            <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-highlight" />
+            <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-module" />
           )}
           <Icon
             className={cn(
               "h-4 w-4 shrink-0",
-              sectionActive ? "text-foreground" : "text-black/35",
+              sectionActive ? "text-sidebar-foreground" : "text-muted-foreground",
             )}
           />
           <span className="truncate">{label}</span>
@@ -430,7 +430,7 @@ function ExpandableNav({
           aria-expanded={open}
           onClick={onToggle}
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-black/40 transition-colors hover:bg-background hover:text-foreground",
+            "flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
             open && "text-foreground",
           )}
         >
@@ -440,7 +440,7 @@ function ExpandableNav({
         </button>
       </div>
       {open && (
-        <ul className="mt-0.5 space-y-0.5 border-s border-black/[0.06] ms-4 ps-2">
+        <ul className="mt-0.5 space-y-0.5 border-s border-sidebar-border ms-4 ps-2">
           {children}
         </ul>
       )}
@@ -462,14 +462,14 @@ function SubNavItem({
       <Link
         href={href}
         className={cn(
-          "relative block rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors",
+          "relative block rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors duration-rise ease-out",
           active
-            ? "bg-background text-foreground"
-            : "text-black/50 hover:bg-background/80 hover:text-foreground",
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
         )}
       >
         {active && (
-          <span className="absolute inset-y-1 start-0 w-[2px] rounded-full bg-highlight" />
+          <span className="absolute inset-y-1 start-0 w-[2px] rounded-full bg-module" />
         )}
         {label}
       </Link>
@@ -486,7 +486,7 @@ function NavSection({
 }) {
   return (
     <div>
-      <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-black/35">
+      <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         {title}
       </p>
       <div className="space-y-0.5">{children}</div>
@@ -514,19 +514,19 @@ function NavItem({
       onMouseEnter={() => router.prefetch(href)}
       onFocus={() => router.prefetch(href)}
       className={cn(
-        "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+        "relative flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors duration-rise ease-out",
         active
-          ? "bg-background text-foreground"
-          : "text-black/55 hover:bg-background/80 hover:text-foreground",
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
       )}
     >
       {active && (
-        <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-highlight" />
+        <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-module" />
       )}
       <Icon
         className={cn(
           "h-4 w-4 shrink-0",
-          active ? "text-foreground" : "text-black/35",
+          active ? "text-sidebar-foreground" : "text-muted-foreground",
         )}
       />
       <span className="truncate">{label}</span>

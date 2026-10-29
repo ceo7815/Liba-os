@@ -163,7 +163,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
         </p>
       ) : null}
       {snapshot.error ? (
-        <p className="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm">{snapshot.error}</p>
+        <p className="rounded-xl border border-black/10 bg-card px-4 py-3 text-sm">{snapshot.error}</p>
       ) : null}
       {snapshot.truncated ? (
         <p className="rounded-xl bg-highlight/30 px-4 py-3 text-sm font-semibold">
@@ -181,13 +181,13 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
       </div>
 
       {reps.length > 0 ? (
-        <div className="rounded-[1.25rem] border border-black/[0.06] bg-white">
-          <div className="border-b border-black/[0.06] px-4 py-3">
+        <div className="rounded-lg border border-border bg-card">
+          <div className="border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold">נציגים עם חריגות</h2>
           </div>
-          <ul className="grid gap-px bg-black/[0.04] sm:grid-cols-2 xl:grid-cols-4">
+          <ul className="grid gap-px bg-muted sm:grid-cols-2 xl:grid-cols-4">
             {reps.map((rep) => (
-              <li key={rep.name} className="bg-white">
+              <li key={rep.name} className="bg-card">
                 <button
                   type="button"
                   onClick={() => { setPerson(rep.name); setQueue("all"); setFocus("overdue"); setStatus("הכל"); }}
@@ -204,8 +204,8 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
         </div>
       ) : null}
 
-      <div className="rounded-[1.25rem] border border-black/[0.06] bg-white">
-        <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] px-3 py-3">
+      <div className="rounded-lg border border-border bg-card">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-3">
           {BOARDS.map((item) => (
             <button
               key={item.id}
@@ -213,7 +213,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
               onClick={() => { setBoard(item.id); setQueue("all"); setStatus("הכל"); }}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-sm font-semibold",
-                board === item.id ? "bg-foreground text-background" : "text-muted-foreground hover:bg-black/[0.04]",
+                board === item.id ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted",
               )}
             >
               {item.label}
@@ -233,7 +233,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
               onClick={() => setFocus(id)}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-sm",
-                focus === id ? "bg-highlight font-semibold" : "text-muted-foreground hover:bg-black/[0.04]",
+                focus === id ? "bg-highlight font-semibold" : "text-muted-foreground hover:bg-muted",
               )}
             >
               {label}
@@ -242,7 +242,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm"
+            className="rounded-lg border border-black/10 bg-card px-2 py-1.5 text-sm"
           >
             <option value="הכל">כל הסטטוסים</option>
             {statuses.map((name) => (
@@ -252,7 +252,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
           <select
             value={person}
             onChange={(event) => setPerson(event.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm"
+            className="rounded-lg border border-black/10 bg-card px-2 py-1.5 text-sm"
           >
             <option value="הכל">כל המטפלים</option>
             {people.map((name) => (
@@ -296,9 +296,9 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
                       className={cn(
                         "inline-flex rounded-md px-2 py-1 text-xs font-semibold",
                         item.state === "overdue" && "bg-highlight",
-                        item.state === "on_time" && "bg-black/[0.04] text-muted-foreground",
+                        item.state === "on_time" && "bg-muted text-muted-foreground",
                         item.state === "unassigned" && "border border-black/10",
-                        (item.state === "watching" || item.state === "blocked") && "bg-black/[0.04]",
+                        (item.state === "watching" || item.state === "blocked") && "bg-muted",
                       )}
                     >
                       {STATE_LABEL[item.state]} · {formatGap(item, snapshot.fetchedAt)}
@@ -339,7 +339,7 @@ function Metric({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-[1.25rem] border border-black/[0.06] bg-white px-4 py-4 text-start hover:border-black/15"
+      className="rounded-lg border border-border bg-card px-4 py-4 text-start hover:border-black/15"
     >
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">{value.toLocaleString("he-IL")}</p>

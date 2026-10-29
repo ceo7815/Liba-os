@@ -166,7 +166,7 @@ export function SocialMediaDashboard({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1 border-b border-black/[0.08] pb-px">
+      <div className="flex flex-wrap gap-1 border-b border-border pb-px">
         {TABS.map((item) => (
           <button
             key={item.id}

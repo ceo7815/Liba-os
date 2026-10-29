@@ -1,12 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bot, Calculator, Contact, FileSpreadsheet, GraduationCap, KeyRound, Layers3, LayoutDashboard, ListChecks, Megaphone, PieChart, Search, UserRound, Users, Wallet, X } from "lucide-react";
 import { agents } from "@/lib/agents.config";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { portals } from "@/lib/portals.config";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { FORMULAS_PATH } from "@/lib/formulas/access";
 import { cn } from "@/lib/utils";
@@ -56,8 +61,19 @@ export function GlobalSearch({
   const router = useRouter();
   const { dashboard } = useLiveDashboard();
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const catalog = useMemo<SearchItem[]>(() => {
     const items: SearchItem[] = [
@@ -377,29 +393,25 @@ export function GlobalSearch({
     canAccessSalesDashboard && q.length >= 2 && !(dashboard?.marketing?.productions?.length);
 
   function goTo(href: string) {
-    setOpen(false);
     setSheetOpen(false);
+    setPaletteOpen(false);
     setQuery("");
     router.push(href);
   }
 
   const field = (inputId: string) => (
     <div className="relative">
-      <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-black/35" />
+      <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <input
         id={inputId}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => {
-          window.setTimeout(() => setOpen(false), 140);
         }}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
-            setOpen(false);
+            setPaletteOpen(false);
+            setSheetOpen(false);
             setQuery("");
           }
           if (e.key === "Enter" && (customerResults[0] || pageResults[0])) {
@@ -409,7 +421,7 @@ export function GlobalSearch({
         }}
         placeholder="חיפוש במערכת..."
         autoComplete="off"
-        className="h-10 w-full rounded-2xl border border-black/[0.06] bg-background pe-9 ps-9 text-sm text-foreground outline-none transition-[border-color,background-color,box-shadow] placeholder:text-muted-foreground focus:border-black/15 focus:bg-white focus:shadow-[0_0_0_3px_rgba(255,212,0,0.28)] sm:h-9 sm:rounded-lg"
+        className="h-11 w-full rounded-lg border border-border bg-background pe-9 ps-9 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-rise ease-out placeholder:text-muted-foreground focus:border-ring focus:shadow-[0_0_0_3px_hsl(var(--highlight)/0.35)]"
       />
       {query ? (
         <button
@@ -417,7 +429,7 @@ export function GlobalSearch({
           aria-label="ניקוי חיפוש"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => setQuery("")}
-          className="absolute end-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-black/35 hover:bg-black/[0.04] hover:text-black"
+          className="absolute end-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -450,7 +462,7 @@ export function GlobalSearch({
                     className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-start transition-colors active:bg-highlight/25 hover:bg-background sm:rounded-lg sm:py-2"
                   >
                     <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-background sm:h-8 sm:w-8 sm:rounded-md">
-                      <UserRound className="h-3.5 w-3.5 text-black/50" />
+                      <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-medium text-foreground">{item.client}</span>
@@ -483,7 +495,7 @@ export function GlobalSearch({
                       )}
                     >
                       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-background sm:h-8 sm:w-8 sm:rounded-md">
-                        <Icon className="h-3.5 w-3.5 text-black/50" />
+                        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                       </span>
                       <span className="min-w-0">
                         <span className="block text-sm font-medium text-foreground">
@@ -527,10 +539,10 @@ export function GlobalSearch({
           </SheetTrigger>
           <SheetContent
             side="top"
-            className="flex h-[min(92dvh,40rem)] flex-col gap-0 border-b border-black/[0.08] bg-white p-0 [&>button]:hidden"
+            className="flex h-[min(92dvh,40rem)] flex-col gap-0 border-b border-border bg-card p-0 [&>button]:hidden"
           >
             <SheetTitle className="sr-only">חיפוש במערכת</SheetTitle>
-            <div className="flex items-center gap-2 border-b border-black/[0.06] px-3 py-3">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-3">
               <div className="min-w-0 flex-1">{field("global-search-mobile")}</div>
               <Button
                 type="button"
@@ -550,15 +562,30 @@ export function GlobalSearch({
       </div>
 
       <div className="relative hidden w-full max-w-md sm:block">
-        <label htmlFor="global-search" className="sr-only">
-          חיפוש במערכת
-        </label>
-        {field("global-search")}
-        {open ? (
-          <div className="absolute inset-x-0 top-[calc(100%+0.4rem)] z-50 overflow-hidden rounded-xl border border-black/[0.08] bg-white shadow-[0_16px_40px_-20px_rgba(17,17,17,0.35)]">
-            {resultsList}
-          </div>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-muted-foreground shadow-sm transition-[border-color,box-shadow,transform] duration-rise ease-out hover:-translate-y-px hover:border-module/50 hover:shadow-card"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="min-w-0 flex-1 truncate text-start">חיפוש או מעבר מהיר</span>
+          <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            Ctrl K
+          </kbd>
+        </button>
+        <Dialog
+          open={paletteOpen}
+          onOpenChange={(next) => {
+            setPaletteOpen(next);
+            if (!next) setQuery("");
+          }}
+        >
+          <DialogContent className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg">
+            <DialogTitle className="sr-only">חיפוש במערכת</DialogTitle>
+            <div className="border-b border-border px-3 py-3">{field("global-search")}</div>
+            <div className="max-h-[min(60vh,26rem)] overflow-auto">{resultsList}</div>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );

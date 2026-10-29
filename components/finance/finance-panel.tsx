@@ -416,7 +416,7 @@ export function FinancePanel({
       </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-1 border-b border-black/[0.08] pb-px">
+      <div className="flex flex-wrap gap-1 border-b border-border pb-px">
         {TABS.map((item) => (
           <button
             key={item.id}
@@ -994,7 +994,7 @@ function MetricCard({
     <div
       className={cn(
         "app-surface px-4 py-4",
-        emphasize ? "border-2 border-black" : "border border-black/[0.08]",
+        emphasize ? "border-2 border-black" : "border border-border",
       )}
     >
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -1603,7 +1603,7 @@ function EntryDialog({
           </div>
 
           {paymentSplitMode ? (
-            <div className="space-y-2 rounded-2xl border border-black/[0.08] bg-background/70 px-3 py-3">
+            <div className="space-y-2 rounded-2xl border border-border bg-background/70 px-3 py-3">
               <div>
                 <Label className="block text-start">סעיפי עמלה (לפני מע״מ)</Label>
                 <p className="mt-1 text-[11px] text-muted-foreground">
@@ -2083,7 +2083,7 @@ function PlSection({
             <PlRow key={l.category} label={l.label} amount={l.amount} />
           ))}
           {report.incomeByPortal.length > 0 ? (
-            <div className="mt-3 border-t border-black/[0.06] pt-3">
+            <div className="mt-3 border-t border-border pt-3">
               <p className="mb-2 text-[11px] font-medium text-muted-foreground">
                 לפי חברת ביטוח
               </p>

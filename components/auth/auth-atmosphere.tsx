@@ -208,10 +208,17 @@ export function AuthAtmosphere({ tone = "liba" }: { tone?: "liba" | "shemesh" })
 
       ctx.clearRect(0, 0, w, h);
 
+      const dark = document.documentElement.classList.contains("dark");
       const g = ctx.createLinearGradient(0, 0, w, h);
-      g.addColorStop(0, "#fafafa");
-      g.addColorStop(0.45, "#ffffff");
-      g.addColorStop(1, "#f3f3f3");
+      if (dark) {
+        g.addColorStop(0, "#171512");
+        g.addColorStop(0.5, "#12110f");
+        g.addColorStop(1, "#0d0c0a");
+      } else {
+        g.addColorStop(0, "#f7f4ee");
+        g.addColorStop(0.45, "#fffdf8");
+        g.addColorStop(1, "#efeae2");
+      }
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
 

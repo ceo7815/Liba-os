@@ -114,7 +114,7 @@ export function AgentApiKeyPanel({
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
             <code
               dir="ltr"
-              className="flex-1 break-all rounded-xl bg-white px-3 py-2.5 text-xs"
+              className="flex-1 break-all rounded-xl bg-card px-3 py-2.5 text-xs"
             >
               {revealed ? freshKey : "•".repeat(40)}
             </code>
@@ -168,7 +168,7 @@ export function AgentApiKeyPanel({
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-black/[0.06]">
+      <div className="overflow-hidden rounded-2xl border border-border">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">

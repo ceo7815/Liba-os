@@ -74,12 +74,12 @@ export function ControlCenterScreen() {
   if (!ready) {
     return (
       <div className="space-y-3 sm:space-y-4">
-        <div className="h-44 animate-pulse rounded-[1.25rem] border border-black/[0.06] bg-white sm:h-40 sm:rounded-[var(--radius)]" />
+        <div className="h-44 animate-pulse rounded-lg border border-border bg-card sm:h-40 sm:rounded-[var(--radius)]" />
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-28 animate-pulse rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]"
+              className="h-28 animate-pulse rounded-lg border border-border bg-card sm:rounded-[var(--radius)]"
             />
           ))}
         </div>
@@ -89,7 +89,7 @@ export function ControlCenterScreen() {
 
   if (!snap) {
     return (
-      <div className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-8 sm:rounded-[var(--radius)] sm:px-8 sm:py-10">
+      <div className="relative overflow-hidden rounded-lg border border-border bg-card px-5 py-8 sm:rounded-[var(--radius)] sm:px-8 sm:py-10">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
         <p className="text-base font-semibold text-foreground">אין נתונים שמורים עדיין</p>
         <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
@@ -173,13 +173,13 @@ export function ControlCenterScreen() {
 
   return (
     <div className="space-y-3">
-      <section className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+      <section className="relative overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-        <div className="grid grid-cols-2 gap-px bg-black/[0.06] lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
           <button
             type="button"
             onClick={() => setOpenKind("upcoming")}
-            className="group bg-[#fffcf0] px-4 py-3 text-start transition-[background-color,transform] active:scale-[0.995] hover:bg-highlight/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group bg-highlight/15 px-4 py-3 text-start transition-[background-color,transform] active:scale-[0.995] hover:bg-highlight/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
           >
             <span className="rounded-full bg-highlight px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
               {snap.upcomingDateLabel}
@@ -201,7 +201,7 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("premium")}
-            className="group bg-white px-4 py-3 text-start transition-colors hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
           >
             <span className="rounded-full bg-highlight/45 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
               {snap.monthLabel}
@@ -221,9 +221,9 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("monthSales")}
-            className="group bg-white px-4 py-3 text-start transition-colors hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
           >
-            <span className="rounded-full bg-black/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+            <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
               העברה ליצרן
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -243,9 +243,9 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("agentAppointment")}
-            className="group bg-white px-4 py-3 text-start transition-colors hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
           >
-            <span className="rounded-full bg-black/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+            <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
               העברה ליצרן
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -260,7 +260,7 @@ export function ControlCenterScreen() {
             </p>
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-black/[0.06] px-4 py-2 text-[11px] sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[11px] sm:px-5">
           {syncedLabel ? (
             <span className="tabular-nums text-muted-foreground">עודכן {syncedLabel}</span>
           ) : null}
@@ -269,7 +269,7 @@ export function ControlCenterScreen() {
               key={kpi.kind}
               type="button"
               onClick={() => setOpenKind(kpi.kind)}
-              className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-[#fffcf0]"
+              className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-highlight/15"
             >
               <span className="text-muted-foreground">{kpi.label}</span>
               <span
@@ -286,7 +286,7 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("pendingMonth")}
-            className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-[#fffcf0]"
+            className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-highlight/15"
           >
             <span className="text-muted-foreground">בתהליך</span>
             <span className="font-semibold tabular-nums text-amber-800">
@@ -314,7 +314,7 @@ export function ControlCenterScreen() {
                 key={item.kind}
                 type="button"
                 onClick={() => setOpenKind(item.kind)}
-                className="group relative min-w-0 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white px-3 py-2.5 text-start transition-[transform,background-color,border-color] active:scale-[0.98] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:px-4 sm:py-3"
+                className="kpi-cube group relative min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2.5 text-start transition-[transform,background-color,border-color] active:scale-[0.98] hover:border-black/10 hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:px-4 sm:py-3"
               >
                 <span className="absolute inset-y-0 start-0 w-1 origin-top scale-y-100 bg-highlight transition-transform duration-300 group-hover:scale-y-110" />
                 <div className="flex items-start justify-between gap-2">
@@ -427,10 +427,10 @@ function ControlCenterDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92dvh] max-w-[96vw] flex-col gap-0 overflow-hidden rounded-[1.35rem] p-0 sm:max-w-5xl sm:rounded-[var(--radius)]">
+      <DialogContent data-peek className="flex max-h-[92dvh] max-w-[96vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
         {detail ? (
           <>
-            <DialogHeader className="border-b border-black/[0.06] px-4 py-4 text-start sm:px-6">
+            <DialogHeader className="border-b border-border px-4 py-4 text-start sm:px-6">
               {detail.kind === "agentAppointment" ? (
                 <div className="mb-3 flex flex-wrap items-center gap-1.5 pe-8">
                   {(
@@ -447,7 +447,7 @@ function ControlCenterDetailDialog({
                         "rounded-full px-3 py-1 text-[12px] font-semibold transition-colors",
                         appointmentPeriod.preset === item.preset
                           ? "bg-highlight text-foreground"
-                          : "bg-black/[0.04] text-muted-foreground hover:bg-black/[0.06]",
+                          : "bg-muted text-muted-foreground hover:bg-border",
                       )}
                     >
                       {item.label}
@@ -464,7 +464,7 @@ function ControlCenterDetailDialog({
                       "rounded-full px-3 py-1 text-[12px] font-semibold outline-none",
                       appointmentPeriod.preset === "pick"
                         ? "bg-highlight text-foreground"
-                        : "bg-black/[0.04] text-muted-foreground",
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     <option value="">חודש לפי בחירה</option>
@@ -481,7 +481,7 @@ function ControlCenterDetailDialog({
                       "rounded-full px-3 py-1 text-[12px] font-semibold transition-colors",
                       appointmentPeriod.preset === "ytd"
                         ? "bg-highlight text-foreground"
-                        : "bg-black/[0.04] text-muted-foreground hover:bg-black/[0.06]",
+                        : "bg-muted text-muted-foreground hover:bg-border",
                     )}
                   >
                     מתחילת שנה
@@ -552,7 +552,7 @@ function ControlCenterDetailDialog({
                   <h3 className="text-xs font-semibold text-muted-foreground">
                     דירוג לפי פרמיה
                   </h3>
-                  <div className="mt-2 overflow-hidden rounded-2xl border border-black/[0.06]">
+                  <div className="mt-2 overflow-hidden rounded-2xl border border-border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-black/[0.05] bg-background/60 text-[11px] text-muted-foreground">
@@ -614,7 +614,7 @@ function ControlCenterDetailDialog({
                             {section.rows.map((row) => (
                               <li
                                 key={row.key}
-                                className="rounded-2xl border border-black/[0.06] bg-white px-3.5 py-3"
+                                className="rounded-2xl border border-border bg-card px-3.5 py-3"
                               >
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="min-w-0">
@@ -642,10 +642,10 @@ function ControlCenterDetailDialog({
                     </ul>
 
                     {/* Desktop table */}
-                    <div className="mt-2 hidden overflow-hidden rounded-xl border border-black/[0.06] sm:block">
+                    <div className="mt-2 hidden overflow-hidden rounded-xl border border-border sm:block">
                       <div className="max-h-[42vh] overflow-auto">
                         <table className="w-full min-w-[52rem] text-sm">
-                          <thead className="sticky top-0 bg-white">
+                          <thead className="sticky top-0 bg-card">
                             <tr className="border-b border-black/[0.05] text-[11px] text-muted-foreground">
                               <th className="px-3 py-2 text-start font-medium">תחילת ביטוח</th>
                               <th className="whitespace-nowrap px-3 py-2 text-start font-medium">

@@ -24,7 +24,7 @@ export function LogoBadge({
       <Link
         href={href}
         className={cn(
-          "group relative block w-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-highlight focus-visible:ring-offset-2",
+          "logo-plate group relative block w-full rounded-lg px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           className,
         )}
       >
@@ -49,7 +49,7 @@ export function LogoBadge({
           className,
         )}
       >
-        <span className="flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3">
+        <span className="logo-plate flex w-full items-center justify-center rounded-lg px-4 py-3">
           <Image
             src="/brand/liba-logo.png"
             alt="ליבה"
@@ -72,7 +72,7 @@ export function LogoBadge({
           className,
         )}
       >
-        <div className="flex w-full items-center justify-center px-1 py-1">
+        <div className="logo-plate flex w-full items-center justify-center rounded-lg px-3 py-2">
           <Image
             src="/brand/liba-logo.png"
             alt="ליבה"

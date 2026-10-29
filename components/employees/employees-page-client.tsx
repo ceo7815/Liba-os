@@ -208,7 +208,7 @@ export function EmployeesPageClient({
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      <div className="flex flex-col gap-3 rounded-[1.25rem] border border-black/[0.06] bg-white px-4 py-3 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex-row sm:items-center sm:justify-between sm:rounded-[var(--radius)] sm:px-5">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex-row sm:items-center sm:justify-between sm:rounded-[var(--radius)] sm:px-5">
         <p className="min-w-0 text-sm leading-snug text-muted-foreground">
           {wageLoading
             ? "טוען שכר מהסנכרון האחרון…"
@@ -225,7 +225,7 @@ export function EmployeesPageClient({
         <Button
           type="button"
           variant="outline"
-          className="h-10 shrink-0 rounded-xl border-black/[0.08] active:scale-95"
+          className="h-10 shrink-0 rounded-xl border-border active:scale-95"
           disabled={syncing}
           onClick={() => importSellers(false)}
         >

@@ -4,6 +4,7 @@ import { GlobalSearch } from "@/components/layout/global-search";
 import { GlobalSyncButton } from "@/components/layout/global-sync-button";
 import { LiveClock } from "@/components/layout/live-clock";
 import { Sidebar } from "@/components/layout/sidebar";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { canAccessFinance, canAccessSourcePnl } from "@/lib/finance/access";
@@ -27,7 +28,7 @@ export function Topbar({ profile }: TopbarProps) {
   const initials = getInitials(displayName);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/[0.08] bg-white/92 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="flex h-14 items-center gap-1.5 px-3 sm:gap-3 sm:px-6 pt-[env(safe-area-inset-top)]">
         <Sheet>
           <SheetTrigger asChild>
@@ -43,7 +44,7 @@ export function Topbar({ profile }: TopbarProps) {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-[min(18rem,88vw)] border-s border-black/[0.08] bg-white p-0 [&>button]:hidden"
+            className="w-[min(18rem,88vw)] border-s border-sidebar-border bg-sidebar p-0 [&>button]:hidden"
           >
             <SheetTitle className="sr-only">תפריט ניווט</SheetTitle>
             <Sidebar profile={profile} className="h-full w-full border-e-0" />
@@ -67,12 +68,14 @@ export function Topbar({ profile }: TopbarProps) {
             <LiveClock />
           </div>
 
-          <div className="hidden h-6 w-px bg-black/[0.08] sm:block" />
+          <ThemeToggle />
+
+          <div className="hidden h-6 w-px bg-border sm:block" />
 
           <div className="hidden items-center gap-2.5 sm:flex">
             <div
               aria-hidden
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-highlight text-[10px] font-bold text-black"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-highlight text-[10px] font-bold text-highlight-foreground"
             >
               {initials}
             </div>

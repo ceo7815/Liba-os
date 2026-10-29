@@ -40,7 +40,7 @@ export function ChecklistSettings() {
 
   return (
     <div className="app-surface overflow-hidden" dir="rtl">
-      <div className="border-b border-black/[0.06] px-5 py-5 sm:px-7">
+      <div className="border-b border-border px-5 py-5 sm:px-7">
         <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
           הגדרות צ׳ק־ליסט · מקור האמת של הסוכן
         </p>
@@ -53,7 +53,7 @@ export function ChecklistSettings() {
         </p>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto border-b border-black/[0.06] px-3 sm:px-5">
+      <div className="flex gap-1 overflow-x-auto border-b border-border px-3 sm:px-5">
         {NAV.map((item) => (
           <button
             key={item.id}
@@ -264,7 +264,7 @@ function ScoreSection() {
       <div className="overflow-x-auto rounded-2xl bg-background">
         <table className="w-full min-w-[32rem] text-right text-sm">
           <thead className="text-[11px] text-muted-foreground">
-            <tr className="border-b border-black/[0.06]">
+            <tr className="border-b border-border">
               <th className="px-4 py-3 font-medium">סטטוס</th>
               <th className="px-4 py-3 font-medium">ערך</th>
               <th className="px-4 py-3 font-medium">השפעה על הציון</th>

@@ -59,7 +59,7 @@ export function AlexanderUnproducedEditor({
   }
 
   return (
-    <section className="rounded-2xl border border-black/[0.06] bg-[#f4f8ff] p-4">
+    <section className="rounded-2xl border border-border bg-[#f4f8ff] p-4">
       <p className="text-sm font-semibold">אלכסנדר — לידים שהתקבלו ולא הופקו</p>
       <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
         סגירות מאלכסנדר באקסל מחויבות אוטומטית ב־{formatIls(ALEXANDER_LEAD_RATE)} לכל אחת.

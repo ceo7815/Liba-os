@@ -406,7 +406,7 @@ export function SalesExcelReportScreen({
   }
   const syncedLabel = formatLastUpdatedAt(workbook.syncedAt);
   const selectClass =
-    "h-8 max-w-[12rem] rounded-full border border-black/[0.08] bg-white px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
+    "h-8 max-w-[12rem] rounded-full border border-border bg-card px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
   const monthPreset = presetDates("month");
   const prevPreset = presetDates("prev");
   const yearPreset = presetDates("year");
@@ -455,7 +455,7 @@ export function SalesExcelReportScreen({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="חיפוש בכל השדות…"
-            className="h-9 rounded-full border-black/[0.08] bg-white pe-9"
+            className="h-9 rounded-full border-border bg-card pe-9"
           />
         </div>
       </header>
@@ -474,7 +474,7 @@ export function SalesExcelReportScreen({
                     "inline-flex shrink-0 items-center gap-2 rounded-full border py-1 pe-1.5 ps-3 text-sm transition-colors",
                     active
                       ? "border-transparent bg-highlight font-medium text-highlight-foreground"
-                      : "border-black/[0.06] bg-white text-foreground hover:bg-[#fafaf8]",
+                      : "border-border bg-card text-foreground hover:bg-[#fafaf8]",
                   )}
                 >
                   <span className="whitespace-nowrap">{item.name}</span>
@@ -493,7 +493,7 @@ export function SalesExcelReportScreen({
         ) : null}
 
         {sheet?.kind === "report" ? (
-          <div className="space-y-2.5 rounded-2xl border border-black/[0.06] bg-white px-3 py-2.5">
+          <div className="space-y-2.5 rounded-2xl border border-border bg-card px-3 py-2.5">
             {company !== "shemesh" && (agentCol >= 0 || sourceCol >= 0) ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">מותג</span>
@@ -514,7 +514,7 @@ export function SalesExcelReportScreen({
                           selected && id === "shemesh" && "bg-amber-700 font-medium text-white",
                           selected && id === "liba" && "bg-[#1a1a1a] font-medium text-white",
                           selected && id === "all" && "bg-highlight font-medium text-highlight-foreground",
-                          !selected && "text-muted-foreground hover:bg-white",
+                          !selected && "text-muted-foreground hover:bg-card",
                         )}
                       >
                         {OPERATING_BRAND_LABEL[id]}
@@ -557,7 +557,7 @@ export function SalesExcelReportScreen({
                         "h-7 rounded-full px-2.5 text-xs transition-colors",
                         activePreset === id
                           ? "bg-highlight font-medium text-highlight-foreground"
-                          : "text-muted-foreground hover:bg-white",
+                          : "text-muted-foreground hover:bg-card",
                       )}
                     >
                       {label}
@@ -589,7 +589,7 @@ export function SalesExcelReportScreen({
                   onChange={(event) => setPolicyQuery(event.target.value)}
                   placeholder="מספר פוליסה"
                   aria-label="מספר פוליסה"
-                  className="h-8 w-40 rounded-full border-black/[0.08] bg-white"
+                  className="h-8 w-40 rounded-full border-border bg-card"
                 />
               ) : null}
               {statuses.length ? (
@@ -659,7 +659,7 @@ export function SalesExcelReportScreen({
               : "אין נתונים — סנכרנו את דוח המנהלים"}
         </div>
       ) : (
-        <div className="mx-3 mb-2 flex min-h-[28rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-5">
+        <div className="mx-3 mb-2 flex min-h-[28rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-5">
           <SalesExcelGrid
             sheet={sheet}
             rows={pageRows}

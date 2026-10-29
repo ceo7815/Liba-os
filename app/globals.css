@@ -141,83 +141,104 @@
 
 @layer base {
   :root {
-    /* Brand tokens — Liba: white, black, bright yellow #FFD400 */
+    /* Brand — Liba paper, ink, and a single gold accent #FFD400 */
     --brand-white: #ffffff;
-    --brand-black: #111111;
+    --brand-black: #141210;
     --brand-yellow: #ffd400;
-    --brand-muted: #f5f5f3;
-    --brand-muted-fg: #6b6b6b;
+    --brand-muted: #f4f1ea;
+    --brand-muted-fg: #6a645c;
     --font-rubik: "Rubik";
 
-    /* Canvas gray used across the product shell */
-    --background: 60 8% 95.5%;
-    --foreground: 0 0% 7%;
+    /* Motion shared with the I Am Body admin system */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-rise: 420ms;
+    --dur-chart: 900ms;
+
+    --shadow-card: 0 1px 2px rgba(20, 18, 16, 0.04), 0 12px 32px -20px rgba(20, 18, 16, 0.14);
+    --shadow-lift: 0 16px 40px -18px rgba(20, 18, 16, 0.22);
+    --shadow-pop: 0 24px 64px -28px rgba(20, 18, 16, 0.32);
+
+    /* Warm paper canvas. Gold is the only saturated accent. */
+    --background: 40 23% 96%;
+    --foreground: 30 8% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
+    --card-foreground: 30 8% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-    --primary: 0 0% 7%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 60 8% 93%;
-    --secondary-foreground: 0 0% 7%;
-    --muted: 60 8% 93%;
-    --muted-foreground: 0 0% 42%;
+    --popover-foreground: 30 8% 10%;
+    --primary: 30 8% 10%;
+    --primary-foreground: 40 33% 98%;
+    --secondary: 40 18% 93%;
+    --secondary-foreground: 30 8% 10%;
+    --muted: 40 16% 93%;
+    --muted-foreground: 30 6% 38%;
     --accent: 50 100% 50%;
-    --accent-foreground: 0 0% 7%;
+    --accent-foreground: 30 8% 10%;
     --highlight: 50 100% 50%;
-    --highlight-foreground: 0 0% 7%;
-    --destructive: 0 72% 51%;
+    --highlight-foreground: 30 8% 10%;
+    --module: 48 96% 46%;
+    --destructive: 2 72% 46%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 50 100% 50%;
-    --chart-1: 50 100% 50%;
-    --chart-2: 0 0% 18%;
-    --chart-3: 0 0% 46%;
-    --chart-4: 50 90% 45%;
-    --chart-5: 0 0% 28%;
-    --radius: 1.15rem;
-    --sidebar: 60 8% 95.5%;
-    --sidebar-foreground: 0 0% 7%;
-    --sidebar-primary: 50 100% 50%;
-    --sidebar-primary-foreground: 0 0% 7%;
-    --sidebar-accent: 0 0% 100%;
-    --sidebar-accent-foreground: 0 0% 7%;
-    --sidebar-border: 0 0% 7%;
-    --sidebar-ring: 50 100% 50%;
+    --border: 36 12% 86%;
+    --input: 36 12% 86%;
+    --ring: 48 96% 46%;
+    --chart-1: 48 96% 46%;
+    --chart-2: 168 32% 34%;
+    --chart-3: 30 8% 22%;
+    --chart-4: 28 72% 46%;
+    --chart-5: 210 28% 40%;
+    --radius: 0.75rem;
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 30 8% 12%;
+    --sidebar-primary: 48 96% 46%;
+    --sidebar-primary-foreground: 30 8% 10%;
+    --sidebar-accent: 48 80% 94%;
+    --sidebar-accent-foreground: 30 8% 10%;
+    --sidebar-border: 36 14% 86%;
+    --sidebar-ring: 48 96% 46%;
   }
 
-  /* Light-only product UI — dark class maps to the same tokens */
+  /* Ink surfaces. Primary flips to gold so buttons, charts, and the logo plate stay readable. */
   .dark {
-    --background: 60 8% 95.5%;
-    --foreground: 0 0% 7%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-    --primary: 0 0% 7%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 60 8% 93%;
-    --secondary-foreground: 0 0% 7%;
-    --muted: 60 8% 93%;
-    --muted-foreground: 0 0% 42%;
-    --accent: 50 100% 50%;
-    --accent-foreground: 0 0% 7%;
-    --highlight: 50 100% 50%;
-    --highlight-foreground: 0 0% 7%;
-    --destructive: 0 72% 51%;
+    color-scheme: dark;
+    --background: 30 8% 7%;
+    --foreground: 40 22% 96%;
+    --card: 30 7% 11%;
+    --card-foreground: 40 22% 96%;
+    --popover: 30 8% 12%;
+    --popover-foreground: 40 22% 96%;
+    --primary: 50 100% 52%;
+    --primary-foreground: 30 10% 8%;
+    --secondary: 30 6% 16%;
+    --secondary-foreground: 40 22% 96%;
+    --muted: 30 6% 16%;
+    --muted-foreground: 36 12% 72%;
+    --accent: 50 100% 52%;
+    --accent-foreground: 30 10% 8%;
+    --highlight: 50 100% 52%;
+    --highlight-foreground: 30 10% 8%;
+    --module: 48 96% 56%;
+    --destructive: 0 72% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 50 100% 50%;
-    --sidebar: 60 8% 95.5%;
-    --sidebar-foreground: 0 0% 7%;
-    --sidebar-primary: 50 100% 50%;
-    --sidebar-primary-foreground: 0 0% 7%;
-    --sidebar-accent: 0 0% 100%;
-    --sidebar-accent-foreground: 0 0% 7%;
-    --sidebar-border: 0 0% 7%;
-    --sidebar-ring: 50 100% 50%;
+    --border: 30 6% 20%;
+    --input: 30 6% 22%;
+    --ring: 50 100% 52%;
+    --chart-1: 48 96% 58%;
+    --chart-2: 168 38% 54%;
+    --chart-3: 36 12% 76%;
+    --chart-4: 28 82% 62%;
+    --chart-5: 210 42% 66%;
+    --sidebar: 30 7% 10%;
+    --sidebar-foreground: 40 18% 94%;
+    --sidebar-primary: 50 100% 52%;
+    --sidebar-primary-foreground: 30 10% 8%;
+    --sidebar-accent: 48 28% 16%;
+    --sidebar-accent-foreground: 40 22% 96%;
+    --sidebar-border: 30 6% 18%;
+    --sidebar-ring: 50 100% 52%;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 40px -24px rgba(0, 0, 0, 0.65);
+    --shadow-lift: 0 18px 44px -16px rgba(0, 0, 0, 0.6);
+    --shadow-pop: 0 28px 70px -28px rgba(0, 0, 0, 0.72);
   }
 
   /* Shemesh accent: the logo's blue, light enough to read as blue on white. */
@@ -240,18 +261,77 @@
 
   html {
     @apply bg-background text-foreground;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    color-scheme: light;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-rubik), system-ui, sans-serif;
+    font-synthesis: none;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  a,
+  summary,
+  select,
+  label[for],
+  [role="button"],
+  [role="option"],
+  [role="menuitem"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  ::selection {
+    background: hsl(var(--highlight) / 0.55);
+    color: hsl(var(--highlight-foreground));
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.35);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 
 @layer components {
   .app-surface {
-    @apply rounded-xl border border-black/[0.06] bg-white shadow-[0_1px_2px_rgba(17,17,17,0.04)];
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-card);
+    transition:
+      transform var(--dur-rise) var(--ease-out),
+      box-shadow var(--dur-rise) var(--ease-out),
+      border-color var(--dur-rise) var(--ease-out);
+  }
+
+  .logo-plate {
+    background: #ffffff;
+    color: #141210;
   }
 
   .agent-tool-cube {
@@ -378,13 +458,82 @@
   }
 }
 
-.dash-enter {
-  animation: dash-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+.dash-enter,
+.rise {
+  animation: dash-enter var(--dur-rise) var(--ease-expo) both;
+}
+
+.kpi-cube {
+  transition:
+    transform var(--dur-rise) var(--ease-out),
+    box-shadow var(--dur-rise) var(--ease-out),
+    background-color var(--dur-rise) var(--ease-out);
+}
+
+.kpi-cube:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+}
+
+.chart-draw {
+  transform-origin: bottom center;
+  animation: chart-reveal var(--dur-chart) var(--ease-expo) both;
+}
+
+@keyframes chart-reveal {
+  from {
+    opacity: 0;
+    transform: scaleY(0.06);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* One hue per module. Brand gold stays the accent; this tints rails, charts, and active nav. */
+[data-module="dashboard"] { --module: 48 96% 46%; }
+[data-module="leads"] { --module: 262 28% 48%; }
+[data-module="sales"] { --module: 168 32% 32%; }
+[data-module="campaigns"] { --module: 28 76% 44%; }
+[data-module="marketing"] { --module: 210 38% 40%; }
+[data-module="finance"] { --module: 152 26% 32%; }
+[data-module="people"] { --module: 200 30% 36%; }
+[data-module="academy"] { --module: 188 34% 34%; }
+[data-module="system"] { --module: 30 8% 24%; }
+
+.dark [data-module="dashboard"] { --module: 48 96% 56%; }
+.dark [data-module="leads"] { --module: 262 42% 70%; }
+.dark [data-module="sales"] { --module: 168 40% 58%; }
+.dark [data-module="campaigns"] { --module: 32 86% 62%; }
+.dark [data-module="marketing"] { --module: 210 55% 68%; }
+.dark [data-module="finance"] { --module: 152 36% 58%; }
+.dark [data-module="people"] { --module: 200 42% 66%; }
+.dark [data-module="academy"] { --module: 188 46% 62%; }
+.dark [data-module="system"] { --module: 40 14% 72%; }
+
+/* Record peek: docked side panel on wide screens, centered dialog below that. */
+@media (min-width: 1024px) {
+  [data-peek] {
+    left: auto !important;
+    right: auto !important;
+    top: 1rem !important;
+    bottom: 1rem !important;
+    inset-inline-end: 1rem !important;
+    height: auto !important;
+    max-height: none !important;
+    width: min(72rem, calc(100vw - 18rem)) !important;
+    transform: none !important;
+    border-radius: var(--radius) !important;
+    box-shadow: var(--shadow-pop) !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-auth-rise,
   .dash-enter,
+  .rise,
+  .chart-draw,
   .agent-tool-cube,
   .status-live-dot,
   .status-run-bar,
@@ -394,9 +543,59 @@
     transform: none !important;
   }
 
-  .agent-tool-cube:hover {
+  .agent-tool-cube:hover,
+  .kpi-cube:hover {
     transform: none !important;
   }
+}
+
+/* Hardcoded light surfaces still used across screens. Keep the logo plate white. */
+.dark .bg-white:not(.logo-plate),
+.dark .bg-white\/80:not(.logo-plate),
+.dark .bg-white\/92:not(.logo-plate),
+.dark .bg-white\/93:not(.logo-plate),
+.dark .bg-white\/95:not(.logo-plate) {
+  background-color: hsl(var(--card));
+}
+
+.dark .text-black,
+.dark .text-\[\#111111\],
+.dark .text-\[\#141210\] {
+  color: hsl(var(--foreground));
+}
+
+.dark .text-\[\#5c5c5c\],
+.dark .text-black\/70,
+.dark .text-black\/55,
+.dark .text-black\/50,
+.dark .text-black\/40,
+.dark .text-black\/35 {
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .border-black\/\[0\.06\],
+.dark .border-black\/\[0\.08\],
+.dark .border-black\/10,
+.dark .border-black\/15,
+.dark .border-black\/\[0\.12\] {
+  border-color: hsl(var(--border));
+}
+
+.dark .bg-black\/\[0\.04\],
+.dark .bg-black\/\[0\.03\],
+.dark .hover\:bg-black\/\[0\.04\]:hover,
+.dark .hover\:bg-black\/\[0\.03\]:hover,
+.dark .hover\:bg-black\/\[0\.07\]:hover {
+  background-color: hsl(var(--muted));
+}
+
+.dark .bg-\[\#fffcf0\],
+.dark .hover\:bg-\[\#fffcf0\]:hover {
+  background-color: hsl(var(--highlight) / 0.12);
+}
+
+.dark .bg-\[\#f4faf6\] {
+  background-color: hsl(152 20% 14%);
 }
 
 @media print {

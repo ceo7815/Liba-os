@@ -99,7 +99,7 @@ export function LoginForm({
       <p className="pt-1 text-center text-sm font-bold">
         <Link
           href="/forgot-password"
-          className="text-foreground underline-offset-4 transition-colors hover:text-black hover:underline"
+          className="text-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
         >
           שכחתי סיסמה
         </Link>

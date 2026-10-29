@@ -272,7 +272,7 @@ export function CampaignsScreen({
   }
 
   return (
-    <section className="mx-auto w-full max-w-[76rem] space-y-5">
+    <section className="w-full space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/40">
@@ -318,7 +318,7 @@ export function CampaignsScreen({
               }}
               className={cn(
                 "h-8 rounded-full px-4 text-sm transition-colors",
-                channel === id ? "bg-[#1a1a1a] font-medium text-white" : "text-muted-foreground hover:bg-white",
+                channel === id ? "bg-[#1a1a1a] font-medium text-white" : "text-muted-foreground hover:bg-card",
               )}
             >
               {label}
@@ -341,7 +341,7 @@ export function CampaignsScreen({
               onClick={() => setPreset(id)}
               className={cn(
                 "h-8 rounded-full px-3 text-sm transition-colors",
-                preset === id ? "bg-highlight font-medium text-highlight-foreground" : "text-muted-foreground hover:bg-white",
+                preset === id ? "bg-highlight font-medium text-highlight-foreground" : "text-muted-foreground hover:bg-card",
               )}
             >
               {label}
@@ -356,7 +356,7 @@ export function CampaignsScreen({
               setPreset("custom");
               setCustomFrom(event.target.value);
             }}
-            className="h-8 rounded-full border border-black/[0.08] bg-white px-2 text-xs"
+            className="h-8 rounded-full border border-border bg-card px-2 text-xs"
           />
           <span className="text-xs text-muted-foreground">עד</span>
           <input
@@ -369,7 +369,7 @@ export function CampaignsScreen({
               setPreset("custom");
               setCustomTo(event.target.value);
             }}
-            className="h-8 rounded-full border border-black/[0.08] bg-white px-2 text-xs"
+            className="h-8 rounded-full border border-border bg-card px-2 text-xs"
           />
         </div>
       </div>
@@ -405,8 +405,8 @@ export function CampaignsScreen({
         />
       ) : null}
 
-      <section className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] px-4 py-3">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
           <div>
             <h2 className="text-sm font-semibold">קמפיינים</h2>
             <p className="text-xs text-muted-foreground">לחיצה על שורה פותחת את הפירוק היומי ואת החישוב.</p>
@@ -425,7 +425,7 @@ export function CampaignsScreen({
                 onClick={() => setListMode(id)}
                 className={cn(
                   "h-7 rounded-full px-3 text-xs",
-                  listMode === id ? "bg-white font-medium text-[#1a1a1a]" : "text-muted-foreground",
+                  listMode === id ? "bg-card font-medium text-[#1a1a1a]" : "text-muted-foreground",
                 )}
               >
                 {label}
@@ -439,7 +439,7 @@ export function CampaignsScreen({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[52rem] table-fixed text-sm">
               <thead>
-                <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+                <tr className="border-b border-border text-[11px] text-muted-foreground">
                   {channel === "all" ? <th className="px-4 py-2 text-start font-medium">ערוץ</th> : null}
                   <th className="px-4 py-2 text-start font-medium">קמפיין</th>
                   <th className="px-3 py-2 text-start font-medium">סטטוס</th>
@@ -533,7 +533,7 @@ function Metric({ label, value, onClick }: { label: string; value: string; onCli
       {onClick ? <p className="mt-2 text-[11px] text-muted-foreground">לחצו לפירוט</p> : null}
     </>
   );
-  const className = "w-full rounded-2xl border border-black/[0.06] bg-white px-4 py-3 text-start";
+  const className = "w-full rounded-2xl border border-border bg-card px-4 py-3 text-start";
   if (!onClick) return <div className={className}>{body}</div>;
   return (
     <button type="button" onClick={onClick} className={cn(className, "transition-colors hover:bg-[#fafaf8]")}>
@@ -570,8 +570,8 @@ function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string
   const totalDuration = groups.reduce((sum, group) => sum + group.duration, 0);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
-      <header className="border-b border-black/[0.06] px-4 py-3">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card">
+      <header className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold">שיחות שגוגל החזירה</h2>
         <p className="text-xs text-muted-foreground">
           {totalCount > 0
@@ -587,8 +587,8 @@ function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string
       ) : (
         <div className="max-h-96 overflow-auto">
           <table className="w-full min-w-[32rem] text-sm">
-            <thead className="sticky top-0 bg-white">
-              <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <thead className="sticky top-0 bg-card">
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
                 <th className="px-4 py-2 text-start font-medium">תאריך</th>
                 <th className="px-3 py-2 text-start font-medium">שיחות</th>
                 <th className="px-3 py-2 text-start font-medium">משך כולל</th>
@@ -599,7 +599,7 @@ function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string
               {groups.map((group) => (
                 <tr
                   key={group.day}
-                  className="cursor-pointer border-b border-black/[0.04] hover:bg-black/[0.03]"
+                  className="cursor-pointer border-b border-black/[0.04] hover:bg-muted"
                   onClick={() => setDay(group.day)}
                 >
                   <td className="px-4 py-2 tabular-nums">{dayLabel(group.day)}</td>
@@ -623,7 +623,7 @@ function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string
               <div className="max-h-80 overflow-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-background">
-                    <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+                    <tr className="border-b border-border text-[11px] text-muted-foreground">
                       <th className="py-2 text-start font-medium">שעה</th>
                       <th className="py-2 text-start font-medium">משך</th>
                       <th className="py-2 text-start font-medium">מה קרה</th>
@@ -691,8 +691,8 @@ function DayTable({
   );
   const price = total.leads > 0 ? total.cost / total.leads : null;
   return (
-    <section className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
-      <header className="border-b border-black/[0.06] px-4 py-3">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card">
+      <header className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold">{title}</h2>
         <p className="text-xs text-muted-foreground">{hint}</p>
       </header>
@@ -701,8 +701,8 @@ function DayTable({
       ) : (
         <div className="max-h-96 overflow-auto">
           <table className="w-full min-w-[40rem] text-sm">
-            <thead className="sticky top-0 bg-white">
-              <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <thead className="sticky top-0 bg-card">
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
                 <th className="px-4 py-2 text-start font-medium">תאריך</th>
                 <th className="px-3 py-2 text-start font-medium">הוצאה</th>
                 <th className="px-3 py-2 text-start font-medium">{leadName}</th>
@@ -717,7 +717,7 @@ function DayTable({
                 return (
                   <tr
                     key={row.day}
-                    className="cursor-pointer border-b border-black/[0.04] hover:bg-black/[0.03]"
+                    className="cursor-pointer border-b border-black/[0.04] hover:bg-muted"
                     onClick={() => onOpen(row.day)}
                   >
                     <td className="px-4 py-2 tabular-nums">{dayLabel(row.day)}</td>
@@ -731,7 +731,7 @@ function DayTable({
               })}
             </tbody>
             <tfoot>
-              <tr className="border-t border-black/[0.08] font-medium">
+              <tr className="border-t border-border font-medium">
                 <td className="px-4 py-2">סה״כ</td>
                 <td className="px-3 py-2 tabular-nums">{money(total.cost)}</td>
                 <td className="px-3 py-2 tabular-nums">{total.leads.toLocaleString("he-IL")}</td>
@@ -796,7 +796,7 @@ function DayDetail({
       </p>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+          <tr className="border-b border-border text-[11px] text-muted-foreground">
             <th className="py-2 text-start font-medium">קמפיין</th>
             <th className="py-2 text-start font-medium">הוצאה</th>
             <th className="py-2 text-start font-medium">{noun}</th>
@@ -864,7 +864,7 @@ function callStatusLabel(status: string): string {
 
 function ExplainLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-baseline gap-3 border-t border-black/[0.06] py-2 text-sm">
+    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-baseline gap-3 border-t border-border py-2 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="tabular-nums">{value}</span>
     </div>
@@ -978,7 +978,7 @@ function ExplainBody(props: {
       <div className="max-h-80 overflow-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-background">
-            <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <tr className="border-b border-border text-[11px] text-muted-foreground">
               <th className="py-2 text-start font-medium">קמפיין</th>
               {props.channel === "all" ? <th className="py-2 text-start font-medium">ערוץ</th> : null}
               <th className="py-2 text-start font-medium">הוצאה</th>
@@ -1050,7 +1050,7 @@ function CampaignDetail({
         <div className="max-h-72 overflow-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-background">
-              <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
                 <th className="py-2 text-start font-medium">תאריך</th>
                 <th className="py-2 text-start font-medium">הוצאה</th>
                 <th className="py-2 text-start font-medium">{noun}</th>

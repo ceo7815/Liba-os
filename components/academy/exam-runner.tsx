@@ -62,7 +62,7 @@ export function ExamRunner({ examId, courseId }: { examId: string; courseId?: st
           {result.answers.map((row) => (
             <article
               key={row.questionId}
-              className="rounded-2xl border border-black/[0.06] bg-white px-4 py-3 text-sm"
+              className="rounded-2xl border border-border bg-card px-4 py-3 text-sm"
             >
               <p className="font-medium">{row.stem}</p>
               <p className={row.correct ? "mt-2 text-emerald-700" : "mt-2 text-red-700"}>
@@ -120,13 +120,13 @@ export function ExamRunner({ examId, courseId }: { examId: string; courseId?: st
       </header>
 
       {current ? (
-        <article className="rounded-2xl border border-black/[0.06] bg-white p-5">
+        <article className="rounded-2xl border border-border bg-card p-5">
           <p className="font-medium leading-relaxed">{current.stem}</p>
           <div className="mt-4 space-y-2">
             {current.options.map((option) => (
               <label
                 key={option.id}
-                className="flex cursor-pointer items-start gap-2 rounded-xl border border-black/[0.06] px-3 py-2 text-sm"
+                className="flex cursor-pointer items-start gap-2 rounded-xl border border-border px-3 py-2 text-sm"
               >
                 <input
                   type="radio"
@@ -153,7 +153,7 @@ export function ExamRunner({ examId, courseId }: { examId: string; courseId?: st
           type="button"
           disabled={index === 0}
           onClick={() => setIndex((value) => Math.max(0, value - 1))}
-          className="rounded-xl border border-black/[0.08] px-3.5 py-2 text-sm disabled:opacity-40"
+          className="rounded-xl border border-border px-3.5 py-2 text-sm disabled:opacity-40"
         >
           הקודם
         </button>

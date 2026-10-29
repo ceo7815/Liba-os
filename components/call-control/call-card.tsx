@@ -212,7 +212,7 @@ export function CallCard({
 
   return (
     <article className="flex min-h-0 flex-col" dir="rtl">
-      <header className="border-b border-black/[0.06] px-5 py-5 sm:px-7">
+      <header className="border-b border-border px-5 py-5 sm:px-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -281,7 +281,7 @@ export function CallCard({
         </div>
       </header>
 
-      <div className="flex gap-1 border-b border-black/[0.06] px-4 sm:px-6">
+      <div className="flex gap-1 border-b border-border px-4 sm:px-6">
         {(
           [
             ["short", "דוח קצר"],
@@ -529,7 +529,7 @@ export function CallCard({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="חיפוש בתמלול"
-                className="h-10 w-full rounded-xl border border-black/[0.08] bg-background pe-9 ps-3 text-sm outline-none focus:ring-1 focus:ring-highlight"
+                className="h-10 w-full rounded-xl border border-border bg-background pe-9 ps-3 text-sm outline-none focus:ring-1 focus:ring-highlight"
               />
             </div>
             {filtered.length === 0 ? (
@@ -548,7 +548,7 @@ export function CallCard({
                         "max-w-[92%] rounded-2xl px-4 py-3",
                         side === "agent" && "ms-0 me-auto bg-highlight/25",
                         side === "customer" && "ms-auto me-0 bg-background",
-                        side === "other" && "mx-auto bg-white ring-1 ring-black/[0.04]",
+                        side === "other" && "mx-auto bg-card ring-1 ring-black/[0.04]",
                       )}
                     >
                       <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -641,7 +641,7 @@ function ScoreMeter({
       <div
         className={cn(
           "mt-2 h-1.5 overflow-hidden rounded-full",
-          emphasize ? "bg-white/15" : "bg-black/[0.06]",
+          emphasize ? "bg-card/15" : "bg-border",
         )}
       >
         <div

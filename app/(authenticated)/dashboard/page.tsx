@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   }).format(new Date());
 
   return (
-    <section className="mx-auto w-full max-w-[72rem] space-y-3">
+    <section className="w-full space-y-4">
       <header className="dash-enter px-0.5 sm:px-0">
         <div className="flex items-end justify-between gap-3">
           <h1 className="text-2xl font-semibold leading-none tracking-tight">
@@ -43,14 +43,14 @@ export default async function DashboardPage() {
 
       {agentRows.length > 0 ? (
         <div
-          className="dash-enter overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]"
+          className="dash-enter overflow-hidden rounded-lg border border-border bg-card sm:rounded-[var(--radius)]"
           style={{ animationDelay: "120ms" }}
         >
-          <div className="flex items-center justify-between border-b border-black/[0.06] px-4 py-3 sm:px-6 sm:py-3.5">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6 sm:py-3.5">
             <h2 className="text-sm font-semibold">סטטוס סוכנים</h2>
             <Link
               href="/agents"
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-black/[0.03] hover:text-foreground active:scale-95"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
             >
               הכל
               <ArrowUpLeft className="size-3.5" />
@@ -108,7 +108,7 @@ export default async function DashboardPage() {
                 <tr
                   key={agent.slug}
                   className={cn(
-                    "border-b border-black/[0.04] transition-colors last:border-b-0 hover:bg-[#fffcf0]/60",
+                    "border-b border-black/[0.04] transition-colors last:border-b-0 hover:bg-highlight/15/60",
                     idx % 2 === 1 && "bg-background/40",
                   )}
                 >

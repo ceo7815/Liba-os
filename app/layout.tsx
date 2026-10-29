@@ -15,7 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="he" dir="rtl" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem("liba-theme")==="dark"){document.documentElement.classList.add("dark")}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="font-sans min-h-screen bg-background text-foreground">
         {children}
       </body>

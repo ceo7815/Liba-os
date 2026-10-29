@@ -67,7 +67,7 @@ export function SalesExcelInspector({
       <DialogContent className="max-w-3xl gap-0 overflow-hidden p-0 sm:max-w-3xl">
         {row ? (
           <>
-            <header className="border-b border-black/[0.06] px-5 pb-4 pt-5 pe-14 text-start">
+            <header className="border-b border-border px-5 pb-4 pt-5 pe-14 text-start">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <DialogTitle className="text-lg">{title}</DialogTitle>
                 <p className="text-[12px] tabular-nums text-muted-foreground">שורה {row.excelRow.toLocaleString("he-IL")}</p>
@@ -133,7 +133,7 @@ export function SalesExcelInspector({
                         {copyable ? (
                           <button
                             type="button"
-                            className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-black/[0.04] hover:text-foreground"
+                            className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                             onClick={() => copyValue(label, value)}
                             aria-label={`העתק ${label}`}
                           >

@@ -387,11 +387,11 @@ export function PostDaySheet({
       <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogContent
           className={cn(
-            "fixed left-1/2 top-1/2 flex max-h-[92vh] w-[min(96vw,72rem)] max-w-[72rem] -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-2xl border-black/[0.08] p-0 shadow-2xl",
+            "fixed left-1/2 top-1/2 flex max-h-[92vh] w-[min(96vw,72rem)] max-w-[72rem] -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-2xl border-border p-0 shadow-2xl",
             "data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 data-[state=open]:zoom-in-100",
           )}
         >
-        <DialogHeader className="shrink-0 border-b border-black/[0.06] px-6 py-5 pe-20 text-start sm:px-8">
+        <DialogHeader className="shrink-0 border-b border-border px-6 py-5 pe-20 text-start sm:px-8">
           <button
             type="button"
             onClick={() => void minimizeToDock()}
@@ -471,7 +471,7 @@ export function PostDaySheet({
             ) : null}
             <div className="grid min-h-0 flex-1 gap-0 overflow-hidden lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
               <div className="min-h-0 space-y-5 overflow-y-auto px-6 py-5 sm:px-8">
-                <section className="space-y-2 rounded-xl border border-black/[0.06] bg-muted/40 p-4">
+                <section className="space-y-2 rounded-xl border border-border bg-muted/40 p-4">
                   <div className="flex items-center justify-between gap-2">
                     <Label className="text-sm font-semibold">המלצת AI</Label>
                     {!locked && !post.caption_locked && (
@@ -601,7 +601,7 @@ export function PostDaySheet({
                         />
                       )}
 
-                      <div className="space-y-2 rounded-xl border border-black/[0.06] bg-background p-4">
+                      <div className="space-y-2 rounded-xl border border-border bg-background p-4">
                         <Label htmlFor="userNotes">הרעיון שלי</Label>
                         <p className="text-[11px] leading-relaxed text-muted-foreground">
                           לא חייבים את ההמלצה למעלה. כתבו נושא או רעיון — AI ינסח
@@ -777,8 +777,8 @@ export function PostDaySheet({
                 )}
               </div>
 
-              <aside className="flex min-h-0 flex-col border-t border-black/[0.06] bg-muted/30 lg:border-t-0 lg:border-s">
-                <div className="flex shrink-0 items-start justify-between gap-2 border-b border-black/[0.06] px-5 py-3">
+              <aside className="flex min-h-0 flex-col border-t border-border bg-muted/30 lg:border-t-0 lg:border-s">
+                <div className="flex shrink-0 items-start justify-between gap-2 border-b border-border px-5 py-3">
                   <div>
                     <h3 className="text-sm font-semibold">תצוגה מקדימה</h3>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -803,7 +803,7 @@ export function PostDaySheet({
                   <button
                     type="button"
                     onClick={() => setFullscreenPreview(true)}
-                    className="w-full rounded-xl border border-black/[0.06] bg-background p-3 text-start transition-colors hover:border-black/15 hover:bg-muted/40"
+                    className="w-full rounded-xl border border-border bg-background p-3 text-start transition-colors hover:border-black/15 hover:bg-muted/40"
                   >
                     <p className="mb-2 text-[11px] font-medium text-muted-foreground">
                       לחצו לתצוגה כמו בפייסבוק / אינסטגרם
@@ -871,7 +871,7 @@ export function PostDaySheet({
               </aside>
             </div>
 
-            <DialogFooter className="shrink-0 flex-row flex-wrap justify-between gap-2 border-t border-black/[0.06] bg-background px-6 py-4 sm:px-8">
+            <DialogFooter className="shrink-0 flex-row flex-wrap justify-between gap-2 border-t border-border bg-background px-6 py-4 sm:px-8">
               {!locked ? (
                 <>
                   <div className="flex flex-wrap gap-2">
