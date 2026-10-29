@@ -54,7 +54,7 @@ const SECTIONS: {
       { href: "/shemesh/costs", label: "הוצאות קבועות", icon: Receipt },
       { href: "/shemesh/receipts", label: "קבלות", icon: Landmark },
       { href: "/shemesh/insurance", label: "ביטוח", icon: Shield },
-      { href: "/shemesh/settlement", label: "התחשבנות", icon: Wallet },
+      { href: "/shemesh/settlement", label: "התחשבנות מול ליבה", icon: Wallet },
       { href: "/shemesh/payroll", label: "שכר", icon: Users },
       { href: "/shemesh/agency", label: "שורנס", icon: Building2 },
       { href: "/shemesh/revival", label: "החזרת לידים", icon: MessageSquare },
