@@ -246,8 +246,14 @@ export function CampaignsScreen({
             : [syncGoogleAds(), syncFacebookAds()];
       void Promise.all(jobs).then((results) => {
         const failed = results.find((result) => !result.ok && !result.skipped);
+        const warning = results
+          .map((result) => ("warning" in result ? result.warning : undefined))
+          .filter((value): value is string => Boolean(value))
+          .join("\n");
         if (failed && !failed.ok) {
           toast.error(failed.error ?? "הסנכרון נכשל");
+        } else if (warning) {
+          toast.error(warning);
         } else if (results.every((result) => result.skipped)) {
           toast.message("החשבון עדיין לא מחובר");
         } else {

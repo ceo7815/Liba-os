@@ -18,6 +18,7 @@ import {
   listFacebookCampaigns,
   listFacebookDailyMetrics,
 } from "@/lib/facebook-ads/client";
+import { publicErrorText } from "@/lib/sync-log";
 
 function isMissingRelation(message: string | undefined): boolean {
   return Boolean(
@@ -206,16 +207,15 @@ async function resolveAccessToken(): Promise<string> {
   return decryptVaultSecret(encrypted);
 }
 
-function isTransientSyncError(message: string): boolean {
-  return /fetch failed|failed to fetch|network|econnreset|etimedout|socket|abort|timeout/i.test(message);
+function facebookTokenSource(): "env" | "database" {
+  return process.env.FACEBOOK_ACCESS_TOKEN?.trim() ? "env" : "database";
 }
 
 async function writeSettingsError(message: string) {
-  if (isTransientSyncError(message)) return;
   const admin = createAdminClient();
   await admin.from("facebook_ads_settings").upsert({
     id: 1,
-    last_error: message,
+    last_error: publicErrorText(message).slice(0, 2000),
     updated_at: new Date().toISOString(),
   });
 }
@@ -328,6 +328,7 @@ export async function syncFacebookAds(): Promise<{
   ok: boolean;
   skipped?: boolean;
   error?: string;
+  warning?: string;
   campaigns?: number;
   days?: number;
 }> {
@@ -340,7 +341,12 @@ export async function syncFacebookAds(): Promise<{
     const accessToken = await resolveAccessToken();
     const accounts = await listFacebookAdAccounts(accessToken);
     if (accounts.length === 0) {
-      return { ok: false, error: "לא נמצאו חשבונות מודעות בפייסבוק" };
+      const message = "לא נמצאו חשבונות מודעות בפייסבוק";
+      console.error("[facebook-sync] sync failed", {
+        tokenSource: facebookTokenSource(),
+        message,
+      });
+      return { ok: false, error: message };
     }
 
     const to = jerusalemYmd();
@@ -364,19 +370,44 @@ export async function syncFacebookAds(): Promise<{
       impressions: number;
       leads: number;
     }[] = [];
+    const accountFailures: string[] = [];
+    const syncedAccounts: typeof accounts = [];
     for (const account of accounts) {
-      const listed = await listFacebookCampaigns(accessToken, account.id);
-      for (const row of listed) {
-        campaigns.push({
-          id: row.id,
-          name: row.name,
-          status: row.status,
+      const label = account.name || account.id;
+      try {
+        const listed = await listFacebookCampaigns(accessToken, account.id);
+        const daily = await listFacebookDailyMetrics(accessToken, account.id, from, to);
+        for (const row of listed) {
+          campaigns.push({
+            id: row.id,
+            name: row.name,
+            status: row.status,
+            adAccountId: account.id,
+            adAccountName: account.name,
+          });
+        }
+        metrics.push(...daily);
+        syncedAccounts.push(account);
+      } catch (err) {
+        const message = publicErrorText(err instanceof Error ? err.message : "שגיאת חשבון");
+        console.error("[facebook-sync] account failed", {
           adAccountId: account.id,
           adAccountName: account.name,
+          message,
         });
+        accountFailures.push(`${label}: ${message}`);
       }
-      const daily = await listFacebookDailyMetrics(accessToken, account.id, from, to);
-      metrics.push(...daily);
+    }
+    const warning = accountFailures.join("\n").slice(0, 2000);
+    if (syncedAccounts.length === 0) {
+      const message = warning || "לא נמצאו חשבונות מודעות שאפשר לסנכרן";
+      console.error("[facebook-sync] sync failed", {
+        tokenSource: facebookTokenSource(),
+        accounts: accounts.length,
+        message,
+      });
+      await writeSettingsError(message);
+      return { ok: false, error: message };
     }
     const accountByCampaign = new Map(
       campaigns.map((row) => [row.id, { id: row.adAccountId, name: row.adAccountName }]),
@@ -442,21 +473,35 @@ export async function syncFacebookAds(): Promise<{
 
     await admin.from("facebook_ads_settings").upsert({
       id: 1,
-      ad_account_id: accounts.map((row) => row.id).join(","),
-      ad_account_name: accounts.map((row) => row.name).join(" · "),
+      ad_account_id: syncedAccounts.map((row) => row.id).join(","),
+      ad_account_name: syncedAccounts.map((row) => row.name).join(" · "),
       last_synced_at: now,
-      last_error: null,
+      last_error: warning || null,
       updated_by: profile.id,
       updated_at: now,
     });
     revalidatePath(SOURCE_PNL_PATH);
-    return { ok: true, campaigns: campaigns.length, days: statRows.length };
+    if (warning) {
+      console.error("[facebook-sync] partial failure", {
+        tokenSource: facebookTokenSource(),
+        synced: syncedAccounts.length,
+        failed: accountFailures.length,
+        message: warning,
+      });
+    }
+    return {
+      ok: true,
+      warning: warning || undefined,
+      campaigns: campaigns.length,
+      days: statRows.length,
+    };
   } catch (err) {
-    const raw = err instanceof Error ? err.message : "סנכרון פייסבוק נכשל";
-    const message = isTransientSyncError(raw)
-      ? "פייסבוק לא הגיב בסנכרון. החיבור תקין, נסו שוב."
-      : raw;
-    await writeSettingsError(raw);
+    const message = publicErrorText(err instanceof Error ? err.message : "סנכרון פייסבוק נכשל");
+    console.error("[facebook-sync] sync failed", {
+      tokenSource: facebookTokenSource(),
+      message,
+    });
+    await writeSettingsError(message);
     return { ok: false, error: message };
   }
 }

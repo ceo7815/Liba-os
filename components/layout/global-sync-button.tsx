@@ -169,6 +169,10 @@ export function GlobalSyncButton({
             adsFailed = true;
             setFacebookStatus("failed");
             toast.error(facebook.error ?? "סנכרון פייסבוק נכשל");
+          } else if (facebook.warning) {
+            adsFailed = true;
+            setFacebookStatus("failed");
+            toast.error(facebook.warning);
           } else {
             setFacebookStatus("done");
             if (!facebook.skipped) toast.success("פייסבוק עודכן");
