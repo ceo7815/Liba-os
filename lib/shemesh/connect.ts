@@ -275,6 +275,33 @@ export async function syncShemeshSources(): Promise<{ ok: boolean; notes: string
   return { ok: true, notes };
 }
 
+export async function testShemeshProvider(provider: "rivhit" | "grow" | "insurance") {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("shemesh_provider_secrets")
+    .select("api_url, secret_encrypted")
+    .eq("provider", provider)
+    .maybeSingle();
+  if (error) return { error: isMissingRelation(error.message) ? "הטבלה עדיין לא הורצה" : error.message };
+  if (!data?.api_url || !data.secret_encrypted) return { error: "קודם שומרים כתובת ומפתח" };
+  let message: string | null = null;
+  try {
+    const secret = decryptVaultSecret(String(data.secret_encrypted));
+    const res = await fetch(String(data.api_url), {
+      headers: { Authorization: `Bearer ${secret}` },
+      cache: "no-store",
+    });
+    if (!res.ok) message = `הבדיקה החזירה ${res.status}`;
+  } catch (err: unknown) {
+    message = err instanceof Error ? err.message : "הבדיקה נכשלה";
+  }
+  await admin.from("shemesh_provider_secrets").update({
+    last_checked_at: new Date().toISOString(),
+    last_error: message,
+  }).eq("provider", provider);
+  return { error: message };
+}
+
 export async function storeShemeshFacebookToken(accessToken: string, expiresAt: string | null, name: string | null) {
   await mark("shemesh_facebook_settings", {
     ad_account_id: SHEMESH_FACEBOOK_ACCOUNT,

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
 import { canManageShemesh } from "@/lib/permissions/access";
-import { pickShemeshGoogleCustomer, saveShemeshProvider, saveShemeshSurense, syncShemeshSources } from "@/lib/shemesh/connect";
+import { pickShemeshGoogleCustomer, saveShemeshProvider, saveShemeshSurense, syncShemeshSources, testShemeshProvider } from "@/lib/shemesh/connect";
 
 async function allowed() {
   const profile = await getCurrentProfile();
@@ -33,6 +33,14 @@ export async function chooseShemeshGoogleCustomer(_state: { error: string | null
   const result = await pickShemeshGoogleCustomer(String(formData.get("customerId") ?? ""));
   if (!result.error) revalidatePath("/shemesh/sources");
   return result;
+}
+
+export async function testShemeshProviderForm(formData: FormData) {
+  if (!(await allowed())) return;
+  const provider = String(formData.get("provider") ?? "");
+  if (provider !== "rivhit" && provider !== "grow" && provider !== "insurance") return;
+  await testShemeshProvider(provider);
+  revalidatePath("/shemesh/sources");
 }
 
 export async function runShemeshSync() {

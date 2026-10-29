@@ -3,10 +3,34 @@
 import { useFormState } from "react-dom";
 import { field } from "@/components/shemesh/module-shell";
 import { Panel } from "@/components/shemesh/widgets";
-import { chooseShemeshGoogleCustomer, connectShemeshProvider, connectShemeshSurense } from "@/app/actions/shemesh-connect";
+import { chooseShemeshGoogleCustomer, connectShemeshProvider, connectShemeshSurense, testShemeshProviderForm } from "@/app/actions/shemesh-connect";
 import type { ShemeshLink } from "@/lib/shemesh/connect";
 
 const idle = { error: null as string | null };
+
+const PROVIDER_GUIDES = [
+  {
+    id: "rivhit" as const,
+    title: "ריווחית",
+    need: "צריך כתובת API ומפתח של החברה.",
+    where: "בריווחית אונליין: הגדרות, ואז מפתח API. מעתיקים את המפתח לכאן, לא לצ׳אט.",
+    secretLabel: "מפתח ריווחית",
+  },
+  {
+    id: "grow" as const,
+    title: "גרואו",
+    need: "צריך כתובת ה-API ומפתח סוחר.",
+    where: "בלוח Grow: מפתחים או הגדרות סליקה. המפתח נשמר מוצפן ולא מוצג שוב.",
+    secretLabel: "מפתח גרואו",
+  },
+  {
+    id: "insurance" as const,
+    title: "חברות ביטוח",
+    need: "צריך כתובת ה-API של החברה ומשתמש או מפתח שהחברה הנפיקה.",
+    where: "כל חברה נותנת את זה בפורטל הספק. מתחילים בחברה הראשונה שאור מחברת איתנו, ושומרים כאן.",
+    secretLabel: "מפתח החברה",
+  },
+];
 
 export function ShemeshConnectPanel({
   links,
@@ -74,19 +98,35 @@ export function ShemeshConnectPanel({
           {surenseState.error ? <p className="text-sm text-destructive sm:col-span-2">{surenseState.error}</p> : null}
         </form>
       </Panel>
-      <Panel title="ריווחית, גרואו וביטוח">
-        <form action={providerAction} className="grid gap-2 sm:grid-cols-2">
-          <select className={field} name="provider" defaultValue="rivhit" aria-label="ספק">
-            <option value="rivhit">ריווחית</option>
-            <option value="grow">גרואו</option>
-            <option value="insurance">חברת ביטוח</option>
-          </select>
-          <input className={field} name="apiUrl" placeholder="כתובת API" />
-          <input className={field} name="secret" type="password" placeholder="מפתח" autoComplete="off" />
-          <button type="submit" className="h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground">שמירת מפתח מוצפן</button>
-          {providerState.error ? <p className="text-sm text-destructive sm:col-span-2">{providerState.error}</p> : null}
-        </form>
-      </Panel>
+      <div className="grid gap-3">
+        {PROVIDER_GUIDES.map((guide) => {
+          const link = links.find((item) => item.id === `shemesh-${guide.id}`);
+          return (
+            <Panel key={guide.id} title={guide.title}>
+              <ol className="list-decimal space-y-1 pe-4 text-sm text-muted-foreground">
+                <li>{guide.need}</li>
+                <li>{guide.where}</li>
+              </ol>
+              <p className="mt-3 text-sm">
+                סטטוס: {link?.connected ? "מחובר" : "לא מחובר"}
+                {link?.syncedAt ? ` · בדיקה אחרונה ${link.syncedAt}` : ""}
+                {link?.note ? ` · ${link.note}` : ""}
+              </p>
+              <form action={providerAction} className="mt-3 grid gap-2 sm:grid-cols-2">
+                <input type="hidden" name="provider" value={guide.id} />
+                <input className={field} name="apiUrl" placeholder="כתובת ה-API" />
+                <input className={field} name="secret" type="password" placeholder={guide.secretLabel} autoComplete="off" />
+                <button type="submit" className="h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground">שמירה מוצפנת</button>
+              </form>
+              <form action={testShemeshProviderForm} className="mt-2">
+                <input type="hidden" name="provider" value={guide.id} />
+                <button type="submit" className="h-9 rounded-xl bg-muted px-3 text-sm">בדיקת חיבור</button>
+              </form>
+            </Panel>
+          );
+        })}
+        {providerState.error ? <p className="text-sm text-destructive">{providerState.error}</p> : null}
+      </div>
     </div>
   );
 }

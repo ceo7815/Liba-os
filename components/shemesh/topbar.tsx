@@ -32,8 +32,8 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
             </Button>
           </SheetTrigger>
           <SheetContent
-            side="right"
-            className="w-[min(18rem,88vw)] border-s border-black/[0.08] bg-white p-0 [&>button]:hidden"
+            side="bottom"
+            className="h-[min(88dvh,44rem)] rounded-t-3xl border-t border-border bg-card p-0 [&>button]:hidden"
           >
             <SheetTitle className="sr-only">תפריט ניווט</SheetTitle>
             <ShemeshSidebar className="h-full w-full border-e-0" />
