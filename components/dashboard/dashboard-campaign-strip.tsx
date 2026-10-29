@@ -55,8 +55,8 @@ export function DashboardCampaignStrip() {
   const formPrice = pulse.facebookForms > 0 ? pulse.facebookSpend / pulse.facebookForms : null;
 
   return (
-    <section className="glass overflow-hidden rounded-lg sm:rounded-[var(--radius)]">
-      <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2 sm:px-5">
+    <section>
+      <div className="flex items-baseline justify-between gap-3 px-1">
         <div>
           <h2 className="text-[1.35rem] font-semibold tracking-tight">קמפיינים של ליבה</h2>
           <p className="text-[11px] text-muted-foreground">
@@ -69,7 +69,7 @@ export function DashboardCampaignStrip() {
           <ArrowUpLeft className="size-3.5" />
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <PulseCell label="הוצאה" value={money(pulse.spend)} hint="גוגל ופייסבוק של ליבה" onClick={() => setOpen("spend")} />
         <PulseCell label="שיחות גוגל" value={pulse.googleCalls.toLocaleString("he-IL")} hint={callPrice == null ? "אין שיחות" : `${money(callPrice)} לשיחה`} onClick={() => setOpen("calls")} />
         <PulseCell label="טפסי פייסבוק" value={pulse.facebookForms.toLocaleString("he-IL")} hint={formPrice == null ? "אין טפסים" : `${money(formPrice)} לטופס`} onClick={() => setOpen("forms")} />
@@ -101,7 +101,7 @@ function PulseCell({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="bg-card px-4 py-2.5 text-start hover:bg-highlight/15">
+    <button type="button" onClick={onClick} className="kpi-cube bg-card px-4 py-3 text-start hover:bg-[#f7f7f8]">
       <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
       <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{hint}</p>

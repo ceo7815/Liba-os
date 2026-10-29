@@ -12,6 +12,7 @@ import { LeadControlScreen } from "@/components/lead-control/screen";
 import { AppShell } from "@/components/layout/app-shell";
 import type { OsModule } from "@/components/layout/shell-frame";
 import { ShemeshMobileDock } from "@/components/shemesh/mobile-dock";
+import { ShemeshTopbar } from "@/components/shemesh/topbar";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { ShemeshDashboard } from "@/components/shemesh/dashboard-screen";
 import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
@@ -86,6 +87,7 @@ export default function DesignLabPage({
           <Suspense fallback={null}>
             <ShemeshSidebar className="hidden lg:flex" />
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <ShemeshTopbar profile={previewProfile} />
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
                 <ShemeshDashboard />
               </div>

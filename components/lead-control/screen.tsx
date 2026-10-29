@@ -186,9 +186,9 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold">נציגים עם חריגות</h2>
           </div>
-          <ul className="grid gap-px bg-muted sm:grid-cols-2 xl:grid-cols-4">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {reps.map((rep) => (
-              <li key={rep.name} className="bg-card">
+              <li key={rep.name} className="rounded-[20px] border border-black/[0.06] bg-card">
                 <button
                   type="button"
                   onClick={() => { setPerson(rep.name); setQueue("all"); setFocus("overdue"); setStatus("הכל"); }}
@@ -292,15 +292,15 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
                   <td className="max-w-40 truncate px-3 py-2.5 text-muted-foreground">{item.source || "—"}</td>
                   <td className="px-3 py-2.5 tabular-nums text-muted-foreground">{formatWhen(item.openedAt)}</td>
                   <td className="px-3 py-2.5">
-                    <span
-                      className={cn(
-                        "inline-flex rounded-md px-2 py-1 text-xs font-semibold",
-                        item.state === "overdue" && "bg-highlight",
-                        item.state === "on_time" && "bg-muted text-muted-foreground",
-                        item.state === "unassigned" && "border border-black/10",
-                        (item.state === "watching" || item.state === "blocked") && "bg-muted",
-                      )}
-                    >
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f4] px-2.5 py-1 text-xs font-medium text-foreground">
+                      <span
+                        className={cn(
+                          "size-1.5 shrink-0 rounded-full bg-neutral-400",
+                          item.state === "overdue" && "bg-amber-500",
+                          (item.state === "blocked" || item.state === "unassigned") && "bg-red-500",
+                          item.state === "on_time" && "bg-emerald-500",
+                        )}
+                      />
                       {STATE_LABEL[item.state]} · {formatGap(item, snapshot.fetchedAt)}
                     </span>
                   </td>

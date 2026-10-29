@@ -199,8 +199,8 @@ export function ControlCenterScreen() {
 
   return (
     <div className="space-y-6">
-      <section className="enter glass glass-noise relative overflow-hidden border border-black/[0.06]">
-        <div className="grid grid-cols-1 gap-px bg-border min-[480px]:grid-cols-2 lg:grid-cols-4">
+      <section className="enter space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <button
             type="button"
             onClick={() => setOpenKind("upcoming")}
@@ -248,7 +248,7 @@ export function ControlCenterScreen() {
             onClick={() => setOpenKind("monthSales")}
             className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
           >
-            <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+            <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
               העברה ליצרן
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -271,7 +271,7 @@ export function ControlCenterScreen() {
             onClick={() => setOpenKind("agentAppointment")}
             className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
           >
-            <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+            <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
               העברה ליצרן
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -286,7 +286,7 @@ export function ControlCenterScreen() {
             </p>
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[11px] sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 py-1 text-[11px]">
           {syncedLabel ? (
             <span className="tabular-nums text-muted-foreground">עודכן {syncedLabel}</span>
           ) : null}

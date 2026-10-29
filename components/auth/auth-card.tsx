@@ -26,8 +26,6 @@ export function AuthCard({
       )}
     >
       <AuthAtmosphere tone={isShemesh ? "shemesh" : "liba"} />
-      <span aria-hidden className="brand-beam" />
-      <span aria-hidden className="brand-beam brand-beam-far" />
 
       <div className="relative z-10 w-full max-w-[440px]">
         {brand === "chooser" ? (
