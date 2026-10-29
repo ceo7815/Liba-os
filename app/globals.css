@@ -841,7 +841,12 @@ button,
   }
 }
 
-.shemesh-os .h-1.bg-highlight {
+.shemesh-os .h-1.bg-highlight,
+.shemesh-os .w-1.bg-highlight {
+  display: none;
+}
+
+.shemesh-os .absolute.inset-y-0.start-0.w-1 {
   display: none;
 }
 

@@ -59,9 +59,8 @@ export function AuthCard({
 
         <div
           data-auth-obstacle
-          className="auth-panel relative overflow-hidden rounded-[1.15rem] border border-border bg-card/95 p-6 shadow-pop backdrop-blur-xl sm:p-10"
+          className="auth-panel relative overflow-hidden rounded-[20px] border border-black/[0.06] bg-white/80 p-6 shadow-card backdrop-blur-xl sm:p-10"
         >
-          <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-highlight" />
           <div className="mb-6 text-center">
             <h1 className="text-[2rem] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-4xl">
               {title}

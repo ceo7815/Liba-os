@@ -26,7 +26,7 @@ export function AppShell({
     <LiveDashboardProvider preview={previewDashboard} campaignPulse={campaignPulse}>
       <ShellFrame module={module}>
         <Sidebar profile={profile} className="hidden lg:flex" />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <Topbar profile={profile} />
           <MainRegion>{children}</MainRegion>
           <MobileDock profile={profile} />
