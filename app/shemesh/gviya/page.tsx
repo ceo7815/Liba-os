@@ -8,6 +8,9 @@ import { buildGviyaModel } from "@/lib/shemesh/gviya";
 import { loadShemeshSalesWorkbook } from "@/lib/shemesh/sales-workbook-store";
 import { matchStoredSnapshot } from "@/lib/shemesh/surense-match";
 import { SheetQueue } from "@/components/shemesh/sheet-queue";
+import { Panel, Stat } from "@/components/shemesh/widgets";
+import { formatShemeshCount } from "@/lib/shemesh/format";
+import { loadShemeshBooks } from "@/lib/shemesh/story";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "פדיונות · שמש" };
@@ -17,11 +20,19 @@ export default async function ShemeshGviyaPage() {
   const model = buildGviyaModel(stored);
   const ledger = await loadDesk("ledger", "redemption");
   const queue = await loadSheetQueue();
+  const books = await loadShemeshBooks();
   const match = await matchStoredSnapshot(model.deals, model.contacts);
   const flag = (id: string, found: Set<string>) =>
     !match.configured ? "unchecked" : found.has(id) ? "matched" : "unmatched";
   return (
     <div className="space-y-6">
+    <Panel title="נמכר לפי תאריך עסקה">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Stat label="נמכרו החודש" value={books.missing ? "—" : formatShemeshCount(books.soldThisMonth)} hint="לפי deal_date" />
+        <Stat label="עסקה עד חשבונית" value={books.cycleToInvoice == null ? "—" : `${formatShemeshCount(books.cycleToInvoice)} ימים`} />
+        <Stat label="חשבונית עד גבייה" value={books.cycleToCollected == null ? "—" : `${formatShemeshCount(books.cycleToCollected)} ימים`} />
+      </div>
+    </Panel>
     <GviyaScreen
       fileName={model.fileName}
       syncedAt={model.syncedAt}
