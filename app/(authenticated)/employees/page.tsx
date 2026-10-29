@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Contact } from "lucide-react";
 import { listFinanceEmployees } from "@/app/actions/finance-people";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { EmployeesPageClient } from "@/components/employees/employees-page-client";
 import {
   OperatingBrandBar,
@@ -27,9 +29,14 @@ export default async function EmployeesPage() {
             עובדים · הסכמים ונוכחות
           </p>
           <div className="mt-1 flex items-end justify-between gap-3">
-            <h1 className="text-[1.65rem] font-semibold leading-none tracking-tight sm:text-3xl">
-              עובדים
-            </h1>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <IconBadge>
+                <Contact className="size-5" />
+              </IconBadge>
+              <h1 className="text-[1.65rem] font-semibold leading-none tracking-tight sm:text-3xl">
+                עובדים
+              </h1>
+            </div>
             <div className="shrink-0 rounded-2xl border border-border bg-card px-3.5 py-2 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)]">
               <p className="text-lg font-semibold tabular-nums leading-none sm:text-xl">
                 {activeCount}

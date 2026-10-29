@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Wallet } from "lucide-react";
 import { listFinanceEmployees } from "@/app/actions/finance-people";
 import { PayrollScreen } from "@/components/employees/payroll-screen";
+import { IconBadge } from "@/components/ui/icon-badge";
 import {
   OperatingBrandBar,
   OperatingBrandProvider,
@@ -27,9 +28,9 @@ export default async function EmployeePayrollPage() {
           <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2.5">
-                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-2xl bg-highlight/35 sm:size-10">
+                <IconBadge className="size-9 sm:size-10">
                   <Wallet className="size-4 sm:size-5" />
-                </span>
+                </IconBadge>
                 <h1 className="text-[1.45rem] font-semibold leading-tight tracking-tight sm:text-3xl sm:leading-none">
                   משכורות
                 </h1>

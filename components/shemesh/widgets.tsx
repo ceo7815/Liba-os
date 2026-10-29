@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { IconBadge } from "@/components/ui/icon-badge";
 
 export function ShemeshPage({
   title,
@@ -22,9 +23,9 @@ export function ShemeshPage({
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">שמש</p>
             <div className="mt-1 flex items-center gap-2.5">
-              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d7ecff] to-[#fff4c8] text-[#0b3a66]">
+              <IconBadge tone="shemesh">
                 <Icon className="size-5" />
-              </span>
+              </IconBadge>
               <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">

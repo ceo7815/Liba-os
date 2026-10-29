@@ -1,3 +1,4 @@
+import { formatCount } from "@/lib/format/numbers";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
 import { JERUSALEM_TZ, normalizeExcelText } from "@/lib/sales-dashboard/columns";
 
@@ -347,7 +348,7 @@ export function formatRatioPct(ratio: number | null): string {
 }
 
 export function formatIls(n: number): string {
-  return `₪${Math.round(n).toLocaleString("he-IL")}`;
+  return `₪${formatCount(n)}`;
 }
 
 export function formatIlsSigned(n: number): string {

@@ -33,6 +33,7 @@ import { ShemeshRevenue } from "@/components/shemesh/revenue-screen";
 import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
 import { ShemeshSources } from "@/components/shemesh/sources-screen";
 import { UsersAccessScreen } from "@/components/users/users-access-screen";
+import { IconBadge } from "@/components/ui/icon-badge";
 import {
   designLabAcademy,
   designLabCampaignPulse,
@@ -242,9 +243,9 @@ export default function DesignLabPage({
           <header>
             <p className="text-[11px] font-medium tracking-wide text-muted-foreground">עובדים · הסכמים ונוכחות</p>
             <div className="mt-1 flex items-center gap-2.5">
-              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ffe7a3] to-[#fff] text-[#1a1204]">
+              <IconBadge>
                 <Contact className="size-5" />
-              </span>
+              </IconBadge>
               <h1 className="text-2xl font-semibold tracking-tight">עובדים</h1>
             </div>
           </header>
@@ -255,9 +256,9 @@ export default function DesignLabPage({
           <header>
             <p className="text-[11px] font-medium tracking-wide text-muted-foreground">עובדים · משכורות לפי הסכם</p>
             <div className="mt-1 flex items-center gap-2.5">
-              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ffe7a3] to-[#fff] text-[#1a1204]">
+              <IconBadge>
                 <Wallet className="size-5" />
-              </span>
+              </IconBadge>
               <h1 className="text-2xl font-semibold tracking-tight">משכורות</h1>
             </div>
           </header>
