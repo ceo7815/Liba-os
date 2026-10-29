@@ -174,18 +174,20 @@ export function CampaignsScreen({
 
   useEffect(() => {
     let cancel = false;
-    void loadGoogleCallLines(from, to).then((result) => {
-      if (cancel) return;
-      setBoard((current) => ({
-        ...current,
-        googleCalls: result.error
-          ? current.googleCalls
-          : result.rows.filter(
-              (row) => !brand || campaignMatchesBrand({ name: row.campaignName, channel: "google" }, brand),
-            ),
-        googleCallsError: result.error,
-      }));
-    });
+    void loadGoogleCallLines(from, to)
+      .then((result) => {
+        if (cancel) return;
+        setBoard((current) => ({
+          ...current,
+          googleCalls: result.error
+            ? current.googleCalls
+            : result.rows.filter(
+                (row) => !brand || campaignMatchesBrand({ name: row.campaignName, channel: "google" }, brand),
+              ),
+          googleCallsError: result.error,
+        }));
+      })
+      .catch(() => undefined);
     return () => {
       cancel = true;
     };

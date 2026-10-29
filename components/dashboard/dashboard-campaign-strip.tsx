@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpLeft } from "lucide-react";
 import { loadDashboardCampaignPulse, type DashboardCampaignPulse } from "@/app/actions/dashboard-pulse";
+import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CAMPAIGNS_PATH } from "@/lib/sales-dashboard/access";
 import { formatIls } from "@/lib/sales-dashboard/campaign-math";
@@ -20,10 +21,17 @@ function money(value: number): string {
 }
 
 export function DashboardCampaignStrip() {
-  const [pulse, setPulse] = useState<DashboardCampaignPulse | null | undefined>(undefined);
+  const { campaignPulse } = useLiveDashboard();
+  const [pulse, setPulse] = useState<DashboardCampaignPulse | null | undefined>(
+    campaignPulse === undefined ? undefined : campaignPulse,
+  );
   const [open, setOpen] = useState<"spend" | "calls" | "forms" | "today" | null>(null);
 
   useEffect(() => {
+    if (campaignPulse) {
+      setPulse(campaignPulse);
+      return;
+    }
     let alive = true;
     void loadDashboardCampaignPulse()
       .then((next) => {
@@ -35,7 +43,7 @@ export function DashboardCampaignStrip() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [campaignPulse]);
 
   if (pulse === undefined) {
     return <div className="skeleton h-24 rounded-lg border border-border" />;

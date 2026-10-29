@@ -27,12 +27,18 @@ export function moduleFromPath(pathname: string): OsModule {
   return "system";
 }
 
-export function ShellFrame({ children }: { children: React.ReactNode }) {
+export function ShellFrame({
+  children,
+  module,
+}: {
+  children: React.ReactNode;
+  module?: OsModule;
+}) {
   const pathname = usePathname();
 
   return (
     <div
-      data-module={moduleFromPath(pathname)}
+      data-module={module ?? moduleFromPath(pathname)}
       className="os-mesh flex min-h-dvh bg-background text-foreground"
     >
       {children}

@@ -114,10 +114,13 @@ export function GeneralPlScreen({
   initialPreset = "ytd",
   initialFrom = null,
   initialTo = null,
+  preview = null,
 }: {
   initialPreset?: DatePreset;
   initialFrom?: string | null;
   initialTo?: string | null;
+  /** Dev preview only. Skips the live report fetch. */
+  preview?: GeneralPlSnapshot | null;
 }) {
   const seedCustom: DateRange = {
     from: initialPreset === "custom" ? initialFrom : null,
@@ -125,7 +128,7 @@ export function GeneralPlScreen({
   };
   const { brand } = useOperatingBrand();
 
-  const [snapshot, setSnapshot] = useState<GeneralPlSnapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<GeneralPlSnapshot | null>(preview);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [preset, setPreset] = useState<DatePreset>(initialPreset);
   const [custom, setCustom] = useState<DateRange>(seedCustom);
@@ -146,11 +149,12 @@ export function GeneralPlScreen({
   }, []);
 
   useLayoutEffect(() => {
+    if (preview) return;
     const key = rangeCacheKey(brand, initialPreset, seedCustom);
     const entry = readCacheEntry(key);
     if (entry) applyCached(entry);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brand]);
+  }, [brand, preview]);
 
   const fetchSnapshot = useCallback(
     async (nextPreset: DatePreset, nextCustom: DateRange) => {
@@ -194,9 +198,10 @@ export function GeneralPlScreen({
   );
 
   useEffect(() => {
+    if (preview) return;
     void fetchSnapshot(initialPreset, seedCustom);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brand, fetchSnapshot]);
+  }, [brand, fetchSnapshot, preview]);
 
   useEffect(() => {
     const onGlobalSync = () => {
