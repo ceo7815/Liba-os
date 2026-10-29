@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
 import { type ControlItem, type ControlLane, type ControlState } from "@/lib/lead-control/rules";
 import type { LeadControlSnapshot } from "@/lib/lead-control/load";
+import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 
 type Board = "leads" | "processes" | "appointment";
@@ -206,22 +207,20 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
 
       <div className="rounded-lg border border-border bg-card">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-3">
-          <div className="segment flex items-center gap-1 rounded-full p-1">
+          <Segmented value={board} label="לוח" className="rounded-full p-1">
           {BOARDS.map((item) => (
             <button
               key={item.id}
               type="button"
+              data-selected={board === item.id}
               onClick={() => { setBoard(item.id); setQueue("all"); setStatus("הכל"); }}
-              className={cn(
-                "tab-key min-h-11 rounded-lg px-3 py-1.5 text-sm font-semibold",
-                board === item.id ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted",
-              )}
+              className="min-h-11 rounded-full px-3 py-1.5 text-sm font-semibold"
             >
               {item.label}
             </button>
           ))}
-          </div>
-          <div className="segment flex items-center gap-1 rounded-full p-1">
+          </Segmented>
+          <Segmented value={focus} label="מיקוד" className="rounded-full p-1">
           {(
             [
               ["overdue", "לא תקין"],
@@ -233,15 +232,13 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
               key={id}
               type="button"
               onClick={() => setFocus(id)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm",
-                focus === id ? "bg-highlight font-semibold" : "text-muted-foreground hover:bg-muted",
-              )}
+              data-selected={focus === id}
+              className="min-h-11 rounded-full px-3 py-1.5 text-sm"
             >
               {label}
             </button>
           ))}
-          </div>
+          </Segmented>
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}

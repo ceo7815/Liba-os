@@ -7,6 +7,7 @@ import { loadCampaignBoard, loadGoogleCallLines } from "@/app/actions/campaigns-
 import { syncFacebookAds } from "@/app/actions/facebook-ads";
 import { syncGoogleAds } from "@/app/actions/google-ads";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Segmented } from "@/components/ui/segmented";
 import { Button } from "@/components/ui/button";
 import {
   campaignMatchesBrand,
@@ -301,7 +302,7 @@ export function CampaignsScreen({
       </header>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="segment flex items-center gap-1 rounded-full p-1" role="tablist" aria-label="ערוץ">
+        <Segmented value={channel} label="ערוץ" className="rounded-full p-1">
           {(
             [
               ["all", "הכל"],
@@ -314,20 +315,19 @@ export function CampaignsScreen({
               type="button"
               role="tab"
               aria-selected={channel === id}
+              data-selected={channel === id}
               onClick={() => {
                 setChannel(id);
                 setSelectedId(null);
               }}
-              className={cn(
-                "h-8 rounded-full px-4 text-sm transition-colors",
-                channel === id ? "bg-primary font-medium text-primary-foreground shadow-[inset_0_-2px_0_hsl(var(--module))]" : "text-muted-foreground hover:bg-muted",
-              )}
+              className="h-8 rounded-full px-4 text-sm"
             >
               {label}
             </button>
           ))}
-        </div>
-        <div className="segment flex flex-wrap items-center gap-1 rounded-full p-1">
+        </Segmented>
+        <div className="flex flex-wrap items-center gap-2">
+          <Segmented value={preset} label="טווח" className="rounded-full p-1">
           {(
             [
               ["today", "היום"],
@@ -341,14 +341,13 @@ export function CampaignsScreen({
               key={id}
               type="button"
               onClick={() => setPreset(id)}
-              className={cn(
-                "h-8 rounded-full px-3 text-sm transition-colors",
-                preset === id ? "bg-highlight font-medium text-highlight-foreground" : "text-muted-foreground hover:bg-card",
-              )}
+              data-selected={preset === id}
+              className="h-8 rounded-full px-3 text-sm"
             >
               {label}
             </button>
           ))}
+          </Segmented>
           <input
             type="date"
             value={preset === "custom" ? customFrom : from}
@@ -413,7 +412,7 @@ export function CampaignsScreen({
             <h2 className="text-sm font-semibold">קמפיינים</h2>
             <p className="text-xs text-muted-foreground">לחיצה על שורה פותחת את הפירוק היומי ואת החישוב.</p>
           </div>
-          <div className="segment flex gap-1 rounded-full p-1">
+          <Segmented value={listMode} label="רשימה" className="rounded-full p-1">
             {(
               [
                 ["spent", "עם הוצאה"],
@@ -425,15 +424,13 @@ export function CampaignsScreen({
                 key={id}
                 type="button"
                 onClick={() => setListMode(id)}
-                className={cn(
-                  "h-7 rounded-full px-3 text-xs",
-                  listMode === id ? "bg-card font-medium text-foreground" : "text-muted-foreground",
-                )}
+                data-selected={listMode === id}
+                className="h-8 rounded-full px-3 text-xs"
               >
                 {label}
               </button>
             ))}
-          </div>
+          </Segmented>
         </header>
         {visible.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">אין קמפיינים בסינון הזה.</p>
