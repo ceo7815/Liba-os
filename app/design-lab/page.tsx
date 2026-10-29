@@ -15,7 +15,11 @@ import { Aurora } from "@/components/brand/aurora";
 import { ShemeshMobileDock } from "@/components/shemesh/mobile-dock";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
+import { CaseBoard } from "@/components/shemesh/case-board";
 import { ShemeshDashboard } from "@/components/shemesh/dashboard-screen";
+import { ShemeshOverview } from "@/components/shemesh/overview-screen";
+import { SettlementFlow } from "@/components/shemesh/settlement-flow";
+import { SettlementScreen } from "@/components/shemesh/settlement-screen";
 import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
 import {
   designLabCampaignPulse,
@@ -27,6 +31,9 @@ import {
   designLabShemesh,
 } from "@/lib/design-lab/fixtures";
 import { formatIls } from "@/lib/finance/categories";
+import { CASE_STAGES, type CaseStageId } from "@/lib/shemesh/catalog";
+import { currentMonthKey } from "@/lib/shemesh/gviya";
+import type { CaseFile } from "@/lib/shemesh/ops";
 import { PERMISSION_KEYS } from "@/lib/permissions/catalog";
 import type { Profile } from "@/lib/types";
 
@@ -78,6 +85,26 @@ export default function DesignLabPage({
       >
         <LoginForm redirectTo={shemesh ? "/shemesh" : "/dashboard"} />
       </AuthCard>
+    );
+  }
+
+  if (view === "integ-home" || view === "integ-cases" || view === "integ-settlement") {
+    return (
+      <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background">
+        <Aurora tone="shemesh" />
+        <Suspense fallback={null}>
+          <ShemeshSidebar className="hidden lg:flex" />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <ShemeshTopbar profile={previewProfile} />
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+              {view === "integ-home" ? <RehearsalHome /> : null}
+              {view === "integ-cases" ? <RehearsalCases /> : null}
+              {view === "integ-settlement" ? <RehearsalSettlement /> : null}
+            </div>
+            <ShemeshMobileDock />
+          </div>
+        </Suspense>
+      </div>
     );
   }
 
@@ -169,6 +196,118 @@ function FinanceStat({ label, value, emphasize }: { label: string; value: string
     <div className="rounded-xl border border-border bg-card px-3 py-2">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className={emphasize ? "text-sm font-semibold text-foreground" : "text-sm font-semibold tabular-nums"}>{value}</p>
+    </div>
+  );
+}
+
+async function rehearsalCreate() {
+  "use server";
+  return { error: null as string | null };
+}
+
+async function rehearsalVoid() {
+  "use server";
+}
+
+function RehearsalHome() {
+  const stages = Object.fromEntries(CASE_STAGES.map((stage) => [stage.id, 0])) as Record<CaseStageId, number>;
+  stages.lead = 2;
+  stages.documents = 1;
+  return (
+    <ShemeshOverview
+      hasWorkbook
+      stages={stages}
+      sales={{ month: currentMonthKey(), sold: 18400, collected: 9200, count: 4, cycleDays: 11 }}
+      books={null}
+    />
+  );
+}
+
+function RehearsalCases() {
+  const cases: CaseFile[] = [
+    {
+      id: "c1",
+      clientName: "אביגיל שמש",
+      phone: "050-5550101",
+      stage: "documents",
+      stageLabel: "איסוף מסמכים",
+      status: "פתוח",
+      handler: "מתן בריזלי",
+      openedOn: "2026-10-02",
+      deadline: "2026-10-20",
+      notes: "",
+      overdue: false,
+      serviceType: "פדיון",
+      tasks: [],
+      documents: [],
+      notesList: [],
+    },
+    {
+      id: "c2",
+      clientName: "רון מזרחי",
+      phone: "052-5550144",
+      stage: "filed",
+      stageLabel: "הגשה",
+      status: "באיחור",
+      handler: "שי בר און",
+      openedOn: "2026-09-18",
+      deadline: "2026-10-01",
+      notes: "",
+      overdue: true,
+      serviceType: "החזר מס",
+      tasks: [],
+      documents: [],
+      notesList: [],
+    },
+  ];
+  return (
+    <CaseBoard
+      cases={cases}
+      missing={false}
+      error={null}
+      audit={[]}
+      canManage={false}
+      createAction={rehearsalCreate}
+      updateAction={rehearsalCreate}
+      childAction={rehearsalVoid}
+      documentAction={rehearsalVoid}
+    />
+  );
+}
+
+function RehearsalSettlement() {
+  return (
+    <div className="space-y-6">
+      <SettlementScreen
+        view={{
+          missing: false,
+          error: null,
+          sales: [
+            {
+              id: "s1",
+              client: "אביגיל שמש",
+              company: "הראל",
+              product: "פנסיה",
+              process: "מינוי סוכן",
+              status: "פעילה",
+              transferDate: "2026-10-06",
+              premium: 1860,
+            },
+          ],
+          premium: 1860,
+          owed: 420,
+          licenseCommissionTotal: 180,
+        }}
+      />
+      <SettlementFlow
+        missing={false}
+        drafts={[]}
+        streams={[
+          { id: "liba_commission", label: "עמלת ליבה", amount: 180, rows: 1, note: "הדגמה" },
+          { id: "insurance_sales", label: "מכירות ביטוח", amount: null, rows: 0, note: "אין שורות" },
+          { id: "redemption_in_liba", label: "פדיון בליבה", amount: null, rows: 0, note: "אין שורות" },
+        ]}
+      />
     </div>
   );
 }
