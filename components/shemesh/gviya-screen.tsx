@@ -22,7 +22,7 @@ type Deal = GviyaDeal & { surense: MatchFlag };
 type Contact = SheetContact & { surense: MatchFlag };
 
 const select =
-  "h-9 rounded-xl border border-black/10 bg-white px-3 text-sm outline-none focus:ring-1 focus:ring-ring";
+  "h-9 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-1 focus:ring-ring";
 
 export function GviyaScreen({
   fileName,
@@ -155,7 +155,7 @@ export function GviyaScreen({
         }
       >
         {surenseError ? (
-          <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950">{surenseError}</p>
+          <p className="mb-3 rounded-xl bg-muted px-3 py-2 text-sm text-foreground">{surenseError}</p>
         ) : null}
         {!surenseConfigured ? (
           <p className="py-2 text-sm text-muted-foreground">
@@ -171,7 +171,7 @@ export function GviyaScreen({
       <Panel title="עסקאות">
         <div className="max-h-[28rem] overflow-auto">
           <table className="w-full min-w-[40rem] text-sm">
-            <thead className="sticky top-0 bg-white text-xs text-muted-foreground">
+            <thead className="sticky top-0 bg-card text-xs text-muted-foreground">
               <tr>
                 {["לקוח", "נציג", "מקור", "תאריך עסקה", "סכום", "נגבה", "חשבונית", "ימים", "שורנס"].map((label) => (
                   <th key={label} className="px-2 py-2 text-right font-medium">{label}</th>
@@ -180,7 +180,7 @@ export function GviyaScreen({
             </thead>
             <tbody>
               {filtered.slice(0, 200).map((deal) => (
-                <tr key={deal.id} className="border-t border-black/[0.06]">
+                <tr key={deal.id} className="border-t border-border">
                   <td className="max-w-[10rem] truncate px-2 py-2 font-medium">{deal.client}</td>
                   <td className="px-2 py-2">{deal.rep}</td>
                   <td className="px-2 py-2">{deal.source}</td>
@@ -209,7 +209,7 @@ export function GviyaScreen({
         ) : needsLead.length === 0 ? (
           <p className="py-4 text-sm text-muted-foreground">כל אנשי הקשר שבגיליון נמצאו בשורנס, או שהגיליון ריק.</p>
         ) : (
-          <ul className="divide-y divide-black/[0.06]">
+          <ul className="divide-y divide-border">
             {needsLead.slice(0, 100).map((contact) => (
               <li key={contact.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                 <span className="font-medium">{contact.name || "בלי שם"}</span>
@@ -229,7 +229,7 @@ export function GviyaScreen({
 
 function MatchPill({ flag }: { flag: MatchFlag }) {
   const label = flag === "matched" ? "הותאם" : flag === "unmatched" ? "בלי התאמה" : "לא נבדק";
-  const tone = flag === "matched" ? "bg-emerald-50 text-emerald-800" : flag === "unmatched" ? "bg-amber-50 text-amber-900" : "bg-black/[0.04] text-muted-foreground";
+  const tone = flag === "matched" ? "bg-highlight/15 text-foreground" : flag === "unmatched" ? "bg-muted text-foreground" : "bg-muted text-muted-foreground";
   return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>{label}</span>;
 }
 
@@ -244,7 +244,7 @@ function Bars({ rows }: { rows: { label: string; value: number; hint: string }[]
             <span className="truncate font-medium">{row.label}</span>
             <span className="shrink-0 tabular-nums text-muted-foreground">{formatShemeshMoney(row.value)} · {row.hint}</span>
           </div>
-          <div className="h-1.5 rounded-full bg-black/[0.05]">
+          <div className="h-1.5 rounded-full bg-muted">
             <div className="h-1.5 rounded-full bg-highlight" style={{ width: `${(row.value / max) * 100}%` }} />
           </div>
         </li>

@@ -65,7 +65,7 @@ export function ShemeshOverview({
               <p className="text-[11px] text-muted-foreground">{index + 1}</p>
               <p className="mt-1 text-sm font-semibold">{stage.label}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums">{formatShemeshCount(stageMap[stage.id])}</p>
-              <div className="mt-2 h-1 rounded-full bg-black/[0.06]">
+              <div className="mt-2 h-1 rounded-full bg-border">
                 <div className="h-1 rounded-full bg-highlight" style={{ width: `${(stageMap[stage.id] / max) * 100}%` }} />
               </div>
             </li>
@@ -84,15 +84,15 @@ export function ShemeshOverview({
         </Panel>
       ) : null}
       <div className="grid gap-3 lg:grid-cols-3">
-        <Link href="/shemesh/gviya" className="app-surface block px-5 py-4 hover:bg-black/[0.02]">
+        <Link href="/shemesh/gviya" className="app-surface block px-5 py-4 hover:bg-muted">
           <p className="text-sm font-semibold">פדיונות וגבייה</p>
           <p className="mt-1 text-xs text-muted-foreground">GVIYA, נציגים, מקורות והצלבה מול שורנס</p>
         </Link>
-        <Link href="/shemesh/tax-refunds" className="app-surface block px-5 py-4 hover:bg-black/[0.02]">
+        <Link href="/shemesh/tax-refunds" className="app-surface block px-5 py-4 hover:bg-muted">
           <p className="text-sm font-semibold">החזרי מס</p>
           <p className="mt-1 text-xs text-muted-foreground">דוח שהועלה, צינור וסכומים</p>
         </Link>
-        <Link href="/shemesh/marketing" className="app-surface block px-5 py-4 hover:bg-black/[0.02]">
+        <Link href="/shemesh/marketing" className="app-surface block px-5 py-4 hover:bg-muted">
           <p className="text-sm font-semibold">שיווק</p>
           <p className="mt-1 text-xs text-muted-foreground">חשבון המודעות של שמש, קמפיין ומודעה</p>
         </Link>
@@ -102,11 +102,11 @@ export function ShemeshOverview({
           {ROADMAP.map((item) => (
             <li key={item.stage}>
               {item.href ? (
-                <Link href={item.href} className="block rounded-xl border border-black/[0.06] px-3 py-3 hover:bg-black/[0.02]">
+                <Link href={item.href} className="block rounded-xl border border-border px-3 py-3 hover:bg-muted">
                   <RoadmapCopy item={item} />
                 </Link>
               ) : (
-                <div className="rounded-xl border border-dashed border-black/10 px-3 py-3">
+                <div className="rounded-xl border border-dashed border-border px-3 py-3">
                   <RoadmapCopy item={item} soon />
                 </div>
               )}

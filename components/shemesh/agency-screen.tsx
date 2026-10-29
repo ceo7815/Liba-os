@@ -54,7 +54,7 @@ export function AgencyScreen({
         ) : (
           <ul className="max-h-80 space-y-1 overflow-auto text-sm">
             {rows.slice(0, 80).map((row) => (
-              <li key={row.id} className="flex justify-between gap-3 border-b border-black/[0.04] py-1.5">
+              <li key={row.id} className="flex justify-between gap-3 border-b border-border py-1.5">
                 <span className="truncate font-medium">{row.name || "בלי שם"}</span>
                 <span className="shrink-0 text-muted-foreground">{row.kind} · {row.source || row.assignee}</span>
               </li>

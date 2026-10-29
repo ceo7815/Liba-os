@@ -45,7 +45,7 @@ export function SettlementScreen({ view = EMPTY_VIEW, books = null }: { view?: S
     >
       {hasSales ? (
         <Panel title="מכירות ביטוח דרך ליבה">
-          <ul className="max-h-96 divide-y divide-black/[0.04] overflow-auto text-sm">
+          <ul className="max-h-96 divide-y divide-border overflow-auto text-sm">
             {view.sales.slice(0, 80).map((row) => (
               <li key={row.id} className="grid gap-1 py-2 sm:grid-cols-[1.4fr_1fr_auto] sm:items-center">
                 <span className="truncate font-medium">{row.client || "בלי שם"}</span>

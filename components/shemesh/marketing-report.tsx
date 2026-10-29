@@ -159,7 +159,7 @@ function Rank({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.name} className="border-t border-black/[0.06]">
+            <tr key={row.name} className="border-t border-border">
               <td className="max-w-[14rem] truncate py-2 font-medium">{row.name}</td>
               <td className="py-2 tabular-nums">{formatShemeshMoney(row.spend)}</td>
               <td className="py-2 tabular-nums">{formatShemeshCount(row.leads)}</td>

@@ -9,7 +9,7 @@ import {
 } from "@/lib/shemesh/model";
 
 const fieldClass =
-  "h-8 rounded-lg border border-black/10 bg-white px-2 text-xs font-medium text-foreground";
+  "h-8 rounded-lg border border-border bg-card px-2 text-xs font-medium text-foreground";
 
 export function ShemeshFilters({
   showPlatform = false,

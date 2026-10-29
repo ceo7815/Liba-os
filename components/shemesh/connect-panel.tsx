@@ -43,7 +43,7 @@ export function ShemeshConnectPanel({
           <article key={link.id} className="app-surface px-5 py-4">
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold">{link.name}</h2>
-              <span className={`rounded-full px-2 py-0.5 text-[11px] ${link.connected ? "bg-emerald-50 text-emerald-800" : "bg-muted text-muted-foreground"}`}>
+              <span className={`rounded-full px-2 py-0.5 text-[11px] ${link.connected ? "bg-highlight/15 text-foreground" : "bg-muted text-muted-foreground"}`}>
                 {link.connected ? "מחובר" : "לא מחובר"}
               </span>
             </div>

@@ -17,7 +17,7 @@ import {
 const STORAGE_KEY = "shemesh.portfolio-report.v2";
 
 const field =
-  "w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring";
+  "w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring";
 
 export function PortfolioReportScreen() {
   const [report, setReport] = useState<PortfolioReport>(emptyReport);
@@ -145,7 +145,7 @@ export function PortfolioReportScreen() {
         >
           <summary className="cursor-pointer text-sm font-medium">מסמכים וכתיבה חופשית</summary>
           <div className="mt-4 space-y-3">
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-black/15 bg-muted px-4 py-6 text-sm">
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted px-4 py-6 text-sm">
               <Upload className="size-5" />
               <span className="font-medium">דפי פרטי ביטוח, PDF</span>
               <span className="text-xs text-muted-foreground">אפשר כמה קבצים יחד. דוח השוואה שכבר הופק ידולג.</span>
@@ -288,7 +288,7 @@ function ReportPreview({ report }: { report: PortfolioReport }) {
     <div
       ref={frameRef}
       dir="ltr"
-      className="report-preview -mx-3 mt-4 bg-[#d5d5d2] px-6 py-8 sm:-mx-6 print:m-0 print:bg-white print:p-0"
+      className="report-preview -mx-3 mt-4 bg-muted px-6 py-8 sm:-mx-6 print:m-0 print:bg-card print:p-0"
     >
       <div
         className="report-stage relative mx-auto"
@@ -296,7 +296,7 @@ function ReportPreview({ report }: { report: PortfolioReport }) {
       >
         <div
           ref={sheetRef}
-          className="report-sheet absolute left-0 top-0 w-[210mm] bg-white px-[10mm] py-[8mm] shadow-[0_18px_50px_rgba(0,0,0,0.28)]"
+          className="report-sheet absolute left-0 top-0 w-[210mm] bg-card px-[10mm] py-[8mm] shadow-md"
           style={{ transform: `scale(${box.scale})`, transformOrigin: "top left" }}
         >
           <PortfolioReportDocument report={report} />

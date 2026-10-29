@@ -24,7 +24,7 @@ export function RevivalScreen() {
         <Panel title="תבנית">
           <div className="grid gap-2">
             <input className={field} placeholder="שם התבנית" value={title} onChange={(event) => setTitle(event.target.value)} />
-            <textarea className="min-h-24 rounded-xl border border-black/10 px-3 py-2 text-sm" placeholder="נוסח ההודעה" value={body} onChange={(event) => setBody(event.target.value)} />
+            <textarea className="min-h-24 rounded-xl border border-border px-3 py-2 text-sm" placeholder="נוסח ההודעה" value={body} onChange={(event) => setBody(event.target.value)} />
             <button
               type="button"
               className="h-9 rounded-xl bg-primary text-sm text-primary-foreground"

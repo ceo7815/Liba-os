@@ -32,7 +32,7 @@ export function ShemeshPage({
             </p>
           </div>
         </div>
-        {filters ? <div className="mt-5 border-t border-black/[0.06] pt-4">{filters}</div> : null}
+        {filters ? <div className="mt-5 border-t border-border pt-4">{filters}</div> : null}
         {stats ? <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats}</div> : null}
       </div>
       {children}
@@ -61,7 +61,7 @@ export function Panel({
 }) {
   return (
     <section className="app-surface">
-      <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] px-5 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
         <h2 className="text-sm font-semibold">{title}</h2>
         {action}
       </div>

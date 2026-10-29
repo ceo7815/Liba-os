@@ -71,7 +71,7 @@ export function ShemeshReports({ books = null }: { books?: ShemeshBooks | null }
               </thead>
               <tbody>
                 {money.byMonth.map((row) => (
-                  <tr key={row.month} className="border-t border-black/[0.06]">
+                  <tr key={row.month} className="border-t border-border">
                     <td className="py-2.5 tabular-nums" dir="ltr">
                       {formatShemeshMonth(row.month)}
                     </td>
@@ -88,7 +88,7 @@ export function ShemeshReports({ books = null }: { books?: ShemeshBooks | null }
           {ads.byChannel.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">אין פרסום בתקופה הזו.</p>
           ) : (
-            <ul className="divide-y divide-black/[0.06]">
+            <ul className="divide-y divide-border">
               {ads.byChannel.map((row) => (
                 <li key={row.channel} className="flex items-center justify-between py-3 text-sm">
                   <span>{CHANNEL_LABEL[row.channel]}</span>
@@ -97,7 +97,7 @@ export function ShemeshReports({ books = null }: { books?: ShemeshBooks | null }
               ))}
             </ul>
           )}
-          <p className="border-t border-black/[0.06] pt-3 text-sm text-muted-foreground">
+          <p className="border-t border-border pt-3 text-sm text-muted-foreground">
             נוסחאות העמלה נשארות כבויות עד אישור.{" "}
             <Link href="/shemesh/formulas" className="text-foreground underline-offset-4 hover:underline">
               לנוסחאות

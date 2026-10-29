@@ -87,9 +87,9 @@ export function ShemeshDashboard() {
         <ShemeshFilters showPlatform />
       </header>
 
-      <section className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+      <section className="relative overflow-hidden rounded-[1.25rem] border border-border bg-card shadow-sm sm:rounded-[var(--radius)]">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-        <div className="grid grid-cols-2 gap-px bg-black/[0.06] lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
           <HeroCell
             href="/shemesh/revenue"
             kicker="בתאריכים"
@@ -124,7 +124,7 @@ export function ShemeshDashboard() {
             hint={ads.leads ? "נכנסו מהקמפיינים" : "אין לידים בתקופה"}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-black/[0.06] px-4 py-2 text-[11px] sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[11px] sm:px-5">
           <QuietLink href="/shemesh/revenue" label="נגבה" value={formatShemeshMoney(board.collectedInRange)} />
           <QuietLink href="/shemesh/expenses" label="תגמול עובדים" value={formatShemeshMoney(money.reward)} />
           <QuietLink
@@ -136,20 +136,20 @@ export function ShemeshDashboard() {
       </section>
 
       {campaigns.length > 0 ? (
-        <section className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]">
-          <div className="flex items-baseline justify-between gap-3 border-b border-black/[0.06] px-4 py-2 sm:px-5">
+        <section className="overflow-hidden rounded-[1.25rem] border border-border bg-card sm:rounded-[var(--radius)]">
+          <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2 sm:px-5">
             <h2 className="text-sm font-semibold tracking-tight">קמפיינים בתקופה</h2>
             <Link href="/shemesh/marketing" className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
               לשיווק
               <ChevronLeft className="size-3.5" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-px bg-black/[0.06] sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
             {campaigns.map((row) => (
               <Link
                 key={row.id}
                 href="/shemesh/marketing"
-                className="group bg-white px-4 py-3 text-start transition-colors hover:bg-highlight/10 sm:px-5"
+                className="group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/10 sm:px-5"
               >
                 <p className="truncate text-[11px] font-medium text-muted-foreground" title={row.name}>
                   {CHANNEL_LABEL[row.channel]}
@@ -181,7 +181,7 @@ export function ShemeshDashboard() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="group relative min-w-0 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white px-3 py-2.5 text-start transition-[background-color,border-color] hover:border-black/10 hover:bg-highlight/10 sm:rounded-[var(--radius)] sm:px-4 sm:py-3"
+                className="group relative min-w-0 overflow-hidden rounded-[1.25rem] border border-border bg-card px-3 py-2.5 text-start transition-[background-color,border-color] hover:border-border hover:bg-highlight/10 sm:rounded-[var(--radius)] sm:px-4 sm:py-3"
               >
                 <span className="absolute inset-y-0 start-0 w-1 bg-highlight" />
                 <div className="flex items-start justify-between gap-2">
@@ -191,7 +191,7 @@ export function ShemeshDashboard() {
                     </span>
                     <p className="truncate text-[11px] font-medium text-muted-foreground">{item.label}</p>
                   </div>
-                  <ChevronLeft className="size-3.5 shrink-0 text-black/30 transition-transform group-hover:-translate-x-0.5" />
+                  <ChevronLeft className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5" />
                 </div>
                 <p className="mt-2 truncate text-base font-semibold tracking-tight">{item.name}</p>
                 <p className="mt-1 truncate text-[11px] tabular-nums text-muted-foreground">{item.detail}</p>
@@ -225,10 +225,10 @@ function HeroCell({
       className={
         tint
           ? "group bg-highlight/15 px-4 py-3 text-start transition-colors hover:bg-highlight/25 sm:px-5 sm:py-4"
-          : "group bg-white px-4 py-3 text-start transition-colors hover:bg-highlight/10 sm:px-5 sm:py-4"
+          : "group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/10 sm:px-5 sm:py-4"
       }
     >
-      <span className={tint ? "rounded-full bg-highlight px-2.5 py-0.5 text-[11px] font-semibold text-white" : "rounded-full bg-black/[0.04] px-2.5 py-0.5 text-[11px] font-semibold"}>
+      <span className={tint ? "rounded-full bg-highlight px-2.5 py-0.5 text-[11px] font-semibold text-highlight-foreground" : "rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold"}>
         {kicker}
       </span>
       <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">{label}</p>

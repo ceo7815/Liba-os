@@ -26,7 +26,7 @@ type TabId = "overview" | RevenueLedger["id"];
 const PAGE_SIZE = 40;
 
 const fieldClass =
-  "h-8 rounded-full border border-black/[0.08] bg-white px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
+  "h-8 rounded-full border border-border bg-card px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
 
 function jerusalemToday(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -67,9 +67,9 @@ function isDateHeader(header: string): boolean {
 
 function statusClass(value: string): string {
   const tone = cellTone("סטטוס", value);
-  if (tone === "active") return "bg-emerald-50 text-emerald-800";
+  if (tone === "active") return "bg-highlight/15 text-foreground";
   if (tone === "cancelled") return "bg-rose-50 text-rose-800";
-  if (tone === "pending") return "bg-amber-50 text-amber-900";
+  if (tone === "pending") return "bg-muted text-foreground";
   return "bg-muted text-muted-foreground";
 }
 
@@ -313,7 +313,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
               "h-9 rounded-full px-3.5 text-sm transition-colors",
               tab === id
                 ? "bg-highlight font-medium text-highlight-foreground"
-                : "border border-black/[0.06] bg-white text-foreground hover:bg-muted",
+                : "border border-border bg-card text-foreground hover:bg-muted",
             )}
           >
             {label}
@@ -329,7 +329,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
               value={query}
               onChange={(event) => resetPageAnd(setQuery)(event.target.value)}
               placeholder="חיפוש לקוח, נציג, מקור או סטטוס"
-              className="h-8 rounded-full border-black/[0.08] bg-white pe-9"
+              className="h-8 rounded-full border-border bg-card pe-9"
             />
           </div>
           {(
@@ -540,7 +540,7 @@ function StatusChip({
       onClick={onClick}
       className={cn(
         "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs",
-        selected ? "bg-highlight font-medium text-highlight-foreground" : "bg-white text-muted-foreground ring-1 ring-black/[0.06]",
+        selected ? "bg-highlight font-medium text-highlight-foreground" : "bg-card text-muted-foreground ring-1 ring-border",
       )}
     >
       {label}
@@ -636,7 +636,7 @@ function LedgerTable({
 }) {
   return (
     <section className="app-surface overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold">{ledger.title}</h2>
           <p className="text-xs text-muted-foreground">{ledger.hint}</p>
@@ -645,8 +645,8 @@ function LedgerTable({
       </div>
       <div className="max-h-[36rem] overflow-auto">
         <table className="w-full min-w-[52rem] border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-white">
-            <tr className="border-b border-black/[0.06] text-xs text-muted-foreground">
+          <thead className="sticky top-0 z-10 bg-card">
+            <tr className="border-b border-border text-xs text-muted-foreground">
               {ledger.show.map((index) => {
                 const header = ledger.headers[index] ?? "";
                 const active = sort?.col === index;
@@ -664,7 +664,7 @@ function LedgerTable({
           <tbody>
             {rows.length ? (
               rows.map((row) => (
-                <tr key={row.id} className="border-b border-black/[0.04] odd:bg-muted">
+                <tr key={row.id} className="border-b border-border odd:bg-muted">
                   {ledger.show.map((index) => {
                     const header = ledger.headers[index] ?? "";
                     const value = row.cells[index] ?? "";

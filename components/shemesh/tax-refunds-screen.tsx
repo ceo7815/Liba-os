@@ -66,7 +66,7 @@ export function TaxRefundsScreen({
         <div className="flex flex-wrap items-center gap-2">
           {statuses.length ? (
             <select
-              className="h-9 rounded-xl border border-black/10 bg-white px-3 text-sm"
+              className="h-9 rounded-xl border border-border bg-card px-3 text-sm"
               value={status}
               onChange={(event) => setStatus(event.target.value)}
               aria-label="סטטוס"
@@ -165,7 +165,7 @@ export function TaxRefundsScreen({
           <Panel title="שורות">
             <div className="max-h-[24rem] overflow-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-white text-xs text-muted-foreground">
+                <thead className="sticky top-0 bg-card text-xs text-muted-foreground">
                   <tr>
                     <th className="py-2 text-right font-medium">שם</th>
                     <th className="py-2 text-right font-medium">סטטוס</th>
@@ -174,7 +174,7 @@ export function TaxRefundsScreen({
                 </thead>
                 <tbody>
                   {filtered.slice(0, 200).map((row) => (
-                    <tr key={row.id} className="border-t border-black/[0.06]">
+                    <tr key={row.id} className="border-t border-border">
                       <td className="py-2 font-medium">{row.name}</td>
                       <td className="py-2">{row.status}</td>
                       <td className="py-2 tabular-nums">{formatShemeshMoney(row.amount)}</td>

@@ -17,7 +17,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
   const initials = getInitials(displayName);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/[0.08] bg-white/92 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/92 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
       <div className="flex h-14 items-center gap-1.5 px-3 pt-[env(safe-area-inset-top)] sm:gap-3 sm:px-6">
         <Sheet>
           <SheetTrigger asChild>
@@ -57,7 +57,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
         <div className="ms-auto flex items-center gap-1 sm:gap-2.5">
           <GlobalSyncButton canSyncAds excelTarget="shemesh" />
           <LiveClock />
-          <div className="hidden h-6 w-px bg-black/[0.08] sm:block" />
+          <div className="hidden h-6 w-px bg-border sm:block" />
           <div className="hidden items-center gap-2.5 sm:flex">
             <div
               aria-hidden

@@ -83,7 +83,7 @@ export function ShemeshSearch() {
 
   const field = (inputId: string) => (
     <div className="relative">
-      <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-black/35" />
+      <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <input
         id={inputId}
         value={query}
@@ -115,7 +115,7 @@ export function ShemeshSearch() {
           aria-label="ניקוי חיפוש"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => setQuery("")}
-          className="absolute end-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-black/35 hover:bg-black/[0.04] hover:text-black"
+          className="absolute end-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -183,10 +183,10 @@ export function ShemeshSearch() {
           </SheetTrigger>
           <SheetContent
             side="top"
-            className="shemesh-os flex h-[min(92dvh,40rem)] flex-col gap-0 border-b border-black/[0.08] bg-white p-0 [&>button]:hidden"
+            className="shemesh-os flex h-[min(92dvh,40rem)] flex-col gap-0 border-b border-border bg-card p-0 [&>button]:hidden"
           >
             <SheetTitle className="sr-only">חיפוש במערכת</SheetTitle>
-            <div className="flex items-center gap-2 border-b border-black/[0.06] px-3 py-3">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-3">
               <div className="min-w-0 flex-1">{field("shemesh-search-mobile")}</div>
               <Button
                 type="button"
@@ -211,7 +211,7 @@ export function ShemeshSearch() {
         </label>
         {field("shemesh-search")}
         {open ? (
-          <div className="absolute inset-x-0 top-[calc(100%+0.4rem)] z-50 overflow-hidden rounded-xl border border-black/[0.08] bg-white shadow-[0_16px_40px_-20px_rgba(17,17,17,0.35)]">
+          <div className="absolute inset-x-0 top-[calc(100%+0.4rem)] z-50 overflow-hidden rounded-xl border border-border bg-card shadow-md">
             {resultsList}
           </div>
         ) : null}
