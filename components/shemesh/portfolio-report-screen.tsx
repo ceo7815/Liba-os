@@ -297,7 +297,7 @@ function ReportPreview({ report }: { report: PortfolioReport }) {
       >
         <div
           ref={sheetRef}
-          className="report-sheet absolute left-0 top-0 w-[210mm] bg-card px-[10mm] py-[8mm] shadow-md"
+          className="report-sheet absolute left-0 top-0 w-[210mm] max-w-none bg-card px-[10mm] py-[8mm] shadow-md"
           style={{ transform: `scale(${box.scale})`, transformOrigin: "top left" }}
         >
           <PortfolioReportDocument report={report} />

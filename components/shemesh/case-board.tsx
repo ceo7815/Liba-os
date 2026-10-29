@@ -71,7 +71,7 @@ export function CaseBoard({
             <a className="text-sm font-medium text-highlight" href="/api/shemesh/export?kind=cases">ייצוא לאקסל</a>
           </div>
           {canManage ? <Panel title="תיק חדש">
-            <form action={formAction} className="grid gap-3 sm:grid-cols-2">
+            <form action={formAction} className="grid min-w-0 gap-3 sm:grid-cols-2">
               <label className="grid gap-1 text-xs text-muted-foreground">
                 שם לקוח
                 <input className={field} name="clientName" required />

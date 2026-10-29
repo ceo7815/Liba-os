@@ -10,7 +10,7 @@ import {
 } from "@/lib/shemesh/model";
 
 const fieldClass =
-  "h-8 rounded-lg border border-border bg-card px-2 text-xs font-medium text-foreground";
+  "h-8 max-w-full min-w-0 rounded-lg border border-border bg-card px-2 text-xs font-medium text-foreground";
 
 export function ShemeshFilters({
   showPlatform = false,
@@ -23,8 +23,12 @@ export function ShemeshFilters({
   const { filter, setFilter } = useShemeshFilter();
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <HebrewDateRange from={filter.from} to={filter.to} onChange={(next) => setFilter(next)} />
+    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="shrink-0">
+          <HebrewDateRange from={filter.from} to={filter.to} onChange={(next) => setFilter(next)} />
+        </div>
+      </div>
       {showPlatform ? (
         <select
           aria-label="מקור פרסום"
@@ -32,7 +36,7 @@ export function ShemeshFilters({
           onChange={(event) =>
             setFilter({ adPlatform: event.target.value as typeof filter.adPlatform })
           }
-          className={fieldClass}
+          className={`${fieldClass} w-full sm:w-auto`}
         >
           <option value="all">כל המקורות</option>
           {AD_PLATFORMS.filter((platform) => platform !== "other").map((platform) => (
@@ -49,7 +53,7 @@ export function ShemeshFilters({
           onChange={(event) =>
             setFilter({ incomeKind: event.target.value as typeof filter.incomeKind })
           }
-          className={fieldClass}
+          className={`${fieldClass} w-full sm:w-auto`}
         >
           <option value="all">כל סוגי ההכנסה</option>
           {INCOME_KINDS.map((kind) => (

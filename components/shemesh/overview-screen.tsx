@@ -47,7 +47,7 @@ export function ShemeshOverview({
             אין עדיין ייבוא של דוח המכירות של שמש. השלבים והסכומים יופיעו רק אחרי שהקובץ נשמר בנפרד מדוח ליבה.
           </p>
         ) : null}
-        <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {CASE_STAGES.map((stage, index) => (
             <li key={stage.id} className="glass px-3 py-3">
               <p className="text-[11px] text-muted-foreground">{index + 1}</p>
@@ -77,7 +77,7 @@ export function ShemeshOverview({
           <p className="mt-3 text-xs text-muted-foreground">הספר הוא תפעול. מכירות, גבייה ומחזור נקראים רק מדוח שמש.</p>
         </Panel>
       ) : null}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/shemesh/gviya" className="glass block px-5 py-4 hover:bg-white/80">
           <p className="text-sm font-semibold">פדיונות וגבייה</p>
           <p className="mt-1 text-xs text-muted-foreground">GVIYA, נציגים, מקורות והצלבה מול שורנס</p>

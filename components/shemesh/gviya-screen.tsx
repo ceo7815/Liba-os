@@ -24,7 +24,7 @@ type Deal = GviyaDeal & { surense: MatchFlag };
 type Contact = SheetContact & { surense: MatchFlag };
 
 const select =
-  "h-9 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-1 focus:ring-ring";
+  "h-9 w-full max-w-full min-w-0 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-1 focus:ring-ring sm:w-auto";
 
 export function GviyaScreen({
   fileName,
@@ -91,7 +91,7 @@ export function GviyaScreen({
       description={`גיליון GVIYA${fileName ? ` · ${fileName}` : ""}. מכירה לפי תאריך העסקה. שורנס לא נכתב מכאן.`}
       icon={BadgeDollarSign}
       filters={
-        <div className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
           <select className={select} value={month} onChange={(event) => setMonth(event.target.value)} aria-label="חודש">
             <option value="all">כל החודשים</option>
             {months.map((item) => (

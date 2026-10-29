@@ -63,7 +63,7 @@ export function TaxRefundsScreen({
       description={fileName ? `מתוך ${fileName}. אין חיבור אוטומטי לתיקייה עד שמעלים את הדוח.` : "דוח החזרי המס עדיין לא הועלה."}
       icon={Scale}
       filters={
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {statuses.length ? (
             <select
               className="h-9 rounded-xl border border-border bg-card px-3 text-sm"

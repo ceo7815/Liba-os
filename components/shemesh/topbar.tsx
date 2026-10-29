@@ -18,7 +18,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
 
   return (
     <header className="sticky top-0 z-40 bg-transparent px-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3">
-      <div className="float-bar flex h-12 items-center gap-1.5 px-2 sm:gap-3 sm:px-4">
+      <div className="float-bar flex h-12 min-w-0 max-w-full items-center gap-1.5 px-2 sm:gap-3 sm:px-4">
         <Sheet>
           <SheetTrigger asChild>
             <Button
@@ -56,7 +56,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
 
         <div className="ms-auto flex items-center gap-1 sm:gap-2.5">
           <GlobalSyncButton canSyncAds excelTarget="shemesh" />
-          <LiveClock />
+          <span className="hidden min-[400px]:inline-flex"><LiveClock /></span>
           <div className="hidden h-6 w-px bg-border sm:block" />
           <div className="hidden items-center gap-2.5 sm:flex">
             <div
