@@ -15,6 +15,8 @@ export type IngestResult = {
   callId: string;
   stored: boolean;
   transcript: boolean;
+  /** True when hangup has a recording or transcript and the call is waiting for call-control. */
+  queued: boolean;
 };
 
 function callIdFrom(data: unknown): string {
@@ -56,7 +58,7 @@ export async function ingestVoicenterCdr(
   const parsed = parseCdr(cdr);
   if (!parsed) throw new Error("Missing call id");
   if (!parsed.sofia) {
-    return { callId: parsed.callId, stored: false, transcript: false };
+    return { callId: parsed.callId, stored: false, transcript: false, queued: false };
   }
 
   const metadata: Record<string, unknown> = {
@@ -66,6 +68,7 @@ export async function ingestVoicenterCdr(
     extension: SOFIA_EXTENSION,
     received_via: "webhook",
     received_at: new Date().toISOString(),
+    voicenter_stage: parsed.stage,
   };
   if (parsed.callerPhone) metadata.caller_phone = parsed.callerPhone;
   if (parsed.recordUrl) metadata.record_url = parsed.recordUrl;
@@ -89,7 +92,8 @@ export async function ingestVoicenterCdr(
   const callId = callIdFrom(registered.data);
   const { status, skipAnalysis } = statusFrom(registered.data);
 
-  if (parsed.fullText) {
+  const hasTranscript = Boolean(parsed.fullText);
+  if (hasTranscript) {
     const saved = await executeMcpTool(admin, BRIDGE_AGENT, "calls.save_transcript", {
       call_id: callId,
       full_text: parsed.fullText,
@@ -98,12 +102,23 @@ export async function ingestVoicenterCdr(
       language: "he",
     });
     if (!saved.ok) throw new Error(saved.error);
-    if (!skipAnalysis && (status === "skipped" || status === "failed")) {
-      await setStatus(admin, callId, "pending");
-    }
-    return { callId: parsed.callId, stored: true, transcript: true };
   }
 
-  if (status === "pending") await setStatus(admin, callId, "skipped");
-  return { callId: parsed.callId, stored: true, transcript: false };
+  const readyForAgent =
+    parsed.stage === "hangup" && Boolean(parsed.recordUrl || parsed.fullText);
+  if (readyForAgent && !skipAnalysis && status !== "done" && status !== "processing" && status !== "claimed") {
+    if (status !== "pending") await setStatus(admin, callId, "pending");
+    return { callId: parsed.callId, stored: true, transcript: hasTranscript, queued: true };
+  }
+
+  // Ring and answer only enrich the same ivruniqueid. They must not mark the call skipped
+  // before the hangup arrives with the recording or transcript.
+  if (parsed.stage === "ring" || parsed.stage === "answer") {
+    return { callId: parsed.callId, stored: true, transcript: hasTranscript, queued: false };
+  }
+
+  if (!readyForAgent && status === "pending" && !hasTranscript && !parsed.recordUrl) {
+    await setStatus(admin, callId, "skipped");
+  }
+  return { callId: parsed.callId, stored: true, transcript: hasTranscript, queued: false };
 }

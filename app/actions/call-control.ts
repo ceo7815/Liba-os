@@ -1,5 +1,10 @@
 "use server";
 
+import {
+  emptyOutcomeTimes,
+  loadVoicenterCdrHealth,
+  type CdrOutcomeTimes,
+} from "@/lib/call-control/cdr-health";
 import { requirePermission } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -14,6 +19,10 @@ export type CallControlManagement = {
   hermesStatus: string | null;
   hermesLastSeenAt: string | null;
   tools: ReportedTool[];
+  cdrLastReceivedAt: string | null;
+  cdrStale: boolean;
+  cdrLastStage: string | null;
+  cdrLastByOutcome: CdrOutcomeTimes;
 };
 
 export type CallControlListResult = {
@@ -159,19 +168,32 @@ export async function getCallControlManagement(): Promise<{
     hermesStatus: null,
     hermesLastSeenAt: null,
     tools: [],
+    cdrLastReceivedAt: null,
+    cdrStale: true,
+    cdrLastStage: null,
+    cdrLastByOutcome: emptyOutcomeTimes(),
   };
   const admin = createAdminClient();
+  const cdr = await loadVoicenterCdrHealth(admin);
   const { data: agent, error: agentError } = await admin
     .from("agents")
     .select("id, hermes_status, hermes_last_seen_at")
     .eq("slug", "call-control")
     .maybeSingle();
 
+  const withCdr = (data: CallControlManagement): CallControlManagement => ({
+    ...data,
+    cdrLastReceivedAt: cdr.lastReceivedAt,
+    cdrStale: cdr.stale,
+    cdrLastStage: cdr.lastStage,
+    cdrLastByOutcome: cdr.lastByOutcome,
+  });
+
   if (agentError) {
-    return { error: agentError.message, data: empty };
+    return { error: agentError.message, data: withCdr(empty) };
   }
   if (!agent) {
-    return { error: null, data: empty };
+    return { error: null, data: withCdr(empty) };
   }
 
   const { data: tools, error: toolsError } = await admin
@@ -181,7 +203,7 @@ export async function getCallControlManagement(): Promise<{
     .order("tool_name");
 
   if (toolsError) {
-    return { error: toolsError.message, data: empty };
+    return { error: toolsError.message, data: withCdr(empty) };
   }
 
   return {
@@ -190,6 +212,10 @@ export async function getCallControlManagement(): Promise<{
       hermesStatus: agent.hermes_status ?? null,
       hermesLastSeenAt: agent.hermes_last_seen_at ?? null,
       tools: (tools ?? []) as ReportedTool[],
+      cdrLastReceivedAt: cdr.lastReceivedAt,
+      cdrStale: cdr.stale,
+      cdrLastStage: cdr.lastStage,
+      cdrLastByOutcome: cdr.lastByOutcome,
     },
   };
 }
