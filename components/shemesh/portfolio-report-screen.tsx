@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FileText, Plus, Printer, Trash2, Upload } from "lucide-react";
+import { HebrewDateInput } from "@/components/shemesh/hebrew-date";
 import { PortfolioReportDocument } from "@/components/shemesh/portfolio-report-document";
 import { Button } from "@/components/ui/button";
 import {
@@ -196,7 +197,7 @@ export function PortfolioReportScreen() {
                 <input className={field} value={report.manager} onChange={(event) => patch({ manager: event.target.value })} />
               </Field>
               <Field label="תאריך">
-                <input className={field} type="date" value={report.updatedOn} onChange={(event) => patch({ updatedOn: event.target.value })} />
+                <HebrewDateInput value={report.updatedOn} onChange={(updatedOn) => patch({ updatedOn })} />
               </Field>
               <Field label="טלפון בסוף הדוח">
                 <input className={field} value={report.phone} onChange={(event) => patch({ phone: event.target.value })} />

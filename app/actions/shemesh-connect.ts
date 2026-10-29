@@ -44,7 +44,8 @@ export async function saveRivhitForm(_state: { error: string | null; ops?: numbe
   return result;
 }
 
-export async function testRivhitForm(_formData: FormData) {
+export async function testRivhitForm(formData: FormData) {
+  void formData;
   if (!(await allowed())) return;
   await testRivhit();
   revalidatePath("/shemesh/sources");

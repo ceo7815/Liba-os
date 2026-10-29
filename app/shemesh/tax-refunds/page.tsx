@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HebrewDateInput } from "@/components/shemesh/hebrew-date";
 import { ShemeshDesk } from "@/components/shemesh/desk";
 import { field } from "@/lib/shemesh/field";
 import { TaxRefundsScreen } from "@/components/shemesh/tax-refunds-screen";
@@ -44,7 +45,7 @@ export default async function ShemeshTaxRefundsPage() {
         <input type="hidden" name="kind" value="tax_refund" />
         <input className={field} name="clientName" placeholder="לקוח" required />
         <input className={field} name="gross" inputMode="decimal" placeholder="ברוטו" required />
-        <input className={field} name="day" type="date" aria-label="תאריך" />
+        <HebrewDateInput name="day" />
         <input className={field} name="notes" placeholder="הערה" />
         <input type="hidden" name="status" value="open" />
       </ShemeshDesk>

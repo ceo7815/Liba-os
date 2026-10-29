@@ -17,8 +17,8 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
   const initials = getInitials(displayName);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/92 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
-      <div className="flex h-14 items-center gap-1.5 px-3 pt-[env(safe-area-inset-top)] sm:gap-3 sm:px-6">
+    <header className="sticky top-0 z-40 bg-transparent px-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3">
+      <div className="float-bar flex h-12 items-center gap-1.5 px-2 sm:gap-3 sm:px-4">
         <Sheet>
           <SheetTrigger asChild>
             <Button
@@ -32,11 +32,11 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
             </Button>
           </SheetTrigger>
           <SheetContent
-            side="bottom"
-            className="h-[min(88dvh,44rem)] rounded-t-3xl border-t border-border bg-card p-0 [&>button]:hidden"
+            side="right"
+            className="shemesh-os w-[min(20rem,92vw)] border-s border-white/70 bg-white/80 p-0 [&>button]:hidden"
           >
             <SheetTitle className="sr-only">תפריט ניווט</SheetTitle>
-            <ShemeshSidebar className="h-full w-full border-e-0" />
+            <ShemeshSidebar className="!m-0 h-full w-full !rounded-none" />
           </SheetContent>
         </Sheet>
 
@@ -61,7 +61,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
           <div className="hidden items-center gap-2.5 sm:flex">
             <div
               aria-hidden
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-highlight text-[10px] font-bold text-highlight-foreground"
+              className="kpi-badge !size-8 text-[10px] font-bold" data-tone="sun"
             >
               {initials}
             </div>

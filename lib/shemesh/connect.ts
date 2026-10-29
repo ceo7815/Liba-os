@@ -295,7 +295,8 @@ export async function syncShemeshSources(): Promise<{ ok: boolean; notes: string
   return { ok: true, notes };
 }
 
-export async function testShemeshProvider(_provider: "rivhit" | "grow" | "insurance") {
+export async function testShemeshProvider(provider: "rivhit" | "grow" | "insurance") {
+  void provider;
   return { error: "הבדיקה היא בכרטיס של ריווחית, גרואו או ייבוא הביטוח, ורק אחרי שהפרטים נשמרו." };
 }
 

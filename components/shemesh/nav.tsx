@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BadgeDollarSign,
+  Bell,
   Building2,
   Cable,
   Calculator,
@@ -32,6 +33,7 @@ import { cn } from "@/lib/utils";
 const ICONS: Record<string, LucideIcon> = {
   "/shemesh": LayoutDashboard,
   "/shemesh/clients": Users,
+  "/shemesh/alerts": Bell,
   "/shemesh/cases": ClipboardList,
   "/shemesh/gviya": BadgeDollarSign,
   "/shemesh/tax-refunds": Scale,
@@ -99,13 +101,13 @@ export function ShemeshSidebar({ className }: { className?: string }) {
   }
 
   return (
-    <aside className={cn("flex w-64 shrink-0 flex-col border-e border-border bg-card", className)}>
+    <aside className={cn("side-glass m-3 me-2 flex w-[16.5rem] shrink-0 flex-col overflow-hidden rounded-[28px] shadow-card backdrop-blur-xl", className)}>
       <div className="flex flex-col items-center px-6 pb-3 pt-5">
-        <Link href="/shemesh" className="block">
-          <Image src="/brand/shemesh-logo.png" alt="שמש מימוש זכויות" width={605} height={782} priority className="h-28 w-auto object-contain" />
+        <Link href="/shemesh" className="logo-plate block rounded-lg px-3 py-2">
+          <Image src="/brand/shemesh-logo.png" alt="שמש מימוש זכויות" width={605} height={782} priority className="h-24 w-auto object-contain" />
         </Link>
-        <div className="mt-3 h-px w-full bg-border">
-          <div className="mx-auto h-px w-10 bg-highlight" />
+        <div className="mt-3 h-px w-full bg-white/80">
+          <div className="mx-auto h-px w-10 bg-[#2f86ea]/40" />
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4">
@@ -119,9 +121,9 @@ export function ShemeshSidebar({ className }: { className?: string }) {
           const expanded = open[group.id] ?? groupActive;
           return (
             <div key={group.id}>
-              <div className={cn("flex items-center rounded-lg", groupActive && "bg-highlight/10")}>
-                <Link href={group.href} className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-[13px] font-semibold">
-                  <Icon className="h-4 w-4 shrink-0" />
+              <div className="flex items-center gap-0.5">
+                <Link href={group.href} className={cn("flex min-w-0 flex-1 items-center gap-2 rounded-full px-3 py-2 text-[13px] font-semibold", groupActive && !childActive && "nav-live")}>
+                  <Icon className={cn("nav-icon h-4 w-4 shrink-0", groupActive && !childActive ? "text-inherit" : "text-[#2f86ea]")} />
                   <span className="truncate">{group.label}</span>
                 </Link>
                 <button type="button" aria-expanded={expanded} aria-label={expanded ? "סגירה" : "פתיחה"} onClick={() => toggle(group.id)} className="me-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted">
@@ -129,7 +131,7 @@ export function ShemeshSidebar({ className }: { className?: string }) {
                 </button>
               </div>
               {expanded ? (
-                <div className="ms-3 space-y-0.5 border-s border-border ps-2">
+                <div className="ms-4 space-y-0.5 border-s border-white/70 ps-2">
                   {group.items.map((item) => (
                     <NavLink key={item.href} href={item.href} label={item.label} icon={ICONS[item.href] ?? Icon} active={activeHref(pathname, item.href)} nested />
                   ))}
@@ -139,7 +141,7 @@ export function ShemeshSidebar({ className }: { className?: string }) {
           );
         })}
       </nav>
-      <div className="border-t border-border px-5 py-4 text-center">
+      <div className="border-t border-white/70 px-5 py-4 text-center">
         <p className="text-[11px] font-semibold">שמש</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">מימוש זכויות</p>
         <Link href="/login?pick=1" className="mt-2 inline-block text-[11px] text-muted-foreground underline-offset-4 hover:underline">החלפת מערכת</Link>
@@ -157,13 +159,13 @@ function NavLink({ href, label, icon: Icon, active, nested }: { href: string; la
       onMouseEnter={() => router.prefetch(href)}
       onFocus={() => router.prefetch(href)}
       className={cn(
-        "relative flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors",
+        "relative flex items-center gap-2 rounded-full px-3 py-2 text-[13px] transition-colors",
         nested ? "font-medium" : "font-semibold",
-        active ? "bg-highlight/10 text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        active ? "nav-live" : "text-muted-foreground hover:bg-white/70 hover:text-foreground",
       )}
     >
-      {active ? <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-highlight" /> : null}
-      <Icon className="h-4 w-4 shrink-0" />
+      {active ? <span className="size-1.5 shrink-0 rounded-full bg-white/80" /> : null}
+      <Icon className={cn("nav-icon h-4 w-4 shrink-0", active ? "text-inherit" : "text-[#0e8f9c]")} />
       <span className="truncate">{label}</span>
     </Link>
   );

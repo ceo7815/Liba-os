@@ -19,6 +19,7 @@ import {
   setCaseDocumentReceived,
 } from "@/lib/shemesh/ops";
 import { rateOrNull } from "@/lib/shemesh/fees";
+import { advanceSettlementDraft, createSettlementDraft } from "@/lib/shemesh/settlement-flow";
 
 async function actor() {
   return shemeshManageActor();
@@ -37,6 +38,8 @@ function refresh() {
   revalidatePath("/shemesh/commissions");
   revalidatePath("/shemesh/debts");
   revalidatePath("/shemesh/income");
+  revalidatePath("/shemesh/settlement");
+  revalidatePath("/shemesh/alerts");
 }
 
 export async function createShemeshCase(_state: { error: string | null }, formData: FormData) {
@@ -215,6 +218,24 @@ export async function createShemeshCaseChild(_state: { error: string | null }, f
     },
     name,
   );
+  if (!result.error) refresh();
+  return result;
+}
+
+export async function createShemeshSettlementDraft(state: { error: string | null }, formData: FormData): Promise<{ error: string | null }> {
+  void state;
+  void formData;
+  const name = await actor();
+  if (!name) return { error: "אין הרשאה" };
+  const result = await createSettlementDraft(name);
+  if (!result.error) refresh();
+  return result;
+}
+
+export async function advanceShemeshSettlement(_state: { error: string | null }, formData: FormData): Promise<{ error: string | null }> {
+  const name = await actor();
+  if (!name) return { error: "אין הרשאה" };
+  const result = await advanceSettlementDraft(String(formData.get("id") ?? ""), String(formData.get("next") ?? ""));
   if (!result.error) refresh();
   return result;
 }

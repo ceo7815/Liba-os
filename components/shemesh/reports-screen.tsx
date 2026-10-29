@@ -33,7 +33,12 @@ export function ShemeshReports({ books = null }: { books?: ShemeshBooks | null }
       title="רווח והפסד"
       description={`הנגבה נקרא רק מ־${SHEMESH_SALES_SOURCE_LABEL}. הוצאות קבועות ושכר הם ספר תפעול, לא דוח ליבה.`}
       icon={LineChart}
-      filters={<ShemeshFilters showPlatform />}
+      filters={
+        <div className="flex flex-wrap items-center gap-3">
+          <ShemeshFilters showPlatform />
+          <a className="text-sm font-medium text-[#2f86ea]" href="/api/shemesh/export?kind=pack">חבילת דוחות לאקסל</a>
+        </div>
+      }
       stats={
         <>
           <Stat label="נגבה" value={formatShemeshMoney(collected)} hint="גיליון הגבייה בדוח שמש" />

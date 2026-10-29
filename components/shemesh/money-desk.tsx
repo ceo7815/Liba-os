@@ -1,3 +1,4 @@
+import { HebrewDateInput } from "@/components/shemesh/hebrew-date";
 import { ShemeshDesk } from "@/components/shemesh/desk";
 import { field } from "@/lib/shemesh/field";
 import { Panel } from "@/components/shemesh/widgets";
@@ -66,7 +67,7 @@ export async function MoneyDesk({ kind, month }: { kind: string; month: string }
           <option value="once">פעם אחת</option>
         </select>
         <input className={field} name="dayOfMonth" inputMode="numeric" placeholder="יום בחודש, 1–28" />
-        <input className={field} name="startsOn" type="date" aria-label="מתאריך" />
+        <HebrewDateInput name="startsOn" />
         <input className={field} name="notes" placeholder="הערה" />
       </ShemeshDesk>
       {!view.missing && !view.error ? <MonthSheet month={month} rows={view.monthRows} total={total} /> : null}

@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (
     process.env.SHEMESH_LOCAL_DEMO === "1" &&
-    (pathname === "/shemesh" || pathname.startsWith("/shemesh/"))
+    (pathname === "/login" || pathname === "/shemesh" || pathname.startsWith("/shemesh/"))
   ) {
     return NextResponse.next({ request });
   }

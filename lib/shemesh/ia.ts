@@ -34,6 +34,7 @@ export const SHEMESH_IA: ShemeshGroup[] = [
     description: "התיק של הלקוח, מהפדיון ועד הביטוח.",
     items: [
       { href: "/shemesh/cases", label: "תיקים", description: "שלב, מטפל, יעד ו־SLA", keywords: ["תיק", "תיקים", "שלב", "מטפל", "sla"], stage: "pipeline" },
+      { href: "/shemesh/alerts", label: "התראות", description: "חריגות SLA, מסמכים חסרים ויעדים", keywords: ["התראה", "התראות", "sla", "מסמך", "יעד"], stage: "alerts" },
       { href: "/shemesh/gviya", label: "פדיונות", description: "גבייה וספר פדיונות", keywords: ["פדיון", "פדיונות", "גבייה", "gviya"], stage: "1" },
       { href: "/shemesh/tax-refunds", label: "החזרי מס", description: "העלאה וספר החזרים", keywords: ["מס", "החזר", "החזרי מס"], stage: "2" },
       { href: "/shemesh/portfolio-report", label: "השוואת תיק", description: "מצב קיים מול מצב חדש", keywords: ["השוואה", "תיק", "פוליסה"] },
@@ -99,7 +100,11 @@ export function shemeshGroupForPath(pathname: string): ShemeshGroup | null {
       if (pathname === group.href) return group;
       continue;
     }
-    if (pathname === group.href || group.items.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))) {
+    if (
+      pathname === group.href ||
+      pathname.startsWith(`${group.href}/`) ||
+      group.items.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    ) {
       return group;
     }
   }
@@ -112,6 +117,7 @@ export function shemeshCrumbs(pathname: string): { href: string; label: string }
   const page = group.items.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
   const crumbs = [{ href: "/shemesh", label: "שמש" }];
   if (group.id !== "home") crumbs.push({ href: group.href, label: group.label });
+  if (pathname.startsWith("/shemesh/clients/card")) crumbs.push({ href: pathname, label: "כרטיס לקוח" });
   if (page && page.href !== group.href) crumbs.push({ href: page.href, label: page.label });
   return crumbs;
 }

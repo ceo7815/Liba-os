@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { localDemoAdmin, localDemoEnabled, type LocalQuery } from "@/lib/shemesh/local-demo";
 
+// Row fields are read dynamically from Postgres. The shape is not a single interface.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function asRows(data: unknown): Record<string, any>[] {
   return Array.isArray(data) ? data : [];
 }

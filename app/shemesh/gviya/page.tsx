@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HebrewDateInput } from "@/components/shemesh/hebrew-date";
 import { ShemeshDesk } from "@/components/shemesh/desk";
 import { field } from "@/lib/shemesh/field";
 import { GviyaScreen } from "@/components/shemesh/gviya-screen";
@@ -29,8 +30,8 @@ export default async function ShemeshGviyaPage() {
     <div className="space-y-6">
     <Panel title="נמכר לפי תאריך עסקה">
       <p className="pb-3 text-xs text-muted-foreground">מקור: {SHEMESH_SALES_SOURCE_LABEL}. לא מדוח המנהלים של ליבה.</p>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Stat label={`נמכר ${formatShemeshMonth(sales.month)}`} value={hasWorkbook ? formatShemeshMoney(sales.sold) : "—"} hint="deal_date בדוח שמש" />
+      <div className="kpi-band grid gap-3 sm:grid-cols-3">
+        <Stat hero tone="sun" label={`נמכר ${formatShemeshMonth(sales.month)}`} value={hasWorkbook ? formatShemeshMoney(sales.sold) : "—"} hint="deal_date בדוח שמש" />
         <Stat label="נגבה" value={hasWorkbook ? formatShemeshMoney(sales.collected) : "—"} />
         <Stat label="עסקה עד חשבונית" value={!hasWorkbook || sales.cycleDays == null ? "—" : `${formatShemeshCount(sales.cycleDays)} ימים`} />
       </div>
@@ -66,7 +67,7 @@ export default async function ShemeshGviyaPage() {
       <input type="hidden" name="kind" value="redemption" />
       <input className={field} name="clientName" placeholder="לקוח" required />
       <input className={field} name="gross" inputMode="decimal" placeholder="ברוטו" required />
-      <input className={field} name="day" type="date" aria-label="תאריך" />
+      <HebrewDateInput name="day" />
       <input className={field} name="notes" placeholder="הערה" />
       <input type="hidden" name="status" value="open" />
     </ShemeshDesk>

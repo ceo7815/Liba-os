@@ -20,6 +20,7 @@ const IDENT = /^[a-z_][a-z0-9_]*$/;
 const TABLE = /^shemesh_[a-z0-9_]+$/;
 
 export type ShemeshResult = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- query rows are untyped until a caller maps them
   data: any;
   error: { message: string } | null;
   count: number | null;

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFormState } from "react-dom";
 import { ClipboardList } from "lucide-react";
+import { HebrewDateInput } from "@/components/shemesh/hebrew-date";
 import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { Panel, ShemeshPage } from "@/components/shemesh/widgets";
 import { field } from "@/lib/shemesh/field";
@@ -93,7 +94,7 @@ export function CaseBoard({
               </label>
               <label className="grid gap-1 text-xs text-muted-foreground">
                 נפתח
-                <input className={field} name="openedOn" type="date" />
+                <HebrewDateInput name="openedOn" />
               </label>
               <label className="grid gap-1 text-xs text-muted-foreground">
                 הערה
@@ -104,15 +105,16 @@ export function CaseBoard({
               <Button type="submit" className="sm:col-span-2 sm:w-fit">שמירת תיק</Button>
             </form>
           </Panel> : null}
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="min-w-0">
+          <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 xl:grid xl:w-full xl:grid-cols-8 xl:overflow-visible">
             {CASE_STAGES.map((stage) => {
               const cards = visible.filter((item) => item.stage === stage.id);
               return (
-                <section key={stage.id} className="w-56 shrink-0 rounded-2xl border border-border bg-muted/60 p-2">
-                  <h2 className="px-1 pb-2 text-xs font-semibold">{stage.label}</h2>
+                <section key={stage.id} className="glass w-40 shrink-0 snap-start p-2 xl:w-auto xl:min-w-0">
+                  <h2 className="px-1 pb-2 text-xs font-semibold leading-tight">{stage.label}</h2>
                   <div className="space-y-2">
                     {cards.map((item) => (
-                      <button key={item.id} type="button" onClick={() => setOpenId(item.id)} className="w-full rounded-xl border border-border bg-card px-3 py-2 text-start shadow-sm transition-colors hover:bg-accent/10">
+                      <button key={item.id} type="button" onClick={() => setOpenId(item.id)} className="w-full rounded-xl border border-white/80 bg-white/80 px-2 py-2 text-start shadow-sm transition-colors hover:bg-white">
                         <span className="block truncate text-sm font-medium">{item.clientName}</span>
                         <SlaBadge overdue={item.overdue} deadline={item.deadline} />
                       </button>
@@ -121,6 +123,7 @@ export function CaseBoard({
                 </section>
               );
             })}
+          </div>
           </div>
           <label className="grid max-w-xs gap-1 text-xs text-muted-foreground">
             חיפוש
@@ -277,7 +280,7 @@ function CaseDetail({
         </select>
         <input className={field} name="title" placeholder="כותרת" />
         <input className={field} name="assignee" placeholder="מטפל" />
-        <input className={field} name="dueOn" type="date" aria-label="יעד" />
+        <HebrewDateInput name="dueOn" />
         <input className={field} name="body" placeholder="נוסח הערה" />
         <Button type="submit" variant="secondary">הוספה לתיק</Button>
       </form> : null}

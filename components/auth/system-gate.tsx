@@ -40,8 +40,9 @@ export function SystemGate({
           <button
             type="button"
             onClick={() => choose("liba")}
-            className="flex w-full flex-col items-center rounded-2xl border-2 border-black/15 bg-white px-4 py-4 text-center transition hover:border-highlight hover:shadow-[0_12px_28px_-16px_rgba(17,17,17,0.45)]"
+            className="auth-choice flex min-h-11 w-full cursor-pointer flex-col items-center rounded-lg border border-border bg-card px-4 py-4 text-center shadow-card"
           >
+            <span className="logo-plate rounded-md px-3 py-1">
             <Image
               src="/brand/liba-logo.png"
               alt="ליבה"
@@ -49,6 +50,7 @@ export function SystemGate({
               height={120}
               className="h-14 w-auto object-contain"
             />
+            </span>
             <span className="mt-1 text-sm font-semibold text-[#5c5c5c]">
               המערכת הקיימת
             </span>
@@ -56,8 +58,9 @@ export function SystemGate({
           <button
             type="button"
             onClick={() => choose("shemesh")}
-            className="flex w-full flex-col items-center rounded-2xl border-2 border-black/15 bg-white px-4 py-3 text-center transition hover:border-[#185A94] hover:shadow-[0_12px_28px_-16px_rgba(24,90,148,0.4)]"
+            className="auth-choice auth-choice-shemesh flex min-h-11 w-full cursor-pointer flex-col items-center rounded-lg border border-border bg-card px-4 py-3 text-center shadow-card"
           >
+            <span className="logo-plate rounded-md px-2 py-1">
             <Image
               src="/brand/shemesh-logo.png"
               alt="שמש מימוש זכויות"
@@ -65,6 +68,7 @@ export function SystemGate({
               height={782}
               className="h-24 w-auto object-contain"
             />
+            </span>
           </button>
         </div>
       </AuthCard>
@@ -92,7 +96,7 @@ export function SystemGate({
         <button
           type="button"
           onClick={() => setSystem(null)}
-          className="text-sm font-bold text-[#5c5c5c] underline-offset-4 hover:text-black hover:underline"
+          className="inline-flex min-h-11 items-center text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           חזרה לבחירת מערכת
         </button>

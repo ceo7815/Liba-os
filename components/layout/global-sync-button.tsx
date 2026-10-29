@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { runShemeshSync } from "@/app/actions/shemesh-connect";
 import { syncLeadControl } from "@/app/actions/lead-control";
 import { syncEmployeesFromExcel } from "@/app/actions/finance-people";
 import { syncFacebookAds } from "@/app/actions/facebook-ads";
@@ -252,14 +251,6 @@ export function GlobalSyncButton({
         }
       }
 
-      try {
-        const shemesh = await runShemeshSync();
-        const detail = shemesh.notes.filter(Boolean).slice(0, 3).join(" · ");
-        if (detail) toast.message(`שמש · ${detail}`);
-      } catch (err: unknown) {
-        toast.error(err instanceof Error ? err.message : "סנכרון שמש נכשל");
-      }
-
       notifyGlobalSyncDone();
       if (excelFailed || adsFailed || leadsFailed) {
         toast.error("הסנכרון הסתיים חלקית. בדקו את ההודעות למעלה.");
@@ -292,21 +283,20 @@ export function GlobalSyncButton({
         disabled={busy}
         onClick={() => void syncAll()}
         aria-label={`סנכרון מערכת. ${statusLine}`}
-        className="inline-flex h-10 items-center gap-2 rounded-2xl border border-white/10 bg-black py-1 pe-3 ps-1 text-white shadow-[0_10px_24px_-16px_rgba(0,0,0,0.8)] transition-transform active:scale-[0.98] disabled:opacity-80 sm:h-11 sm:gap-2.5 sm:rounded-full sm:pe-4 sm:ps-1.5"
+        className="sync-live inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/70 px-3 text-[#1a1204] active:scale-[0.98] disabled:opacity-80"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight text-highlight-foreground sm:size-8 sm:rounded-full">
-          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
-        </span>
-        <span className="flex min-w-0 flex-col items-start text-start leading-none">
-          <span className="text-[12px] font-semibold tracking-tight sm:text-[13px]">סנכרון מערכת</span>
-          <span className="mt-1 whitespace-nowrap text-[10px] font-medium text-white/60">
+        <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+        <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+        <span className="hidden min-w-0 flex-col items-start text-start leading-none sm:flex">
+          <span className="text-[12px] font-medium tracking-tight">סנכרון</span>
+          <span className="mt-0.5 max-w-[9rem] truncate text-[10px] font-normal text-muted-foreground sm:max-w-none">
             {statusLine}
           </span>
         </span>
       </button>
 
       {busy ? (
-        <div className="absolute end-0 top-[calc(100%+0.5rem)] z-50 w-[min(16.5rem,calc(100vw-1.5rem))] rounded-2xl border border-black/[0.08] bg-white/95 p-3 shadow-[0_18px_40px_-18px_rgba(17,17,17,0.45)] backdrop-blur-md">
+        <div className="absolute end-0 top-[calc(100%+0.5rem)] z-50 w-[min(16.5rem,calc(100vw-1.5rem))] rounded-lg border border-border bg-popover/95 p-3 text-popover-foreground shadow-pop backdrop-blur-md">
           <p className="text-[11px] font-semibold text-foreground">סנכרון מערכת…</p>
           <div className="mt-2 space-y-1.5">
             {includeExcel ? <SyncStepRow label="אקסל" status={excelStatus} /> : null}

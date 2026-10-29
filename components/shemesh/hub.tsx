@@ -9,7 +9,7 @@ export function ShemeshHub({ groupId, numbers }: { groupId: string; numbers: Rec
     <ShemeshPage title={group.label} description={group.description} icon={LayoutDashboard}>
       <div className="grid gap-3 sm:grid-cols-2">
         {group.items.map((item) => (
-          <Link key={item.href} href={item.href} className="app-surface block px-5 py-4 transition-colors hover:bg-accent/10">
+          <Link key={item.href} href={item.href} className="glass block px-5 py-4 transition-colors hover:bg-white/80">
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-base font-semibold">{item.label}</h2>
               {item.stage ? <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">שלב {item.stage}</span> : null}

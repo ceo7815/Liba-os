@@ -137,8 +137,11 @@ export function GviyaScreen({
               <div key={row.month} className="flex min-w-14 flex-1 flex-col items-center gap-1">
                 <div className="flex h-28 w-full items-end">
                   <div
-                    className="w-full rounded-t-lg bg-highlight"
-                    style={{ height: `${Math.max(8, (row.sold / maxSold) * 100)}%` }}
+                    className="w-full rounded-t-lg"
+                    style={{
+                      height: `${Math.max(8, (row.sold / maxSold) * 100)}%`,
+                      background: "linear-gradient(180deg, #fff1a8, #ffd60a 40%, #ff7a3c)",
+                    }}
                     title={formatShemeshMoney(row.sold)}
                   />
                 </div>
@@ -246,8 +249,8 @@ function Bars({ rows }: { rows: { label: string; value: number; hint: string }[]
             <span className="truncate font-medium">{row.label}</span>
             <span className="shrink-0 tabular-nums text-muted-foreground">{formatShemeshMoney(row.value)} · {row.hint}</span>
           </div>
-          <div className="h-1.5 rounded-full bg-muted">
-            <div className="h-1.5 rounded-full bg-highlight" style={{ width: `${(row.value / max) * 100}%` }} />
+          <div className="h-1.5 rounded-full bg-white/70">
+            <div className="h-1.5 rounded-full" style={{ width: `${(row.value / max) * 100}%`, background: "linear-gradient(90deg, #5ee0a0, #128a52)" }} />
           </div>
         </li>
       ))}

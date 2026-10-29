@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Aurora } from "@/components/brand/aurora";
 import { Toaster } from "@/components/ui/sonner";
 import { LiveDashboardProvider } from "@/components/layout/live-dashboard-provider";
+import { ShemeshMobileDock } from "@/components/shemesh/mobile-dock";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { ShemeshBreadcrumbs } from "@/components/shemesh/breadcrumbs";
 import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
@@ -98,13 +100,14 @@ export default async function ShemeshLayout({
   return (
     <LiveDashboardProvider>
       <ShemeshTheme />
-      <div className="shemesh-os flex h-dvh min-h-0 overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
+      <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
+        <Aurora tone="shemesh" />
         <ShemeshSidebar className="hidden lg:flex print:hidden" />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col print:block print:h-auto print:overflow-visible">
           <div className="print:hidden">
             <ShemeshTopbar profile={profile} />
           </div>
-          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5 print:block print:h-auto print:overflow-visible print:p-0">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-3 py-4 sm:px-6 sm:py-5 print:block print:h-auto print:overflow-visible print:p-0">
             <ShemeshBreadcrumbs />
             <Suspense fallback={<ShemeshSkeleton />}>
               <ShemeshPulseProvider pulse={live}>
@@ -112,6 +115,7 @@ export default async function ShemeshLayout({
               </ShemeshPulseProvider>
             </Suspense>
           </main>
+          <ShemeshMobileDock />
         </div>
       </div>
       <Toaster dir="rtl" theme="light" position="top-center" />

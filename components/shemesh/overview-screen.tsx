@@ -49,12 +49,18 @@ export function ShemeshOverview({
         ) : null}
         <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {CASE_STAGES.map((stage, index) => (
-            <li key={stage.id} className="rounded-2xl border border-border bg-muted px-3 py-3">
+            <li key={stage.id} className="glass px-3 py-3">
               <p className="text-[11px] text-muted-foreground">{index + 1}</p>
               <p className="mt-1 text-sm font-semibold">{stage.label}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums">{formatShemeshCount(stages[stage.id])}</p>
-              <div className="mt-2 h-1 rounded-full bg-border">
-                <div className="h-1 rounded-full bg-highlight" style={{ width: `${(stages[stage.id] / max) * 100}%` }} />
+              <div className="mt-2 h-1.5 rounded-full bg-white/70">
+                <div
+                  className="h-1.5 rounded-full"
+                  style={{
+                    width: `${(stages[stage.id] / max) * 100}%`,
+                    background: "linear-gradient(90deg, #9fd0ff, #2f86ea)",
+                  }}
+                />
               </div>
             </li>
           ))}
@@ -71,18 +77,22 @@ export function ShemeshOverview({
           <p className="mt-3 text-xs text-muted-foreground">הספר הוא תפעול. מכירות, גבייה ומחזור נקראים רק מדוח שמש.</p>
         </Panel>
       ) : null}
-      <div className="grid gap-3 lg:grid-cols-3">
-        <Link href="/shemesh/gviya" className="app-surface block px-5 py-4 hover:bg-muted">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href="/shemesh/gviya" className="glass block px-5 py-4 hover:bg-white/80">
           <p className="text-sm font-semibold">פדיונות וגבייה</p>
           <p className="mt-1 text-xs text-muted-foreground">GVIYA, נציגים, מקורות והצלבה מול שורנס</p>
         </Link>
-        <Link href="/shemesh/tax-refunds" className="app-surface block px-5 py-4 hover:bg-muted">
+        <Link href="/shemesh/tax-refunds" className="glass block px-5 py-4 hover:bg-white/80">
           <p className="text-sm font-semibold">החזרי מס</p>
           <p className="mt-1 text-xs text-muted-foreground">דוח שהועלה, צינור וסכומים</p>
         </Link>
-        <Link href="/shemesh/marketing" className="app-surface block px-5 py-4 hover:bg-muted">
+        <Link href="/shemesh/marketing" className="glass block px-5 py-4 hover:bg-white/80">
           <p className="text-sm font-semibold">שיווק</p>
           <p className="mt-1 text-xs text-muted-foreground">חשבון המודעות של שמש, קמפיין ומודעה</p>
+        </Link>
+        <Link href="/shemesh/alerts" className="glass block px-5 py-4 hover:bg-white/80">
+          <p className="text-sm font-semibold">התראות</p>
+          <p className="mt-1 text-xs text-muted-foreground">חריגות SLA, מסמכים חסרים ויעדים</p>
         </Link>
       </div>
       <Panel title="בהמשך">
