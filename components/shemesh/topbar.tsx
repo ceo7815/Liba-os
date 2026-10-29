@@ -33,10 +33,10 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-[min(18rem,88vw)] border-s border-black/[0.08] bg-white p-0 [&>button]:hidden"
+            className="shemesh-os w-[min(20rem,92vw)] border-s border-white/70 bg-white/80 p-0 [&>button]:hidden"
           >
             <SheetTitle className="sr-only">תפריט ניווט</SheetTitle>
-            <ShemeshSidebar className="h-full w-full border-e-0" />
+            <ShemeshSidebar className="!m-0 h-full w-full !rounded-none" />
           </SheetContent>
         </Sheet>
 
@@ -57,7 +57,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
         <div className="ms-auto flex items-center gap-1 sm:gap-2.5">
           <GlobalSyncButton canSyncAds excelTarget="shemesh" />
           <LiveClock />
-          <div className="hidden h-6 w-px bg-black/[0.08] sm:block" />
+          <div className="hidden h-6 w-px bg-border sm:block" />
           <div className="hidden items-center gap-2.5 sm:flex">
             <div
               aria-hidden

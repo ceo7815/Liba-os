@@ -5,13 +5,13 @@ import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
 import type { ConnectedInterface } from "@/lib/interfaces/status";
 import { cn } from "@/lib/utils";
 
-const ICONS = {
+const ICONS: Record<string, typeof Phone> = {
   voicenter: Phone,
   "google-ads": Megaphone,
   facebook: Share2,
   "sales-excel": FileSpreadsheet,
   surense: ListChecks,
-} as const;
+};
 
 export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
   const connected = items.filter((item) => item.connected).length;
@@ -27,7 +27,7 @@ export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
           <h1 className="text-2xl font-semibold tracking-tight">ממשקים מחוברים</h1>
         </div>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          כל מערכת חיצונית שמזינה את ליבה. ירוק אומר שהחיבור פעיל והנתונים נכנסים לכאן.
+          ליבה ושמש מופיעות בנפרד. ירוק אומר שהחיבור של אותה מערכת פעיל.
         </p>
         <p className="mt-4 text-sm font-medium text-emerald-800">
           {connected.toLocaleString("he-IL")} מחוברים
@@ -51,9 +51,12 @@ export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
           </div>
         ))}
 
+      {(["liba", "shemesh"] as const).map((group) => (
+        <div key={group} className="space-y-3">
+          <h2 className="text-sm font-semibold">{group === "liba" ? "ליבה" : "שמש"}</h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        {items.map((item) => {
-          const Icon = ICONS[item.id];
+        {items.filter((item) => item.group === group).map((item) => {
+          const Icon = ICONS[item.id] ?? Cable;
           const synced = formatLastUpdatedAt(item.syncedAt);
           return (
             <Link
@@ -103,6 +106,8 @@ export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
           );
         })}
       </div>
+        </div>
+      ))}
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { productionDateOf, shiftCalendarMonth } from "@/lib/employees/contract";
 import { excelAgentKey } from "@/lib/employees/excel-sellers";
 import type { OperatingBrandId } from "@/lib/finance/operating-brand";
+import { productionsForLibaKpi } from "@/lib/sales-dashboard/sales-report-rows";
 import {
   formatIls,
   jerusalemYmd,
@@ -364,11 +365,9 @@ export function buildControlCenterSnapshot(
   now = new Date(),
   scope: ControlCenterBrandScope = ALL_BRANDS,
 ): ControlCenterSnapshot | null {
-  // הקוביות הן על כל הסוכנות. מותג ההפעלה לא מסנן אותן.
-  void scope;
   if (!data || data.source !== "live") return null;
 
-  const productions = data.marketing?.productions ?? [];
+  const productions = productionsForLibaKpi(data.marketing?.productions ?? [], scope);
   const window = monthWindow(productions, now);
   const pendingRows = productions.filter((row) => row.status === "pending" && isReportSale(row));
   const premium = sumPremium(window.activeRows);
@@ -463,9 +462,8 @@ export function buildControlCenterDetail(
   scope: ControlCenterBrandScope = ALL_BRANDS,
   appointmentPeriod: AgentAppointmentPeriod = { preset: "month" },
 ): ControlCenterDetail | null {
-  void scope;
   if (!data || data.source !== "live") return null;
-  const productions = data.marketing?.productions ?? [];
+  const productions = productionsForLibaKpi(data.marketing?.productions ?? [], scope);
   const window = monthWindow(productions, now);
   const monthLabel = window.rangeLabel;
   const pendingRows = productions.filter((row) => row.status === "pending" && isReportSale(row));

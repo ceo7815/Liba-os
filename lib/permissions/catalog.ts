@@ -23,6 +23,13 @@ export const PERMISSION_KEYS = [
   "academy.manage",
   "org.users",
   "portals.view",
+  "shemesh.view",
+  "shemesh.manage",
+  "shemesh.ops",
+  "shemesh.handler",
+  "shemesh.marketing",
+  "shemesh.finance",
+  "shemesh.sysadmin",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -185,6 +192,48 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       },
     ],
   },
+  {
+    id: "shemesh",
+    label: "שמש",
+    description: "מערכת שמש, בנפרד מליבה",
+    permissions: [
+      {
+        key: "shemesh.view",
+        label: "שמש — צפייה",
+        description: "צפייה בתיקים, כספים וממשקים של שמש",
+      },
+      {
+        key: "shemesh.manage",
+        label: "שמש — ניהול",
+        description: "בעלים או מנכ״ל: תיקים, כספים וחיבורים",
+      },
+      {
+        key: "shemesh.ops",
+        label: "שמש — תפעול",
+        description: "תיקים, SLA, Sheet-6 והחזרי מס. בלי שכר",
+      },
+      {
+        key: "shemesh.handler",
+        label: "שמש — מטפל",
+        description: "רק תיקים שהמטפל שלהם הוא המשתמש",
+      },
+      {
+        key: "shemesh.marketing",
+        label: "שמש — שיווק",
+        description: "לוח שיווק וחיבורי פרסום",
+      },
+      {
+        key: "shemesh.finance",
+        label: "שמש — כספים",
+        description: "שכר בלבד, בנוסף לבעלים ולמנכ״ל",
+      },
+      {
+        key: "shemesh.sysadmin",
+        label: "שמש — מערכת",
+        description: "חיבורים ויומן גישה",
+      },
+    ],
+  },
 ];
 
 export type PermissionPresetId =
@@ -248,6 +297,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       "academy.learn",
       "academy.team",
       "portals.view",
+      "shemesh.view",
     ],
   },
   {

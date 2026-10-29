@@ -3,7 +3,7 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, Wallet } from "lucide-react";
-import { DateRangeField } from "@/components/ui/date-range-field";
+import { HebrewDateRange } from "@/components/shemesh/hebrew-date";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
@@ -27,7 +27,7 @@ type TabId = "overview" | RevenueLedger["id"];
 const PAGE_SIZE = 40;
 
 const fieldClass =
-  "h-8 rounded-full border border-black/[0.08] bg-white px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
+  "h-8 rounded-full border border-border bg-card px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
 
 function jerusalemToday(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -68,10 +68,10 @@ function isDateHeader(header: string): boolean {
 
 function statusClass(value: string): string {
   const tone = cellTone("סטטוס", value);
-  if (tone === "active") return "bg-emerald-50 text-emerald-800";
+  if (tone === "active") return "bg-highlight/15 text-foreground";
   if (tone === "cancelled") return "bg-rose-50 text-rose-800";
-  if (tone === "pending") return "bg-amber-50 text-amber-900";
-  return "bg-[#f3f2ee] text-[#3f3f3a]";
+  if (tone === "pending") return "bg-muted text-foreground";
+  return "bg-muted text-muted-foreground";
 }
 
 function uniqueValues(rows: RevenueRow[], index: number): string[] {
@@ -314,7 +314,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
               "h-9 rounded-full px-3.5 text-sm transition-colors",
               tab === id
                 ? "bg-highlight font-medium text-highlight-foreground"
-                : "border border-black/[0.06] bg-white text-foreground hover:bg-[#fafaf8]",
+                : "border border-border bg-card text-foreground hover:bg-muted",
             )}
           >
             {label}
@@ -330,7 +330,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
               value={query}
               onChange={(event) => resetPageAnd(setQuery)(event.target.value)}
               placeholder="חיפוש לקוח, נציג, מקור או סטטוס"
-              className="h-8 rounded-full border-black/[0.08] bg-white pe-9"
+              className="h-8 rounded-full border-border bg-card pe-9"
             />
           </div>
           {(
@@ -349,20 +349,19 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
                 "h-8 rounded-full px-3 text-xs",
                 preset === id
                   ? "bg-highlight font-medium text-highlight-foreground"
-                  : "bg-[#f6f5f1] text-muted-foreground hover:bg-white",
+                  : "bg-muted text-muted-foreground hover:bg-card",
               )}
             >
               {label}
             </button>
           ))}
-          <DateRangeField
+          <HebrewDateRange
             from={from}
             to={to}
             onChange={(next) => {
               setPreset("custom");
               resetPageAnd(setFrom)(next.from);
-              setTo(next.to);
-              setPage(0);
+              resetPageAnd(setTo)(next.to);
             }}
           />
         </div>
@@ -528,7 +527,7 @@ function StatusChip({
       onClick={onClick}
       className={cn(
         "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs",
-        selected ? "bg-highlight font-medium text-highlight-foreground" : "bg-white text-muted-foreground ring-1 ring-black/[0.06]",
+        selected ? "bg-highlight font-medium text-highlight-foreground" : "bg-card text-muted-foreground ring-1 ring-border",
       )}
     >
       {label}
@@ -551,7 +550,7 @@ function SummaryCard({
   onOpen: () => void;
 }) {
   return (
-    <button type="button" onClick={onOpen} className="app-surface px-5 py-4 text-start transition-colors hover:bg-[#fafaf8]">
+    <button type="button" onClick={onOpen} className="app-surface px-5 py-4 text-start transition-colors hover:bg-muted">
       <p className="text-sm font-medium">{title}</p>
       <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
       <p className="mt-3 text-2xl font-semibold tabular-nums">{value}</p>
@@ -585,7 +584,7 @@ function Breakdown({
                   <span className="truncate">{row.key}</span>
                   <span className="text-[11px] text-muted-foreground tabular-nums">{row.count.toLocaleString("he-IL")}</span>
                 </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#f3f2ee]">
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-highlight"
                     style={{ width: `${Math.max(4, Math.round((row.amount / max) * 100))}%` }}
@@ -624,7 +623,7 @@ function LedgerTable({
 }) {
   return (
     <section className="app-surface overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold">{ledger.title}</h2>
           <p className="text-xs text-muted-foreground">{ledger.hint}</p>
@@ -633,8 +632,8 @@ function LedgerTable({
       </div>
       <div className="max-h-[36rem] overflow-auto">
         <table className="w-full min-w-[52rem] border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-white">
-            <tr className="border-b border-black/[0.06] text-xs text-muted-foreground">
+          <thead className="sticky top-0 z-10 bg-card">
+            <tr className="border-b border-border text-xs text-muted-foreground">
               {ledger.show.map((index) => {
                 const header = ledger.headers[index] ?? "";
                 const active = sort?.col === index;
@@ -652,7 +651,7 @@ function LedgerTable({
           <tbody>
             {rows.length ? (
               rows.map((row) => (
-                <tr key={row.id} className="border-b border-black/[0.04] odd:bg-[#fafaf8]">
+                <tr key={row.id} className="border-b border-border odd:bg-muted">
                   {ledger.show.map((index) => {
                     const header = ledger.headers[index] ?? "";
                     const value = row.cells[index] ?? "";
@@ -697,14 +696,14 @@ function LedgerTable({
           עמוד {(page + 1).toLocaleString("he-IL")} מתוך {pageCount.toLocaleString("he-IL")}
         </span>
         <div className="flex gap-2">
-          <button type="button" disabled={page <= 0} onClick={() => onPage(page - 1)} className="rounded-full bg-[#f6f5f1] px-3 py-1 disabled:opacity-40">
+          <button type="button" disabled={page <= 0} onClick={() => onPage(page - 1)} className="rounded-full bg-muted px-3 py-1 disabled:opacity-40">
             הקודם
           </button>
           <button
             type="button"
             disabled={page + 1 >= pageCount}
             onClick={() => onPage(page + 1)}
-            className="rounded-full bg-[#f6f5f1] px-3 py-1 disabled:opacity-40"
+            className="rounded-full bg-muted px-3 py-1 disabled:opacity-40"
           >
             הבא
           </button>

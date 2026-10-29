@@ -740,10 +740,12 @@ export function SourcePnlScreen({
       denied: "החיבור לפייסבוק בוטל",
       auth: "צריך להתחבר למערכת קודם",
     };
+    const reason = params.get("reason");
     if (googleFlag) {
       const ok = googleFlag === "connected" || googleFlag === "pick";
-      if (ok) toast.success(googleMessages[googleFlag] ?? googleFlag);
-      else toast.error(googleMessages[googleFlag] ?? googleFlag);
+      const base = googleMessages[googleFlag] ?? googleFlag;
+      if (ok) toast.success(base);
+      else toast.error(reason ? `${base}: ${reason}` : base);
     }
     if (facebookFlag) {
       const ok = facebookFlag === "connected" || facebookFlag === "pick";

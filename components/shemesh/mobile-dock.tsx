@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { LayoutDashboard, Megaphone, Menu, Users, Wallet } from "lucide-react";
+import { BadgeDollarSign, ClipboardList, LayoutDashboard, LineChart, Menu } from "lucide-react";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { activePath } from "@/lib/nav-path";
@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/shemesh", label: "בקרה", icon: LayoutDashboard, exact: true },
-  { href: "/shemesh/marketing", label: "שיווק", icon: Megaphone, exact: false },
-  { href: "/shemesh/leads", label: "לידים", icon: Users, exact: false },
-  { href: "/shemesh/revenue", label: "כספים", icon: Wallet, exact: false },
+  { href: "/shemesh/cases", label: "תיקים", icon: ClipboardList, exact: false },
+  { href: "/shemesh/gviya", label: "פדיונות", icon: BadgeDollarSign, exact: false },
+  { href: "/shemesh/reports", label: "רווח", icon: LineChart, exact: false },
 ];
 
 export function ShemeshMobileDock() {
@@ -42,10 +42,10 @@ export function ShemeshMobileDock() {
         </SheetTrigger>
         <SheetContent
           side="right"
-          className="shemesh-os w-[min(18rem,88vw)] border-s border-sidebar-border bg-sidebar p-0 [&>button]:hidden"
+          className="shemesh-os w-[min(20rem,92vw)] border-s border-sidebar-border bg-sidebar p-0 [&>button]:hidden"
         >
           <SheetTitle className="sr-only">תפריט ניווט</SheetTitle>
-          <ShemeshSidebar className="h-full w-full border-e-0" />
+          <ShemeshSidebar className="!m-0 h-full w-full !rounded-none" />
         </SheetContent>
       </Sheet>
     </nav>

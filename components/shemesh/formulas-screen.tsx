@@ -11,7 +11,7 @@ export function ShemeshFormulas() {
       description="הכללים רשומים כאן ולא רצים בדוחות. הלוח והרווח מציגים את הסכומים שנרשמו בקובץ ובפרסום."
       icon={Calculator}
       stats={
-        <div className="rounded-2xl border border-black/[0.05] bg-background/80 px-4 py-3 text-center">
+        <div className="rounded-2xl border border-border bg-background/80 px-4 py-3 text-center">
           <p className="text-2xl font-semibold tabular-nums leading-none">{SHEMESH_FORMULAS.length}</p>
           <p className="mt-1 text-[11px] text-muted-foreground">ממתינות</p>
         </div>

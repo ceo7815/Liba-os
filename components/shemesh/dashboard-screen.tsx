@@ -205,7 +205,7 @@ export function ShemeshDashboard() {
                     </span>
                     <p className="truncate text-[11px] font-medium text-muted-foreground">{item.label}</p>
                   </div>
-                  <ChevronLeft className="size-3.5 shrink-0 text-black/30 transition-transform group-hover:-translate-x-0.5" />
+                  <ChevronLeft className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5" />
                 </div>
                 <p className="mt-2 truncate text-base font-semibold tracking-tight">{item.name}</p>
                 <p className="mt-1 truncate text-[11px] tabular-nums text-muted-foreground">{item.detail}</p>

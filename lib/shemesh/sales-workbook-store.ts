@@ -4,7 +4,9 @@ import { workbookStats } from "@/lib/sales-dashboard/workbook-store";
 import type { SalesWorkbook, SalesWorkbookPayload, WorkbookSheet } from "@/lib/sales-dashboard/workbook-grid";
 import { parseShemeshSalesWorkbook } from "@/lib/shemesh/sales-excel-parse";
 
-const FILE_OBJECT = "shemesh/live/sales.xlsx";
+import { SHEMESH_SALES_OBJECT, SHEMESH_SALES_TABLE } from "@/lib/shemesh/sales-source";
+
+const FILE_OBJECT = SHEMESH_SALES_OBJECT;
 const META_OBJECT = "shemesh/live/meta.json";
 const SNAPSHOT_CONTENT_TYPE = "application/octet-stream";
 
@@ -58,7 +60,7 @@ export async function saveShemeshSalesWorkbook(input: {
     { contentType: SNAPSHOT_CONTENT_TYPE, upsert: true, cacheControl: "0" },
   );
 
-  const { error } = await admin.from("shemesh_sales_workbooks").upsert(
+  const { error } = await admin.from(SHEMESH_SALES_TABLE).upsert(
     {
       id: 1,
       file_name: fileName,
@@ -92,7 +94,7 @@ export async function ingestShemeshSalesBuffer(
 export async function shemeshSalesSyncStamp(): Promise<string | null> {
   const admin = createAdminClient();
   const { data } = await admin
-    .from("shemesh_sales_workbooks")
+    .from(SHEMESH_SALES_TABLE)
     .select("synced_at")
     .eq("id", 1)
     .maybeSingle();
@@ -113,7 +115,7 @@ export async function shemeshSalesSyncStamp(): Promise<string | null> {
 export async function loadShemeshSalesWorkbook(): Promise<SalesWorkbookPayload | null> {
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from("shemesh_sales_workbooks")
+    .from(SHEMESH_SALES_TABLE)
     .select("file_name, synced_at, sheets")
     .eq("id", 1)
     .maybeSingle();
