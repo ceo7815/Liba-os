@@ -200,7 +200,6 @@ export function ControlCenterScreen() {
   return (
     <div className="space-y-3">
       <section className="glass glass-noise relative overflow-hidden rounded-[1.15rem] border border-border">
-        <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
         <div className="grid grid-cols-1 gap-px bg-border min-[480px]:grid-cols-2 lg:grid-cols-4">
           <button
             type="button"
