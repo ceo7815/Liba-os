@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Aurora } from "@/components/brand/aurora";
 
 export type OsModule =
   | "dashboard"
@@ -41,6 +42,7 @@ export function ShellFrame({
       data-module={module ?? moduleFromPath(pathname)}
       className="os-mesh flex h-dvh max-h-dvh min-h-0 overflow-hidden bg-background text-foreground"
     >
+      <Aurora />
       {children}
     </div>
   );

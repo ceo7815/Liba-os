@@ -11,6 +11,7 @@ import { CampaignsScreen } from "@/components/campaigns/campaigns-screen";
 import { LeadControlScreen } from "@/components/lead-control/screen";
 import { AppShell } from "@/components/layout/app-shell";
 import type { OsModule } from "@/components/layout/shell-frame";
+import { Aurora } from "@/components/brand/aurora";
 import { ShemeshMobileDock } from "@/components/shemesh/mobile-dock";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
@@ -83,6 +84,7 @@ export default function DesignLabPage({
   if (view === "shemesh") {
     return (
       <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background">
+        <Aurora tone="shemesh" />
         <ShemeshPulseProvider pulse={designLabShemesh(now)}>
           <Suspense fallback={null}>
             <ShemeshSidebar className="hidden lg:flex" />

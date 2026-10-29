@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Aurora } from "@/components/brand/aurora";
 import { AuthAtmosphere } from "@/components/auth/auth-atmosphere";
 import { LogoBadge } from "@/components/brand/logo-badge";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export function AuthCard({
         isShemesh && "shemesh-os",
       )}
     >
+      <Aurora tone={isShemesh ? "shemesh" : "liba"} />
       <AuthAtmosphere tone={isShemesh ? "shemesh" : "liba"} />
 
       <div className="relative z-10 w-full max-w-[440px]">

@@ -39,6 +39,42 @@ import { CountUp } from "@/components/ui/count-up";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+function MiniArea({ title, counts, from, to }: { title: string; counts: number[]; from: string; to: string }) {
+  if (counts.length < 2) return null;
+  const width = 280;
+  const height = 72;
+  const max = Math.max(...counts, 1);
+  const min = Math.min(...counts);
+  const span = max - min || 1;
+  const points = counts.map((value, index) => {
+    const x = (index / (counts.length - 1)) * width;
+    const y = height - 8 - ((value - min) / span) * (height - 16);
+    return { x, y };
+  });
+  const d = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const area = `${d} L${width} ${height} L0 ${height} Z`;
+  const id = title.replace(/\s/g, "");
+  return (
+    <div className="kpi-cube p-4">
+      <p className="text-sm font-semibold tracking-tight">{title}</p>
+      <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-16 w-full" role="img" aria-label={title}>
+        <defs>
+          <linearGradient id={`${id}-fill`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={from} stopOpacity="0.55" />
+            <stop offset="100%" stopColor={to} stopOpacity="0.02" />
+          </linearGradient>
+          <linearGradient id={`${id}-line`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={from} />
+            <stop offset="100%" stopColor={to} />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${id}-fill)`} />
+        <path d={d} fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.5" strokeLinecap="round" className="chart-line" pathLength={100} />
+      </svg>
+    </div>
+  );
+}
+
 function SalesSpark({ counts }: { counts: number[] }) {
   if (counts.length < 2) return null;
   const width = 76;
@@ -216,8 +252,11 @@ export function ControlCenterScreen() {
             onClick={() => setOpenKind("upcoming")}
             className="kpi-hero kpi-cube group px-4 py-4 text-start active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
           >
-            <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-              {snap.upcomingDateLabel}
+            <span className="flex items-center justify-between gap-2">
+              <span className="kpi-badge" data-tone="sun" aria-hidden><Package className="size-4" /></span>
+              <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+                {snap.upcomingDateLabel}
+              </span>
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               הפקות ב־{snap.upcomingDateLabel}
@@ -237,9 +276,13 @@ export function ControlCenterScreen() {
             type="button"
             onClick={() => setOpenKind("premium")}
             className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
+            data-accent="green"
           >
-            <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-              {snap.monthLabel}
+            <span className="flex items-center justify-between gap-2">
+              <span className="kpi-badge" data-tone="green" aria-hidden><Package className="size-4" /></span>
+              <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+                {snap.monthLabel}
+              </span>
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               הפקות החודש
@@ -257,9 +300,13 @@ export function ControlCenterScreen() {
             type="button"
             onClick={() => setOpenKind("monthSales")}
             className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
+            data-accent="violet"
           >
-            <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-              העברה ליצרן
+            <span className="flex items-center justify-between gap-2">
+              <span className="kpi-badge" data-tone="violet" aria-hidden><PhoneIncoming className="size-4" /></span>
+              <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+                העברה ליצרן
+              </span>
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               מכירות
@@ -280,9 +327,13 @@ export function ControlCenterScreen() {
             type="button"
             onClick={() => setOpenKind("agentAppointment")}
             className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
+            data-accent="teal"
           >
-            <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-              העברה ליצרן
+            <span className="flex items-center justify-between gap-2">
+              <span className="kpi-badge" data-tone="teal" aria-hidden><UserRound className="size-4" /></span>
+              <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+                העברה ליצרן
+              </span>
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               מינוי סוכן
@@ -332,6 +383,11 @@ export function ControlCenterScreen() {
         </div>
       </section>
 
+      <div className="enter grid gap-3 sm:grid-cols-2" style={{ ["--i" as string]: 1 }}>
+        <MiniArea title="מגמת מכירות" counts={dashboard?.sales?.counts ?? []} from="#FFD60A" to="#FF6B81" />
+        <MiniArea title="מגמת מינויים" counts={dashboard?.appointments?.counts ?? []} from="#5AC8FA" to="#6D5EFC" />
+      </div>
+
       <div className="enter" style={{ ["--i" as string]: 2 }}>
         <DashboardCampaignStrip />
       </div>
@@ -364,9 +420,8 @@ export function ControlCenterScreen() {
                       {item.label}
                     </p>
                   </div>
-                  <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">
+                  <span className={cn("medal", index < 3 && "shrink-0")} data-rank={index < 3 ? String(index + 1) : undefined}>
                     #{index + 1}
-                    <ChevronLeft className="size-3.5 opacity-50 transition-transform group-hover:-translate-x-0.5" />
                   </span>
                 </div>
                 <p className="mt-2 truncate text-base font-semibold tracking-tight">

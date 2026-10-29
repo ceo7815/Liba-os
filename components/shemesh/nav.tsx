@@ -61,7 +61,7 @@ export function ShemeshSidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        "m-4 me-2 flex w-[16.5rem] shrink-0 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] bg-white/75 shadow-card backdrop-blur-xl",
+        "m-4 me-2 side-glass flex w-[16.5rem] shrink-0 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] bg-white/75 shadow-card backdrop-blur-xl",
         className,
       )}
     >

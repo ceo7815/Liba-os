@@ -35,6 +35,7 @@ import {
   EXPENSES_PATH,
   GENERAL_PNL_PATH,
   INSURANCE_AGREEMENTS_PATH,
+  LEDGER_PATH,
   SETTLED_COMMISSIONS_PATH,
   SOURCE_PNL_PATH,
 } from "@/lib/finance/access";
@@ -157,7 +158,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
         className,
       )}
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] bg-white/70 text-sidebar-foreground shadow-card backdrop-blur-xl backdrop-saturate-150">
+      <div className="side-glass flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] bg-white/70 text-sidebar-foreground shadow-card backdrop-blur-xl backdrop-saturate-150">
       <div className="flex flex-col items-center px-5 pb-5 pt-7">
         <LogoBadge centered className="w-full" />
         <div className="mt-5 h-px w-full bg-sidebar-border">
@@ -171,6 +172,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
             href="/dashboard"
             label="לוח בקרה"
             icon={LayoutDashboard}
+            tone="sun"
             active={pathname === "/dashboard"}
           />
           {showSalesDashboard ? (
@@ -178,6 +180,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
               href={LEAD_CONTROL_PATH}
               label="בקרת לידים"
               icon={ListChecks}
+              tone="teal"
               active={leadControlActive}
             />
           ) : null}
@@ -194,6 +197,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
               href={CAMPAIGNS_PATH}
               label="קמפיינים"
               icon={Megaphone}
+              tone="violet"
               active={campaignsActive}
             />
           ) : null}
@@ -209,11 +213,19 @@ export function Sidebar({ profile, className }: SidebarProps) {
 
         {showFinance ? (
           <NavSection title="כספים">
+            <NavItem
+              href={LEDGER_PATH}
+              label="רישום תנועות"
+              icon={Wallet}
+              tone="green"
+              active={pathname === LEDGER_PATH}
+            />
             {showPlGeneral ? (
               <NavItem
                 href={GENERAL_PNL_PATH}
                 label="רווח והפסד"
                 icon={LineChart}
+                tone="green"
                 active={generalPnlActive}
               />
             ) : null}
@@ -498,10 +510,12 @@ function NavItem({
   label,
   icon: Icon,
   active,
+  tone,
 }: {
   href: string;
   label: string;
   active: boolean;
+  tone?: "sun" | "teal" | "violet" | "green" | "coral";
   icon: React.ComponentType<{ className?: string }>;
 }) {
   const router = useRouter();
@@ -520,12 +534,9 @@ function NavItem({
       )}
     >
       {active && <span className="size-1.5 shrink-0 rounded-full bg-white/80" />}
-      <Icon
-        className={cn(
-          "h-4 w-4 shrink-0",
-          active ? "text-sidebar-foreground" : "text-muted-foreground",
-        )}
-      />
+      <span data-tone={tone} className="nav-icon inline-flex">
+        <Icon className="h-4 w-4 shrink-0" />
+      </span>
       <span className="truncate">{label}</span>
     </Link>
   );

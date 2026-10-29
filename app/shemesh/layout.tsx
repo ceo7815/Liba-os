@@ -7,6 +7,7 @@ import { ShemeshMobileDock } from "@/components/shemesh/mobile-dock";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
 import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
+import { Aurora } from "@/components/brand/aurora";
 import { ShemeshTheme } from "@/components/shemesh/theme";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
 import { requireProfile } from "@/lib/auth";
@@ -95,6 +96,7 @@ export default async function ShemeshLayout({
     <LiveDashboardProvider>
       <ShemeshTheme />
       <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
+        <Aurora tone="shemesh" />
         <ShemeshSidebar className="hidden lg:flex print:hidden" />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col print:block print:h-auto print:overflow-visible">
           <div className="print:hidden">

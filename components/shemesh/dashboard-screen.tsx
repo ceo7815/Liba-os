@@ -157,6 +157,7 @@ export function ShemeshDashboard() {
                 className="group rounded-[20px] border border-black/[0.06] bg-white px-4 py-3 text-start shadow-card transition-colors hover:bg-[#f7f7f8] sm:px-5"
               >
                 <p className="truncate text-[11px] font-medium text-muted-foreground" title={row.name}>
+                  <span className="kpi-badge me-1 inline-flex !size-5" data-tone={row.channel === "facebook" ? "meta" : "google"} aria-hidden />
                   {CHANNEL_LABEL[row.channel]}
                 </p>
                 <p className="mt-1 truncate text-base font-semibold tracking-tight" title={row.name}>
