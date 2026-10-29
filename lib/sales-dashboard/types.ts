@@ -42,7 +42,7 @@ export type SaleAlert = {
   agent: string;
 };
 
-export type DashboardSource = "live" | "demo";
+export type DashboardSource = "live" | "demo" | "empty";
 
 /** Referral-source rollup for the marketing dashboard. Premium is active-only. */
 export type MarketingProductionStatus = "active" | "pending" | "cancelled" | "other";

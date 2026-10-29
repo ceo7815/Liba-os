@@ -81,6 +81,7 @@ export function FacebookAdsMapper({
         }
         if (result.warning) toast.error(result.warning);
         else toast.success("הקמפיינים סונכרנו מפייסבוק");
+        if (result.tokenWarning) toast.warning(result.tokenWarning);
         onChanged();
       });
     });
@@ -369,6 +370,7 @@ export function FacebookAdsAccountPicker({ onChanged }: { onChanged: () => void 
                         if (!synced.ok) toast.error(synced.error ?? "סנכרון נכשל");
                         else if (synced.warning) toast.error(synced.warning);
                         else toast.success("חשבון המודעות חובר");
+                        if (synced.tokenWarning) toast.warning(synced.tokenWarning);
                         onChanged();
                       });
                     });

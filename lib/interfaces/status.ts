@@ -1,5 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { envFacebookAccessToken } from "@/lib/facebook-ads/config";
+import {
+  FACEBOOK_RECONNECT_PATH,
+  facebookTokenExpiryWarning,
+} from "@/lib/facebook-ads/expiry";
 import { envRefreshToken } from "@/lib/google-ads/config";
 import { CAMPAIGNS_PATH, SALES_EXCEL_REPORT_PATH } from "@/lib/sales-dashboard/access";
 import { LEAD_CONTROL_PATH } from "@/lib/lead-control/rules";
@@ -13,9 +17,12 @@ export type ConnectedInterface = {
   connected: boolean;
   syncedAt: string | null;
   note: string | null;
+  warning: string | null;
+  actionHref: string | null;
+  actionLabel: string | null;
 };
 
-const CATALOG: Omit<ConnectedInterface, "connected" | "syncedAt" | "note">[] = [
+const CATALOG: Pick<ConnectedInterface, "id" | "name" | "description" | "href">[] = [
   {
     id: "voicenter",
     name: "Voicenter",
@@ -64,7 +71,9 @@ export async function loadConnectedInterfaces(): Promise<ConnectedInterface[]> {
       .maybeSingle(),
     admin
       .from("facebook_ads_settings")
-      .select("ad_account_name, connected_name, access_token_encrypted, last_synced_at")
+      .select(
+        "ad_account_name, connected_name, access_token_encrypted, last_synced_at, token_expires_at",
+      )
       .eq("id", 1)
       .maybeSingle(),
     admin
@@ -102,31 +111,53 @@ export async function loadConnectedInterfaces(): Promise<ConnectedInterface[]> {
   const voiceToolConnected = text(toolRow?.status) === "connected";
   const voiceConnected = voiceToolConnected || Boolean(callRow);
 
-  const byId: Record<ConnectedInterface["id"], Pick<ConnectedInterface, "connected" | "syncedAt" | "note">> = {
+  const facebookExpiry = facebookTokenExpiryWarning(
+    typeof facebookRow?.token_expires_at === "string" ? facebookRow.token_expires_at : null,
+  );
+
+  const byId: Record<
+    ConnectedInterface["id"],
+    Pick<ConnectedInterface, "connected" | "syncedAt" | "note" | "warning" | "actionHref" | "actionLabel">
+  > = {
     voicenter: {
       connected: voiceConnected,
       syncedAt: text(callRow?.call_date) || text(callRow?.created_at) || text(toolRow?.last_checked_at),
       note: voiceConnected ? "שיחות נכנסות" : null,
+      warning: null,
+      actionHref: null,
+      actionLabel: null,
     },
     "google-ads": {
       connected: googleConnected,
       syncedAt: text(googleRow?.last_synced_at),
       note: text(googleRow?.connected_email) || text(googleRow?.customer_id),
+      warning: null,
+      actionHref: null,
+      actionLabel: null,
     },
     facebook: {
       connected: facebookConnected,
       syncedAt: text(facebookRow?.last_synced_at),
       note: text(facebookRow?.ad_account_name) || text(facebookRow?.connected_name),
+      warning: facebookConnected ? facebookExpiry : null,
+      actionHref: facebookConnected && facebookExpiry ? FACEBOOK_RECONNECT_PATH : null,
+      actionLabel: facebookConnected && facebookExpiry ? "חיבור מחדש" : null,
     },
     "sales-excel": {
       connected: excelConnected,
       syncedAt: text(workbookRow?.synced_at),
       note: text(workbookRow?.file_name),
+      warning: null,
+      actionHref: null,
+      actionLabel: null,
     },
     surense: {
       connected: surenseConfigured() || Boolean(surenseRow?.synced_at),
       syncedAt: text(surenseRow?.synced_at),
       note: "Surense",
+      warning: null,
+      actionHref: null,
+      actionLabel: null,
     },
   };
 

@@ -250,6 +250,10 @@ export function CampaignsScreen({
           .map((result) => ("warning" in result ? result.warning : undefined))
           .filter((value): value is string => Boolean(value))
           .join("\n");
+        const tokenWarning = results
+          .map((result) => ("tokenWarning" in result ? result.tokenWarning : undefined))
+          .filter((value): value is string => Boolean(value))
+          .join("\n");
         if (failed && !failed.ok) {
           toast.error(failed.error ?? "הסנכרון נכשל");
         } else if (warning) {
@@ -259,6 +263,7 @@ export function CampaignsScreen({
         } else {
           toast.success("נמשכו 36 החודשים האחרונים מהחשבונות");
         }
+        if (tokenWarning) toast.warning(tokenWarning);
         void loadCampaignBoard()
           .then((next) => setBoard(scopeCampaignBoard(next, brand)))
           .catch(() => undefined);

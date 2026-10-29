@@ -241,13 +241,21 @@ export async function saveGoogleAdsRefreshToken(refreshToken: string, email?: st
     throw new Error("חסר VAULT_ENCRYPTION_KEY להצפנת החיבור לגוגל");
   }
   const admin = createAdminClient();
-  const { error } = await admin.from("google_ads_settings").upsert({
+  const patch: {
+    id: number;
+    refresh_token_encrypted: string;
+    connected_email?: string;
+    last_error: null;
+    updated_at: string;
+  } = {
     id: 1,
     refresh_token_encrypted: encryptVaultSecret(refreshToken),
-    connected_email: email?.trim() || null,
     last_error: null,
     updated_at: new Date().toISOString(),
-  });
+  };
+  const trimmed = email?.trim();
+  if (trimmed) patch.connected_email = trimmed;
+  const { error } = await admin.from("google_ads_settings").upsert(patch);
   if (error) throw new Error(error.message);
 }
 

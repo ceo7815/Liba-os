@@ -91,6 +91,23 @@ export async function exchangeAuthCode(code: string, redirectUri: string) {
   };
 }
 
+/** Best-effort. Returns null when the token was granted without the email scope. */
+export async function fetchGoogleAccountEmail(accessToken: string): Promise<string | null> {
+  if (!accessToken) return null;
+  try {
+    const res = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = asRecord(await res.json().catch(() => ({})));
+    const email = asString(json.email).trim();
+    return email || null;
+  } catch {
+    return null;
+  }
+}
+
 async function adsFetch(
   path: string,
   accessToken: string,

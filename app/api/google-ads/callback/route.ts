@@ -10,6 +10,7 @@ import {
 } from "@/lib/google-ads/config";
 import {
   exchangeAuthCode,
+  fetchGoogleAccountEmail,
   listAccessibleCustomerIds,
   refreshAccessToken,
 } from "@/lib/google-ads/client";
@@ -46,8 +47,9 @@ export async function GET(request: Request) {
 
   try {
     const tokens = await exchangeAuthCode(code, googleAdsRedirectUri());
-    await saveGoogleAdsRefreshToken(tokens.refreshToken);
     const access = tokens.accessToken || (await refreshAccessToken(tokens.refreshToken));
+    const email = await fetchGoogleAccountEmail(access);
+    await saveGoogleAdsRefreshToken(tokens.refreshToken, email);
     const accounts = await listAccessibleCustomerIds(access);
     const preferred = envCustomerId();
     const login = envLoginCustomerId();

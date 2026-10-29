@@ -68,6 +68,15 @@ export function SettledCommissionsScreen() {
         <p className="mt-1 text-sm text-muted-foreground">
           יוצג אחרי ייבוא — כרגע מקום שמור לתבנית.
         </p>
+        <div
+          role="status"
+          className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"
+        >
+          ממתין לדוחות
+          <span className="mt-1 block font-normal">
+            האריחים למטה שמורים לתבנית. הסימן «—» אינו מספר חי.
+          </span>
+        </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {SETTLED_KPI_PLACEHOLDERS.map((kpi) => (
             <div
