@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { useFormState } from "react-dom";
 import { importInsurerForm } from "@/app/actions/shemesh-connect";
 import { field } from "@/lib/shemesh/field";
 import { IMPORT_FIELDS, INSURERS } from "@/lib/shemesh/insurer-import";
+import { HebrewFileDrop } from "@/components/shemesh/file-drop";
 import { Panel } from "@/components/shemesh/widgets";
 
 const idle = { error: null as string | null, headers: [] as string[], inserted: undefined as number | undefined, skipped: undefined as number | undefined, messages: [] as string[] };
 
 export function InsurerImport({ history }: { history: { id: string; company: string; kind: string; fileName: string; inserted: number; skipped: number; createdAt: string }[] }) {
   const [state, action] = useFormState(importInsurerForm, idle);
-  const [fileLabel, setFileLabel] = useState("לא נבחר קובץ");
   const headers = state.headers ?? [];
   return (
     <div className="space-y-3">
@@ -28,21 +27,7 @@ export function InsurerImport({ history }: { history: { id: string; company: str
               ))}
             </select>
           </label>
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            קובץ אקסל או XML
-            <span className="flex flex-wrap items-center gap-2">
-              <input
-                className="sr-only"
-                name="file"
-                type="file"
-                accept=".xlsx,.xls,.xml,.csv"
-                required
-                onChange={(event) => setFileLabel(event.target.files?.[0]?.name || "לא נבחר קובץ")}
-              />
-              <span className="inline-flex h-9 items-center rounded-xl border border-border bg-muted px-3 text-sm text-foreground">בחירת קובץ</span>
-              <span className="text-sm text-foreground">{fileLabel}</span>
-            </span>
-          </label>
+          <HebrewFileDrop name="file" accept=".xlsx,.xls,.xml,.csv" required hint="אקסל עמלה או הפקה, או XML של המסלקה" />
           {headers.length ? (
             <div className="grid gap-2 sm:grid-cols-2">
               {IMPORT_FIELDS.map((item) => (

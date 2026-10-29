@@ -42,16 +42,19 @@ export function UploadCard({
   return (
     <Panel title={title}>
       <p className="pb-2 text-xs text-muted-foreground">{hint}</p>
-      <input
-        type="file"
-        accept=".csv,text/csv"
-        className="text-sm"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (!file) return;
-          void file.text().then(onText);
-        }}
-      />
+      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#2f86ea]/40 bg-white/80 px-4 py-6 text-center">
+        <span className="text-sm font-semibold">גררו CSV לכאן או לחצו לבחירה</span>
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            void file.text().then(onText);
+          }}
+        />
+      </label>
     </Panel>
   );
 }

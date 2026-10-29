@@ -4,6 +4,7 @@ import { useFormState } from "react-dom";
 import { archiveShemeshReceipt, saveShemeshAdBudget, saveShemeshMailDraft } from "@/app/actions/shemesh-ops";
 import { Panel } from "@/components/shemesh/widgets";
 import { Button } from "@/components/ui/button";
+import { HebrewFileDrop } from "@/components/shemesh/file-drop";
 import { field } from "@/lib/shemesh/field";
 import { formatIls } from "@/lib/format/numbers";
 
@@ -21,7 +22,7 @@ export function AdReceiptForm({ month }: { month: string }) {
           <option value="facebook">פייסבוק</option>
           <option value="other">אחר</option>
         </select>
-        <input name="file" type="file" required className="text-sm" />
+        <HebrewFileDrop name="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv" required hint="קבלה של גוגל או פייסבוק" />
         <Button type="submit" className="w-fit">שמירה בארכיון</Button>
         {state.error ? <p className="text-sm text-destructive sm:col-span-2">{state.error}</p> : null}
       </form>

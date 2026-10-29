@@ -78,6 +78,9 @@ export async function loadShemeshDashboard(): Promise<{ input: DashInput; source
     campaigns,
     audit: (board?.audit ?? []).map((row) => ({ id: row.id, summary: row.summary, createdAt: row.createdAt })),
     today,
+    salesFileName: model.fileName,
+    salesSyncedAt: model.syncedAt,
+    salesColumns: model.columns,
   };
   return {
     input,

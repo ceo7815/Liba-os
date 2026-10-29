@@ -1,6 +1,6 @@
 import { jerusalemYmd } from "@/lib/sales-dashboard/campaign-math";
 import type { SalesWorkbookPayload } from "@/lib/sales-dashboard/workbook-grid";
-import { buildRevenueBook, parseRecordedMoney, type RevenueLedger } from "@/lib/shemesh/revenue-book";
+import { buildRevenueBook, mapCollectionColumns, parseRecordedMoney, type RevenueLedger } from "@/lib/shemesh/revenue-book";
 import { presentShemeshWorkbook } from "@/lib/shemesh/sales-excel-view";
 import { CASE_STAGES, type CaseStageId } from "@/lib/shemesh/catalog";
 
@@ -14,6 +14,8 @@ export type GviyaDeal = {
   dealDate: string | null;
   dealAmount: number;
   collected: number;
+  /** Explicit open column when the sheet has one. Otherwise the dashboard uses sold minus collected. */
+  openAmount: number | null;
   invoiceDate: string | null;
   cycleDays: number | null;
   stage: CaseStageId;
@@ -26,6 +28,14 @@ export type SheetContact = {
   idNumber: string;
 };
 
+export type GviyaColumnMap = {
+  sheet: string;
+  date: string | null;
+  deal: string | null;
+  collected: string | null;
+  open: string | null;
+};
+
 export type GviyaModel = {
   fileName: string | null;
   syncedAt: string | null;
@@ -33,6 +43,7 @@ export type GviyaModel = {
   contacts: SheetContact[];
   reps: string[];
   sources: string[];
+  columns: GviyaColumnMap;
 };
 
 function ymd(stamp: number): string {
@@ -83,12 +94,17 @@ function findSheet(workbook: SalesWorkbookPayload, title: string) {
 }
 
 export function buildGviyaModel(raw: SalesWorkbookPayload | null): GviyaModel {
+  const emptyColumns: GviyaColumnMap = { sheet: "גבייה", date: null, deal: null, collected: null, open: null };
   if (!raw?.sheets.length) {
-    return { fileName: null, syncedAt: null, deals: [], contacts: [], reps: [], sources: [] };
+    return { fileName: null, syncedAt: null, deals: [], contacts: [], reps: [], sources: [], columns: emptyColumns };
   }
   const workbook = presentShemeshWorkbook(raw);
   const book = buildRevenueBook(workbook);
   const collection = book.ledgers.find((ledger) => ledger.id === "collection") ?? null;
+  const mapped = collection ? mapCollectionColumns(collection.headers) : null;
+  const columns: GviyaColumnMap = mapped
+    ? { sheet: "גבייה", ...mapped.labels }
+    : emptyColumns;
   const invoices = book.ledgers.find((ledger) => ledger.id === "invoices") ?? null;
   const invoiceDates = invoiceIndex(invoices);
   const deals = (collection?.rows ?? []).map((row) => {
@@ -111,6 +127,7 @@ export function buildGviyaModel(raw: SalesWorkbookPayload | null): GviyaModel {
       dealDate,
       dealAmount: money(row.cells, collection?.deal ?? -1),
       collected,
+      openAmount: mapped && mapped.open >= 0 ? money(row.cells, mapped.open) : null,
       invoiceDate,
       cycleDays: cycleDays != null && cycleDays >= 0 ? cycleDays : null,
       stage: stageOf({ status, signed, collected, invoiced: Boolean(invoiceDate) }),
@@ -124,6 +141,7 @@ export function buildGviyaModel(raw: SalesWorkbookPayload | null): GviyaModel {
     contacts,
     reps: unique(deals.map((deal) => deal.rep)),
     sources: unique(deals.map((deal) => deal.source)),
+    columns,
   };
 }
 
@@ -254,3 +272,49 @@ export function stageCounts(deals: GviyaDeal[]): Record<CaseStageId, number> {
   for (const deal of deals) counts[deal.stage] += 1;
   return counts;
 }
+
+function assertMainWorkbookColumns(): void {
+  const model = buildGviyaModel({
+    fileName: "דוח מכירות שמש פדיונות ראשי.xlsx",
+    syncedAt: "2026-10-21T08:15:00.000Z",
+    stored: true,
+    sheets: [
+      {
+        name: "Gviya",
+        kind: "report",
+        headers: ["סטטוס גבייה", "שם מלא", "תאריך", "סכום עסקה", "סכום שנגבה", "שם נציג", "מקור", "יתרה לגבייה"],
+        rows: [{ id: "1", excelRow: 2, cells: ["פתוח", "הדגמה", "2026-10-04", "100", "40", "נציג", "קמפיין", "60"] }],
+      },
+      {
+        name: "live/managers.xlsx",
+        kind: "helper",
+        headers: ["סכום"],
+        rows: [{ id: "liba", excelRow: 2, cells: ["99999"] }],
+      },
+    ],
+  });
+  const deal = model.deals[0];
+  if (!deal || deal.dealAmount !== 100 || deal.collected !== 40 || deal.openAmount !== 60 || deal.dealDate !== "2026-10-04") {
+    throw new Error("Gviya columns must drive sold, collected, and open");
+  }
+  if (model.columns.deal !== "סכום עסקה" || model.columns.collected !== "סכום שנגבה" || model.columns.open !== "יתרה לגבייה") {
+    throw new Error("column labels drifted");
+  }
+  if (model.deals.some((row) => row.dealAmount === 99999)) throw new Error("Liba sheet must not enter Shemesh sales");
+  const alt = buildGviyaModel({
+    fileName: "דוח מכירות שמש פדיונות 2",
+    syncedAt: "2026-10-28T00:00:00.000Z",
+    stored: true,
+    sheets: [{
+      name: "גבייה",
+      kind: "report",
+      headers: ["סטטוס", "לקוח", "תאריך עסקה", "סכום עסקה", "נגבה", "נציג", "מקור ליד"],
+      rows: [{ id: "2", excelRow: 2, cells: ["פתוח", "הדגמה", "2026-10-04", "80", "10", "נציג", "שיחה"] }],
+    }],
+  });
+  if (alt.deals[0]?.dealAmount !== 80 || alt.deals[0]?.collected !== 10 || alt.deals[0]?.openAmount != null) {
+    throw new Error("פדיונות 2 headers must still map, with open derived");
+  }
+}
+
+assertMainWorkbookColumns();

@@ -7,7 +7,7 @@ import { CountUp } from "@/components/ui/count-up";
 import { DateRangeField } from "@/components/ui/date-range-field";
 import { formatCount, formatDelta, formatIls } from "@/lib/format/numbers";
 import { formatShemeshMonth } from "@/lib/shemesh/format";
-import { SHEMESH_SALES_SOURCE_LABEL } from "@/lib/shemesh/sales-source";
+import { SHEMESH_SALES_MAIN_FILE, shemeshSalesSourceLabel, shemeshSalesSyncStale } from "@/lib/shemesh/sales-source";
 import {
   buildDashboard,
   shiftIso,
@@ -116,6 +116,9 @@ export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; s
   const [range, setRange] = useState<DashRange>({ from: monthStart(input.today), to: input.today });
   const [source, setSource] = useState("all");
   const view = useMemo(() => buildDashboard(input, range, source), [input, range, source]);
+  const stale = shemeshSalesSyncStale(input.salesSyncedAt, input.today);
+  const syncedLabel = input.salesSyncedAt ? input.salesSyncedAt.slice(0, 16).replace("T", " ") : null;
+  const columns = input.salesColumns;
   const exportHref = `/api/shemesh/export?kind=dashboard&from=${range.from}&to=${range.to}&source=${encodeURIComponent(source)}`;
 
   return (
@@ -140,11 +143,27 @@ export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; s
             {sourceOptions.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </div>
-        <p className="text-[11px] text-muted-foreground">מכירות וגבייה רק מ־{SHEMESH_SALES_SOURCE_LABEL}. תיקים וספר הם תפעול.</p>
+        <p className="text-[11px] text-muted-foreground">
+          מכירות וגבייה מ־{shemeshSalesSourceLabel(input.salesFileName)}
+          {syncedLabel ? ` · סונכרן ${syncedLabel} UTC` : ` · ${SHEMESH_SALES_MAIN_FILE} עדיין לא שמור במסד הזה`}
+          . לא מדוח המנהלים של ליבה.
+        </p>
+        {stale ? (
+          <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950" role="status">
+            הסנכרון ישן מיומיים. הקובץ האחרון הוא {input.salesFileName}.
+          </p>
+        ) : null}
+        {view.salesReady ? (
+          <p className="text-[11px] text-muted-foreground">
+            נמכר = גיליון {columns.sheet} · {columns.deal ?? "סכום עסקה"} לפי {columns.date ?? "תאריך"}.
+            נגבה = {columns.collected ?? "סכום שנגבה"}.
+            פתוח = {columns.open ?? "סכום עסקה פחות סכום שנגבה"}.
+          </p>
+        ) : null}
       </header>
 
       <section className="kpi-band grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Kpi hero tone="sun" label="נמכר בתקופה" value={view.sold} text={formatIls} hint="לפי תאריך עסקה בדוח שמש" pending={view.salesReady ? undefined : "השלב הבא: ייבוא דוח המכירות בחיבורים"} delta={<Delta current={view.sold} previous={view.soldPrev} money />} spark={view.sparkSold} />
+        <Kpi hero tone="sun" label="נמכר בתקופה" value={view.sold} text={formatIls} hint="לפי תאריך עסקה בדוח שמש" pending={view.salesReady ? undefined : `השלב הבא: שמירת ${SHEMESH_SALES_MAIN_FILE} בחיבורים. גם «פדיונות 2» נקרא אם הוא הקובץ השמור.`} delta={<Delta current={view.sold} previous={view.soldPrev} money />} spark={view.sparkSold} />
         <Kpi tone="green" label="נגבה בתקופה" value={view.collected} text={formatIls} hint="גיליון הגבייה בדוח שמש" pending={view.salesReady ? undefined : "ממתין לאותו דוח"} delta={<Delta current={view.collected} previous={view.collectedPrev} money />} spark={view.sparkCollected} />
         <Kpi tone="violet" label="פתוח לגבייה" value={view.openToCollect} text={formatIls} hint="נמכר פחות נגבה, בדוח שמש" pending={view.salesReady ? undefined : "ממתין לאותו דוח"} delta={<Delta current={view.openToCollect} previous={view.openToCollectPrev} money />} />
         <Kpi tone="teal" label="תיקים פעילים" value={view.activeCases} text={formatCount} hint="נפתחו בתקופה ועדיין פתוחים" delta={<Delta current={view.activeCases} previous={view.activeCasesPrev} />} />

@@ -4,6 +4,8 @@ import { workbookStats } from "@/lib/sales-dashboard/workbook-store";
 import type { SalesWorkbook, SalesWorkbookPayload, WorkbookSheet } from "@/lib/sales-dashboard/workbook-grid";
 import { parseShemeshSalesWorkbook } from "@/lib/shemesh/sales-excel-parse";
 
+import { shemeshAdmin } from "@/lib/shemesh/db";
+import { localDemoEnabled } from "@/lib/shemesh/local-demo";
 import { SHEMESH_SALES_OBJECT, SHEMESH_SALES_TABLE } from "@/lib/shemesh/sales-source";
 
 const FILE_OBJECT = SHEMESH_SALES_OBJECT;
@@ -112,7 +114,24 @@ export async function shemeshSalesSyncStamp(): Promise<string | null> {
   });
 }
 
+function payloadFromRow(row: WorkbookRow | null): SalesWorkbookPayload | null {
+  if (!row) return null;
+  const sheets = Array.isArray(row.sheets) ? row.sheets.filter(isSheet) : [];
+  if (!sheets.length) return null;
+  return {
+    fileName: row.file_name,
+    sheets,
+    syncedAt: row.synced_at,
+    stored: true,
+  };
+}
+
 export async function loadShemeshSalesWorkbook(): Promise<SalesWorkbookPayload | null> {
+  if (localDemoEnabled()) {
+    const { data, error } = await shemeshAdmin().from(SHEMESH_SALES_TABLE).select("file_name, synced_at, sheets").eq("id", 1).maybeSingle();
+    if (error || !data) return null;
+    return payloadFromRow(data as WorkbookRow);
+  }
   const admin = createAdminClient();
   const { data, error } = await admin
     .from(SHEMESH_SALES_TABLE)

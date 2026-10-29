@@ -48,6 +48,75 @@ function colIncludes(headers: string[], needle: string): number {
   return headers.findIndex((header) => header.includes(needle));
 }
 
+/** Exact header first, then a longer partial, so «סכום» does not steal «סכום שנגבה». */
+export function pickHeader(headers: string[], aliases: string[]): number {
+  const trimmed = headers.map((header) => header.trim());
+  for (const alias of aliases) {
+    const exact = trimmed.findIndex((header) => header === alias);
+    if (exact >= 0) return exact;
+  }
+  const partials = [...aliases].filter((alias) => alias.length >= 4).sort((a, b) => b.length - a.length);
+  for (const alias of partials) {
+    const partial = trimmed.findIndex((header) => header.includes(alias));
+    if (partial >= 0) return partial;
+  }
+  return -1;
+}
+
+export const COLLECTION_ALIASES = {
+  status: ["סטטוס גבייה", "סטטוס"],
+  signed: ["חתום על ייפוי", "חתום"],
+  client: ["שם מלא", "שם לקוח", "לקוח"],
+  date: ["תאריך עסקה", "תאריך"],
+  deal: ["סכום עסקה"],
+  collected: ["סכום שנגבה", "סכום גבייה", "נגבה"],
+  open: ["יתרה לגבייה", "פתוח לגבייה", "יתרת גבייה"],
+  agent: ["שם נציג", "נציג", "מטפל"],
+  source: ["מקור ליד", "מקור"],
+} as const;
+
+export type CollectionColumnMap = {
+  status: number;
+  signed: number;
+  client: number;
+  date: number;
+  deal: number;
+  collected: number;
+  open: number;
+  agent: number;
+  source: number;
+  labels: {
+    date: string | null;
+    deal: string | null;
+    collected: string | null;
+    open: string | null;
+  };
+};
+
+export function mapCollectionColumns(headers: string[]): CollectionColumnMap {
+  const index = {
+    status: pickHeader(headers, [...COLLECTION_ALIASES.status]),
+    signed: pickHeader(headers, [...COLLECTION_ALIASES.signed]),
+    client: pickHeader(headers, [...COLLECTION_ALIASES.client]),
+    date: pickHeader(headers, [...COLLECTION_ALIASES.date]),
+    deal: pickHeader(headers, [...COLLECTION_ALIASES.deal]),
+    collected: pickHeader(headers, [...COLLECTION_ALIASES.collected]),
+    open: pickHeader(headers, [...COLLECTION_ALIASES.open]),
+    agent: pickHeader(headers, [...COLLECTION_ALIASES.agent]),
+    source: pickHeader(headers, [...COLLECTION_ALIASES.source]),
+  };
+  const label = (at: number) => (at >= 0 ? headers[at]?.trim() || null : null);
+  return {
+    ...index,
+    labels: {
+      date: label(index.date),
+      deal: label(index.deal),
+      collected: label(index.collected),
+      open: label(index.open),
+    },
+  };
+}
+
 function labelHeaders(headers: string[]): string[] {
   return headers.map((header, index) => {
     if (header !== "הפקדות") return header;
@@ -95,16 +164,17 @@ function emptyLedger(id: RevenueLedgerId, title: string, hint: string): RevenueL
 
 function collectionLedger(sheet: WorkbookSheet): RevenueLedger {
   const headers = sheet.headers;
+  const mapped = mapCollectionColumns(headers);
   const ledger = emptyLedger("collection", "גבייה", "סכום עסקה מול מה שנגבה בפועל");
   ledger.headers = headers;
-  ledger.status = col(headers, "סטטוס גבייה");
-  ledger.signed = colIncludes(headers, "חתום");
-  ledger.client = col(headers, "שם מלא");
-  ledger.date = col(headers, "תאריך");
-  ledger.deal = col(headers, "סכום עסקה");
-  ledger.collected = col(headers, "סכום שנגבה");
-  ledger.agent = col(headers, "שם נציג");
-  ledger.source = col(headers, "מקור");
+  ledger.status = mapped.status;
+  ledger.signed = mapped.signed;
+  ledger.client = mapped.client;
+  ledger.date = mapped.date;
+  ledger.deal = mapped.deal;
+  ledger.collected = mapped.collected;
+  ledger.agent = mapped.agent;
+  ledger.source = mapped.source;
   const paidOn = col(headers, "שולם בתאריך");
   const notes = col(headers, "הערות");
   ledger.show = [
@@ -184,6 +254,8 @@ function financeLedger(sheet: WorkbookSheet): RevenueLedger {
 
 const BUILDERS: Record<string, (sheet: WorkbookSheet) => RevenueLedger> = {
   גבייה: collectionLedger,
+  Gviya: collectionLedger,
+  gviya: collectionLedger,
   חשבוניות: invoiceLedger,
   פיננסים: financeLedger,
 };

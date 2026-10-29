@@ -1,5 +1,5 @@
 import { CASE_STAGES, type CaseStageId } from "@/lib/shemesh/catalog";
-import type { GviyaDeal } from "@/lib/shemesh/gviya";
+import type { GviyaColumnMap, GviyaDeal } from "@/lib/shemesh/gviya";
 import { formatShemeshDay } from "@/lib/shemesh/format";
 import { daysBetween } from "@/lib/shemesh/lifecycle";
 
@@ -49,6 +49,9 @@ export type DashInput = {
   campaigns: DashCampaign[];
   audit: DashAudit[];
   today: string;
+  salesFileName: string | null;
+  salesSyncedAt: string | null;
+  salesColumns: GviyaColumnMap;
 };
 
 export type AttentionItem = { id: string; title: string; detail: string; href: string };
@@ -117,7 +120,7 @@ function dealsIn(deals: GviyaDeal[], range: DashRange, source: string): GviyaDea
 function sumSales(deals: GviyaDeal[]) {
   const sold = deals.reduce((sum, deal) => sum + deal.dealAmount, 0);
   const collected = deals.reduce((sum, deal) => sum + deal.collected, 0);
-  const open = deals.reduce((sum, deal) => sum + Math.max(0, deal.dealAmount - deal.collected), 0);
+  const open = deals.reduce((sum, deal) => sum + (deal.openAmount != null ? deal.openAmount : Math.max(0, deal.dealAmount - deal.collected)), 0);
   return { sold, collected, open, count: deals.length };
 }
 
@@ -274,6 +277,7 @@ function assertDashboardMath(): void {
     dealDate: date,
     dealAmount: amount,
     collected,
+    openAmount: null,
     invoiceDate: null,
     cycleDays: null,
     stage: "lead",
@@ -300,6 +304,9 @@ function assertDashboardMath(): void {
       campaigns: [],
       audit: [],
       today: "2026-10-29",
+      salesFileName: null,
+      salesSyncedAt: null,
+      salesColumns: { sheet: "גבייה", date: null, deal: null, collected: null, open: null },
     },
     range,
     "all",
@@ -312,7 +319,7 @@ function assertDashboardMath(): void {
     throw new Error("attention must come from the case rows");
   }
   const empty = buildDashboard(
-    { hasWorkbook: false, deals: [deal("2026-10-04", 100, 40)], cases: [], ledger: [], ratesPending: true, slaDays: null, drafts: [], campaigns: [], audit: [], today: "2026-10-29" },
+    { hasWorkbook: false, deals: [deal("2026-10-04", 100, 40)], cases: [], ledger: [], ratesPending: true, slaDays: null, drafts: [], campaigns: [], audit: [], today: "2026-10-29", salesFileName: null, salesSyncedAt: null, salesColumns: { sheet: "גבייה", date: null, deal: null, collected: null, open: null } },
     range,
     "all",
   );

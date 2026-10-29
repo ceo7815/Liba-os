@@ -78,7 +78,7 @@ export function GviyaScreen({
         <ShemeshEmpty
           icon={FileSpreadsheet}
           title="הדוח עוד לא הגיע"
-          body="נמכר, נגבה ומחזור יופיעו רק אחרי ייבוא «דוח מכירות שמש פדיונות 2» מתיקיית תפעול שמש. הספר למטה הוא שכר טרחה, לא דוח המכירות."
+          body="נמכר, נגבה ופתוח לגבייה נקראים מגיליון Gviya בקובץ «דוח מכירות שמש פדיונות ראשי». גם «פדיונות 2» נקרא אם הוא הקובץ השמור. הספר למטה הוא שכר טרחה, לא דוח המכירות."
           action={<Link href="/shemesh/sources" className="inline-flex h-9 items-center rounded-xl bg-primary px-3 text-sm text-primary-foreground">לחיבור הדוח</Link>}
         />
       </ShemeshPage>
