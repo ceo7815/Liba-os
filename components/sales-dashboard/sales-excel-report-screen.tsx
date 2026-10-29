@@ -116,7 +116,7 @@ export function SalesExcelReportScreen({
   const [sort, setSort] = useState<SortState>(null);
   const [filters, setFilters] = useState<Record<number, string[]>>({});
   const [quick, setQuick] = useState({ status: "", process: "", agent: "" });
-  const [brand, setBrand] = useState<OperatingBrandId>("all");
+  const [brand, setBrand] = useState<OperatingBrandId>(company === "shemesh" ? "all" : "liba");
   const [policyQuery, setPolicyQuery] = useState("");
   const deferredPolicy = useDeferredValue(policyQuery);
   const [dateCol, setDateCol] = useState(-1);
@@ -399,7 +399,7 @@ export function SalesExcelReportScreen({
     setQuery("");
     setSort(null);
     setQuick({ status: "", process: "", agent: "" });
-    setBrand("all");
+    setBrand(company === "shemesh" ? "all" : "liba");
     setPolicyQuery("");
     setDateFrom("");
     setDateTo("");
@@ -496,12 +496,11 @@ export function SalesExcelReportScreen({
           <div className="space-y-2.5 rounded-2xl border border-black/[0.06] bg-white px-3 py-2.5">
             {company !== "shemesh" && (agentCol >= 0 || sourceCol >= 0) ? (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">מותג</span>
-                <div className="flex items-center gap-1 rounded-full bg-[#f6f5f1] p-1" role="tablist" aria-label="ליבה או שמש">
-                  {(["all", "liba", "shemesh"] as const).map((id) => {
+                <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">תצוגה</span>
+                <div className="flex items-center gap-1 rounded-full bg-[#f6f5f1] p-1" role="tablist" aria-label="ליבה או ספק שמש">
+                  {(["liba", "shemesh"] as const).map((id) => {
                     const selected = brand === id;
-                    const count =
-                      id === "all" ? sheet.rows.length : id === "liba" ? brandCounts.liba : brandCounts.shemesh;
+                    const count = id === "liba" ? brandCounts.liba : brandCounts.shemesh;
                     return (
                       <button
                         key={id}
@@ -513,16 +512,22 @@ export function SalesExcelReportScreen({
                           "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs transition-colors",
                           selected && id === "shemesh" && "bg-amber-700 font-medium text-white",
                           selected && id === "liba" && "bg-[#1a1a1a] font-medium text-white",
-                          selected && id === "all" && "bg-highlight font-medium text-highlight-foreground",
                           !selected && "text-muted-foreground hover:bg-white",
                         )}
                       >
-                        {OPERATING_BRAND_LABEL[id]}
+                        {id === "shemesh" ? "ספק · שמש" : OPERATING_BRAND_LABEL[id]}
                         <span className="tabular-nums opacity-80">{count.toLocaleString("he-IL")}</span>
                       </button>
                     );
                   })}
                 </div>
+                <p className="w-full text-[11px] text-muted-foreground">
+                  {brand === "shemesh"
+                    ? "שמש מופיעה כאן כספק של ליבה. הסכום לא נכנס לקוביות של ליבה."
+                    : brandCounts.shemesh
+                      ? `${brandCounts.shemesh.toLocaleString("he-IL")} שורות ספק שמש לא נכללות בסיכום הזה.`
+                      : "סיכום ליבה בלבד."}
+                </p>
               </div>
             ) : null}
             {dateColumns.length ? (
@@ -685,7 +690,9 @@ export function SalesExcelReportScreen({
           {sheet && visible.length !== sheet.rows.length
             ? ` · אחרי סינון מתוך ${sheet.rows.length.toLocaleString("he-IL")}`
             : ""}
-          {premiumCol >= 0 ? ` · פרמיה ${formatIls(Math.round(premiumSum))}` : ""}
+          {premiumCol >= 0
+            ? ` · ${brand === "shemesh" ? "פרמיית ספק" : "פרמיית ליבה"} ${formatIls(Math.round(premiumSum))}`
+            : ""}
         </p>
         <div className="flex items-center gap-2">
           {company === "liba" ? <SalesEntryAudit sheets={workbook.sheets} /> : null}

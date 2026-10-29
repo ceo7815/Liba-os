@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { Wallet } from "lucide-react";
 import { listFinanceEmployees } from "@/app/actions/finance-people";
 import { PayrollScreen } from "@/components/employees/payroll-screen";
-import {
-  OperatingBrandBar,
-  OperatingBrandProvider,
-} from "@/components/finance/operating-brand-bar";
+import { OperatingBrandProvider } from "@/components/finance/operating-brand-bar";
 import { requireEmployeesAccess } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -18,7 +15,7 @@ export default async function EmployeePayrollPage() {
   const activeCount = list.employees.filter((e) => e.is_active).length;
 
   return (
-    <OperatingBrandProvider>
+    <OperatingBrandProvider lockedBrand="liba">
       <section className="mx-auto max-w-[90rem] space-y-3.5 sm:space-y-5">
         <header className="dash-enter">
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
@@ -63,7 +60,6 @@ export default async function EmployeePayrollPage() {
             </p>
           ) : null}
         </header>
-        <OperatingBrandBar />
         <PayrollScreen initialEmployees={list.employees} />
       </section>
     </OperatingBrandProvider>

@@ -1,6 +1,6 @@
 import {
   adsSourceBrand,
-  facebookAccountBrand,
+  facebookCampaignVisibleInBrand,
   googleCampaignOperatingBrand,
 } from "@/lib/finance/operating-brand";
 import { GOOGLE_ADS_CUBE_SOURCE } from "@/lib/sales-dashboard/campaign-math";
@@ -21,6 +21,7 @@ export type CampaignRow = {
   sourceName: string | null;
   adAccountId?: string | null;
   adAccountName?: string | null;
+  googleCustomerId?: string | null;
   inbound: boolean;
   points: CampaignPoint[];
 };
@@ -109,8 +110,9 @@ const DIALED_KEYS = [
 ];
 
 /**
- * Google follows the campaign name: «פיננסים» is Shemesh, «ביטוחים» is Liba.
- * Facebook follows the ad account: «חשבון המודעות של שמש» is Shemesh, Liba's account stays on Liba.
+ * Facebook follows the ad-account id allowlist.
+ * Google follows GOOGLE_SHEMESH_CUSTOMER_IDS. A campaign name is not a brand.
+ * An explicit supplier source such as «קמפיין שמש» still marks a row as Shemesh.
  */
 export function campaignMatchesBrand(
   row: {
@@ -118,17 +120,25 @@ export function campaignMatchesBrand(
     sourceName?: string | null;
     channel?: "google" | "facebook";
     adAccountName?: string | null;
+    adAccountId?: string | null;
+    googleCustomerId?: string | null;
   },
   brand: "liba" | "shemesh",
 ): boolean {
   if (row.channel === "facebook") {
-    const accountBrand = facebookAccountBrand(row.adAccountName);
-    if (accountBrand) return accountBrand === brand;
-    return brand === "liba";
+    return facebookCampaignVisibleInBrand(
+      {
+        sourceName: row.sourceName ?? null,
+        adAccountId: row.adAccountId,
+        adAccountName: row.adAccountName,
+      },
+      brand,
+    );
   }
-  if (googleCampaignOperatingBrand(row.name) === "shemesh") return brand === "shemesh";
+  const googleBrand = googleCampaignOperatingBrand(row.name, row.googleCustomerId);
+  if (googleBrand) return googleBrand === brand;
   if (row.sourceName?.trim() && adsSourceBrand(row.sourceName) === "shemesh") return brand === "shemesh";
-  return brand === "liba";
+  return false;
 }
 
 export function scopeCampaignBoard(board: CampaignBoard, brand?: "liba" | "shemesh"): CampaignBoard {
@@ -148,7 +158,14 @@ export function scopeCampaignBoard(board: CampaignBoard, brand?: "liba" | "sheme
       ),
     },
     googleCalls: board.googleCalls.filter((row) =>
-      campaignMatchesBrand({ name: row.campaignName, channel: "google" }, brand),
+      campaignMatchesBrand(
+        {
+          name: row.campaignName,
+          channel: "google",
+          googleCustomerId: board.google.campaigns.find((campaign) => campaign.googleCustomerId)?.googleCustomerId,
+        },
+        brand,
+      ),
     ),
   };
 }
