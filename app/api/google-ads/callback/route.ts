@@ -19,8 +19,6 @@ import {
   saveGoogleAdsRefreshToken,
   syncGoogleAds,
 } from "@/app/actions/google-ads";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { publicErrorText } from "@/lib/sync-log";
 
 export const dynamic = "force-dynamic";
 
@@ -68,25 +66,8 @@ export async function GET(request: Request) {
     const pick = dash("google_ads=pick");
     pick.cookies.delete("google_ads_oauth_state");
     return pick;
-  } catch (error) {
-    const message = publicErrorText(
-      error instanceof Error ? error.message : "חיבור גוגל אדס נכשל",
-    ).slice(0, 180);
-    console.error("[google-ads-callback]", { message });
-    try {
-      const admin = createAdminClient();
-      await admin.from("google_ads_settings").upsert({
-        id: 1,
-        last_error: message,
-        updated_at: new Date().toISOString(),
-      });
-    } catch (writeError) {
-      const detail = publicErrorText(
-        writeError instanceof Error ? writeError.message : "last_error write failed",
-      );
-      console.error("[google-ads-callback]", { message: detail });
-    }
-    const fail = dash(`google_ads=error&reason=${encodeURIComponent(message)}`);
+  } catch {
+    const fail = dash("google_ads=error");
     fail.cookies.delete("google_ads_oauth_state");
     return fail;
   }

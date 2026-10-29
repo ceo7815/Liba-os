@@ -27,11 +27,11 @@ import {
 } from "@/components/ui/dialog";
 import {
   adsSourceBrand,
+  assignOperatingBrand,
   filterFacebookCampaignsForBrand,
   matchesOperatingBrand,
   sourceNameVisibleInBrand,
 } from "@/lib/finance/operating-brand";
-import { productionsForSalesReport } from "@/lib/sales-dashboard/sales-report-rows";
 import {
   DATE_PRESET_LABEL,
   DATE_PRESET_ORDER,
@@ -407,14 +407,23 @@ export function SalesBySourceScreen() {
     };
   }, [data, liveReady]);
 
-  const salesRows = useMemo(
-    () => productionsForSalesReport(data?.marketing?.productions ?? []),
-    [data?.marketing?.productions],
-  );
+  const brandRows = useMemo(() => {
+    const rows = data?.marketing?.productions ?? [];
+    return rows.filter((row) =>
+      matchesOperatingBrand(
+        assignOperatingBrand({
+          agent: row.agent,
+          source: row.source,
+          shemeshEmployeeNames,
+        }),
+        brand,
+      ),
+    );
+  }, [data?.marketing?.productions, brand, shemeshEmployeeNames]);
 
   const productions = useMemo(
-    () => salesRows.filter((row) => isSaleProcess(row.process)),
-    [salesRows],
+    () => brandRows.filter((row) => isSaleProcess(row.process)),
+    [brandRows],
   );
 
   const scopedFacebookCampaigns = useMemo(
@@ -756,14 +765,14 @@ export function SalesBySourceScreen() {
 
       {split === "employee" ? (
         <EmployeeBreakdown
-          productions={salesRows}
+          productions={brandRows}
           range={range}
-          brand="all"
+          brand={brand}
           shemeshEmployeeNames={shemeshEmployeeNames}
           pay={employeePay}
         />
       ) : split === "company" ? (
-        <CompanyBreakdown productions={salesRows} range={range} />
+        <CompanyBreakdown productions={brandRows} range={range} />
       ) : (
       <>
       {allCards.length > 0 ? (
