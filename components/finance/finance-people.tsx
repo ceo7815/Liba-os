@@ -1221,7 +1221,7 @@ export function SuppliersSection({
                 {rows.map((s) => (
             <article
               key={s.id}
-              className="app-surface flex flex-wrap items-start justify-between gap-3 border-2 border-black px-4 py-3"
+              className="app-surface flex flex-wrap items-start justify-between gap-3 px-4 py-3"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">

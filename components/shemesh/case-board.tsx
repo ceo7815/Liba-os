@@ -64,7 +64,7 @@ export function CaseBoard({
       ) : (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <a className="text-sm font-medium text-highlight" href="/api/shemesh/export?kind=cases">ייצוא לאקסל</a>
+            <a className="inline-flex min-h-11 items-center text-sm font-medium text-highlight" href="/api/shemesh/export?kind=cases">ייצוא לאקסל</a>
           </div>
           {canManage ? <Panel title="תיק חדש">
             <form action={formAction} className="grid gap-3 sm:grid-cols-2">
@@ -106,15 +106,15 @@ export function CaseBoard({
             </form>
           </Panel> : null}
           <div className="min-w-0">
-          <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 xl:grid xl:w-full xl:grid-cols-8 xl:overflow-visible">
+          <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-2 [-ms-overflow-style:none] [scrollbar-width:none] xl:grid xl:w-full xl:grid-cols-8 xl:overflow-visible [&::-webkit-scrollbar]:hidden">
             {CASE_STAGES.map((stage) => {
               const cards = visible.filter((item) => item.stage === stage.id);
               return (
-                <section key={stage.id} className="glass w-40 shrink-0 snap-start p-2 xl:w-auto xl:min-w-0">
+                <section key={stage.id} className="glass w-[9.5rem] shrink-0 snap-start p-2 xl:w-auto xl:min-w-0">
                   <h2 className="px-1 pb-2 text-xs font-semibold leading-tight">{stage.label}</h2>
                   <div className="space-y-2">
                     {cards.map((item) => (
-                      <button key={item.id} type="button" onClick={() => setOpenId(item.id)} className="w-full rounded-xl border border-white/80 bg-white/80 px-2 py-2 text-start shadow-sm transition-colors hover:bg-white">
+                      <button key={item.id} type="button" onClick={() => setOpenId(item.id)} className="w-full min-h-11 rounded-xl border border-white/80 bg-white/80 px-2 py-2 text-start shadow-sm transition-[transform,background-color] duration-150 ease-out hover:bg-white active:scale-[0.98]">
                         <span className="block truncate text-sm font-medium">{item.clientName}</span>
                         <SlaBadge overdue={item.overdue} deadline={item.deadline} />
                       </button>
@@ -240,10 +240,13 @@ function CaseDetail({
       )}
       <section>
         <h3 className="text-sm font-semibold">משימות</h3>
-        <ul className="mt-1 space-y-1 text-sm">{item.tasks.map((task) => <li key={task.id}>{task.title} · {task.assignee || "בלי מטפל"} · {task.dueOn || "בלי יעד"}</li>)}</ul>
+        {item.tasks.length === 0 ? <p className="mt-1 text-sm text-muted-foreground">אין משימות בתיק</p> : (
+          <ul className="mt-1 space-y-1 text-sm">{item.tasks.map((task) => <li key={task.id}>{task.title} · {task.assignee || "בלי מטפל"} · {task.dueOn || "בלי יעד"}</li>)}</ul>
+        )}
       </section>
       <section>
         <h3 className="text-sm font-semibold">מסמכים</h3>
+        {item.documents.length === 0 ? <p className="mt-1 text-sm text-muted-foreground">אין מסמכים בתיק</p> : (
         <ul className="mt-1 space-y-2 text-sm">
           {item.documents.map((doc) => (
             <li key={doc.id} className="flex items-center justify-between gap-2">
@@ -262,14 +265,19 @@ function CaseDetail({
             </li>
           ))}
         </ul>
+        )}
       </section>
       <section>
         <h3 className="text-sm font-semibold">הערות</h3>
-        <ul className="mt-1 space-y-1 text-sm">{item.notesList.map((note) => <li key={note.id}>{note.body} · {note.author}</li>)}</ul>
+        {item.notesList.length === 0 ? <p className="mt-1 text-sm text-muted-foreground">אין הערות בתיק</p> : (
+          <ul className="mt-1 space-y-1 text-sm">{item.notesList.map((note) => <li key={note.id}>{note.body} · {note.author}</li>)}</ul>
+        )}
       </section>
       <section>
         <h3 className="text-sm font-semibold">יומן</h3>
-        <ul className="mt-1 space-y-1 text-sm text-muted-foreground">{audit.map((entry) => <li key={entry.id}>{entry.summary}</li>)}</ul>
+        {audit.length === 0 ? <p className="mt-1 text-sm text-muted-foreground">אין אירועים ביומן</p> : (
+          <ul className="mt-1 space-y-1 text-sm text-muted-foreground">{audit.map((entry) => <li key={entry.id}>{entry.summary}</li>)}</ul>
+        )}
       </section>
       {canManage ? <form action={childAction} className="grid gap-2">
         <input type="hidden" name="caseId" value={item.id} />

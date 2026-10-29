@@ -808,7 +808,7 @@ function SummaryCube({
           : "bg-zinc-300";
 
   return (
-    <div className="relative overflow-hidden rounded-[var(--radius)] border border-border bg-card px-4 py-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:px-5">
+    <div className="app-surface relative overflow-hidden px-4 py-4 text-start sm:px-5">
       <span className={cn("absolute inset-y-0 start-0 w-1", accentClass)} />
       <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
       <p
