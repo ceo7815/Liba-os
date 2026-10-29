@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BadgeDollarSign } from "lucide-react";
+import { BadgeDollarSign, FileSpreadsheet } from "lucide-react";
+import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
 import { formatShemeshCount, formatShemeshDay, formatShemeshMoney, formatShemeshMonth } from "@/lib/shemesh/format";
 import {
@@ -72,14 +73,11 @@ export function GviyaScreen({
         description="דשבורד GVIYA. המכירות נספרות לפי תאריך העסקה, וההצלבה מול שורנס היא לקריאה בלבד."
         icon={BadgeDollarSign}
       >
-        <Panel title="אין דוח עדיין">
-          <p className="py-6 text-sm leading-relaxed text-muted-foreground">
-            לחצו «סנכרון מערכת» אחרי שקובץ דוח המכירות של שמש נמצא בנתיב של המשרד, או הגדירו
-            {" "}
-            <span className="font-mono text-xs">SHEMESH_EXCEL_LOCAL_PATH</span>
-            . הגיליון הרלוונטי הוא GVIYA. לא נטען כאן מידע לקוחות לדוגמה.
-          </p>
-        </Panel>
+        <ShemeshEmpty
+          icon={FileSpreadsheet}
+          title="הדוח עוד לא הגיע"
+          body="המסך נדלק מגיליון GVIYA שבקובץ המכירות של שמש, אחרי שהוא נשמר ב־shemesh_sales_workbooks. לחצו סנכרון מערכת, או הגדירו SHEMESH_EXCEL_LOCAL_PATH. אין כאן נתוני דוגמה."
+        />
       </ShemeshPage>
     );
   }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Sparkles } from "lucide-react";
 import { Panel, Stat } from "@/components/shemesh/widgets";
+import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { formatShemeshCount, formatShemeshMoney } from "@/lib/shemesh/format";
 import { jerusalemYmd } from "@/lib/sales-dashboard/campaign-math";
-import type { FacebookAdDailyMetric } from "@/lib/facebook-ads/client";
+import type { ShemeshStatRow } from "@/lib/shemesh/meta-report";
 
 const PERIODS = [
   { id: "month", label: "החודש" },
@@ -31,13 +32,15 @@ export function ShemeshMarketingReport({
 }: {
   accountId: string;
   error: string | null;
-  rows: FacebookAdDailyMetric[];
+  rows: ShemeshStatRow[];
 }) {
   const [period, setPeriod] = useState<PeriodId>("month");
   const today = jerusalemYmd();
   const visible = useMemo(() => rows.filter((row) => inPeriod(row.day, period, today)), [rows, period, today]);
-  const campaigns = rollup(visible, (row) => row.campaignName || row.campaignId);
-  const ads = rollup(visible, (row) => row.adName || row.adId);
+  const campaignRows = visible.filter((row) => row.grain !== "ad");
+  const adRows = visible.filter((row) => row.grain === "ad");
+  const campaigns = rollup(campaignRows.length ? campaignRows : visible, (row) => row.campaignName || row.campaignId);
+  const ads = rollup(adRows, (row) => row.adName || row.adId);
   const spend = visible.reduce((sum, row) => sum + row.cost, 0);
   const leads = visible.reduce((sum, row) => sum + row.leads, 0);
   const cpl = leads > 0 ? spend / leads : null;
@@ -79,27 +82,31 @@ export function ShemeshMarketingReport({
           <Stat label="צפי הוצאה לחודש" value={forecast == null ? "—" : formatShemeshMoney(forecast)} hint="ממוצע יומי כפול ימי החודש" />
         </div>
       </div>
-      {error ? (
-        <Panel title="החשבון לא נקרא">
-          <p className="py-3 text-sm text-muted-foreground">{error}</p>
-        </Panel>
-      ) : rows.length === 0 ? (
-        <Panel title="אין נתוני מודעות">
-          <p className="py-3 text-sm text-muted-foreground">
-            אחרי חיבור פייסבוק של ליבה, המסך קורא רק את חשבון שמש. חשבונות אחרים לא נספרים כאן.
-          </p>
-        </Panel>
+      {rows.length === 0 ? (
+        <ShemeshEmpty
+          icon={Megaphone}
+          title="אין עדיין מספרים לחשבון שמש"
+          body={error || "המסך קורא את facebook_ads_daily_stats רק לחשבון act_2542541459538449. אחרי סנכרון המערכת יופיעו כאן הוצאה, לידים ועלות לליד."}
+        />
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           <Rank title="קמפיינים" rows={campaigns} />
-          <Rank title="מודעות" rows={ads} />
+          {ads.length ? (
+            <Rank title="מודעות" rows={ads} />
+          ) : (
+            <ShemeshEmpty
+              icon={Sparkles}
+              title="פירוט מודעה עדיין לא שמור"
+              body="הקמפיינים למעלה הם מהנתונים השמורים. רמת המודעה תופיע כשתישמר באותו מסד, בלי קריאה חיה שמפילה את המסך."
+            />
+          )}
         </div>
       )}
     </section>
   );
 }
 
-function rollup(rows: FacebookAdDailyMetric[], key: (row: FacebookAdDailyMetric) => string) {
+function rollup(rows: ShemeshStatRow[], key: (row: ShemeshStatRow) => string) {
   const groups = new Map<string, { spend: number; leads: number }>();
   for (const row of rows) {
     const name = key(row) || "ללא שם";
@@ -118,7 +125,7 @@ function rollup(rows: FacebookAdDailyMetric[], key: (row: FacebookAdDailyMetric)
     .slice(0, 12);
 }
 
-function forecastMonth(rows: FacebookAdDailyMetric[], today: string): number | null {
+function forecastMonth(rows: ShemeshStatRow[], today: string): number | null {
   const month = today.slice(0, 7);
   const days = new Map<string, number>();
   for (const row of rows) {

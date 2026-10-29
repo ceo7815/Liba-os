@@ -1,6 +1,9 @@
 import { surenseConfigured, surenseFetch, surensePost } from "@/lib/surense/client";
 import { publicErrorText } from "@/lib/sync-log";
+import { isMissingRelation } from "@/lib/shemesh/db";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { SHEMESH_HANDLERS, SHEMESH_SUPPLIER_SOURCES } from "@/lib/shemesh/catalog";
+import { isShemeshSourceName } from "@/lib/finance/operating-brand";
 import { normKey, type GviyaDeal, type SheetContact } from "@/lib/shemesh/gviya";
 
 export type SurensePerson = {
@@ -136,5 +139,68 @@ export async function matchShemeshSurense(
     const message = publicErrorText(error instanceof Error ? error.message : "Surense לא זמין");
     console.error("[surense-sync] shemesh match failed", { message });
     return { ...EMPTY, configured: true, error: message };
+  }
+}
+
+function handlerMatches(value: string): boolean {
+  const key = normKey(value);
+  if (!key) return false;
+  return SHEMESH_HANDLERS.some((name) => key === normKey(name) || key.includes(normKey(name)));
+}
+
+function indexPeople(people: SurensePerson[], deals: GviyaDeal[], contacts: SheetContact[]): SurenseMatch {
+  const byName = new Set(people.map((person) => normKey(person.name)).filter(Boolean));
+  const dealMatched = new Set<string>();
+  for (const deal of deals) {
+    if (byName.has(normKey(deal.client))) dealMatched.add(deal.id);
+  }
+  const contactFound = new Set<string>();
+  for (const contact of contacts) {
+    if (contact.name && byName.has(normKey(contact.name))) contactFound.add(contact.id);
+  }
+  return { configured: true, error: null, scanned: people.length, dealMatched, contactFound };
+}
+
+/** Read-only match against the last stored Surense snapshot. Never calls Surense. */
+export async function matchStoredSnapshot(deals: GviyaDeal[], contacts: SheetContact[]): Promise<SurenseMatch> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("lead_control_snapshots")
+      .select("items")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) {
+      if (isMissingRelation(error.message)) {
+        return { ...EMPTY, error: "צילום שורנס עדיין לא קיים במסד. אחרי «סנכרון מערכת» תופיע כאן ההצלבה." };
+      }
+      return { ...EMPTY, configured: true, error: error.message };
+    }
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const people: SurensePerson[] = [];
+    for (const raw of items) {
+      if (!raw || typeof raw !== "object") continue;
+      const row = raw as { name?: unknown; source?: unknown; assignee?: unknown; kind?: unknown };
+      const name = typeof row.name === "string" ? row.name : "";
+      const source = typeof row.source === "string" ? row.source : "";
+      const handler = typeof row.assignee === "string" ? row.assignee : "";
+      const sourceOk = isShemeshSourceName(source);
+      const handlerOk = handlerMatches(handler);
+      if (source && handler && !(sourceOk && handlerOk)) continue;
+      if (!sourceOk && !handlerOk) continue;
+      if (!name) continue;
+      people.push({
+        name,
+        phone: "",
+        idNumber: "",
+        source,
+        handler,
+        kind: row.kind === "workflow" ? "process" : "lead",
+      });
+    }
+    return indexPeople(people, deals, contacts);
+  } catch (error) {
+    const message = publicErrorText(error instanceof Error ? error.message : "הצילום לא נקרא");
+    return { ...EMPTY, error: message };
   }
 }

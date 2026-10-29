@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { GviyaScreen } from "@/components/shemesh/gviya-screen";
 import { buildGviyaModel } from "@/lib/shemesh/gviya";
 import { loadShemeshSalesWorkbook } from "@/lib/shemesh/sales-workbook-store";
-import { matchShemeshSurense } from "@/lib/shemesh/surense-match";
+import { matchStoredSnapshot } from "@/lib/shemesh/surense-match";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "פדיונות · שמש" };
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "פדיונות · שמש" };
 export default async function ShemeshGviyaPage() {
   const stored = await loadShemeshSalesWorkbook().catch(() => null);
   const model = buildGviyaModel(stored);
-  const match = await matchShemeshSurense(model.deals, model.contacts);
+  const match = await matchStoredSnapshot(model.deals, model.contacts);
   const flag = (id: string, found: Set<string>) =>
     !match.configured ? "unchecked" : found.has(id) ? "matched" : "unmatched";
   return (

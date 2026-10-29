@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Scale } from "lucide-react";
+import { Scale, Upload } from "lucide-react";
+import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
@@ -108,12 +109,29 @@ export function TaxRefundsScreen({
       }
     >
       {rows.length === 0 ? (
-        <Panel title="אין דוח עדיין">
-          <p className="max-w-xl py-4 text-sm leading-relaxed text-muted-foreground">
-            העלו את «דוח החזרי מס» מתיקיית שמש תפעול, בקובץ Excel או CSV. המסך יישאר ריק עד אז.
-            לא נשמרים כאן נתוני דוגמה.
-          </p>
-        </Panel>
+        <ShemeshEmpty
+          icon={Upload}
+          title="עוד אין דוח החזרי מס"
+          body="העלו את הקובץ מתיקיית שמש תפעול, ב־Excel או CSV. הוא נשמר כמו דוח המכירות, בלי טבלה חדשה. עד אז המסך נשאר ריק בכוונה."
+          action={
+            <label className="inline-flex cursor-pointer">
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="sr-only"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void upload(file);
+                  event.target.value = "";
+                }}
+              />
+              <Button type="button" disabled={busy} asChild>
+                <span>{busy ? "מעלה…" : "העלאת דוח"}</span>
+              </Button>
+            </label>
+          }
+        />
       ) : (
         <>
           <div className="grid gap-3 lg:grid-cols-2">
