@@ -37,12 +37,17 @@ export const CASE_STAGES = [
 
 export type CaseStageId = (typeof CASE_STAGES)[number]["id"];
 
-export const ROADMAP = [
-  { stage: "10", title: "הוצאות קבועות", detail: "סעיפים ומחשבון, בלי סכומים אמיתיים בקוד" },
+export const ROADMAP: {
+  stage: string;
+  title: string;
+  detail: string;
+  href?: string;
+}[] = [
+  { stage: "10", href: "/shemesh/costs", title: "הוצאות קבועות", detail: "סעיפים ומחשבון, בלי סכומים אמיתיים בקוד" },
   { stage: "4", title: "קבלות ותיקייה", detail: "העלאת קבלות גוגל ופייסבוק והוצאות מהתיקייה" },
   { stage: "9", title: "ביטוח ונפרעים", detail: "התאמה מול חברות, בלי נוסחת עמלה עד אישור" },
   { stage: "11", title: "הכנסה והתחשבנות", detail: "גבייה, נפרעים, ומעבר מליבה לשמש" },
   { stage: "5", title: "עובדים ושכר", detail: "מבנה הסכם ומחשבון. בלי סכומי שכר בקוד" },
   { stage: "3", title: "היקף שורנס", detail: "אותה סוכנות או סוכנות נפרדת, לפי הגדרה" },
   { stage: "7", title: "תור החזרת לידים", detail: "תור ותבניות הודעה. בלי שליחה" },
-] as const;
+];

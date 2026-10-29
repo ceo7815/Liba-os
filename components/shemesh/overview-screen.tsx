@@ -75,14 +75,39 @@ export function ShemeshOverview({
       <Panel title="בהמשך">
         <ul className="grid gap-2 sm:grid-cols-2">
           {ROADMAP.map((item) => (
-            <li key={item.stage} className="rounded-xl border border-dashed border-black/10 px-3 py-3">
-              <p className="text-[11px] font-medium text-muted-foreground">שלב {item.stage} · בקרוב</p>
-              <p className="mt-1 text-sm font-semibold">{item.title}</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
+            <li key={item.stage}>
+              {item.href ? (
+                <Link href={item.href} className="block rounded-xl border border-black/[0.06] px-3 py-3 hover:bg-black/[0.02]">
+                  <RoadmapCopy item={item} />
+                </Link>
+              ) : (
+                <div className="rounded-xl border border-dashed border-black/10 px-3 py-3">
+                  <RoadmapCopy item={item} soon />
+                </div>
+              )}
             </li>
           ))}
         </ul>
       </Panel>
     </ShemeshPage>
+  );
+}
+
+function RoadmapCopy({
+  item,
+  soon,
+}: {
+  item: { stage: string; title: string; detail: string };
+  soon?: boolean;
+}) {
+  return (
+    <>
+      <p className="text-[11px] font-medium text-muted-foreground">
+        שלב {item.stage}
+        {soon ? " · בקרוב" : ""}
+      </p>
+      <p className="mt-1 text-sm font-semibold">{item.title}</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
+    </>
   );
 }

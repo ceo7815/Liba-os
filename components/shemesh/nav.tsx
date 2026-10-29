@@ -47,6 +47,7 @@ const SECTIONS: {
   {
     title: "מערכת",
     items: [
+      { href: "/shemesh/costs", label: "הוצאות קבועות", icon: Receipt },
       { href: "/shemesh/sources", label: "מקורות", icon: Cable },
       { href: "/shemesh/formulas", label: "נוסחאות שמש", icon: Calculator },
     ],
