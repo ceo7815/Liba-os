@@ -85,7 +85,6 @@ import {
   Money,
   type CampaignLineKind,
 } from "@/components/marketing-dashboard/campaign-dialog";
-import { Input } from "@/components/ui/input";
 import { GoogleAdsAccountPicker } from "@/components/marketing-dashboard/google-ads-panel";
 import { FacebookAdsAccountPicker, FacebookAdsMapper } from "@/components/marketing-dashboard/facebook-ads-panel";
 

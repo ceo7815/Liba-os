@@ -16,7 +16,6 @@ import {
 } from "@/lib/finance/categories";
 import { listFinanceFixedCosts } from "@/app/actions/finance-fixed-costs";
 import { DateRangeField } from "@/components/ui/date-range-field";
-import { Input } from "@/components/ui/input";
 
 export type ExpensesTab = "all" | "fixed" | "variable";
 
