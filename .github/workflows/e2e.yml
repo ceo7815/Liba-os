@@ -1,0 +1,33 @@
+name: e2e
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Route smoke is informational. A failure here does not block merge.
+jobs:
+  smoke:
+    name: route smoke (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Smoke Liba and Shemesh routes
+        run: npm run test:e2e
+        env:
+          CI: "true"
+          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VAULT_ENCRYPTION_KEY: ${{ secrets.VAULT_ENCRYPTION_KEY }}
