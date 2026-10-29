@@ -209,16 +209,16 @@ export async function downloadGraphDriveItem(driveId: string, itemId: string): P
   const token = await getGraphToken();
   const base = `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`;
   const headers = { Authorization: `Bearer ${token}` };
-  const metaRes = await fetch(`${base}?$select=name,eTag,lastModifiedDateTime`, { headers, cache: "no-store" });
+  const metaRes = await graphRequest(`${base}?$select=name,eTag,lastModifiedDateTime`, { headers });
   if (!metaRes.ok) {
     const text = await metaRes.text().catch(() => "");
-    throw new Error(`Graph item lookup failed (${metaRes.status}): ${text.slice(0, 200)}`);
+    throw new Error(publicErrorText(`Graph item lookup failed (${metaRes.status}): ${text.slice(0, 180)}`));
   }
   const meta = (await metaRes.json()) as { name?: string; eTag?: string; lastModifiedDateTime?: string };
-  const contentRes = await fetch(`${base}/content`, { headers, cache: "no-store" });
+  const contentRes = await graphRequest(`${base}/content`, { headers });
   if (!contentRes.ok) {
     const text = await contentRes.text().catch(() => "");
-    throw new Error(`Graph download failed (${contentRes.status}): ${text.slice(0, 200)}`);
+    throw new Error(publicErrorText(`Graph download failed (${contentRes.status}): ${text.slice(0, 180)}`));
   }
   return {
     buffer: await contentRes.arrayBuffer(),
@@ -226,4 +226,13 @@ export async function downloadGraphDriveItem(driveId: string, itemId: string): P
     etag: normalizeExcelEtag(meta.eTag),
     lastModified: meta.lastModifiedDateTime ?? null,
   };
+}
+
+/** Download one drive item by id. Does not use the Liba sales-file env vars. */
+export async function downloadDriveItem(
+  driveId: string,
+  itemId: string,
+): Promise<{ buffer: ArrayBuffer; fileName: string }> {
+  const file = await downloadGraphDriveItem(driveId, itemId);
+  return { buffer: file.buffer, fileName: file.fileName.trim() || "shemesh-sales.xlsx" };
 }

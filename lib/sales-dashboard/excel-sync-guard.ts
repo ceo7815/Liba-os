@@ -1,3 +1,4 @@
+import { SHEMESH_EXCEL_STORED_COPY_WARNING } from "@/lib/shemesh/sales-excel-source";
 import { publicErrorText } from "@/lib/sync-log";
 
 /** Why a forced Excel sync must not replace the numbers already on screen. */
@@ -33,4 +34,15 @@ export function shemeshExcelSyncFailure(
   if (status === 401) return http;
   const error = typeof body?.error === "string" ? body.error.trim() : "";
   return error ? publicErrorText(error) : http;
+}
+
+/** A 200 that kept the stored Shemesh file is not a refresh. */
+export function shemeshExcelStoredCopyWarning(
+  status: number,
+  body: { skipped?: boolean; warning?: string | null } | null | undefined,
+): string | null {
+  if (status < 200 || status >= 300) return null;
+  if (!body?.skipped) return null;
+  const warning = typeof body.warning === "string" ? body.warning.trim() : "";
+  return publicErrorText(warning || SHEMESH_EXCEL_STORED_COPY_WARNING);
 }
