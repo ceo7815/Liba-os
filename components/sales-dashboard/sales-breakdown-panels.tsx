@@ -163,7 +163,7 @@ export type EmployeePayBundle = {
   ads: AdsLeadSnapshot;
 };
 
-export function useEmployeePayBundle(): EmployeePayBundle {
+export function useEmployeePayBundle(enabled = true): EmployeePayBundle {
   const [employees, setEmployees] = useState<EmployeePayBundle["employees"]>([]);
   const [hours, setHours] = useState<EmployeeHoursRow[]>([]);
   const [alexander, setAlexander] = useState<Map<string, Record<string, number>>>(() => new Map());
@@ -172,6 +172,10 @@ export function useEmployeePayBundle(): EmployeePayBundle {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setReady(true);
+      return;
+    }
     let cancelled = false;
     void Promise.all([
       listFinanceEmployees(),
@@ -190,7 +194,7 @@ export function useEmployeePayBundle(): EmployeePayBundle {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
   return { ready, error, employees, hours, alexander, ads };
 }

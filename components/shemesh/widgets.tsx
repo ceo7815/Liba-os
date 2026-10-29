@@ -22,7 +22,7 @@ export function ShemeshPage({
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">שמש</p>
             <div className="mt-1 flex items-center gap-2.5">
-              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
+              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d7ecff] to-[#fff4c8] text-[#0b3a66]">
                 <Icon className="size-5" />
               </span>
               <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -42,7 +42,7 @@ export function ShemeshPage({
 
 export function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl bg-[#f4f7fb] px-4 py-3">
+    <div className="kpi-cube rounded-2xl px-4 py-3">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
       {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}
@@ -71,5 +71,10 @@ export function Panel({
 }
 
 export function EmptyLine({ children }: { children: React.ReactNode }) {
-  return <p className="py-8 text-center text-sm text-muted-foreground">{children}</p>;
+  return (
+    <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+      <span className="size-2 rounded-full bg-highlight" aria-hidden />
+      <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">{children}</p>
+    </div>
+  );
 }

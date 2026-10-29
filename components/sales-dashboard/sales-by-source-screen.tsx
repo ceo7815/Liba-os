@@ -226,7 +226,7 @@ function asSpendMap(value: unknown): Record<string, number> {
   return out;
 }
 
-export function SalesBySourceScreen() {
+export function SalesBySourceScreen({ preview = false }: { preview?: boolean } = {}) {
   const { brand, shemeshEmployeeNames } = useOperatingBrand();
   const { dashboard: liveDashboard, ready: liveReady } = useLiveDashboard();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -261,7 +261,7 @@ export function SalesBySourceScreen() {
   const rangeRef = useRef(rangeForPreset("month", { from: null, to: null }));
 
   const range = useMemo(() => rangeForPreset(preset, custom), [preset, custom]);
-  const employeePay = useEmployeePayBundle();
+  const employeePay = useEmployeePayBundle(!preview);
   rangeRef.current = range;
 
   const applyAds = useCallback((bundle: CachedAdsBundle, persist = true) => {
@@ -343,6 +343,10 @@ export function SalesBySourceScreen() {
   );
 
   useEffect(() => {
+    if (preview) {
+      setAdsReady(true);
+      return;
+    }
     const cached = readCachedAds();
     if (
       cached &&
@@ -367,9 +371,10 @@ export function SalesBySourceScreen() {
     return () => {
       cancelled = true;
     };
-  }, [loadAds, range.from, range.to]);
+  }, [loadAds, preview, range.from, range.to]);
 
   useEffect(() => {
+    if (preview) return;
     const onSync = () => {
       setQuietRefreshing(true);
       void loadAds(rangeRef.current)
@@ -381,10 +386,10 @@ export function SalesBySourceScreen() {
     };
     window.addEventListener(GLOBAL_SYNC_EVENT, onSync);
     return () => window.removeEventListener(GLOBAL_SYNC_EVENT, onSync);
-  }, [loadAds]);
+  }, [loadAds, preview]);
 
   useEffect(() => {
-    if (data || !liveReady) return;
+    if (preview || data || !liveReady) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -405,7 +410,7 @@ export function SalesBySourceScreen() {
     return () => {
       cancelled = true;
     };
-  }, [data, liveReady]);
+  }, [data, liveReady, preview]);
 
   const brandRows = useMemo(() => {
     const rows = data?.marketing?.productions ?? [];

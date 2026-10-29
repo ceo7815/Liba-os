@@ -101,9 +101,16 @@ async function fetchWorkbook(company: "liba" | "shemesh"): Promise<SalesWorkbook
 export function SalesExcelReportScreen({
   initial,
   company = "liba",
+  frozen = false,
+  initialSheet,
+  initialRowId,
 }: {
   initial?: SalesWorkbookPayload | null;
   company?: "liba" | "shemesh";
+  /** Dev preview. Keeps the supplied workbook and does not call the API. */
+  frozen?: boolean;
+  initialSheet?: string;
+  initialRowId?: string | null;
 }) {
   const { dashboard } = useLiveDashboard();
   const urlQuery = useSearchParams().get("q") ?? "";
@@ -111,7 +118,12 @@ export function SalesExcelReportScreen({
   const [loadState, setLoadState] = useState<"loading" | "ok" | "error">(
     initial?.sheets.length ? "ok" : "loading",
   );
-  const [sheetIndex, setSheetIndex] = useState(0);
+  const [sheetIndex, setSheetIndex] = useState(() => {
+    if (!initialSheet || !initial?.sheets.length) return 0;
+    const book = company === "shemesh" ? presentShemeshWorkbook(initial) : initial;
+    const index = book.sheets.findIndex((sheet) => sheet.name === initialSheet);
+    return index >= 0 ? index : 0;
+  });
   const [query, setQuery] = useState(urlQuery);
   const deferredQuery = useDeferredValue(query);
   const [sort, setSort] = useState<SortState>(null);
@@ -123,10 +135,17 @@ export function SalesExcelReportScreen({
   const [dateCol, setDateCol] = useState(-1);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialRowId ?? null);
   const [page, setPage] = useState(0);
 
   useEffect(() => {
+    if (frozen) {
+      if (initial?.sheets.length) {
+        setRemote(initial);
+        setLoadState("ok");
+      }
+      return;
+    }
     let cancelled = false;
     if (initial?.sheets.length) {
       setLoadState("ok");
@@ -155,7 +174,7 @@ export function SalesExcelReportScreen({
       cancelled = true;
       window.removeEventListener(GLOBAL_SYNC_EVENT, onSync);
     };
-  }, [initial, company]);
+  }, [initial, company, frozen]);
 
   const workbook = useMemo(() => {
     const raw = remote?.sheets?.length
@@ -196,6 +215,10 @@ export function SalesExcelReportScreen({
     setSelectedId(null);
     setPage(0);
   }, [sheetIndex]);
+
+  useEffect(() => {
+    if (initialRowId) setSelectedId(initialRowId);
+  }, [initialRowId]);
 
   const statusCol = sheet ? findHeaderIndex(sheet.headers, "סטאטוס", "סטטוס") : -1;
   const processCol = sheet ? findHeaderIndex(sheet.headers, "סוג תהליך", "תהליך") : -1;

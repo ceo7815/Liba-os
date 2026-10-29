@@ -194,8 +194,11 @@ function MetricTile({
 
 export function PayrollScreen({
   initialEmployees,
+  preview = false,
 }: {
   initialEmployees: FinanceEmployee[];
+  /** Dev preview. Keeps the supplied people and does not call payroll APIs. */
+  preview?: boolean;
 }) {
   const { brand } = useOperatingBrand();
   const [employees, setEmployees] = useState(initialEmployees);
@@ -206,7 +209,7 @@ export function PayrollScreen({
   );
   const [ads, setAds] = useState<AdsLeadSnapshot>(EMPTY_ADS_LEAD_SNAPSHOT);
   const [syncedAt, setSyncedAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!preview);
   const [preset, setPreset] = useState<PayrollPreset>("this_month");
   const [pickedMonth, setPickedMonth] = useState(() => jerusalemYmd().slice(0, 7));
   const [pickedYear, setPickedYear] = useState(() => jerusalemYmd().slice(0, 4));
@@ -263,21 +266,24 @@ export function PayrollScreen({
   }, [applyDashboard, liveDashboard, liveReady]);
 
   useEffect(() => {
+    if (preview) return;
     void loadPeople();
-  }, [loadPeople]);
+  }, [loadPeople, preview]);
 
   useEffect(() => {
+    if (preview) return;
     void loadAdsLeadSnapshot().then(setAds).catch(() => setAds(EMPTY_ADS_LEAD_SNAPSHOT));
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
+    if (preview) return;
     const onGlobalSync = () => {
       void loadPeople();
       void loadAdsLeadSnapshot().then(setAds).catch(() => setAds(EMPTY_ADS_LEAD_SNAPSHOT));
     };
     window.addEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
     return () => window.removeEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
-  }, [loadPeople]);
+  }, [loadPeople, preview]);
 
   const activityMonths = useMemo(() => {
     const contracts = employees.flatMap((emp) => [

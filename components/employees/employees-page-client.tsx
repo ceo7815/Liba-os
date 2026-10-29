@@ -34,8 +34,11 @@ import { Button } from "@/components/ui/button";
 
 export function EmployeesPageClient({
   initialEmployees,
+  preview = false,
 }: {
   initialEmployees: FinanceEmployee[];
+  /** Dev preview. Keeps the supplied cards and does not call people APIs. */
+  preview?: boolean;
 }) {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [employees, setEmployees] = useState(initialEmployees);
@@ -47,7 +50,7 @@ export function EmployeesPageClient({
     () => new Map(),
   );
   const [ads, setAds] = useState<AdsLeadSnapshot>(EMPTY_ADS_LEAD_SNAPSHOT);
-  const [wageLoading, setWageLoading] = useState(true);
+  const [wageLoading, setWageLoading] = useState(!preview);
   const [syncing, startSync] = useTransition();
   const { dashboard: liveDashboard, ready: liveReady } = useLiveDashboard();
 
@@ -169,28 +172,34 @@ export function EmployeesPageClient({
   }, []);
 
   useEffect(() => {
+    if (preview) return;
     void listFinanceEmployees().then((list) => {
       if (!list.error) setEmployees(list.employees);
     });
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
+    if (preview) return;
     void loadRates();
-  }, [loadRates]);
+  }, [loadRates, preview]);
 
   useEffect(() => {
+    if (preview) return;
     void reloadHours();
-  }, [reloadHours]);
+  }, [reloadHours, preview]);
 
   useEffect(() => {
+    if (preview) return;
     void reloadAlexander();
-  }, [reloadAlexander]);
+  }, [reloadAlexander, preview]);
 
   useEffect(() => {
+    if (preview) return;
     void loadAdsLeadSnapshot().then(setAds).catch(() => setAds(EMPTY_ADS_LEAD_SNAPSHOT));
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
+    if (preview) return;
     const onGlobalSync = () => {
       void listFinanceEmployees().then((list) => {
         if (!list.error) setEmployees(list.employees);
@@ -202,7 +211,7 @@ export function EmployeesPageClient({
     };
     window.addEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
     return () => window.removeEventListener(GLOBAL_SYNC_EVENT, onGlobalSync);
-  }, [loadRates, reloadHours, reloadAlexander]);
+  }, [loadRates, preview, reloadHours, reloadAlexander]);
 
   const syncedAtLabel = formatLastUpdatedAt(dashboard?.syncedAt);
 

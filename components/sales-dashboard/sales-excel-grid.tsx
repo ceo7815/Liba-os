@@ -37,11 +37,11 @@ const MAX_COL = 560;
 
 const PILL_CLASS: Record<CellTone, string> = {
   none: "",
-  active: "bg-emerald-50 text-emerald-800",
-  cancelled: "bg-rose-50 text-rose-800",
-  pending: "bg-amber-50 text-amber-900",
-  sale: "bg-sky-50 text-sky-900",
-  settled: "bg-violet-50 text-violet-800",
+  active: "status-chip status-chip-ok",
+  cancelled: "status-chip status-chip-bad",
+  pending: "status-chip status-chip-wait",
+  sale: "status-chip status-chip-info",
+  settled: "status-chip status-chip-info",
 };
 
 function uniqueColumnValues(rows: WorkbookRow[], col: number): [string, number][] {
@@ -135,10 +135,7 @@ const ExcelRow = memo(function ExcelRow({
           >
             {tone !== "none" && value ? (
               <span
-                className={cn(
-                  "max-w-full truncate rounded-full px-2 py-0.5 text-[12px] font-medium leading-5",
-                  PILL_CLASS[tone],
-                )}
+                className={cn("max-w-full truncate", PILL_CLASS[tone])}
               >
                 {shown}
               </span>
@@ -239,7 +236,7 @@ const GridHeader = memo(function GridHeader({
     <>
       <div
         role="row"
-        className="sticky top-0 z-20 flex border-b border-border bg-card text-[12px] font-medium text-[#6d6d66]"
+        className="sticky top-0 z-20 flex border-b border-border bg-white/85 text-[12px] font-medium text-[#6d6d66] backdrop-blur-md"
         style={{ height: HEADER_H, width: totalWidth }}
       >
         <div

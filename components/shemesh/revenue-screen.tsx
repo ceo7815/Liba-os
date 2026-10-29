@@ -68,10 +68,10 @@ function isDateHeader(header: string): boolean {
 
 function statusClass(value: string): string {
   const tone = cellTone("סטטוס", value);
-  if (tone === "active") return "bg-emerald-50 text-emerald-800";
-  if (tone === "cancelled") return "bg-rose-50 text-rose-800";
-  if (tone === "pending") return "bg-amber-50 text-amber-900";
-  return "bg-[#f3f2ee] text-[#3f3f3a]";
+  if (tone === "active") return "status-chip status-chip-ok";
+  if (tone === "cancelled") return "status-chip status-chip-bad";
+  if (tone === "pending") return "status-chip status-chip-wait";
+  return "status-chip status-chip-muted";
 }
 
 function uniqueValues(rows: RevenueRow[], index: number): string[] {
@@ -632,8 +632,8 @@ function LedgerTable({
         <p className="text-xs text-muted-foreground tabular-nums">{total.toLocaleString("he-IL")} שורות</p>
       </div>
       <div className="max-h-[36rem] overflow-auto">
-        <table className="w-full min-w-[52rem] border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-white">
+        <table className="data-sheet w-full min-w-[52rem] border-collapse text-sm">
+          <thead className="sticky top-0 z-10 bg-white/80 backdrop-blur-md">
             <tr className="border-b border-black/[0.06] text-xs text-muted-foreground">
               {ledger.show.map((index) => {
                 const header = ledger.headers[index] ?? "";
@@ -652,7 +652,7 @@ function LedgerTable({
           <tbody>
             {rows.length ? (
               rows.map((row) => (
-                <tr key={row.id} className="border-b border-black/[0.04] odd:bg-[#fafaf8]">
+                <tr key={row.id} className="border-b border-black/[0.04] transition-colors hover:bg-highlight/10">
                   {ledger.show.map((index) => {
                     const header = ledger.headers[index] ?? "";
                     const value = row.cells[index] ?? "";
