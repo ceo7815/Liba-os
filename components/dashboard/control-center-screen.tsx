@@ -46,17 +46,20 @@ function SalesSpark({ counts }: { counts: number[] }) {
   const max = Math.max(...counts, 1);
   const min = Math.min(...counts);
   const span = max - min || 1;
-  const d = counts
-    .map((value, index) => {
-      const x = (index / (counts.length - 1)) * width;
-      const y = height - 3 - ((value - min) / span) * (height - 6);
-      return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
+  const points = counts.map((value, index) => {
+    const x = (index / (counts.length - 1)) * width;
+    const y = height - 3 - ((value - min) / span) * (height - 6);
+    return { x, y };
+  });
+  const d = points
+    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
     .join(" ");
+  const area = `${d} L${width} ${height} L0 ${height} Z`;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="chart-draw mt-2 h-6 w-[4.75rem]" role="img" aria-label="מגמת המכירות השמורה">
-      <path d={d} fill="none" stroke="hsl(var(--highlight))" strokeWidth="1.75" strokeLinecap="round" />
+    <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-6 w-[4.75rem]" role="img" aria-label="מגמת המכירות השמורה">
+      <path d={area} fill="hsl(var(--highlight) / 0.28)" />
+      <path d={d} pathLength={100} fill="none" stroke="hsl(var(--highlight))" strokeWidth="1.75" strokeLinecap="round" className="chart-line" />
     </svg>
   );
 }
@@ -313,7 +316,7 @@ export function ControlCenterScreen() {
             className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-highlight/15"
           >
             <span className="text-muted-foreground">בתהליך</span>
-            <span className="font-semibold tabular-nums text-amber-800">
+            <span className="font-semibold tabular-nums text-warning">
               {snap.pendingInMonth.toLocaleString("he-IL")}
             </span>
           </button>

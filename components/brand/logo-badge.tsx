@@ -33,7 +33,7 @@ export function LogoBadge({
           alt="ליבה"
           width={640}
           height={220}
-          className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+          className="brand-mark h-auto w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
           priority
         />
       </Link>
@@ -55,7 +55,7 @@ export function LogoBadge({
             alt="ליבה"
             width={220}
             height={72}
-            className="h-11 w-auto max-w-[11.5rem] object-contain object-center"
+            className="brand-mark h-11 w-auto max-w-[11.5rem] object-contain object-center"
             priority
           />
         </span>
@@ -78,7 +78,7 @@ export function LogoBadge({
             alt="ליבה"
             width={320}
             height={120}
-            className="h-16 w-auto max-w-[15rem] object-contain object-center"
+            className="brand-mark h-16 w-auto max-w-[15rem] object-contain object-center"
             priority
           />
         </div>
@@ -100,7 +100,7 @@ export function LogoBadge({
         width={compact ? 160 : 200}
         height={compact ? 56 : 64}
         className={cn(
-          "object-contain object-center",
+          "brand-mark object-contain object-center",
           compact ? "h-11 w-auto max-w-[9rem]" : "h-12 w-auto max-w-[11rem]",
         )}
         priority

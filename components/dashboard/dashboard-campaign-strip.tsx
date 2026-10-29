@@ -55,7 +55,7 @@ export function DashboardCampaignStrip() {
   const formPrice = pulse.facebookForms > 0 ? pulse.facebookSpend / pulse.facebookForms : null;
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-card sm:rounded-[var(--radius)]">
+    <section className="glass overflow-hidden rounded-lg sm:rounded-[var(--radius)]">
       <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2 sm:px-5">
         <div>
           <h2 className="text-sm font-semibold tracking-tight">קמפיינים של ליבה</h2>

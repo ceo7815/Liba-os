@@ -156,7 +156,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
         className,
       )}
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.15rem] border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-card">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.35rem] border border-black/[0.06] bg-white/70 text-sidebar-foreground shadow-card backdrop-blur-xl backdrop-saturate-150">
       <div className="flex flex-col items-center px-5 pb-5 pt-7">
         <LogoBadge centered className="w-full" />
         <div className="mt-5 h-px w-full bg-sidebar-border">

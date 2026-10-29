@@ -301,7 +301,7 @@ export function CampaignsScreen({
       </header>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 rounded-full bg-[#f6f5f1] p-1" role="tablist" aria-label="ערוץ">
+        <div className="segment flex items-center gap-1 rounded-full p-1" role="tablist" aria-label="ערוץ">
           {(
             [
               ["all", "הכל"],
@@ -327,7 +327,7 @@ export function CampaignsScreen({
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-1 rounded-full bg-[#f6f5f1] p-1">
+        <div className="segment flex flex-wrap items-center gap-1 rounded-full p-1">
           {(
             [
               ["today", "היום"],
@@ -413,7 +413,7 @@ export function CampaignsScreen({
             <h2 className="text-sm font-semibold">קמפיינים</h2>
             <p className="text-xs text-muted-foreground">לחיצה על שורה פותחת את הפירוק היומי ואת החישוב.</p>
           </div>
-          <div className="flex gap-1 rounded-full bg-[#f6f5f1] p-1">
+          <div className="segment flex gap-1 rounded-full p-1">
             {(
               [
                 ["spent", "עם הוצאה"],
@@ -427,7 +427,7 @@ export function CampaignsScreen({
                 onClick={() => setListMode(id)}
                 className={cn(
                   "h-7 rounded-full px-3 text-xs",
-                  listMode === id ? "bg-card font-medium text-[#1a1a1a]" : "text-muted-foreground",
+                  listMode === id ? "bg-card font-medium text-foreground" : "text-muted-foreground",
                 )}
               >
                 {label}

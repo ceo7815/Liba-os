@@ -206,6 +206,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
 
       <div className="rounded-lg border border-border bg-card">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-3">
+          <div className="segment flex items-center gap-1 rounded-full p-1">
           {BOARDS.map((item) => (
             <button
               key={item.id}
@@ -219,7 +220,8 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
               {item.label}
             </button>
           ))}
-          <span className="mx-1 hidden h-5 w-px bg-black/10 sm:block" />
+          </div>
+          <div className="segment flex items-center gap-1 rounded-full p-1">
           {(
             [
               ["overdue", "לא תקין"],
@@ -239,6 +241,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
               {label}
             </button>
           ))}
+          </div>
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}

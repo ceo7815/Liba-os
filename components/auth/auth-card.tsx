@@ -27,6 +27,7 @@ export function AuthCard({
     >
       <AuthAtmosphere tone={isShemesh ? "shemesh" : "liba"} />
       <span aria-hidden className="brand-beam" />
+      <span aria-hidden className="brand-beam brand-beam-far" />
 
       <div className="relative z-10 w-full max-w-[440px]">
         {brand === "chooser" ? (
@@ -34,7 +35,10 @@ export function AuthCard({
         ) : (
         <div className="auth-brand mb-6 flex justify-center px-2">
           <div className="relative w-full max-w-[300px]">
-            <p className="auth-kicker mb-3 text-center">{isShemesh ? "שמש" : "ליבה"}</p>
+            <p className="auth-kicker mb-1 text-center">{isShemesh ? "שמש" : "ליבה"}</p>
+            <p className="auth-tagline mb-3 text-center text-xs font-medium text-muted-foreground">
+              {isShemesh ? "מימוש זכויות" : "ביטוח ופיננסים"}
+            </p>
             {isShemesh ? (
               <span className="logo-plate relative z-10 mx-auto flex justify-center rounded-lg px-4 py-2">
                 <Image
@@ -59,7 +63,7 @@ export function AuthCard({
         >
           <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-highlight" />
           <div className="mb-6 text-center">
-            <h1 className="text-[1.65rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-[2rem] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-4xl">
               {title}
             </h1>
             {description && (
