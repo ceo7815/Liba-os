@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { reapStaleAgentRuns } from "@/lib/agents/reap-stale-runs";
+import { hasProcessablePendingCalls } from "@/lib/call-control/pending-work";
 import type { AuthenticatedAgent } from "@/lib/mcp/auth";
 import { executeSocialTool, SOCIAL_MCP_TOOLS } from "@/lib/mcp/social-tools";
 
@@ -168,6 +170,7 @@ async function pollWork(
   agent: AuthenticatedAgent,
   params: Params,
 ): Promise<McpResult> {
+  await reapStaleAgentRuns(admin);
   agent = await resolveTargetAgent(admin, agent, params);
 
   const { data, error } = await admin.rpc("claim_queued_agent_run", {
@@ -199,6 +202,7 @@ async function heartbeat(
   agent: AuthenticatedAgent,
   params: Params,
 ): Promise<McpResult> {
+  await reapStaleAgentRuns(admin);
   agent = await resolveTargetAgent(admin, agent, params);
 
   const status = str(params.status, "status");
@@ -223,6 +227,7 @@ async function startRun(
   agent: AuthenticatedAgent,
   params: Params,
 ): Promise<McpResult> {
+  await reapStaleAgentRuns(admin);
   agent = await resolveTargetAgent(admin, agent, params);
 
   const existingRunId = optStr(params.run_id);
@@ -279,6 +284,42 @@ async function startRun(
   }
 
   const trigger = str(params.trigger, "trigger");
+
+  if (trigger === "os_pending" && agent.agentSlug === "call-control") {
+    const workable = await hasProcessablePendingCalls(admin);
+    if (!workable) {
+      return {
+        ok: true,
+        data: {
+          created: false,
+          skipped: true,
+          reason: "no_pending_calls_with_audio_or_transcript",
+        },
+      };
+    }
+
+    const { data: openPending } = await admin
+      .from("agent_runs")
+      .select("id, started_at, status, trigger")
+      .eq("agent_id", agent.agentId)
+      .eq("status", "running")
+      .eq("trigger", "os_pending")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (openPending) {
+      return {
+        ok: true,
+        data: {
+          run_id: openPending.id,
+          started_at: openPending.started_at,
+          status: openPending.status,
+          resumed: true,
+          trigger: openPending.trigger,
+        },
+      };
+    }
+  }
 
   // Reuse an OS-created running upload run so we don't open a second run.
   const { data: activeRunning } = await admin

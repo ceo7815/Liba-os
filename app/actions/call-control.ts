@@ -1,5 +1,6 @@
 "use server";
 
+import { reapStaleAgentRuns } from "@/lib/agents/reap-stale-runs";
 import {
   emptyOutcomeTimes,
   loadVoicenterCdrHealth,
@@ -174,6 +175,7 @@ export async function getCallControlManagement(): Promise<{
     cdrLastByOutcome: emptyOutcomeTimes(),
   };
   const admin = createAdminClient();
+  await reapStaleAgentRuns(admin);
   const cdr = await loadVoicenterCdrHealth(admin);
   const { data: agent, error: agentError } = await admin
     .from("agents")
