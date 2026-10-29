@@ -92,12 +92,15 @@ export function Stat({
 
 export function ShemeshSkeleton() {
   return (
-    <div className="mx-auto max-w-[72rem] space-y-4" aria-busy="true" aria-live="polite">
-      <div className="glass h-36 animate-pulse" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="glass h-28 animate-pulse" />
-        <div className="glass h-28 animate-pulse" />
+    <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <div className="skeleton h-8 w-40 rounded-full" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="skeleton h-28 rounded-[20px]" />
+        <div className="skeleton h-28 rounded-[20px]" />
+        <div className="skeleton h-28 rounded-[20px]" />
+        <div className="skeleton h-28 rounded-[20px]" />
       </div>
+      <div className="skeleton h-64 rounded-[20px]" />
     </div>
   );
 }

@@ -29,7 +29,7 @@ export function AcademyPath({
                   ? "bg-foreground text-white"
                   : current
                     ? "bg-highlight text-black"
-                    : "bg-black/[0.06] text-muted-foreground",
+                    : "bg-border text-muted-foreground",
               )}
             >
               {index + 1}

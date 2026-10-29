@@ -89,7 +89,7 @@ export function FacebookAdsMapper({
 
   if (!connection.oauthReady && !connection.connected) {
     return (
-      <div className="rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
+      <div className="rounded-xl border border-border bg-background p-4 text-sm">
         <p className="font-semibold">פייסבוק מודעות</p>
         <p className="mt-1 text-muted-foreground">
           בשרת חסרים FACEBOOK_APP_ID ו-FACEBOOK_APP_SECRET. אחרי שמזינים אותם יופיע כפתור
@@ -101,7 +101,7 @@ export function FacebookAdsMapper({
 
   if (!connection.connected) {
     return (
-      <div className="rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
+      <div className="rounded-xl border border-border bg-background p-4 text-sm">
         <p className="font-semibold">פייסבוק מודעות</p>
         <p className="mt-1 text-muted-foreground">
           מחברים את חשבון המודעות, ואז משייכים כל קמפיין לקוביה מדויקת.
@@ -124,7 +124,7 @@ export function FacebookAdsMapper({
   const mapped = visibleCampaigns.length - unmapped;
 
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-background p-4">
+    <div className="rounded-xl border border-border bg-background p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold">שיוך קמפייני פייסבוק לקוביות</p>
@@ -183,7 +183,7 @@ export function FacebookAdsMapper({
         <div className="mt-3 -mx-1 overflow-x-auto overscroll-x-contain">
           <table className="w-max min-w-full text-sm">
             <thead>
-              <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
                 <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">קמפיין פייסבוק</th>
                 <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">ID</th>
                 <th className="whitespace-nowrap px-2 py-2 text-start font-semibold">סטטוס</th>
@@ -213,7 +213,7 @@ export function FacebookAdsMapper({
                     </td>
                     <td className="px-2 py-3">
                       <select
-                        className="h-10 min-w-[9.5rem] max-w-[16rem] rounded-xl border border-black/[0.12] bg-white px-2.5 text-xs sm:h-8 sm:rounded-md"
+                        className="h-10 min-w-[9.5rem] max-w-[16rem] rounded-xl border border-border bg-card px-2.5 text-xs sm:h-8 sm:rounded-md"
                         disabled={pending}
                         value={row.sourceName ?? ""}
                         onChange={(event) => {
@@ -279,7 +279,7 @@ export function FacebookAdsCubePanel({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <tr className="border-b border-border text-[11px] text-muted-foreground">
               <th className="py-2 text-start font-semibold">שם קמפיין</th>
               <th className="py-2 text-start font-semibold">ID</th>
               <th className="py-2 text-start font-semibold">סטטוס</th>
@@ -307,7 +307,7 @@ export function FacebookAdsCubePanel({
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-black/[0.12] text-sm font-semibold">
+            <tr className="border-t border-border text-sm font-semibold">
               <td className="py-3" colSpan={3}>
                 סה״כ {mapped.length} קמפיינים
               </td>
@@ -342,7 +342,7 @@ export function FacebookAdsAccountPicker({ onChanged }: { onChanged: () => void 
   }
 
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
+    <div className="rounded-xl border border-border bg-background p-4 text-sm">
       <p className="font-semibold">בחירת חשבון מודעות</p>
       <p className="mt-1 text-muted-foreground">יש כמה חשבונות בפייסבוק. בחרו את חשבון ליבה.</p>
       {accounts == null ? (
@@ -358,7 +358,7 @@ export function FacebookAdsAccountPicker({ onChanged }: { onChanged: () => void 
               <button
                 type="button"
                 disabled={pending}
-                className="w-full rounded-lg border border-black/[0.08] px-3 py-2 text-start hover:bg-black/[0.03]"
+                className="w-full rounded-lg border border-border px-3 py-2 text-start hover:bg-muted"
                 onClick={() => {
                   startTransition(() => {
                     void saveFacebookAdAccount(account.id, account.name).then((saved) => {

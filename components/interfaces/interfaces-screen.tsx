@@ -17,7 +17,7 @@ export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
   const connected = items.filter((item) => item.connected).length;
 
   return (
-    <section className="mx-auto max-w-[72rem] space-y-6" dir="rtl">
+    <section className="w-full space-y-6" dir="rtl">
       <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
         <p className="text-xs font-medium text-muted-foreground">מערכת</p>
         <div className="mt-1 flex items-center gap-2.5">
@@ -63,17 +63,17 @@ export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
               key={item.id}
               href={item.href}
               className={cn(
-                "group flex min-h-44 flex-col rounded-[1.5rem] border bg-white p-5 shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-colors",
+                "group flex min-h-44 flex-col rounded-lg border bg-card p-5 shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-colors",
                 item.connected
                   ? "border-emerald-200/80 hover:border-emerald-300"
-                  : "border-black/[0.06] hover:border-black/15",
+                  : "border-border hover:border-black/15",
               )}
             >
               <div className="flex items-start justify-between gap-3">
                 <span
                   className={cn(
                     "inline-flex size-11 items-center justify-center rounded-2xl",
-                    item.connected ? "bg-emerald-50 text-emerald-800" : "bg-black/[0.04] text-black/40",
+                    item.connected ? "bg-emerald-50 text-emerald-800" : "bg-muted text-muted-foreground",
                   )}
                 >
                   <Icon className="size-5" />
@@ -81,7 +81,7 @@ export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
                 <span
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium",
-                    item.connected ? "bg-emerald-50 text-emerald-800" : "bg-black/[0.04] text-black/45",
+                    item.connected ? "bg-emerald-50 text-emerald-800" : "bg-muted text-black/45",
                   )}
                 >
                   <span

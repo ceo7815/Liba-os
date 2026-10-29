@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { Aurora } from "@/components/brand/aurora";
 import { Toaster } from "@/components/ui/sonner";
 import { LiveDashboardProvider } from "@/components/layout/live-dashboard-provider";
+import { RouteEnter } from "@/components/layout/route-enter";
 import { ShemeshMobileDock } from "@/components/shemesh/mobile-dock";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { ShemeshBreadcrumbs } from "@/components/shemesh/breadcrumbs";
@@ -12,7 +14,6 @@ import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
 import { ShemeshTheme } from "@/components/shemesh/theme";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
 import { ShemeshSkeleton } from "@/components/shemesh/widgets";
-import { redirect } from "next/navigation";
 import { shemeshProfile } from "@/lib/shemesh/actor";
 import { canViewShemesh } from "@/lib/permissions/access";
 import { assessShemeshSources } from "@/lib/shemesh/connectors";
@@ -107,18 +108,20 @@ export default async function ShemeshLayout({
           <div className="print:hidden">
             <ShemeshTopbar profile={profile} />
           </div>
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-3 py-4 sm:px-6 sm:py-5 print:block print:h-auto print:overflow-visible print:p-0">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-4 py-6 sm:px-6 lg:py-8 print:block print:h-auto print:overflow-visible print:p-0">
             <ShemeshBreadcrumbs />
-            <Suspense fallback={<ShemeshSkeleton />}>
-              <ShemeshPulseProvider pulse={live}>
-                <ShemeshSourceProvider sources={sources}>{children}</ShemeshSourceProvider>
-              </ShemeshPulseProvider>
-            </Suspense>
+            <RouteEnter>
+              <Suspense fallback={<ShemeshSkeleton />}>
+                <ShemeshPulseProvider pulse={live}>
+                  <ShemeshSourceProvider sources={sources}>{children}</ShemeshSourceProvider>
+                </ShemeshPulseProvider>
+              </Suspense>
+            </RouteEnter>
           </main>
           <ShemeshMobileDock />
         </div>
       </div>
-      <Toaster dir="rtl" theme="light" position="top-center" />
+      <Toaster dir="rtl" position="top-center" />
     </LiveDashboardProvider>
   );
 }

@@ -74,6 +74,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DateField } from "@/components/ui/date-range-field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
@@ -407,10 +408,10 @@ export function EmployeeCardDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-[1.25rem] border-black/[0.08] p-0 text-start shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] data-[state=closed]:slide-out-to-left-0 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-[min(52rem,calc(100dvh-1.5rem))] sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,64rem)] sm:max-w-none sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]"
+        className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-lg border-border p-0 text-start shadow-[0_24px_80px_-24px_rgba(17,17,17,0.45)] data-[state=closed]:slide-out-to-left-0 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-[min(52rem,calc(100dvh-1.5rem))] sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,64rem)] sm:max-w-none sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]"
         dir="rtl"
       >
-        <DialogHeader className="shrink-0 space-y-3 border-b border-black/[0.06] px-4 pb-3 pt-4 text-start sm:space-y-4 sm:px-6 sm:pb-4 sm:pt-5">
+        <DialogHeader className="shrink-0 space-y-3 border-b border-border px-4 pb-3 pt-4 text-start sm:space-y-4 sm:px-6 sm:pb-4 sm:pt-5">
           <div className="pe-8">
             <DialogTitle className="text-xl font-semibold tracking-tight sm:text-2xl">
               {emp.full_name}
@@ -441,7 +442,7 @@ export function EmployeeCardDialog({
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {tab === "review" ? (
             <div className="space-y-5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-6">
-              <section className="grid gap-2 rounded-2xl border border-black/[0.06] bg-muted/15 p-4 sm:grid-cols-2 lg:grid-cols-4">
+              <section className="grid gap-2 rounded-2xl border border-border bg-muted/15 p-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   ["מחלקה", emp.department],
                   ["מעגל", emp.wait_circle],
@@ -634,7 +635,7 @@ export function EmployeeCardDialog({
                                 className={cn(
                                   "flex h-full w-8 shrink-0 items-center justify-center",
                                   active
-                                    ? "text-white/80 hover:bg-white/15 hover:text-white"
+                                    ? "text-white/80 hover:bg-card/15 hover:text-white"
                                     : "hover:bg-black/10 hover:text-foreground",
                                 )}
                               >
@@ -651,20 +652,10 @@ export function EmployeeCardDialog({
                   <>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field label="מתאריך" hint="ריק = מתחילת האקסל">
-                        <Input
-                          type="date"
-                          className="h-11 rounded-xl tabular-nums"
-                          value={selected.from}
-                          onChange={(e) => patchAgreement(selected.id, { from: e.target.value })}
-                        />
+                        <DateField value={selected.from} onChange={(iso) => patchAgreement(selected.id, { from: iso })} />
                       </Field>
                       <Field label="עד תאריך" hint="ריק = בתוקף עד היום">
-                        <Input
-                          type="date"
-                          className="h-11 rounded-xl tabular-nums"
-                          value={selected.to}
-                          onChange={(e) => patchAgreement(selected.id, { to: e.target.value })}
-                        />
+                        <DateField value={selected.to} onChange={(iso) => patchAgreement(selected.id, { to: iso })} />
                       </Field>
                     </div>
 
@@ -741,7 +732,7 @@ export function EmployeeCardDialog({
                 )}
               </div>
 
-              <aside className="space-y-4 border-t border-black/[0.06] bg-muted/20 p-4 sm:p-5 lg:border-t-0 lg:border-s">
+              <aside className="space-y-4 border-t border-border bg-muted/20 p-4 sm:p-5 lg:border-t-0 lg:border-s">
                 <div>
                   <p className="text-xs text-muted-foreground">
                     {kind === "unpaid" ? "שכר לעובד" : kind === "partnership" ? "תשלום לשותף" : "שכר ששולם"}
@@ -937,7 +928,7 @@ export function EmployeeCardDialog({
           ) : null}
         </div>
 
-        <DialogFooter className="shrink-0 flex-col gap-2 border-t border-black/[0.06] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:space-x-0 sm:px-6 sm:py-4 sm:pb-4">
+        <DialogFooter className="shrink-0 flex-col gap-2 border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:space-x-0 sm:px-6 sm:py-4 sm:pb-4">
           <div className="order-2 flex w-full items-center sm:order-1 sm:w-auto">
             {onDelete ? (
               <Button
@@ -1206,7 +1197,7 @@ function SalariedFields({
     agreementFrom,
   });
   return (
-    <section className="space-y-3 rounded-2xl border border-black/[0.06] bg-muted/15 p-4">
+    <section className="space-y-3 rounded-2xl border border-border bg-muted/15 p-4">
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm leading-relaxed text-amber-950">
         שכיר לא מקבל נפרעים. אין עמלת מינוי סוכן ואין שדות נפרעים. השכר נכנס רק להיקף.
       </div>
@@ -1795,7 +1786,7 @@ function FreelancerFields({
   const effective = spec?.settledPercent ?? 0;
 
   return (
-    <section className="space-y-3 rounded-2xl border border-black/[0.06] bg-muted/15 p-4">
+    <section className="space-y-3 rounded-2xl border border-border bg-muted/15 p-4">
       <div>
         <h3 className="text-sm font-semibold">הסכם עצמאי</h3>
         <p className="text-[11px] text-muted-foreground">
@@ -1861,7 +1852,7 @@ function FreelancerFields({
         </Select>
       </div>
       {explainOpen || formula === "freelancers_1" || formula === "freelancers_2" || formula === "freelancers_3" || formula === "freelancers_4" ? (
-        <div className="space-y-2 rounded-xl border border-black/[0.06] bg-background/80 px-3 py-3 text-[13px] leading-relaxed">
+        <div className="space-y-2 rounded-xl border border-border bg-background/80 px-3 py-3 text-[13px] leading-relaxed">
           {formula === "freelancers_4" ? (
             <>
               <p className="font-semibold">עצמאים 4 — אביחי יוסף</p>

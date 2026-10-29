@@ -98,7 +98,7 @@ export function OperatingBrandBar() {
   const { brand, setBrand } = useOperatingBrand();
 
   return (
-    <div className="mb-0 flex flex-col gap-2.5 rounded-[1.25rem] border border-black/[0.06] bg-white px-3.5 py-3 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:rounded-[var(--radius)] sm:px-5">
+    <div className="mb-0 flex flex-col gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:rounded-[var(--radius)] sm:px-5">
       <div className="min-w-0">
         <p className="text-[11px] font-medium text-muted-foreground">מותג תצוגה</p>
         <p className="mt-0.5 text-sm font-semibold tracking-tight">ליבה · שמש</p>

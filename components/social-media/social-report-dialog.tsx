@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { createSocialReportLink } from "@/app/actions/social-report";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -92,26 +91,7 @@ export function SocialReportDialog({ open, onOpenChange, year, month }: Props) {
             פתוח לצוות.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-2 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="report-from">מתאריך</Label>
-            <Input
-              id="report-from"
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="report-to">עד תאריך</Label>
-            <Input
-              id="report-to"
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </div>
-        </div>
+        <DateRangeField from={from} to={to} onChange={(next) => { setFrom(next.from); setTo(next.to); }} />
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-start">
           <Button type="button" onClick={openReport} disabled={pending}>
             <FileText className="h-4 w-4" />

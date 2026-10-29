@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
 import { type ControlItem, type ControlLane, type ControlState } from "@/lib/lead-control/rules";
 import type { LeadControlSnapshot } from "@/lib/lead-control/load";
+import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 
 type Board = "leads" | "processes" | "appointment";
@@ -163,7 +164,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
         </p>
       ) : null}
       {snapshot.error ? (
-        <p className="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm">{snapshot.error}</p>
+        <p className="rounded-xl border border-black/10 bg-card px-4 py-3 text-sm">{snapshot.error}</p>
       ) : null}
       {snapshot.truncated ? (
         <p className="rounded-xl bg-highlight/30 px-4 py-3 text-sm font-semibold">
@@ -181,13 +182,13 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
       </div>
 
       {reps.length > 0 ? (
-        <div className="rounded-[1.25rem] border border-black/[0.06] bg-white">
-          <div className="border-b border-black/[0.06] px-4 py-3">
+        <div className="rounded-lg border border-border bg-card">
+          <div className="border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold">נציגים עם חריגות</h2>
           </div>
-          <ul className="grid gap-px bg-black/[0.04] sm:grid-cols-2 xl:grid-cols-4">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {reps.map((rep) => (
-              <li key={rep.name} className="bg-white">
+              <li key={rep.name} className="rounded-[20px] border border-black/[0.06] bg-card">
                 <button
                   type="button"
                   onClick={() => { setPerson(rep.name); setQueue("all"); setFocus("overdue"); setStatus("הכל"); }}
@@ -204,22 +205,22 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
         </div>
       ) : null}
 
-      <div className="rounded-[1.25rem] border border-black/[0.06] bg-white">
-        <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] px-3 py-3">
+      <div className="rounded-lg border border-border bg-card">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-3">
+          <Segmented value={board} label="לוח" className="rounded-full p-1">
           {BOARDS.map((item) => (
             <button
               key={item.id}
               type="button"
+              data-selected={board === item.id}
               onClick={() => { setBoard(item.id); setQueue("all"); setStatus("הכל"); }}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-semibold",
-                board === item.id ? "bg-foreground text-background" : "text-muted-foreground hover:bg-black/[0.04]",
-              )}
+              className="min-h-11 rounded-full px-3 py-1.5 text-sm font-semibold"
             >
               {item.label}
             </button>
           ))}
-          <span className="mx-1 hidden h-5 w-px bg-black/10 sm:block" />
+          </Segmented>
+          <Segmented value={focus} label="מיקוד" className="rounded-full p-1">
           {(
             [
               ["overdue", "לא תקין"],
@@ -231,18 +232,17 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
               key={id}
               type="button"
               onClick={() => setFocus(id)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm",
-                focus === id ? "bg-highlight font-semibold" : "text-muted-foreground hover:bg-black/[0.04]",
-              )}
+              data-selected={focus === id}
+              className="min-h-11 rounded-full px-3 py-1.5 text-sm"
             >
               {label}
             </button>
           ))}
+          </Segmented>
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm"
+            className="rounded-lg border border-black/10 bg-card px-2 py-1.5 text-sm"
           >
             <option value="הכל">כל הסטטוסים</option>
             {statuses.map((name) => (
@@ -252,7 +252,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
           <select
             value={person}
             onChange={(event) => setPerson(event.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm"
+            className="rounded-lg border border-black/10 bg-card px-2 py-1.5 text-sm"
           >
             <option value="הכל">כל המטפלים</option>
             {people.map((name) => (
@@ -269,7 +269,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
 
         <p className="px-4 pt-3 text-xs text-muted-foreground">{rows.length.toLocaleString("he-IL")} רשומות</p>
 
-        <div className="overflow-x-auto">
+        <div key={board} className="view-swap overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="text-xs text-muted-foreground">
@@ -292,15 +292,15 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
                   <td className="max-w-40 truncate px-3 py-2.5 text-muted-foreground">{item.source || "—"}</td>
                   <td className="px-3 py-2.5 tabular-nums text-muted-foreground">{formatWhen(item.openedAt)}</td>
                   <td className="px-3 py-2.5">
-                    <span
-                      className={cn(
-                        "inline-flex rounded-md px-2 py-1 text-xs font-semibold",
-                        item.state === "overdue" && "bg-highlight",
-                        item.state === "on_time" && "bg-black/[0.04] text-muted-foreground",
-                        item.state === "unassigned" && "border border-black/10",
-                        (item.state === "watching" || item.state === "blocked") && "bg-black/[0.04]",
-                      )}
-                    >
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f4] px-2.5 py-1 text-xs font-medium text-foreground">
+                      <span
+                        className={cn(
+                          "size-1.5 shrink-0 rounded-full bg-neutral-400",
+                          item.state === "overdue" && "bg-amber-500",
+                          (item.state === "blocked" || item.state === "unassigned") && "bg-red-500",
+                          item.state === "on_time" && "bg-emerald-500",
+                        )}
+                      />
                       {STATE_LABEL[item.state]} · {formatGap(item, snapshot.fetchedAt)}
                     </span>
                   </td>
@@ -339,7 +339,7 @@ function Metric({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-[1.25rem] border border-black/[0.06] bg-white px-4 py-4 text-start hover:border-black/15"
+      className="rounded-lg border border-border bg-card px-4 py-4 text-start hover:border-black/15"
     >
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">{value.toLocaleString("he-IL")}</p>

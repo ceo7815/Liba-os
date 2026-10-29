@@ -140,12 +140,12 @@ export function VaultPanel({ initialEntries, isAdmin, initialError }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="חיפוש לפי שם, תיאור, משתמש או קטגוריה…"
-              className="h-11 rounded-xl border-black/[0.08] pe-3 ps-10"
+              className="h-11 rounded-xl border-border pe-3 ps-10"
             />
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="h-11 w-full rounded-xl border-black/[0.08] sm:w-48">
+              <SelectTrigger className="h-11 w-full rounded-xl border-border sm:w-48">
                 <SelectValue placeholder="קטגוריה" />
               </SelectTrigger>
               <SelectContent>
@@ -286,9 +286,9 @@ function VaultCard({
   }
 
   return (
-    <article className="app-surface overflow-hidden border-2 border-black">
+    <article className="app-surface overflow-hidden">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/[0.06] px-4 py-4 sm:px-5">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold tracking-tight">
@@ -394,12 +394,12 @@ function VaultCard({
       </div>
 
       {/* Password zone */}
-      <div className="border-t border-black/[0.06] bg-background/70 px-4 py-3 sm:px-5">
+      <div className="border-t border-border bg-background/70 px-4 py-3 sm:px-5">
         <p className="mb-2 text-[11px] font-medium text-muted-foreground">
           סיסמה
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-black/[0.06] bg-white px-3 py-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5">
             <KeyRound className="size-3.5 shrink-0 text-muted-foreground" />
             <code
               className="min-w-0 flex-1 truncate text-sm tabular-nums tracking-wide"

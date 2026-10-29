@@ -41,7 +41,7 @@ export function VariableExpensesScreen({
         </div>
       </section>
 
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-black/[0.12] bg-black/[0.02] px-6 py-16 text-center">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-black/[0.02] px-6 py-16 text-center">
         <CircleDashed className="size-8 text-muted-foreground/50" />
         <p className="mt-3 text-sm font-medium">אין הוצאות משתנות עדיין</p>
         <p className="mt-1 max-w-md text-sm text-muted-foreground">

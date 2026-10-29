@@ -183,7 +183,7 @@ function WaitingForAgreementPanel({ employee }: { employee: FinanceEmployee }) {
         שמעדכנים הסכם — ואז החישוב מתעדכן אוטומטית לפי מה שנשמר.
       </p>
 
-      <div className="mt-5 rounded-xl border border-black/[0.06] bg-muted/15 px-4 py-4">
+      <div className="mt-5 rounded-xl border border-border bg-muted/15 px-4 py-4">
         <p className="text-xs font-medium text-muted-foreground">היום בדוח</p>
         <p className="mt-1 text-sm font-semibold">
           שכר = 0 עד שיש הסכם שמור

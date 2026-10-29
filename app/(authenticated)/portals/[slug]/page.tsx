@@ -30,7 +30,7 @@ export default function PortalPage({ params }: PageProps) {
   }
 
   return (
-    <section className="mx-auto max-w-[72rem] space-y-6">
+    <section className="w-full space-y-6">
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Link href="/portals" className="font-medium hover:text-foreground">
           איחוד פורטלים
@@ -70,7 +70,7 @@ export default function PortalPage({ params }: PageProps) {
             כאן יתנקזו הנתונים מפורטל {portal.name} — פוליסות, לקוחות, סטטוסים
             ועדכונים. החיבור לפורטל יופעל בשלב הבא.
           </p>
-          <div className="mt-6 rounded-xl border border-black/[0.06] bg-background px-4 py-10 text-center">
+          <div className="mt-6 rounded-xl border border-border bg-background px-4 py-10 text-center">
             <p className="text-sm font-medium text-foreground">אין נתונים עדיין</p>
             <p className="mt-1 text-xs text-muted-foreground">
               המסך מוכן. מחכים לחיבור מקור הנתונים.
