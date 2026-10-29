@@ -28,15 +28,15 @@ export function Topbar({ profile }: TopbarProps) {
   const initials = getInitials(displayName);
 
   return (
-    <header className="sticky top-0 z-40 bg-transparent px-2 pt-2 sm:px-3">
-      <div className="float-bar flex h-12 items-center gap-1.5 px-2 sm:gap-3 sm:px-4">
+    <header className="sticky top-0 z-40 bg-transparent px-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3">
+      <div className="float-bar flex min-h-12 items-center gap-1 px-1.5 sm:gap-3 sm:px-4">
         <Sheet>
           <SheetTrigger asChild>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="size-10 shrink-0 rounded-xl active:scale-95 lg:hidden"
+              className="size-11 shrink-0 rounded-xl active:scale-95 lg:hidden"
               aria-label="תפריט ניווט"
             >
               <Menu className="size-4" />

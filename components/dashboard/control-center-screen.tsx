@@ -202,9 +202,9 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("upcoming")}
-            className="kpi-cube group bg-highlight/15 px-4 py-3 text-start transition-[background-color,transform] active:scale-[0.995] hover:bg-highlight/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-hero kpi-cube group px-4 py-4 text-start active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
           >
-            <span className="rounded-full bg-highlight px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+            <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
               {snap.upcomingDateLabel}
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -224,9 +224,9 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("premium")}
-            className="kpi-cube group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
           >
-            <span className="rounded-full bg-highlight/45 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+            <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
               {snap.monthLabel}
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -244,7 +244,7 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("monthSales")}
-            className="kpi-cube group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
           >
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
               העברה ליצרן
@@ -267,7 +267,7 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("agentAppointment")}
-            className="kpi-cube group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
           >
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
               העברה ליצרן
@@ -324,7 +324,7 @@ export function ControlCenterScreen() {
 
       <section className="space-y-2">
         <div className="flex items-baseline justify-between gap-3 px-0.5">
-          <h2 className="text-sm font-semibold tracking-tight">מובילים החודש</h2>
+          <h2 className="text-base font-semibold tracking-tight">מובילים החודש</h2>
           <p className="text-[11px] text-muted-foreground">
             לחצו על קובייה לפירוט
           </p>
@@ -350,7 +350,7 @@ export function ControlCenterScreen() {
                       {item.label}
                     </p>
                   </div>
-                  <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold tabular-nums text-black/30">
+                  <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">
                     #{index + 1}
                     <ChevronLeft className="size-3.5 opacity-50 transition-transform group-hover:-translate-x-0.5" />
                   </span>

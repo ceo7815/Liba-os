@@ -283,12 +283,12 @@ export function GlobalSyncButton({
         disabled={busy}
         onClick={() => void syncAll()}
         aria-label={`סנכרון מערכת. ${statusLine}`}
-        className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-primary/10 bg-primary py-1 pe-3 ps-1 text-primary-foreground shadow-lift transition-transform duration-rise ease-out hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-80 sm:h-11 sm:gap-2.5 sm:pe-4 sm:ps-1.5"
+        className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary/10 bg-primary text-primary-foreground shadow-lift active:scale-[0.97] disabled:opacity-80 sm:h-11 sm:w-auto sm:justify-start sm:gap-2.5 sm:pe-4 sm:ps-1.5"
       >
         <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight text-highlight-foreground sm:size-8 sm:rounded-full">
           <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
         </span>
-        <span className="flex min-w-0 flex-col items-start text-start leading-none">
+        <span className="hidden min-w-0 flex-col items-start text-start leading-none sm:flex">
           <span className="text-[12px] font-semibold tracking-tight sm:text-[13px]">סנכרון מערכת</span>
           <span className="mt-1 max-w-[9rem] truncate text-[10px] font-medium text-primary-foreground/70 sm:max-w-none">
             {statusLine}

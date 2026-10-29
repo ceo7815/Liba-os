@@ -497,10 +497,33 @@
 }
 
 .kpi-cube {
+  background-color: hsl(var(--card) / 0.86);
+  color: hsl(var(--card-foreground));
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
   transition:
     transform var(--dur-rise) var(--ease-out),
-    box-shadow var(--dur-rise) var(--ease-out),
-    background-color var(--dur-rise) var(--ease-out);
+    box-shadow var(--dur-rise) var(--ease-out);
+}
+
+.kpi-hero {
+  background-color: hsl(var(--highlight) / 0.28);
+  color: hsl(var(--highlight-foreground));
+}
+
+.dark .kpi-cube {
+  background-color: hsl(var(--card) / 0.9);
+  color: hsl(var(--card-foreground));
+}
+
+.dark .kpi-hero {
+  background-color: hsl(46 32% 18%);
+  color: hsl(42 40% 96%);
+}
+
+.tone-chip {
+  background: hsl(var(--highlight));
+  color: hsl(var(--highlight-foreground));
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -547,7 +570,7 @@
 }
 
 .glass {
-  background: hsl(var(--card) / 0.84);
+  background: hsl(var(--card) / 0.72);
   border: 1px solid hsl(var(--border));
   box-shadow:
     inset 0 1px 0 hsl(0 0% 100% / 0.7),
@@ -557,7 +580,7 @@
 }
 
 .dark .glass {
-  background: hsl(var(--card) / 0.78);
+  background: hsl(var(--card) / 0.66);
   box-shadow:
     inset 0 1px 0 hsl(0 0% 100% / 0.08),
     var(--shadow-lift);
@@ -704,6 +727,10 @@ button,
   .mobile-dock a {
     min-height: 44px;
   }
+
+  .float-bar button {
+    min-width: 44px;
+  }
 }
 
 .mobile-dock {
@@ -737,8 +764,9 @@ button,
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(42rem 26rem at 100% -8%, hsl(var(--highlight) / 0.2), transparent 62%),
-    radial-gradient(28rem 18rem at 0% 110%, hsl(var(--info) / 0.08), transparent 60%);
+    radial-gradient(46rem 28rem at 100% -10%, hsl(var(--highlight) / 0.34), transparent 60%),
+    radial-gradient(32rem 22rem at -10% 110%, hsl(var(--info) / 0.14), transparent 58%),
+    radial-gradient(24rem 16rem at 50% 40%, hsl(var(--highlight) / 0.08), transparent 70%);
 }
 
 .os-mesh > * {
@@ -782,6 +810,94 @@ button,
 
 .auth-panel {
   animation: dash-enter 640ms var(--ease-out) 90ms both;
+}
+
+.auth-stage {
+  background: hsl(36 18% 96%);
+}
+
+.dark .auth-stage {
+  background: hsl(30 10% 7%);
+}
+
+.auth-mesh {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(28rem 18rem at 80% 12%, hsl(48 96% 52% / 0.28), transparent 62%),
+    radial-gradient(22rem 16rem at 8% 88%, hsl(28 50% 46% / 0.12), transparent 64%),
+    radial-gradient(18rem 14rem at 50% 50%, hsl(42 40% 40% / 0.06), transparent 70%);
+}
+
+.auth-mesh-shemesh {
+  background:
+    radial-gradient(28rem 18rem at 80% 12%, hsl(208 72% 46% / 0.28), transparent 62%),
+    radial-gradient(22rem 16rem at 8% 88%, hsl(200 40% 40% / 0.14), transparent 64%),
+    radial-gradient(18rem 14rem at 50% 50%, hsl(210 30% 30% / 0.08), transparent 70%);
+}
+
+.dark .auth-mesh {
+  background:
+    radial-gradient(32rem 20rem at 78% 8%, hsl(46 80% 46% / 0.22), transparent 60%),
+    radial-gradient(26rem 18rem at 6% 92%, hsl(24 40% 28% / 0.2), transparent 62%);
+}
+
+.dark .auth-mesh-shemesh {
+  background:
+    radial-gradient(32rem 20rem at 78% 8%, hsl(206 70% 48% / 0.28), transparent 60%),
+    radial-gradient(26rem 18rem at 6% 92%, hsl(214 40% 24% / 0.35), transparent 62%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-mesh {
+    animation: auth-mesh-drift 18s var(--ease-in-out) infinite alternate;
+  }
+}
+
+@keyframes auth-mesh-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-1.5%, -1%, 0) scale(1.04); }
+}
+
+.auth-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.auth-stage .logo-plate {
+  border-radius: 1.5rem;
+  background: hsl(40 40% 98% / 0.72);
+  border: 1px solid hsl(0 0% 100% / 0.45);
+  box-shadow:
+    0 24px 50px hsl(30 20% 8% / 0.18),
+    inset 0 1px 0 hsl(0 0% 100% / 0.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.dark .auth-stage .logo-plate {
+  background: hsl(36 24% 94% / 0.92);
+  border-color: hsl(0 0% 100% / 0.35);
+  box-shadow: 0 28px 60px hsl(0 0% 0% / 0.45);
+}
+
+.auth-panel {
+  background: hsl(var(--card) / 0.72);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  backdrop-filter: blur(22px) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.65),
+    var(--shadow-pop);
+}
+
+.dark .auth-panel {
+  background: hsl(var(--card) / 0.55);
+  border-color: hsl(0 0% 100% / 0.08);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.08),
+    0 30px 80px hsl(0 0% 0% / 0.45);
 }
 
 .auth-stage.shemesh-os .auth-panel button[type="submit"] {

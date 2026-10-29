@@ -17,7 +17,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
   const initials = getInitials(displayName);
 
   return (
-    <header className="sticky top-0 z-40 bg-transparent px-2 pt-2 sm:px-3">
+    <header className="sticky top-0 z-40 bg-transparent px-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3">
       <div className="float-bar flex h-12 items-center gap-1.5 px-2 sm:gap-3 sm:px-4">
         <Sheet>
           <SheetTrigger asChild>
