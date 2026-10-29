@@ -42,3 +42,9 @@ BEGIN
   RETURNING r.*;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.claim_queued_agent_run(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.claim_queued_agent_run(uuid) TO service_role;
+
+COMMENT ON FUNCTION public.claim_queued_agent_run(uuid) IS
+  'os.poll_work: claim oldest queued agent_run → claimed and stamp heartbeat_at (SKIP LOCKED)';

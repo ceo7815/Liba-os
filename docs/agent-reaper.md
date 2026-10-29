@@ -17,7 +17,7 @@ The Hebrew reason stored on the row is `ההרצה נתקעה יותר משעה 
 
 `os.heartbeat` remains the presence ping on `agents.hermes_last_seen_at`. It also refreshes open runs, so a long job survives while the worker keeps calling it.
 
-The column is added by `supabase/migrations/20261029180000_agent_runs_heartbeat.sql`. **That migration is not applied from this repo.** Until it is applied, heartbeat writes are ignored and the reaper still uses `started_at`, which is the previous behavior. Claiming a queued run also sets `heartbeat_at` inside `claim_queued_agent_run` once that migration is applied.
+The column is added by `supabase/migrations/20261029201500_agent_runs_heartbeat.sql`. **That migration is not applied from this repo.** Until it is applied, heartbeat writes are ignored and the reaper still uses `started_at`, which is the previous behavior. Claiming a queued run also sets `heartbeat_at` inside `claim_queued_agent_run` once that migration is applied.
 
 ## Cron route
 
