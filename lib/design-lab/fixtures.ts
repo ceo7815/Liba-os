@@ -926,12 +926,24 @@ export function designLabUsers(now = new Date()): ManagedUser[] {
 
 export function designLabInterfaces(now = new Date()): ConnectedInterface[] {
   const synced = now.toISOString();
+  const quiet = { warning: null, actionHref: null, actionLabel: null };
   return [
-    { id: "voicenter", name: "Voicenter", description: "שיחות שיקוף של סופיה נכנסות לבקרת השיחות.", href: "/agents/call-control", connected: true, syncedAt: synced, note: "הדגמה" },
-    { id: "google-ads", name: "גוגל אדס", description: "הוצאות ולידים מהקמפיינים בגוגל.", href: "/sales-dashboard/campaigns", connected: true, syncedAt: synced, note: null },
-    { id: "facebook", name: "פייסבוק", description: "הוצאות ולידים מהקמפיינים בפייסבוק.", href: "/sales-dashboard/campaigns", connected: true, syncedAt: synced, note: null },
-    { id: "sales-excel", name: "דוח אקסל מכירות", description: "דוח המנהלים המסונכרן. ממנו נספרות המכירות וההפקות.", href: "/sales-dashboard/excel", connected: true, syncedAt: synced, note: null },
-    { id: "surense", name: "שורנס", description: "לידים, תהליכים ומינוי סוכן נכנסים לבקרת הלידים.", href: "/lead-control", connected: false, syncedAt: null, note: "ממתין לגישה" },
+    { id: "voicenter", name: "Voicenter", description: "שיחות שיקוף של סופיה נכנסות לבקרת השיחות.", href: "/agents/call-control", connected: true, syncedAt: synced, note: "הדגמה", ...quiet },
+    { id: "google-ads", name: "גוגל אדס", description: "הוצאות ולידים מהקמפיינים בגוגל.", href: "/sales-dashboard/campaigns", connected: true, syncedAt: synced, note: null, ...quiet },
+    {
+      id: "facebook",
+      name: "פייסבוק",
+      description: "הוצאות ולידים מהקמפיינים בפייסבוק.",
+      href: "/sales-dashboard/campaigns",
+      connected: true,
+      syncedAt: synced,
+      note: null,
+      warning: "תוקף החיבור יפוג בקרוב.",
+      actionHref: "/api/facebook-ads/connect",
+      actionLabel: "חיבור מחדש",
+    },
+    { id: "sales-excel", name: "דוח אקסל מכירות", description: "דוח המנהלים המסונכרן. ממנו נספרות המכירות וההפקות.", href: "/sales-dashboard/excel", connected: true, syncedAt: synced, note: null, ...quiet },
+    { id: "surense", name: "שורנס", description: "לידים, תהליכים ומינוי סוכן נכנסים לבקרת הלידים.", href: "/lead-control", connected: false, syncedAt: null, note: "ממתין לגישה", ...quiet },
   ];
 }
 
