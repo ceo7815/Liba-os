@@ -27,7 +27,21 @@ It is safe to run more than once. It creates only new `public.shemesh_*` objects
 | `shemesh_google_settings` | One row: refresh token, chosen customer, candidate customers |
 | `shemesh_excel_settings` | One row: Graph drive and item ids for the Shemesh sales file |
 | `shemesh_surense_settings` | One row: same agency or separate credentials |
-| `shemesh_provider_secrets` | Rivhit, Grow, and insurance URL plus encrypted key |
+| `shemesh_provider_secrets` | Older generic provider slot. Rivhit and Grow now have their own tables |
+
+## Connectors file
+
+`supabase/migrations/20261029193000_shemesh_connectors.sql` is also idempotent and only adds `shemesh_*` objects.
+
+| Table | What it holds |
+| --- | --- |
+| `shemesh_rivhit_settings` | company id, encrypted api token, monthly op count, and a read cache |
+| `shemesh_grow_settings` | user id, encrypted page code, optional platform key, sandbox or production, webhook token |
+| `shemesh_insurer_mappings` | Saved column map per insurance company |
+| `shemesh_insurer_imports` | Import history |
+| `shemesh_insurer_rows` | Imported production and commission lines. Unique per company and external key |
+
+Indexes: `shemesh_insurer_rows_company_idx`, `shemesh_insurer_imports_created_idx`. Same admin-only RLS pattern.
 
 ## Indexes
 

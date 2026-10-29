@@ -29,12 +29,23 @@ export type LibaAgentSale = {
   premium: number;
 };
 
+export type LicenseCommission = {
+  company: string;
+  policy: string;
+  client: string;
+  commission: number | null;
+  premium: number | null;
+  day: string;
+};
+
 export type ShemeshLibaSettlement = {
   missing: boolean;
   error: string | null;
   sales: LibaAgentSale[];
   premium: number;
   owed: number | null;
+  licenseCommissions?: LicenseCommission[];
+  licenseCommissionTotal?: number | null;
 };
 
 type SaleSource = Pick<

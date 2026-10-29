@@ -3,34 +3,11 @@
 import { useFormState } from "react-dom";
 import { field } from "@/components/shemesh/module-shell";
 import { Panel } from "@/components/shemesh/widgets";
-import { chooseShemeshGoogleCustomer, connectShemeshProvider, connectShemeshSurense, testShemeshProviderForm } from "@/app/actions/shemesh-connect";
+import { chooseShemeshGoogleCustomer, connectShemeshSurense, saveGrowForm, saveRivhitForm, testRivhitForm } from "@/app/actions/shemesh-connect";
 import type { ShemeshLink } from "@/lib/shemesh/connect";
 
 const idle = { error: null as string | null };
-
-const PROVIDER_GUIDES = [
-  {
-    id: "rivhit" as const,
-    title: "ריווחית",
-    need: "צריך כתובת API ומפתח של החברה.",
-    where: "בריווחית אונליין: הגדרות, ואז מפתח API. מעתיקים את המפתח לכאן, לא לצ׳אט.",
-    secretLabel: "מפתח ריווחית",
-  },
-  {
-    id: "grow" as const,
-    title: "גרואו",
-    need: "צריך כתובת ה-API ומפתח סוחר.",
-    where: "בלוח Grow: מפתחים או הגדרות סליקה. המפתח נשמר מוצפן ולא מוצג שוב.",
-    secretLabel: "מפתח גרואו",
-  },
-  {
-    id: "insurance" as const,
-    title: "חברות ביטוח",
-    need: "צריך כתובת ה-API של החברה ומשתמש או מפתח שהחברה הנפיקה.",
-    where: "כל חברה נותנת את זה בפורטל הספק. מתחילים בחברה הראשונה שאור מחברת איתנו, ושומרים כאן.",
-    secretLabel: "מפתח החברה",
-  },
-];
+const growIdle = { error: null as string | null, webhookToken: "" };
 
 export function ShemeshConnectPanel({
   links,
@@ -41,7 +18,8 @@ export function ShemeshConnectPanel({
   googleChoices: string[];
   missing: boolean;
 }) {
-  const [providerState, providerAction] = useFormState(connectShemeshProvider, idle);
+  const [rivhitState, rivhitAction] = useFormState(saveRivhitForm, idle);
+  const [growState, growAction] = useFormState(saveGrowForm, growIdle);
   const [surenseState, surenseAction] = useFormState(connectShemeshSurense, idle);
   const [googleState, googleAction] = useFormState(chooseShemeshGoogleCustomer, idle);
   return (
@@ -98,35 +76,45 @@ export function ShemeshConnectPanel({
           {surenseState.error ? <p className="text-sm text-destructive sm:col-span-2">{surenseState.error}</p> : null}
         </form>
       </Panel>
-      <div className="grid gap-3">
-        {PROVIDER_GUIDES.map((guide) => {
-          const link = links.find((item) => item.id === `shemesh-${guide.id}`);
-          return (
-            <Panel key={guide.id} title={guide.title}>
-              <ol className="list-decimal space-y-1 pe-4 text-sm text-muted-foreground">
-                <li>{guide.need}</li>
-                <li>{guide.where}</li>
-              </ol>
-              <p className="mt-3 text-sm">
-                סטטוס: {link?.connected ? "מחובר" : "לא מחובר"}
-                {link?.syncedAt ? ` · בדיקה אחרונה ${link.syncedAt}` : ""}
-                {link?.note ? ` · ${link.note}` : ""}
-              </p>
-              <form action={providerAction} className="mt-3 grid gap-2 sm:grid-cols-2">
-                <input type="hidden" name="provider" value={guide.id} />
-                <input className={field} name="apiUrl" placeholder="כתובת ה-API" />
-                <input className={field} name="secret" type="password" placeholder={guide.secretLabel} autoComplete="off" />
-                <button type="submit" className="h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground">שמירה מוצפנת</button>
-              </form>
-              <form action={testShemeshProviderForm} className="mt-2">
-                <input type="hidden" name="provider" value={guide.id} />
-                <button type="submit" className="h-9 rounded-xl bg-muted px-3 text-sm">בדיקת חיבור</button>
-              </form>
-            </Panel>
-          );
-        })}
-        {providerState.error ? <p className="text-sm text-destructive">{providerState.error}</p> : null}
-      </div>
+      <Panel title="ריווחית">
+        <ol className="list-decimal space-y-1 pe-4 text-sm text-muted-foreground">
+          <li>צריך api_token ומזהה חברה. בסיס הקריאות קבוע: api.rivhit.co.il.</li>
+          <li>את המפתח מנפיקים בריווחית אונליין. המודול בתשלום ויש לו מכסה חודשית, לכן קריאה זהה נשמרת במטמון ונשמר מונה.</li>
+          <li>אחרי השמירה, בדיקה קוראת ל־Monitor.Get. קריאות הקריאה הן Document.List, Receipt.List, Customer.List ו־Payment.Report. אין קריאה לפני שהשדות נשמרו.</li>
+        </ol>
+        <form action={rivhitAction} className="mt-3 grid gap-2 sm:grid-cols-2">
+          <input className={field} name="companyId" placeholder="company_id" autoComplete="off" />
+          <input className={field} name="apiToken" type="password" placeholder="api_token" autoComplete="off" />
+          <button type="submit" className="h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground">שמירה מוצפנת</button>
+        </form>
+        <form action={testRivhitForm} className="mt-2">
+          <button type="submit" className="h-9 rounded-xl bg-muted px-3 text-sm">בדיקת חיבור</button>
+        </form>
+        {rivhitState.error ? <p className="mt-2 text-sm text-destructive">{rivhitState.error}</p> : null}
+      </Panel>
+      <Panel title="גרואו (משולם)">
+        <ol className="list-decimal space-y-1 pe-4 text-sm text-muted-foreground">
+          <li>צריך userId ו־pageCode. apiKey רשות, רק למצב פלטפורמה.</li>
+          <li>את הפרטים מנפיק התמיכה של Grow. אין מסך self-serve.</li>
+          <li>סנדבוקס: sandbox.meshulam.co.il. ייצור: secure.meshulam.co.il. הוובהוק מחזיר 200 וקורא ל־ApproveTransaction.</li>
+        </ol>
+        <form action={growAction} className="mt-3 grid gap-2 sm:grid-cols-2">
+          <input className={field} name="userId" placeholder="userId" autoComplete="off" />
+          <input className={field} name="pageCode" type="password" placeholder="pageCode" autoComplete="off" />
+          <input className={field} name="apiKey" type="password" placeholder="apiKey, רשות" autoComplete="off" />
+          <select className={field} name="environment" defaultValue="sandbox" aria-label="סביבה">
+            <option value="sandbox">סנדבוקס</option>
+            <option value="production">ייצור</option>
+          </select>
+          <button type="submit" className="h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground">שמירה מוצפנת</button>
+        </form>
+        {growState.webhookToken ? <p className="mt-2 text-xs text-muted-foreground">וובהוק: /api/shemesh/grow/webhook/{growState.webhookToken}</p> : null}
+        {growState.error ? <p className="mt-2 text-sm text-destructive">{growState.error}</p> : null}
+      </Panel>
+      <Panel title="חברות ביטוח">
+        <p className="text-sm text-muted-foreground">אין להן API ציבורי. הייבוא הוא קובץ אקסל או מסלקה (Swiftness) לכל חברה, עם מיפוי עמודות שנשמר. העמלות שייכות לליבה, בעלת הרישיון.</p>
+        <a className="mt-3 inline-flex h-9 items-center rounded-xl bg-primary px-3 text-sm text-primary-foreground" href="/shemesh/insurance">לייבוא ביטוח</a>
+      </Panel>
     </div>
   );
 }

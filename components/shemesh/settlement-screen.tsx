@@ -25,6 +25,11 @@ export function SettlementScreen({ view = EMPTY_VIEW }: { view?: ShemeshLibaSett
             <Stat label="שורות" value={formatShemeshCount(view.sales.length)} />
             <Stat label="פרמיה" value={formatShemeshMoney(view.premium)} />
             <Stat
+              label="עמלות בעל הרישיון"
+              value={formatShemeshMoney(view.licenseCommissionTotal ?? null)}
+              hint="העמלה שייכת לליבה, בעלת הרישיון, לפי קבצי החברות."
+            />
+            <Stat
               label="לתשלום לשמש"
               value={formatShemeshMoney(view.owed)}
               hint={
@@ -72,6 +77,19 @@ export function SettlementScreen({ view = EMPTY_VIEW }: { view?: ShemeshLibaSett
           }
         />
       )}
+      {(view.licenseCommissions ?? []).length ? (
+        <Panel title="עמלות ביטוח של ליבה">
+          <p className="pb-2 text-xs text-muted-foreground">העמלה שייכת לבעל הרישיון, ליבה, גם כששמש מטפלת בתיק.</p>
+          <ul className="max-h-64 divide-y divide-border overflow-auto text-sm">
+            {view.licenseCommissions?.map((row) => (
+              <li key={`${row.company}-${row.policy}-${row.day}`} className="flex justify-between gap-3 py-2">
+                <span>{row.company} · {row.policy || row.client || "בלי פוליסה"}</span>
+                <span className="tabular-nums">{formatShemeshMoney(row.commission)}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
     </ShemeshPage>
   );
 }
