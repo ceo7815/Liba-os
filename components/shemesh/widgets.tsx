@@ -42,7 +42,7 @@ export function ShemeshPage({
 
 export function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl bg-[#f4f7fb] px-4 py-3">
+    <div className="rounded-2xl bg-muted px-4 py-3">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
       {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}

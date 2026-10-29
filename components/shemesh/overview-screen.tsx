@@ -47,12 +47,12 @@ export function ShemeshOverview({
         ) : null}
         <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {CASE_STAGES.map((stage, index) => (
-            <li key={stage.id} className="rounded-2xl border border-black/[0.06] bg-[#f7f9fc] px-3 py-3">
+            <li key={stage.id} className="rounded-2xl border border-border bg-muted px-3 py-3">
               <p className="text-[11px] text-muted-foreground">{index + 1}</p>
               <p className="mt-1 text-sm font-semibold">{stage.label}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums">{formatShemeshCount(stages[stage.id])}</p>
               <div className="mt-2 h-1 rounded-full bg-black/[0.06]">
-                <div className="h-1 rounded-full bg-[#185A94]" style={{ width: `${(stages[stage.id] / max) * 100}%` }} />
+                <div className="h-1 rounded-full bg-highlight" style={{ width: `${(stages[stage.id] / max) * 100}%` }} />
               </div>
             </li>
           ))}

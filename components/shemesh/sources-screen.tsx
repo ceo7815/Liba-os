@@ -25,7 +25,7 @@ export function ShemeshSources() {
                 <span
                   className={cn(
                     "rounded-full px-2 py-0.5 text-[11px] font-medium",
-                    connected ? "bg-emerald-50 text-emerald-800" : "bg-[#f4f7fb] text-muted-foreground",
+                    connected ? "bg-emerald-50 text-emerald-800" : "bg-muted text-muted-foreground",
                   )}
                 >
                   {connected ? "מחובר" : "ממתין"}

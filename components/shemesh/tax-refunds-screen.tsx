@@ -153,7 +153,7 @@ export function TaxRefundsScreen({
                   {months.map(([month, value]) => (
                     <div key={month} className="flex min-w-12 flex-1 flex-col items-center gap-1">
                       <div className="flex h-24 w-full items-end">
-                        <div className="w-full rounded-t-lg bg-[#185A94]" style={{ height: `${Math.max(8, (value / max) * 100)}%` }} />
+                        <div className="w-full rounded-t-lg bg-highlight" style={{ height: `${Math.max(8, (value / max) * 100)}%` }} />
                       </div>
                       <p className="text-[10px] text-muted-foreground">{formatShemeshMonth(month)}</p>
                     </div>

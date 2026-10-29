@@ -70,7 +70,7 @@ function statusClass(value: string): string {
   if (tone === "active") return "bg-emerald-50 text-emerald-800";
   if (tone === "cancelled") return "bg-rose-50 text-rose-800";
   if (tone === "pending") return "bg-amber-50 text-amber-900";
-  return "bg-[#f3f2ee] text-[#3f3f3a]";
+  return "bg-muted text-muted-foreground";
 }
 
 function uniqueValues(rows: RevenueRow[], index: number): string[] {
@@ -313,7 +313,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
               "h-9 rounded-full px-3.5 text-sm transition-colors",
               tab === id
                 ? "bg-highlight font-medium text-highlight-foreground"
-                : "border border-black/[0.06] bg-white text-foreground hover:bg-[#fafaf8]",
+                : "border border-black/[0.06] bg-white text-foreground hover:bg-muted",
             )}
           >
             {label}
@@ -348,7 +348,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
                 "h-8 rounded-full px-3 text-xs",
                 preset === id
                   ? "bg-highlight font-medium text-highlight-foreground"
-                  : "bg-[#f6f5f1] text-muted-foreground hover:bg-white",
+                  : "bg-muted text-muted-foreground hover:bg-card",
               )}
             >
               {label}
@@ -563,7 +563,7 @@ function SummaryCard({
   onOpen: () => void;
 }) {
   return (
-    <button type="button" onClick={onOpen} className="app-surface px-5 py-4 text-start transition-colors hover:bg-[#fafaf8]">
+    <button type="button" onClick={onOpen} className="app-surface px-5 py-4 text-start transition-colors hover:bg-muted">
       <p className="text-sm font-medium">{title}</p>
       <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
       <p className="mt-3 text-2xl font-semibold tabular-nums">{value}</p>
@@ -597,7 +597,7 @@ function Breakdown({
                   <span className="truncate">{row.key}</span>
                   <span className="text-[11px] text-muted-foreground tabular-nums">{row.count.toLocaleString("he-IL")}</span>
                 </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#f3f2ee]">
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-highlight"
                     style={{ width: `${Math.max(4, Math.round((row.amount / max) * 100))}%` }}
@@ -664,7 +664,7 @@ function LedgerTable({
           <tbody>
             {rows.length ? (
               rows.map((row) => (
-                <tr key={row.id} className="border-b border-black/[0.04] odd:bg-[#fafaf8]">
+                <tr key={row.id} className="border-b border-black/[0.04] odd:bg-muted">
                   {ledger.show.map((index) => {
                     const header = ledger.headers[index] ?? "";
                     const value = row.cells[index] ?? "";
@@ -709,14 +709,14 @@ function LedgerTable({
           עמוד {(page + 1).toLocaleString("he-IL")} מתוך {pageCount.toLocaleString("he-IL")}
         </span>
         <div className="flex gap-2">
-          <button type="button" disabled={page <= 0} onClick={() => onPage(page - 1)} className="rounded-full bg-[#f6f5f1] px-3 py-1 disabled:opacity-40">
+          <button type="button" disabled={page <= 0} onClick={() => onPage(page - 1)} className="rounded-full bg-muted px-3 py-1 disabled:opacity-40">
             הקודם
           </button>
           <button
             type="button"
             disabled={page + 1 >= pageCount}
             onClick={() => onPage(page + 1)}
-            className="rounded-full bg-[#f6f5f1] px-3 py-1 disabled:opacity-40"
+            className="rounded-full bg-muted px-3 py-1 disabled:opacity-40"
           >
             הבא
           </button>

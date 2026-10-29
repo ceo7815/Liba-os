@@ -42,7 +42,7 @@ export function FixedCostsScreen() {
             </select>
             <button
               type="button"
-              className="h-9 rounded-xl bg-black text-sm text-white"
+              className="h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground"
               onClick={() => {
                 if (!title.trim()) return;
                 setRows((current) => [...current, { title: title.trim(), gross }]);

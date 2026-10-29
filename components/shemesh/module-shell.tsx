@@ -4,7 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { Panel, ShemeshPage } from "@/components/shemesh/widgets";
 
-export const field = "h-9 w-full rounded-xl border border-black/10 bg-white px-3 text-sm";
+export const field = "h-9 w-full rounded-xl border border-input bg-card px-3 text-sm";
 
 export function ModulePage({
   title,

@@ -213,7 +213,7 @@ export function ShemeshSearch() {
         }}
         placeholder="חיפוש במערכת..."
         autoComplete="off"
-        className="h-10 w-full rounded-2xl border border-black/[0.06] bg-background pe-9 ps-9 text-sm text-foreground outline-none transition-[border-color,background-color,box-shadow] placeholder:text-muted-foreground focus:border-black/15 focus:bg-white focus:shadow-[0_0_0_3px_rgba(24,90,148,0.28)] sm:h-9 sm:rounded-lg"
+        className="h-10 w-full rounded-2xl border border-border bg-background pe-9 ps-9 text-sm text-foreground outline-none transition-[border-color,background-color,box-shadow] placeholder:text-muted-foreground focus:border-ring focus:bg-card focus:shadow-[0_0_0_3px_hsl(var(--ring)/0.28)] sm:h-9 sm:rounded-lg"
       />
       {query ? (
         <button

@@ -40,7 +40,7 @@ export function AgencyScreen({
               key={item}
               type="button"
               onClick={() => setMode(item)}
-              className={`h-9 rounded-full px-4 text-sm ${mode === item ? "bg-black text-white" : "bg-[#f4f7fb]"}`}
+              className={`h-9 rounded-full px-4 text-sm ${mode === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}
             >
               {item === "same" ? "אותה סוכנות" : "סוכנות נפרדת"}
             </button>

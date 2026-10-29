@@ -145,7 +145,7 @@ export function PortfolioReportScreen() {
         >
           <summary className="cursor-pointer text-sm font-medium">מסמכים וכתיבה חופשית</summary>
           <div className="mt-4 space-y-3">
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-black/15 bg-[#f4f7fb] px-4 py-6 text-sm">
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-black/15 bg-muted px-4 py-6 text-sm">
               <Upload className="size-5" />
               <span className="font-medium">דפי פרטי ביטוח, PDF</span>
               <span className="text-xs text-muted-foreground">אפשר כמה קבצים יחד. דוח השוואה שכבר הופק ידולג.</span>
@@ -210,7 +210,7 @@ export function PortfolioReportScreen() {
             </div>
 
             {report.blocks.map((block, index) => (
-              <section key={block.id} className="rounded-2xl bg-[#f4f7fb] p-4">
+              <section key={block.id} className="rounded-2xl bg-muted p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h2 className="text-sm font-semibold">תחום {index + 1}</h2>
                   <button
@@ -316,7 +316,7 @@ function SideForm({
   onChange: (partial: Partial<ReportSide>) => void;
 }) {
   return (
-    <div className="rounded-2xl bg-[#f4f7fb] p-3">
+    <div className="rounded-2xl bg-muted p-3">
       <p className="mb-2 text-xs font-semibold">{title}</p>
       <div className="space-y-2">
         <input className={field} value={side.title} onChange={(event) => onChange({ title: event.target.value })} placeholder="חברה · מספר פוליסה" />

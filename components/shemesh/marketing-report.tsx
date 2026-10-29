@@ -62,13 +62,13 @@ export function ShemeshMarketingReport({
               חשבון Meta <span className="font-mono text-xs" dir="ltr">act_{accountId}</span>. עלות, לידים ועלות לליד לפי קמפיין ולפי מודעה.
             </p>
           </div>
-          <div className="flex rounded-full bg-[#f6f5f1] p-1" role="tablist" aria-label="תקופה">
+          <div className="flex rounded-full bg-muted p-1" role="tablist" aria-label="תקופה">
             {PERIODS.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setPeriod(item.id)}
-                className={`h-8 rounded-full px-3 text-xs ${period === item.id ? "bg-white font-semibold shadow-sm" : "text-muted-foreground"}`}
+                className={`h-8 rounded-full px-3 text-xs ${period === item.id ? "bg-card font-semibold shadow-sm" : "text-muted-foreground"}`}
               >
                 {item.label}
               </button>

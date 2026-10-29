@@ -47,7 +47,7 @@ export function PayrollScreen() {
           />
           <button
             type="button"
-            className="mt-2 h-9 rounded-xl bg-black px-3 text-sm text-white"
+            className="mt-2 h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground"
             onClick={() => {
               const rateValue = Number(bandRate);
               if (!(rateValue > 0)) return;

@@ -27,7 +27,7 @@ export function RevivalScreen() {
             <textarea className="min-h-24 rounded-xl border border-black/10 px-3 py-2 text-sm" placeholder="נוסח ההודעה" value={body} onChange={(event) => setBody(event.target.value)} />
             <button
               type="button"
-              className="h-9 rounded-xl bg-black text-sm text-white"
+              className="h-9 rounded-xl bg-primary text-sm text-primary-foreground"
               onClick={() => {
                 if (!title.trim() || !body.trim()) return;
                 setTemplates((current) => [...current, { title: title.trim(), body: body.trim() }]);
@@ -50,7 +50,7 @@ export function RevivalScreen() {
         <Panel title="תור">
           <UploadCard title="אנשי קשר" hint="CSV: שם,טלפון" onText={(text) => setQueue(parseCsv(text).map((row) => ({ name: row[0] || "", phone: row[1] || "" })))} />
           <p className="py-2 text-sm text-muted-foreground">{formatShemeshCount(queue.length)} בתור.</p>
-          <button type="button" disabled className="h-9 cursor-not-allowed rounded-xl bg-black/10 px-3 text-sm text-muted-foreground">
+          <button type="button" disabled className="h-9 cursor-not-allowed rounded-xl bg-muted px-3 text-sm text-muted-foreground">
             שליחה לא פעילה עד אימות Meta
           </button>
         </Panel>
