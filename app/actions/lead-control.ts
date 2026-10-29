@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { LEAD_CONTROL_PATH } from "@/lib/lead-control/rules";
-import { syncLeadControlSnapshot } from "@/lib/lead-control/load";
+import { recordLeadControlSyncError, syncLeadControlSnapshot } from "@/lib/lead-control/load";
 import { canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
 import { publicErrorText } from "@/lib/sync-log";
 
@@ -19,6 +19,7 @@ export async function syncLeadControl(): Promise<{ ok: boolean; error?: string; 
       error instanceof Error ? error.message : "סנכרון שורנס נכשל",
     );
     console.error("[surense-sync] sync failed", { message });
+    await recordLeadControlSyncError(message).catch(() => undefined);
     return { ok: false, error: message };
   }
 }

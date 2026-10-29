@@ -1,4 +1,5 @@
 import { publicErrorText } from "@/lib/sync-log";
+import { isRetryableHttpStatus, RetryableError, withRetry } from "@/lib/sync-retry";
 
 const DEFAULT_TOKEN_URL = "https://api.surense.com/oauth/token";
 const DEFAULT_API_BASE = "https://api.surense.com/api/v1";
@@ -154,11 +155,30 @@ export async function surensePost(path: string, body: unknown): Promise<Response
   });
 }
 
+const SURENSE_TIMEOUT_MS = 12_000;
+
 export async function surenseFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = await surenseAccessToken();
-  const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${token}`);
-  headers.set("Accept", "application/json");
   const suffix = path.startsWith("/") ? path : `/${path}`;
-  return fetch(`${apiBase()}${suffix}`, { ...init, headers, cache: "no-store" });
+  return withRetry(async () => {
+    const token = await surenseAccessToken();
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    headers.set("Accept", "application/json");
+    let response: Response;
+    try {
+      response = await fetch(`${apiBase()}${suffix}`, {
+        ...init,
+        headers,
+        cache: "no-store",
+        signal: AbortSignal.timeout(SURENSE_TIMEOUT_MS),
+      });
+    } catch (err) {
+      const message = publicErrorText(err instanceof Error ? err.message : "surense fetch failed");
+      throw new RetryableError(message || "Surense לא הגיב");
+    }
+    if (isRetryableHttpStatus(response.status)) {
+      throw new RetryableError(`Surense ${suffix} ${response.status}`);
+    }
+    return response;
+  });
 }

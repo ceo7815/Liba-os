@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Toaster } from "@/components/ui/sonner";
 import { LiveDashboardProvider } from "@/components/layout/live-dashboard-provider";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
@@ -107,6 +108,7 @@ export default async function ShemeshLayout({
           </main>
         </div>
       </div>
+      <Toaster dir="rtl" theme="light" position="top-center" />
     </LiveDashboardProvider>
   );
 }

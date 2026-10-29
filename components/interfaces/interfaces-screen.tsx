@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Cable, ChevronLeft, FileSpreadsheet, ListChecks, Megaphone, Phone, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
 import type { ConnectedInterface } from "@/lib/interfaces/status";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,23 @@ export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
           {connected.toLocaleString("he-IL")} מחוברים
         </p>
       </div>
+
+      {items
+        .filter((item) => item.warning)
+        .map((item) => (
+          <div
+            key={`${item.id}-warning`}
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          >
+            <p className="font-semibold">{item.warning}</p>
+            {item.actionHref ? (
+              <Button asChild size="sm" variant="outline">
+                <a href={item.actionHref}>{item.actionLabel ?? "חיבור מחדש"}</a>
+              </Button>
+            ) : null}
+          </div>
+        ))}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {items.map((item) => {

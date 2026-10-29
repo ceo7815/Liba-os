@@ -35,6 +35,8 @@ export async function GET() {
         poll_work:
           "Claims oldest queued run → status=claimed. Then os.start_run({ run_id }) promotes claimed→running. metadata.ingest=drive|pending_calls|mixed.",
         start_run_with_run_id: "Continues queued/claimed job; does not insert a new run",
+        os_pending:
+          "call-control os.start_run({ trigger: os_pending }) inserts a run only when a pending call has audio or a transcript. Otherwise skipped=true and no row is created. Runs left running for more than 1 hour are failed by the reaper.",
         heartbeat: "os.heartbeat({ agent_slug, status: online|offline })",
         upload_ingest:
           "When metadata.source=upload or ingest=pending_calls → calls.get_pending and download audio_path/download_url",

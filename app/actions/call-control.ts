@@ -1,5 +1,7 @@
 "use server";
 
+import { agentRunErrorHe } from "@/lib/agents/run-error";
+import { reapStaleAgentRuns } from "@/lib/agents/reap-stale-runs";
 import {
   emptyOutcomeTimes,
   loadVoicenterCdrHealth,
@@ -23,6 +25,7 @@ export type CallControlManagement = {
   cdrStale: boolean;
   cdrLastStage: string | null;
   cdrLastByOutcome: CdrOutcomeTimes;
+  agentRunError: string | null;
 };
 
 export type CallControlListResult = {
@@ -172,8 +175,10 @@ export async function getCallControlManagement(): Promise<{
     cdrStale: true,
     cdrLastStage: null,
     cdrLastByOutcome: emptyOutcomeTimes(),
+    agentRunError: null,
   };
   const admin = createAdminClient();
+  await reapStaleAgentRuns(admin);
   const cdr = await loadVoicenterCdrHealth(admin);
   const { data: agent, error: agentError } = await admin
     .from("agents")
@@ -196,6 +201,15 @@ export async function getCallControlManagement(): Promise<{
     return { error: null, data: withCdr(empty) };
   }
 
+  const { data: lastRun } = await admin
+    .from("agent_runs")
+    .select("status, error_message")
+    .eq("agent_id", agent.id)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const agentRunError = agentRunErrorHe(lastRun?.status, lastRun?.error_message);
+
   const { data: tools, error: toolsError } = await admin
     .from("agent_tools")
     .select("tool_name, tool_type, status, last_checked_at")
@@ -203,7 +217,7 @@ export async function getCallControlManagement(): Promise<{
     .order("tool_name");
 
   if (toolsError) {
-    return { error: toolsError.message, data: withCdr(empty) };
+    return { error: toolsError.message, data: { ...withCdr(empty), agentRunError } };
   }
 
   return {
@@ -216,6 +230,7 @@ export async function getCallControlManagement(): Promise<{
       cdrStale: cdr.stale,
       cdrLastStage: cdr.lastStage,
       cdrLastByOutcome: cdr.lastByOutcome,
+      agentRunError,
     },
   };
 }

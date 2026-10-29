@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { touchRunHeartbeat } from "@/lib/agents/run-heartbeat";
 import type { AuthenticatedAgent } from "@/lib/mcp/auth";
 import { SOCIAL_STORAGE_BUCKET } from "@/lib/social-media/constants";
 
@@ -116,6 +117,8 @@ async function pollDue(
 
   const postId = row.post_id as string;
   const queueId = row.queue_id as string;
+  const linkedRun = optStr(params.run_id);
+  if (linkedRun) await touchRunHeartbeat(admin, linkedRun);
 
   const { error: postErr } = await admin
     .from("social_posts")
@@ -172,6 +175,7 @@ async function completePublish(
   const postId = str(params.post_id, "post_id");
   const metaIds = asObject(params.meta_ids);
   const runId = optStr(params.run_id);
+  if (runId) await touchRunHeartbeat(admin, runId);
   const now = new Date().toISOString();
 
   const partial = Array.isArray(metaIds.partial_errors)

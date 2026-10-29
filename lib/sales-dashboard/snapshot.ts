@@ -37,6 +37,42 @@ function sameEtag(a: string | null | undefined, b: string | null | undefined) {
   return Boolean(left && right && left === right);
 }
 
+/** Production must not invent the March 2026 sample. Screens treat source !== "live" as empty. */
+function unavailableDashboard(error?: string): DashboardData {
+  const emptyTrend = { labels: [] as string[], counts: [] as number[], sums: [] as number[] };
+  return {
+    active: 0,
+    premium: 0,
+    pending: 0,
+    issues: 0,
+    agents: [],
+    monthAgents: [],
+    companies: [],
+    sources: [],
+    sales: emptyTrend,
+    appointments: emptyTrend,
+    currentMonth: {
+      label: "",
+      totalCount: 0,
+      totalSum: 0,
+      activeCount: 0,
+      activeSum: 0,
+    },
+    pendingRows: [],
+    activePolicies: [],
+    fileName: null,
+    syncedAt: "",
+    source: "empty",
+    error: error || "אין נתוני מכירות שמורים",
+  };
+}
+
+function fallbackDashboard(error?: string): DashboardData {
+  if (process.env.NODE_ENV === "production") return unavailableDashboard(error);
+  const demo = getDemoDashboard();
+  return error ? { ...demo, error } : demo;
+}
+
 export function replaceSalesDashboardSnapshot(data: DashboardData) {
   cache = { data, etag: null };
 }
@@ -82,7 +118,7 @@ async function hydrateSnapshot(): Promise<DashboardData> {
   // Never re-parse the ingested xlsx here. Manual «סנכרן הכל» is the only
   // path that downloads / parses Excel and writes dashboard.json.
   if (cache?.data && hasProductions(cache.data)) return cache.data;
-  return remember(getDemoDashboard(), null);
+  return remember(fallbackDashboard(), null);
 }
 
 async function persist(data: DashboardData, etag: string | null, extra?: {
@@ -146,7 +182,7 @@ async function refreshSnapshot(options?: { force?: boolean }): Promise<Dashboard
       if (stored?.data && hasProductions(stored.data)) {
         return remember(stored.data, stored.etag);
       }
-      return remember(getDemoDashboard(), null);
+      return remember(fallbackDashboard(), null);
     }
 
     const ingested = await loadIngestedWorkbook();
@@ -162,17 +198,17 @@ async function refreshSnapshot(options?: { force?: boolean }): Promise<Dashboard
       });
     }
 
-    return remember(getDemoDashboard(), null);
+    return remember(fallbackDashboard(), null);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "שגיאה בטעינת קובץ המכירות";
-    if (cache?.data) {
+    if (cache?.data && hasProductions(cache.data)) {
       return { ...cache.data, error: message };
     }
     const stored = await loadParsedDashboardSnapshot().catch(() => null);
     if (stored?.data) {
       return { ...stored.data, error: message };
     }
-    return { ...getDemoDashboard(), error: message };
+    return fallbackDashboard(message);
   }
 }

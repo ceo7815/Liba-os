@@ -166,8 +166,8 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
         <p className="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm">{snapshot.error}</p>
       ) : null}
       {snapshot.truncated ? (
-        <p className="rounded-xl bg-highlight/30 px-4 py-3 text-sm">
-          בסטטוס חדש יש אלפי לידים בלי מטפל. שעון 3 השעות רץ על מי שכבר יש לו מטפל. הרשימה של בלי מטפל חלקית.
+        <p className="rounded-xl bg-highlight/30 px-4 py-3 text-sm font-semibold">
+          הסנכרון נחתך. הרשימה חלקית עד שהסנכרון הבא ממשיך מאותה נקודה.
         </p>
       ) : null}
 

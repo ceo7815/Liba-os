@@ -28,6 +28,8 @@ function isProtectedPath(pathname: string) {
     pathname.startsWith("/employees") ||
     pathname.startsWith("/sales-dashboard") ||
     pathname.startsWith("/marketing-dashboard") ||
+    pathname.startsWith("/lead-control") ||
+    pathname.startsWith("/interfaces") ||
     pathname.startsWith("/academy") ||
     pathname.startsWith("/shemesh")
   );

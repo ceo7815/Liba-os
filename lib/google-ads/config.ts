@@ -6,7 +6,12 @@ export function googleAdsApiVersion(): string {
   return `v${digits}`;
 }
 
-export const GOOGLE_ADS_OAUTH_SCOPE = "https://www.googleapis.com/auth/adwords";
+/** adwords plus OpenID email so the callback can store connected_email. Email is non-sensitive and optional. */
+export const GOOGLE_ADS_OAUTH_SCOPE = [
+  "https://www.googleapis.com/auth/adwords",
+  "openid",
+  "email",
+].join(" ");
 
 export function digitsOnly(value: string | null | undefined): string {
   return (value ?? "").replace(/\D/g, "");

@@ -9,6 +9,11 @@ import { syncFacebookAds } from "@/app/actions/facebook-ads";
 import { syncGoogleAds } from "@/app/actions/google-ads";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { publishLiveDashboard } from "@/lib/sales-dashboard/client-snapshot";
+import {
+  excelHttpSyncFailure,
+  salesExcelSyncProblem,
+  shemeshExcelSyncFailure,
+} from "@/lib/sales-dashboard/excel-sync-guard";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +23,8 @@ type StepStatus = "pending" | "active" | "done" | "failed";
 
 const GOOGLE_SYNC_TIMEOUT_MS = 120_000;
 const FACEBOOK_SYNC_TIMEOUT_MS = 180_000;
+const EXCEL_SYNC_TIMEOUT_MS = 120_000;
+const SURENSE_SYNC_TIMEOUT_MS = 90_000;
 
 function formatSyncStamp(iso: string | null | undefined): string {
   if (!iso) return "טרם סונכרן";
@@ -84,52 +91,81 @@ export function GlobalSyncButton({
     setFacebookStatus("pending");
     setLeadsStatus(excelTarget === "liba" ? "pending" : "done");
 
+    let excelFailed = false;
     try {
       if (includeExcel && excelTarget === "shemesh") {
         toast.message("מסנכרן אקסל שמש…");
-        const excelRes = await fetch(`/api/shemesh/sales-excel?t=${Date.now()}`, {
-          method: "POST",
-          cache: "no-store",
-          credentials: "include",
-        });
-        const excelBody = (await excelRes.json().catch(() => null)) as {
-          error?: string;
-          skipped?: boolean;
-          rowCount?: number;
-        } | null;
-        if (!excelRes.ok) {
-          throw new Error(
-            excelRes.status === 401
-              ? "אין הרשאה לסנכרון אקסל"
-              : excelBody?.error || "סנכרון אקסל נכשל",
+        try {
+          const excelRes = await withTimeout(
+            fetch(`/api/shemesh/sales-excel?t=${Date.now()}`, {
+              method: "POST",
+              cache: "no-store",
+              credentials: "include",
+            }),
+            EXCEL_SYNC_TIMEOUT_MS,
+            "סנכרון אקסל",
           );
-        }
-        setExcelStatus("done");
-        if (!excelBody?.skipped && typeof excelBody?.rowCount === "number") {
-          toast.success(`דוח שמש עודכן · ${excelBody.rowCount.toLocaleString("he-IL")} שורות`);
+          const excelBody = (await excelRes.json().catch(() => null)) as {
+            error?: string;
+            skipped?: boolean;
+            rowCount?: number;
+          } | null;
+          const failure = shemeshExcelSyncFailure(excelRes.status, excelBody);
+          if (failure) {
+            excelFailed = true;
+            setExcelStatus("failed");
+            toast.error(failure);
+          } else {
+            setExcelStatus("done");
+            if (!excelBody?.skipped && typeof excelBody?.rowCount === "number") {
+              toast.success(`דוח שמש עודכן · ${excelBody.rowCount.toLocaleString("he-IL")} שורות`);
+            }
+          }
+        } catch (err: unknown) {
+          excelFailed = true;
+          setExcelStatus("failed");
+          toast.error(err instanceof Error ? err.message : "סנכרון אקסל נכשל");
         }
       } else if (includeExcel) {
         toast.message("מסנכרן אקסל…");
-        const excelRes = await fetch(`/api/sales-dashboard?force=1&t=${Date.now()}`, {
-          cache: "no-store",
-          credentials: "include",
-        });
-        if (!excelRes.ok) {
-          throw new Error(
-            excelRes.status === 401 ? "אין הרשאה לסנכרון אקסל" : "סנכרון אקסל נכשל",
+        try {
+          const excelRes = await withTimeout(
+            fetch(`/api/sales-dashboard?force=1&t=${Date.now()}`, {
+              cache: "no-store",
+              credentials: "include",
+            }),
+            EXCEL_SYNC_TIMEOUT_MS,
+            "סנכרון אקסל",
           );
-        }
-        const excelData = (await excelRes.json()) as DashboardData;
-        publishLiveDashboard(excelData);
-        setExcelStatus("done");
-
-        const people = await syncEmployeesFromExcel();
-        if (people.error) {
-          toast.error(people.error);
-        } else if (people.added > 0) {
-          toast.success(
-            `עודכנו ${people.added} כרטיסי עובדים מהאקסל (${people.found} משווקים)`,
-          );
+          const httpFailure = excelHttpSyncFailure(excelRes.status);
+          if (httpFailure) {
+            excelFailed = true;
+            setExcelStatus("failed");
+            toast.error(httpFailure);
+          } else {
+            const excelData = (await excelRes.json()) as DashboardData;
+            const excelProblem = salesExcelSyncProblem(excelData);
+            if (excelProblem) {
+              excelFailed = true;
+              setExcelStatus("failed");
+              toast.error(excelProblem);
+            } else {
+              publishLiveDashboard(excelData);
+              setExcelStatus("done");
+              const people = await syncEmployeesFromExcel();
+              if (people.error) {
+                toast.error(people.error);
+              } else if (people.added > 0) {
+                toast.success(
+                  `עודכנו ${people.added} כרטיסי עובדים מהאקסל (${people.found} משווקים)`,
+                );
+              }
+            }
+          }
+        } catch (err: unknown) {
+          excelFailed = true;
+          setExcelStatus("failed");
+          toast.error(err instanceof Error ? err.message : "סנכרון אקסל נכשל");
         }
       }
 
@@ -169,13 +205,16 @@ export function GlobalSyncButton({
             adsFailed = true;
             setFacebookStatus("failed");
             toast.error(facebook.error ?? "סנכרון פייסבוק נכשל");
+            if (facebook.tokenWarning) toast.warning(facebook.tokenWarning);
           } else if (facebook.warning) {
             adsFailed = true;
             setFacebookStatus("failed");
             toast.error(facebook.warning);
+            if (facebook.tokenWarning) toast.warning(facebook.tokenWarning);
           } else {
             setFacebookStatus("done");
-            if (!facebook.skipped) toast.success("פייסבוק עודכן");
+            if (facebook.tokenWarning) toast.warning(facebook.tokenWarning);
+            else if (!facebook.skipped) toast.success("פייסבוק עודכן");
           }
         } catch (err: unknown) {
           adsFailed = true;
@@ -192,7 +231,11 @@ export function GlobalSyncButton({
         setLeadsStatus("active");
         toast.message("מסנכרן שורנס…");
         try {
-          const leads = await syncLeadControl();
+          const leads = await withTimeout(
+            syncLeadControl(),
+            SURENSE_SYNC_TIMEOUT_MS,
+            "סנכרון שורנס",
+          );
           if (!leads.ok) {
             leadsFailed = true;
             setLeadsStatus("failed");
@@ -209,10 +252,8 @@ export function GlobalSyncButton({
       }
 
       notifyGlobalSyncDone();
-      if (adsFailed) {
-        toast.error(includeExcel ? "האקסל עודכן. גוגל או פייסבוק לא הושלמו" : "גוגל או פייסבוק לא הושלמו");
-      } else if (leadsFailed) {
-        toast.error("הסנכרון הסתיים. שורנס לא הושלם");
+      if (excelFailed || adsFailed || leadsFailed) {
+        toast.error("הסנכרון הסתיים חלקית. בדקו את ההודעות למעלה.");
       } else {
         toast.success("הסנכרון הסתיים — מוצג העדכון האחרון");
       }

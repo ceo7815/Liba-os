@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { agentRunErrorHe } from "@/lib/agents/run-error";
 import { cn } from "@/lib/utils";
 import { AgentApiKeyPanel } from "@/components/agents/api-key-panel";
 import { AgentGuidelinesPanel } from "@/components/agents/agent-guidelines-panel";
@@ -53,6 +54,7 @@ export type AgentDashboardData = {
     cost_usd: number | string;
     input_tokens: number;
     output_tokens: number;
+    error_message?: string | null;
   }>;
   costs: Array<{
     id: string;
@@ -752,6 +754,12 @@ export function AgentDashboard({
                         </span>
                       </div>
                     </div>
+
+                    {agentRunErrorHe(run.status, run.error_message) ? (
+                      <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-950">
+                        {agentRunErrorHe(run.status, run.error_message)}
+                      </p>
+                    ) : null}
 
                     {isRunning ? (
                       <div className="status-run-track mt-4" aria-hidden>

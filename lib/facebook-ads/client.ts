@@ -4,6 +4,7 @@ import {
   facebookGraphVersion,
 } from "@/lib/facebook-ads/config";
 import { publicErrorText } from "@/lib/sync-log";
+import { isRetryableHttpStatus, RetryableError, withRetry } from "@/lib/sync-retry";
 
 type GraphJson = Record<string, unknown>;
 
@@ -79,27 +80,33 @@ async function graphFetch(
   for (const [key, value] of Object.entries(search)) {
     if (value) url.searchParams.set(key, value);
   }
-  const signal =
-    typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
-      ? AbortSignal.timeout(GRAPH_FETCH_TIMEOUT_MS)
-      : undefined;
-  let res: Response;
-  try {
-    res = await fetch(url.toString(), { cache: "no-store", signal });
-  } catch (err) {
-    if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
-      console.error("[facebook-sync] graph timeout", { path });
-      throw new Error(`פייסבוק לא הגיב בזמן (${path})`);
+  return withRetry(async () => {
+    const signal =
+      typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
+        ? AbortSignal.timeout(GRAPH_FETCH_TIMEOUT_MS)
+        : undefined;
+    let res: Response;
+    try {
+      res = await fetch(url.toString(), { cache: "no-store", signal });
+    } catch (err) {
+      if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
+        console.error("[facebook-sync] graph timeout", { path });
+        throw new RetryableError(`פייסבוק לא הגיב בזמן (${path})`);
+      }
+      const message = publicErrorText(err instanceof Error ? err.message : "facebook fetch failed");
+      console.error("[facebook-sync] graph fetch failed", { path, message });
+      throw new RetryableError(message);
     }
-    const message = publicErrorText(err instanceof Error ? err.message : "facebook fetch failed");
-    console.error("[facebook-sync] graph fetch failed", { path, message });
-    throw new Error(message);
-  }
-  const json = asRecord(await res.json().catch(() => ({})));
-  if (!res.ok || json.error) {
-    throw new Error(graphError(json, res.status));
-  }
-  return json;
+    if (isRetryableHttpStatus(res.status)) {
+      const json = asRecord(await res.json().catch(() => ({})));
+      throw new RetryableError(graphError(json, res.status));
+    }
+    const json = asRecord(await res.json().catch(() => ({})));
+    if (!res.ok || json.error) {
+      throw new Error(graphError(json, res.status));
+    }
+    return json;
+  });
 }
 
 async function graphPages(

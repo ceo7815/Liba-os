@@ -11,6 +11,8 @@ import {
   envFacebookAdAccountId,
   facebookAdsOAuthConfigured,
 } from "@/lib/facebook-ads/config";
+import { facebookTokenExpiryWarning } from "@/lib/facebook-ads/expiry";
+import { facebookSettingsSyncStamp } from "@/lib/facebook-ads/sync-stamp";
 import {
   extendFacebookToken,
   facebookMeName,
@@ -324,15 +326,33 @@ export async function unmapFacebookAdsCampaign(
   return { ok: true };
 }
 
+async function readFacebookTokenWarning(): Promise<string | null> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("facebook_ads_settings")
+      .select("token_expires_at")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) return null;
+    const expiresAt = data?.token_expires_at;
+    return facebookTokenExpiryWarning(typeof expiresAt === "string" ? expiresAt : null);
+  } catch {
+    return null;
+  }
+}
+
 export async function syncFacebookAds(): Promise<{
   ok: boolean;
   skipped?: boolean;
   error?: string;
   warning?: string;
+  tokenWarning?: string;
   campaigns?: number;
   days?: number;
 }> {
   const profile = await requireSourcePnlAccess();
+  const tokenWarning = (await readFacebookTokenWarning()) ?? undefined;
   try {
     const bundle = await readFacebookAdsBundle();
     if (!bundle.connection.connected) {
@@ -346,7 +366,7 @@ export async function syncFacebookAds(): Promise<{
         tokenSource: facebookTokenSource(),
         message,
       });
-      return { ok: false, error: message };
+      return { ok: false, error: message, tokenWarning };
     }
 
     const to = jerusalemYmd();
@@ -407,7 +427,7 @@ export async function syncFacebookAds(): Promise<{
         message,
       });
       await writeSettingsError(message);
-      return { ok: false, error: message };
+      return { ok: false, error: message, tokenWarning };
     }
     const accountByCampaign = new Map(
       campaigns.map((row) => [row.id, { id: row.adAccountId, name: row.adAccountName }]),
@@ -475,8 +495,7 @@ export async function syncFacebookAds(): Promise<{
       id: 1,
       ad_account_id: syncedAccounts.map((row) => row.id).join(","),
       ad_account_name: syncedAccounts.map((row) => row.name).join(" · "),
-      last_synced_at: now,
-      last_error: warning || null,
+      ...facebookSettingsSyncStamp(now, warning),
       updated_by: profile.id,
       updated_at: now,
     });
@@ -492,6 +511,7 @@ export async function syncFacebookAds(): Promise<{
     return {
       ok: true,
       warning: warning || undefined,
+      tokenWarning,
       campaigns: campaigns.length,
       days: statRows.length,
     };
@@ -502,6 +522,6 @@ export async function syncFacebookAds(): Promise<{
       message,
     });
     await writeSettingsError(message);
-    return { ok: false, error: message };
+    return { ok: false, error: message, tokenWarning };
   }
 }
