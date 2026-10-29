@@ -839,6 +839,11 @@ button,
   .os-mesh main {
     padding-bottom: 1.25rem;
   }
+
+  .kpi-cube {
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
 }
 
 .shemesh-os .h-1.bg-highlight,
