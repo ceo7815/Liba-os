@@ -52,6 +52,7 @@ import {
   type PlReport,
 } from "@/lib/finance/categories";
 import { cn } from "@/lib/utils";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -354,24 +355,14 @@ export function FinancePanel({
       <div className="app-surface p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">מתאריך</Label>
-              <Input
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                className="h-10 w-40 rounded-xl"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">עד תאריך</Label>
-              <Input
-                type="date"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                className="h-10 w-40 rounded-xl"
-              />
-            </div>
+            <DateRangeField
+              from={from}
+              to={to}
+              onChange={(next) => {
+                setFrom(next.from);
+                setTo(next.to);
+              }}
+            />
             <Button
               type="button"
               variant="outline"
