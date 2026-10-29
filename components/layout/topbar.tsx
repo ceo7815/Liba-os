@@ -75,7 +75,7 @@ export function Topbar({ profile }: TopbarProps) {
           <div className="hidden items-center gap-2.5 sm:flex">
             <div
               aria-hidden
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-highlight text-[10px] font-bold text-highlight-foreground"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f2f2f4] text-[10px] font-semibold text-foreground"
             >
               {initials}
             </div>

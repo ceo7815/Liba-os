@@ -81,16 +81,16 @@ export default function DesignLabPage({
 
   if (view === "shemesh") {
     return (
-      <div className="shemesh-os os-mesh min-h-dvh bg-background">
+      <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background">
         <ShemeshPulseProvider pulse={designLabShemesh(now)}>
           <Suspense fallback={null}>
-            <div className="flex min-h-dvh">
-              <ShemeshSidebar className="hidden lg:flex" />
-              <div className="min-w-0 flex-1 overflow-x-clip px-3 py-4 pb-28 lg:px-6">
+            <ShemeshSidebar className="hidden lg:flex" />
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
                 <ShemeshDashboard />
               </div>
+              <ShemeshMobileDock />
             </div>
-            <ShemeshMobileDock />
           </Suspense>
         </ShemeshPulseProvider>
       </div>

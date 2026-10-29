@@ -60,7 +60,7 @@ export function ShemeshSidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-e border-black/[0.08] bg-white",
+        "m-4 me-2 flex w-[16.5rem] shrink-0 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] bg-white/75 shadow-card backdrop-blur-xl",
         className,
       )}
     >
@@ -76,7 +76,7 @@ export function ShemeshSidebar({ className }: { className?: string }) {
           />
         </Link>
         <div className="mt-3 h-px w-full bg-black/[0.06]">
-          <div className="mx-auto h-px w-10 bg-highlight" />
+          <div className="mx-auto h-px w-10 bg-black/10" />
         </div>
       </div>
 
@@ -132,15 +132,13 @@ function ShemeshNavItem({
       onMouseEnter={() => router.prefetch(href)}
       onFocus={() => router.prefetch(href)}
       className={cn(
-        "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+        "relative flex items-center gap-2.5 rounded-full px-3 py-2 text-[13px] font-medium transition-colors",
         active
-          ? "bg-highlight/10 text-foreground"
-          : "text-black/55 hover:bg-highlight/10 hover:text-foreground",
+          ? "bg-[#f2f2f4] text-foreground"
+          : "text-black/55 hover:bg-[#f2f2f4] hover:text-foreground",
       )}
     >
-      {active ? (
-        <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-highlight" />
-      ) : null}
+      {active ? <span className="size-1.5 shrink-0 rounded-full bg-highlight" /> : null}
       <Icon className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-black/35")} />
       <span className="truncate">{label}</span>
     </Link>

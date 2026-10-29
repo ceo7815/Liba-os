@@ -58,7 +58,7 @@ export function DashboardCampaignStrip() {
     <section className="glass overflow-hidden rounded-lg sm:rounded-[var(--radius)]">
       <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2 sm:px-5">
         <div>
-          <h2 className="text-sm font-semibold tracking-tight">קמפיינים של ליבה</h2>
+          <h2 className="text-[1.35rem] font-semibold tracking-tight">קמפיינים של ליבה</h2>
           <p className="text-[11px] text-muted-foreground">
             {dayLabel(pulse.from)} עד {dayLabel(pulse.to)}
             {synced ? ` · עודכן ${synced}` : ""}

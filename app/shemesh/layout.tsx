@@ -100,7 +100,7 @@ export default async function ShemeshLayout({
           <div className="print:hidden">
             <ShemeshTopbar profile={profile} />
           </div>
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-3 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-5 lg:pb-5 print:block print:h-auto print:overflow-visible print:p-0">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-4 py-6 sm:px-6 lg:py-8 print:block print:h-auto print:overflow-visible print:p-0">
             <Suspense fallback={<p className="text-sm text-muted-foreground">טוען...</p>}>
               <ShemeshPulseProvider pulse={live}>
                 <ShemeshSourceProvider sources={sources}>{children}</ShemeshSourceProvider>

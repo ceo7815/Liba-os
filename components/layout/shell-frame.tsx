@@ -39,7 +39,7 @@ export function ShellFrame({
   return (
     <div
       data-module={module ?? moduleFromPath(pathname)}
-      className="os-mesh flex min-h-dvh bg-background text-foreground"
+      className="os-mesh flex h-dvh max-h-dvh min-h-0 overflow-hidden bg-background text-foreground"
     >
       {children}
     </div>

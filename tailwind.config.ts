@@ -13,7 +13,14 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-rubik)", "system-ui", "sans-serif"],
+        sans: [
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "var(--font-rubik)",
+          "sans-serif",
+        ],
       },
       colors: {
         background: "hsl(var(--background) / <alpha-value>)",

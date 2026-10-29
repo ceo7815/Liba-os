@@ -198,8 +198,8 @@ export function ControlCenterScreen() {
   ];
 
   return (
-    <div className="space-y-3">
-      <section className="glass glass-noise relative overflow-hidden rounded-[1.15rem] border border-border">
+    <div className="space-y-6">
+      <section className="enter glass glass-noise relative overflow-hidden border border-black/[0.06]">
         <div className="grid grid-cols-1 gap-px bg-border min-[480px]:grid-cols-2 lg:grid-cols-4">
           <button
             type="button"
@@ -322,11 +322,13 @@ export function ControlCenterScreen() {
         </div>
       </section>
 
-      <DashboardCampaignStrip />
+      <div className="enter" style={{ ["--i" as string]: 2 }}>
+        <DashboardCampaignStrip />
+      </div>
 
-      <section className="space-y-2">
+      <section className="enter space-y-4" style={{ ["--i" as string]: 3 }}>
         <div className="flex items-baseline justify-between gap-3 px-0.5">
-          <h2 className="text-base font-semibold tracking-tight">מובילים החודש</h2>
+          <h2 className="text-[1.35rem] font-semibold tracking-tight">מובילים החודש</h2>
           <p className="text-[11px] text-muted-foreground">
             לחצו על קובייה לפירוט
           </p>
@@ -340,14 +342,14 @@ export function ControlCenterScreen() {
                 key={item.kind}
                 type="button"
                 onClick={() => setOpenKind(item.kind)}
-                className="kpi-cube group relative min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2.5 text-start transition-[transform,background-color,border-color] active:scale-[0.98] hover:border-black/10 hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:px-4 sm:py-3"
+                className="kpi-cube group relative min-w-0 overflow-hidden border border-black/[0.06] bg-card px-3 py-3 text-start transition-[transform,background-color,border-color] active:scale-[0.98] hover:bg-[#f7f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:px-4 sm:py-4"
               >
-                <span className="absolute inset-y-0 start-0 w-1 origin-top scale-y-100 bg-highlight transition-transform duration-300 group-hover:scale-y-110" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight/35 sm:size-8">
+                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f2f2f4]">
                       <Icon className="size-3.5 text-foreground sm:size-4" />
                     </span>
+                    <span className="size-1.5 shrink-0 rounded-full bg-highlight" aria-hidden />
                     <p className="truncate text-[11px] font-medium text-muted-foreground">
                       {item.label}
                     </p>

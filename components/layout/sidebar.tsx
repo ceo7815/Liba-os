@@ -152,11 +152,11 @@ export function Sidebar({ profile, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col bg-transparent p-2 pe-1",
+        "flex w-[18.5rem] shrink-0 flex-col bg-transparent p-4 pe-3",
         className,
       )}
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.35rem] border border-black/[0.06] bg-white/70 text-sidebar-foreground shadow-card backdrop-blur-xl backdrop-saturate-150">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] bg-white/70 text-sidebar-foreground shadow-card backdrop-blur-xl backdrop-saturate-150">
       <div className="flex flex-col items-center px-5 pb-5 pt-7">
         <LogoBadge centered className="w-full" />
         <div className="mt-5 h-px w-full bg-sidebar-border">
@@ -409,15 +409,13 @@ function ExpandableNav({
         <Link
           href={href}
           className={cn(
-            "relative flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors duration-rise ease-out",
+            "relative flex min-w-0 flex-1 items-center gap-2.5 rounded-full px-3 py-2 text-[13px] font-medium transition-colors duration-rise ease-out",
             sectionActive
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+              ? "bg-[#f2f2f4] text-foreground"
+              : "text-muted-foreground hover:bg-[#f2f2f4]/80 hover:text-foreground",
           )}
         >
-          {overviewActive && (
-            <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-module" />
-          )}
+          {overviewActive && <span className="size-1.5 shrink-0 rounded-full bg-highlight" />}
           <Icon
             className={cn(
               "h-4 w-4 shrink-0",
@@ -464,15 +462,13 @@ function SubNavItem({
       <Link
         href={href}
         className={cn(
-          "relative block rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors duration-rise ease-out",
+          "relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-[12px] font-medium transition-colors duration-rise ease-out",
           active
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+            ? "bg-[#f2f2f4] text-foreground"
+            : "text-muted-foreground hover:bg-[#f2f2f4]/80 hover:text-foreground",
         )}
       >
-        {active && (
-          <span className="absolute inset-y-1 start-0 w-[2px] rounded-full bg-module" />
-        )}
+        {active && <span className="size-1.5 shrink-0 rounded-full bg-highlight" />}
         {label}
       </Link>
     </li>
@@ -516,15 +512,13 @@ function NavItem({
       onMouseEnter={() => router.prefetch(href)}
       onFocus={() => router.prefetch(href)}
       className={cn(
-        "relative flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors duration-rise ease-out",
+        "relative flex items-center gap-2.5 rounded-full px-3 py-2 text-[13px] font-medium text-foreground transition-colors duration-rise ease-out",
         active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+          ? "bg-[#f2f2f4]"
+          : "text-muted-foreground hover:bg-[#f2f2f4]/80 hover:text-foreground",
       )}
     >
-      {active && (
-        <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-module" />
-      )}
+      {active && <span className="size-1.5 shrink-0 rounded-full bg-highlight" />}
       <Icon
         className={cn(
           "h-4 w-4 shrink-0",
