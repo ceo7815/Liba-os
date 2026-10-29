@@ -5,6 +5,7 @@
 import { COL, PROCESS, STATUS, sourcePnlKindForProcess } from "@/lib/sales-dashboard/columns";
 import { parseSalesWorkbook } from "@/lib/sales-dashboard/parse";
 import { assertOperatingBrandRules } from "@/lib/finance/operating-brand";
+import { assertShemeshRowStaysInLibaSalesReport } from "@/lib/sales-dashboard/sales-report-rows";
 import { assertContractWagesDoNotMix } from "@/lib/employees/contract";
 import { assertLeadCostRules } from "@/lib/employees/lead-costs";
 import { assertFormulasCatalog } from "@/lib/formulas/catalog";
@@ -77,6 +78,7 @@ export function buildSampleSalesWorkbook(): Uint8Array {
 
 export function assertSampleWorkbookParses() {
   assertOperatingBrandRules();
+  assertShemeshRowStaysInLibaSalesReport();
   const parsed = parseSalesWorkbook(buildSampleSalesWorkbook(), "sample.xlsx");
   if (parsed.active !== 1) throw new Error(`expected 1 active, got ${parsed.active}`);
   if (parsed.pending !== 1) throw new Error(`expected 1 pending, got ${parsed.pending}`);

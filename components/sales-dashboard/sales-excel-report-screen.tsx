@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatIls } from "@/lib/sales-dashboard/campaign-math";
+import { includeInLibaSalesReport, salesExcelPremium } from "@/lib/sales-dashboard/sales-report-rows";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
 import { presentShemeshWorkbook, shemeshSheetHint } from "@/lib/shemesh/sales-excel-view";
 import {
@@ -19,7 +20,6 @@ import {
   formatWorkbookDateDisplay,
   isDateHeader,
   isPolicyHeader,
-  parsePremiumCell,
   parseWorkbookDate,
   premiumColumnIndex,
   workbookFromDashboard,
@@ -194,6 +194,7 @@ export function SalesExcelReportScreen({
   const agentCol = sheet
     ? findHeaderIndex(sheet.headers, "משווק", ...(company === "shemesh" ? ["שם נציג", "נציג"] : []))
     : -1;
+  const sourceCol = sheet ? findHeaderIndex(sheet.headers, "מקור") : -1;
   const premiumCol = sheet ? premiumColumnIndex(sheet.headers) : -1;
   const policyCol = sheet ? sheet.headers.findIndex((header) => isPolicyHeader(header)) : -1;
 
@@ -254,6 +255,14 @@ export function SalesExcelReportScreen({
       if (quick.status && statusCol >= 0 && (row.cells[statusCol] ?? "") !== quick.status) return false;
       if (quick.process && processCol >= 0 && (row.cells[processCol] ?? "") !== quick.process) return false;
       if (quick.agent && agentCol >= 0 && (row.cells[agentCol] ?? "") !== quick.agent) return false;
+      if (
+        !includeInLibaSalesReport({
+          agent: agentCol >= 0 ? row.cells[agentCol] : "",
+          source: sourceCol >= 0 ? row.cells[sourceCol] : "",
+        })
+      ) {
+        return false;
+      }
       if (policyNeedle && policyCol >= 0) {
         const policy = (row.cells[policyCol] ?? "").replace(/\s/g, "").toLowerCase();
         if (!policy.includes(policyNeedle)) return false;
@@ -290,6 +299,7 @@ export function SalesExcelReportScreen({
     statusCol,
     processCol,
     agentCol,
+    sourceCol,
     policyCol,
     dateCol,
     dateFrom,
@@ -313,8 +323,8 @@ export function SalesExcelReportScreen({
 
   const premiumSum = useMemo(() => {
     if (premiumCol < 0) return 0;
-    return visible.reduce((sum, row) => sum + parsePremiumCell(row.cells[premiumCol] ?? ""), 0);
-  }, [visible, premiumCol]);
+    return salesExcelPremium(visible, premiumCol, agentCol, sourceCol);
+  }, [visible, premiumCol, agentCol, sourceCol]);
 
   const selected = visible.find((row) => row.id === selectedId) ?? null;
 

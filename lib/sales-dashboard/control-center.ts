@@ -1,10 +1,7 @@
 import { productionDateOf, shiftCalendarMonth } from "@/lib/employees/contract";
 import { excelAgentKey } from "@/lib/employees/excel-sellers";
-import {
-  assignOperatingBrand,
-  matchesOperatingBrand,
-  type OperatingBrandId,
-} from "@/lib/finance/operating-brand";
+import type { OperatingBrandId } from "@/lib/finance/operating-brand";
+import { productionsForLibaKpi } from "@/lib/sales-dashboard/sales-report-rows";
 import {
   formatIls,
   jerusalemYmd,
@@ -370,16 +367,7 @@ export function buildControlCenterSnapshot(
 ): ControlCenterSnapshot | null {
   if (!data || data.source !== "live") return null;
 
-  const productions = (data.marketing?.productions ?? []).filter((row) =>
-    matchesOperatingBrand(
-      assignOperatingBrand({
-        agent: row.agent,
-        source: row.source,
-        shemeshEmployeeNames: scope.shemeshEmployeeNames,
-      }),
-      scope.brand,
-    ),
-  );
+  const productions = productionsForLibaKpi(data.marketing?.productions ?? [], scope);
   const window = monthWindow(productions, now);
   const pendingRows = productions.filter((row) => row.status === "pending" && isReportSale(row));
   const premium = sumPremium(window.activeRows);
@@ -475,16 +463,7 @@ export function buildControlCenterDetail(
   appointmentPeriod: AgentAppointmentPeriod = { preset: "month" },
 ): ControlCenterDetail | null {
   if (!data || data.source !== "live") return null;
-  const productions = (data.marketing?.productions ?? []).filter((row) =>
-    matchesOperatingBrand(
-      assignOperatingBrand({
-        agent: row.agent,
-        source: row.source,
-        shemeshEmployeeNames: scope.shemeshEmployeeNames,
-      }),
-      scope.brand,
-    ),
-  );
+  const productions = productionsForLibaKpi(data.marketing?.productions ?? [], scope);
   const window = monthWindow(productions, now);
   const monthLabel = window.rangeLabel;
   const pendingRows = productions.filter((row) => row.status === "pending" && isReportSale(row));
