@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Wallet } from "lucide-react";
+import { AuthCard } from "@/components/auth/auth-card";
+import { LoginForm } from "@/components/auth/login-form";
 import { ControlCenterScreen } from "@/components/dashboard/control-center-screen";
 import { DashHero } from "@/components/dashboard/dash-hero";
 import { FinancePanel } from "@/components/finance/finance-panel";
@@ -58,6 +60,24 @@ export default function DesignLabPage({
     day: "numeric",
     month: "long",
   }).format(now);
+
+  if (view === "login" || view === "login-shemesh") {
+    const shemesh = view === "login-shemesh";
+    return (
+      <AuthCard
+        brand={shemesh ? "shemesh" : "liba"}
+        title={shemesh ? "התחברות לשמש" : "התחברות לליבה"}
+        description={
+          shemesh
+            ? "גישה מאובטחת למערכת של שמש"
+            : "גישה מאובטחת לפלטפורמת הניהול הפנימית של ליבה"
+        }
+        footer={shemesh ? "© שמש · מערכת פנימית" : "© ליבה ביטוח ופנסיוני · מערכת פנימית"}
+      >
+        <LoginForm redirectTo={shemesh ? "/shemesh" : "/dashboard"} />
+      </AuthCard>
+    );
+  }
 
   if (view === "shemesh") {
     return (
