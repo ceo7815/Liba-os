@@ -17,6 +17,7 @@ import {
 } from "@/app/actions/users";
 import { InviteUserDialog } from "@/components/users/invite-user-dialog";
 import { Badge } from "@/components/ui/badge";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -56,9 +57,9 @@ export function UsersAccessScreen({
         <div>
           <p className="text-xs font-medium text-muted-foreground">ארגון</p>
           <div className="mt-1 flex items-center gap-2.5">
-            <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
+            <IconBadge>
               <Shield className="size-5" />
-            </span>
+            </IconBadge>
             <h1 className="text-2xl font-semibold tracking-tight">
               ניהול משתמשים והרשאות
             </h1>

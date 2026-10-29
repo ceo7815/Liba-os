@@ -342,8 +342,43 @@ export function FixedExpensesScreen({
         </div>
       ) : (
         <div className="app-surface overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[44rem] text-sm">
+          <ul className="space-y-2 p-3 sm:hidden">
+            {filtered.map((cost) => {
+              const amount = cost.this_month_amount ?? cost.default_amount;
+              return (
+                <li key={cost.id} className="rounded-2xl border border-black/[0.06] bg-white px-3 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 truncate text-sm font-semibold">{cost.title}</p>
+                    <p className="shrink-0 text-sm font-semibold tabular-nums">{ils(amount)}</p>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{cost.vendor_name || "בלי ספק"} · {cost.last_paid_at ?? "לא שולם"}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className={cn("status-chip", cost.expense_kind === "fixed" ? "status-chip-ok" : "status-chip-wait")}>
+                      {cost.expense_kind === "fixed" ? "קבועה" : "משתנה"}
+                    </span>
+                    <span className={cn("status-chip", cost.allocation_type === "office" ? "status-chip-info" : "status-chip-muted")}>
+                      {cost.allocation_type === "office" ? "משרד" : "מקורות"}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 h-8 rounded-lg px-2.5 text-xs"
+                    onClick={() => {
+                      setEditing(cost);
+                      setEditorOpen(true);
+                    }}
+                  >
+                    <Pencil className="size-3.5" />
+                    עריכה
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hidden overflow-x-auto sm:block">
+            <table className="data-sheet w-full min-w-[44rem] text-sm">
               <thead>
                 <tr className="border-b border-border bg-black/[0.02] text-start text-xs font-semibold text-muted-foreground">
                   <th className="px-4 py-3 font-semibold">שם הוצאה</th>

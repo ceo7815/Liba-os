@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Cable, ChevronLeft, FileSpreadsheet, ListChecks, Megaphone, Phone, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
 import type { ConnectedInterface } from "@/lib/interfaces/status";
 import { cn } from "@/lib/utils";
@@ -21,9 +22,9 @@ export function InterfacesScreen({ items }: { items: ConnectedInterface[] }) {
       <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
         <p className="text-xs font-medium text-muted-foreground">מערכת</p>
         <div className="mt-1 flex items-center gap-2.5">
-          <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-800">
+          <IconBadge>
             <Cable className="size-5" />
-          </span>
+          </IconBadge>
           <h1 className="text-2xl font-semibold tracking-tight">ממשקים מחוברים</h1>
         </div>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">

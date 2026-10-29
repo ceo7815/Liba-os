@@ -1159,7 +1159,6 @@ button,
   opacity: var(--aurora-blob);
   mix-blend-mode: multiply;
   animation: blob-drift 32s ease-in-out infinite alternate;
-  will-change: transform;
 }
 
 .aurora span:nth-child(1) { background: #ffd60a; top: -22%; inset-inline-start: -14%; width: 42vw; height: 42vw; }
@@ -1531,6 +1530,13 @@ button,
 }
 
 @media (max-width: 767px) {
+  /* Static wash on a phone. Five blurred layers drifting is a GPU tax for no reading benefit. */
+  .aurora span {
+    animation: none !important;
+    filter: blur(32px);
+    will-change: auto;
+  }
+
   [data-overlay="dialog"] {
     left: 0 !important;
     right: 0 !important;
@@ -1660,6 +1666,7 @@ button,
   .sync-live,
   .aurora span {
     animation: none !important;
+    will-change: auto;
   }
 
   .agent-tool-cube:hover,

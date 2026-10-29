@@ -26,6 +26,7 @@ import {
 } from "@/components/call-control/agent-ops-panel";
 import { CallCard } from "@/components/call-control/call-card";
 import { FilterChip, StatusPill } from "@/components/call-control/visual";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { CDR_POST_OUTCOMES } from "@/lib/voicenter/outcomes";
 import {
   formatCallClock,
@@ -45,6 +46,8 @@ type Props = {
   isAdmin: boolean;
   keys: AgentKeyMeta[];
   initialManagement: CallControlManagement;
+  /** Dev preview. Does not poll or open a live call card. */
+  preview?: boolean;
 };
 
 const STATUS_FILTERS: Array<{ id: "all" | ProcessingStatus; label: string }> = [
@@ -102,6 +105,7 @@ export function CallControlScreen({
   isAdmin,
   keys,
   initialManagement,
+  preview = false,
 }: Props) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
@@ -146,9 +150,11 @@ export function CallControlScreen({
   }, [initialManagement]);
 
   useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
-      setSelectedRow(null);
+    if (preview || !selectedId) {
+      if (!selectedId) {
+        setDetail(null);
+        setSelectedRow(null);
+      }
       return;
     }
     let cancelled = false;
@@ -162,9 +168,10 @@ export function CallControlScreen({
     return () => {
       cancelled = true;
     };
-  }, [selectedId]);
+  }, [preview, selectedId]);
 
   useEffect(() => {
+    if (preview) return;
     const timer = window.setInterval(() => {
       void listCallControlCalls().then((result) => {
         if (result.error) return;
@@ -193,9 +200,10 @@ export function CallControlScreen({
       });
     }, 8000);
     return () => window.clearInterval(timer);
-  }, [selectedId]);
+  }, [preview, selectedId]);
 
   function writeUrl(next: { tab?: WorkspaceTab; call?: string | null }) {
+    if (preview) return;
     const params = new URLSearchParams();
     const nextTab = next.tab ?? tab;
     const nextCall = next.call === undefined ? selectedId : next.call;
@@ -242,9 +250,9 @@ export function CallControlScreen({
         <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
-              <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-2xl bg-highlight/35 sm:size-10">
+              <IconBadge className="size-9 sm:size-10">
                 <Headphones className="size-4 sm:size-5" />
-              </span>
+              </IconBadge>
               <h1 className="text-[1.45rem] font-semibold leading-tight tracking-tight sm:text-3xl sm:leading-none">
                 בקרת שיחות
               </h1>
@@ -400,8 +408,28 @@ export function CallControlScreen({
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[52rem] text-right text-sm">
+              <>
+              <ul className="space-y-2 p-3 sm:hidden">
+                {filtered.map((row) => (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      onClick={() => openCall(row.id)}
+                      className="w-full rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-start"
+                    >
+                      <span className="flex items-start justify-between gap-2">
+                        <span className="min-w-0 truncate text-sm font-semibold">{row.customerName ?? "לקוח לא זוהה"}</span>
+                        <StatusPill status={row.processingStatus} />
+                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {row.agentName} · {formatCallClock(row.callDate)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="data-sheet w-full min-w-[52rem] text-right text-sm">
                   <thead className="text-[11px] text-muted-foreground">
                     <tr className="border-b border-border">
                       <th className="px-4 py-3 font-medium">תאריך</th>
@@ -482,6 +510,7 @@ export function CallControlScreen({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         </div>
