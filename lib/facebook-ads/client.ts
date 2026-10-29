@@ -305,3 +305,57 @@ export async function listFacebookDailyMetrics(
     }))
     .filter((row) => row.campaignId && /^\d{4}-\d{2}-\d{2}$/.test(row.day));
 }
+
+export type FacebookAdDailyMetric = {
+  campaignId: string;
+  campaignName: string;
+  adId: string;
+  adName: string;
+  day: string;
+  cost: number;
+  leads: number;
+};
+
+export async function listFacebookAdInsights(
+  accessToken: string,
+  adAccountId: string,
+  from: string,
+  to: string,
+): Promise<FacebookAdDailyMetric[]> {
+  const rows: GraphJson[] = [];
+  let fields = "campaign_id,campaign_name,ad_id,ad_name,spend,date_start,actions";
+  for (const chunk of monthRanges(from, to)) {
+    try {
+      const part = await graphPages(`/${actId(adAccountId)}/insights`, accessToken, {
+        level: "ad",
+        fields,
+        time_increment: "1",
+        time_range: JSON.stringify({ since: chunk.from, until: chunk.to }),
+        limit: "500",
+      });
+      rows.push(...part);
+    } catch (err) {
+      if (!fields.includes("actions")) throw err;
+      fields = "campaign_id,campaign_name,ad_id,ad_name,spend,date_start";
+      const part = await graphPages(`/${actId(adAccountId)}/insights`, accessToken, {
+        level: "ad",
+        fields,
+        time_increment: "1",
+        time_range: JSON.stringify({ since: chunk.from, until: chunk.to }),
+        limit: "500",
+      });
+      rows.push(...part);
+    }
+  }
+  return rows
+    .map((row) => ({
+      campaignId: asString(row.campaign_id),
+      campaignName: asString(row.campaign_name),
+      adId: asString(row.ad_id),
+      adName: asString(row.ad_name),
+      day: asString(row.date_start).slice(0, 10),
+      cost: Math.round(asNumber(row.spend) * 100) / 100,
+      leads: facebookWebsiteLeadCount(row.actions),
+    }))
+    .filter((row) => row.adId && /^\d{4}-\d{2}-\d{2}$/.test(row.day));
+}

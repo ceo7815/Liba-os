@@ -43,6 +43,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@hebcal ./node_modul
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/quick-lru ./node_modules/quick-lru
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/temporal-polyfill ./node_modules/temporal-polyfill
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pngjs ./node_modules/pngjs
+# next/image loads sharp only at runtime. Standalone tracing drops the
+# native @img bindings, which throws in production.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/detect-libc ./node_modules/detect-libc
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/semver ./node_modules/semver
 
 USER nextjs
 EXPOSE 3000

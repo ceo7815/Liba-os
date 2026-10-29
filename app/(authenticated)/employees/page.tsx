@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { listFinanceEmployees } from "@/app/actions/finance-people";
 import { EmployeesPageClient } from "@/components/employees/employees-page-client";
-import {
-  OperatingBrandBar,
-  OperatingBrandProvider,
-} from "@/components/finance/operating-brand-bar";
+import { OperatingBrandProvider } from "@/components/finance/operating-brand-bar";
 import { requireEmployeesAccess } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -20,7 +17,7 @@ export default async function EmployeesPage() {
   const activeCount = list.employees.filter((e) => e.is_active).length;
 
   return (
-    <OperatingBrandProvider>
+    <OperatingBrandProvider lockedBrand="liba">
       <section className="mx-auto w-full max-w-[72rem] space-y-4 sm:space-y-6">
         <header className="dash-enter px-0.5 sm:px-0">
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
@@ -48,10 +45,6 @@ export default async function EmployeesPage() {
             </p>
           ) : null}
         </header>
-
-        <div className="dash-enter" style={{ animationDelay: "40ms" }}>
-          <OperatingBrandBar />
-        </div>
 
         <div className="dash-enter" style={{ animationDelay: "80ms" }}>
           <EmployeesPageClient initialEmployees={list.employees} />

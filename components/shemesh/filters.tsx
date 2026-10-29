@@ -1,5 +1,6 @@
 "use client";
 
+import { HebrewDateRange } from "@/components/shemesh/hebrew-date";
 import { useShemeshFilter } from "@/components/shemesh/use-shemesh-view";
 import {
   AD_PLATFORM_LABEL,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/shemesh/model";
 
 const fieldClass =
-  "h-8 rounded-lg border border-black/10 bg-white px-2 text-xs font-medium text-foreground";
+  "h-8 rounded-lg border border-border bg-card px-2 text-xs font-medium text-foreground";
 
 export function ShemeshFilters({
   showPlatform = false,
@@ -23,23 +24,7 @@ export function ShemeshFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <input
-        type="date"
-        dir="ltr"
-        aria-label="מתאריך"
-        value={filter.from}
-        onChange={(event) => setFilter({ from: event.target.value })}
-        className={fieldClass}
-      />
-      <span className="text-xs text-muted-foreground">עד</span>
-      <input
-        type="date"
-        dir="ltr"
-        aria-label="עד תאריך"
-        value={filter.to}
-        onChange={(event) => setFilter({ to: event.target.value })}
-        className={fieldClass}
-      />
+      <HebrewDateRange from={filter.from} to={filter.to} onChange={(next) => setFilter(next)} />
       {showPlatform ? (
         <select
           aria-label="מקור פרסום"

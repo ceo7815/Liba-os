@@ -1,3 +1,5 @@
+import { adAccountBrand, googleCustomerBrand } from "@/lib/finance/brand-accounts";
+import { SHEMESH_SUPPLIER_SOURCES } from "@/lib/shemesh/catalog";
 import { normalizeExcelText } from "@/lib/sales-dashboard/columns";
 import {
   canonicalAgentName,
@@ -44,18 +46,19 @@ export function textHasMusdarToken(value: string | null | undefined): boolean {
   return MUSDAR_TOKENS.some((token) => textHasStandaloneToken(v, token));
 }
 
+/** Exact supplier-source label. A name that merely contains «שמש» is not a brand. */
 export function isShemeshSourceName(name: string | null | undefined): boolean {
-  return textHasShemeshToken(name);
+  const value = normalizeExcelText(name ?? "");
+  if (!value) return false;
+  return SHEMESH_SUPPLIER_SOURCES.some((source) => normalizeExcelText(source) === value);
 }
 
 export function isShemeshAgentName(
   name: string | null | undefined,
   shemeshEmployeeNames: Iterable<string> = [],
 ): boolean {
-  const raw = normalizeExcelText(name ?? "");
-  if (!raw) return false;
-  if (textHasShemeshToken(raw)) return true;
-  const canon = canonicalAgentName(raw);
+  const canon = canonicalAgentName(normalizeExcelText(name ?? ""));
+  if (!canon) return false;
   for (const employee of Array.from(shemeshEmployeeNames)) {
     if (canonicalAgentName(employee) === canon) return true;
   }
@@ -88,10 +91,11 @@ export function assignOperatingBrand(input: {
 }
 
 export function matchesOperatingBrand(
-  assigned: AssignedOperatingBrand,
+  assigned: AssignedOperatingBrand | null,
   selected: OperatingBrandId,
 ): boolean {
   if (selected === "all") return true;
+  if (!assigned) return false;
   return assigned === selected;
 }
 
@@ -123,14 +127,13 @@ export function adsSourceBrand(sourceName: string): AssignedOperatingBrand {
   return isShemeshSourceName(sourceName) ? "shemesh" : "liba";
 }
 
-/** Google campaign «פיננסים» = שמש. «ביטוחים» / liba = ליבה. */
+/** Google brand follows the customer id allowlist. The campaign name is ignored. */
 export function googleCampaignOperatingBrand(
   campaignName: string,
-): AssignedOperatingBrand {
-  const v = normalizeExcelText(campaignName);
-  if (!v) return "liba";
-  if (v.includes("פיננס") || textHasShemeshToken(v)) return "shemesh";
-  return "liba";
+  customerId?: string | null,
+): AssignedOperatingBrand | null {
+  void campaignName;
+  return googleCustomerBrand(customerId);
 }
 
 export function filterGoogleCampaignsForBrand<
@@ -142,29 +145,41 @@ export function filterGoogleCampaignsForBrand<
   );
 }
 
-/** Shemesh ad account names contain «שמש». Every other connected account stays on Liba. */
+/** Brand comes from the ad-account id allowlist. The account name is ignored. */
 export function facebookAccountBrand(
-  accountName: string | null | undefined,
+  account:
+    | string
+    | null
+    | undefined
+    | { accountId?: string | null; accountName?: string | null },
 ): AssignedOperatingBrand | null {
-  const name = normalizeExcelText(accountName ?? "");
-  if (!name) return null;
-  return textHasShemeshToken(name) ? "shemesh" : "liba";
+  const id = typeof account === "string" || account == null ? account : account.accountId;
+  return adAccountBrand(id);
 }
 
-/** Ad account decides the company. A mapped cube is only a fallback before the account is known. */
+/** Known account id wins. Without an id, only an explicit supplier source is Shemesh. */
 export function facebookCampaignVisibleInBrand(
-  campaign: { sourceName: string | null; adAccountName?: string | null },
+  campaign: {
+    sourceName: string | null;
+    adAccountName?: string | null;
+    adAccountId?: string | null;
+  },
   brand: OperatingBrandId,
 ): boolean {
   if (brand === "all") return true;
-  const accountBrand = facebookAccountBrand(campaign.adAccountName);
-  if (accountBrand) return accountBrand === brand;
-  if (!campaign.sourceName) return true;
-  return matchesOperatingBrand(adsSourceBrand(campaign.sourceName), brand);
+  const id = campaign.adAccountId?.trim();
+  if (id) return facebookAccountBrand({ accountId: id }) === brand;
+  if (isShemeshSupplierSource(campaign.sourceName)) return brand === "shemesh";
+  if (campaign.sourceName) return brand === "liba";
+  return false;
+}
+
+function isShemeshSupplierSource(name: string | null | undefined): boolean {
+  return isShemeshSourceName(name);
 }
 
 export function filterFacebookCampaignsForBrand<
-  T extends { sourceName: string | null; adAccountName?: string | null },
+  T extends { sourceName: string | null; adAccountName?: string | null; adAccountId?: string | null },
 >(campaigns: T[], brand: OperatingBrandId): T[] {
   if (brand === "all") return campaigns;
   return campaigns.filter((row) => facebookCampaignVisibleInBrand(row, brand));
@@ -176,16 +191,16 @@ export function parseOperatingBrand(value: string | null | undefined): Operating
   return null;
 }
 
+/** Brand field only: wait circle exactly «שמש». A name or a note is not a brand. */
 export function employeeLooksLikeShemesh(input: {
   fullName?: string | null;
   waitCircle?: string | null;
   notes?: string | null;
 }): boolean {
-  return (
-    textHasShemeshToken(input.waitCircle) ||
-    textHasShemeshToken(input.fullName) ||
-    textHasShemeshToken(input.notes)
-  );
+  void input.fullName;
+  void input.notes;
+  const circle = normalizeExcelText(input.waitCircle ?? "").toLowerCase();
+  return circle === "שמש" || circle === "shemesh";
 }
 
 export function displayWaitCircle(value: string | null | undefined): string {
@@ -222,10 +237,10 @@ export function fixedCostLooksLikeShemesh(cost: {
   vendor_name?: string | null;
   allocations?: { source_name: string }[];
 }): boolean {
-  if (textHasShemeshToken(cost.title)) return true;
-  if (textHasShemeshToken(cost.notes)) return true;
-  if (textHasShemeshToken(cost.vendor_name)) return true;
-  return (cost.allocations ?? []).some((row) => textHasShemeshToken(row.source_name));
+  void cost.notes;
+  void cost.vendor_name;
+  if (isShemeshSourceName(cost.title)) return true;
+  return (cost.allocations ?? []).some((row) => isShemeshSourceName(row.source_name));
 }
 
 export function assertOperatingBrandRules() {
@@ -237,8 +252,8 @@ export function assertOperatingBrandRules() {
   if (assignOperatingBrand({ agent: "ניב קובי", source: "קמפיין שמש" }) !== "shemesh") {
     throw new Error("source קמפיין שמש should be shemesh");
   }
-  if (assignOperatingBrand({ agent: "שמש", source: "שיחות נכנסות" }) !== "shemesh") {
-    throw new Error("agent שמש should be shemesh");
+  if (assignOperatingBrand({ agent: "שמש", source: "שיחות נכנסות" }) !== "liba") {
+    throw new Error("agent name alone is not a brand");
   }
   if (
     assignOperatingBrand({
@@ -261,26 +276,26 @@ export function assertOperatingBrandRules() {
   if (employeeOperatingBrand({ fullName: "טופז - סגל", waitCircle: "מוסדר" }) !== "liba") {
     throw new Error("מוסדר wait circle is liba");
   }
-  if (assignOperatingBrand({ agent: "ניב - שמש", source: "לידים קרים" }) !== "shemesh") {
-    throw new Error("shemesh marker should win over liba");
+  if (assignOperatingBrand({ agent: "ניב - שמש", source: "לידים קרים" }) !== "liba") {
+    throw new Error("a name containing שמש is not a brand");
   }
   if (parseOperatingBrand("musdar") !== "liba") {
     throw new Error("saved musdar filter should become liba");
   }
-  if (googleCampaignOperatingBrand("פיננסים") !== "shemesh") {
-    throw new Error("פיננסים ads should be shemesh");
+  if (googleCampaignOperatingBrand("פיננסים") !== null) {
+    throw new Error("campaign name is not a brand");
   }
-  if (googleCampaignOperatingBrand("ביטוחים") !== "liba") {
-    throw new Error("ביטוחים ads should be liba");
+  if (googleCampaignOperatingBrand("ביטוחים", "6469861321") !== "liba") {
+    throw new Error("Liba Google customer should be liba");
   }
-  if (googleCampaignOperatingBrand("msm_phone_Calls_liba") !== "liba") {
-    throw new Error("liba-named google campaign should stay liba");
+  if (googleCampaignOperatingBrand("x", "932578606562493") !== null) {
+    throw new Error("unknown account should belong to neither brand");
   }
   if (defaultGoogleAdsCubeForCampaign("ביטוחים") !== GOOGLE_ADS_CUBE_SOURCE) {
     throw new Error("ביטוחים should map to שיחות נכנסות");
   }
-  if (defaultGoogleAdsCubeForCampaign("פיננסים") !== GOOGLE_ADS_SHEMESH_CUBE_SOURCE) {
-    throw new Error("פיננסים should map to קמפיין שמש");
+  if (defaultGoogleAdsCubeForCampaign("פיננסים") !== GOOGLE_ADS_CUBE_SOURCE) {
+    throw new Error("unnamed google customer stays on the liba cube");
   }
   if (facebookCampaignVisibleInBrand({ sourceName: "קמפיין שמש" }, "liba")) {
     throw new Error("shemesh-mapped facebook campaign must not appear on liba");
@@ -294,11 +309,27 @@ export function assertOperatingBrandRules() {
   if (facebookCampaignVisibleInBrand({ sourceName: "דף נחיתה אינטרנט" }, "shemesh")) {
     throw new Error("liba-mapped facebook campaign must not appear on shemesh");
   }
-  if (!facebookCampaignVisibleInBrand({ sourceName: null }, "liba")) {
-    throw new Error("unmapped facebook campaign must stay on liba");
+  if (facebookCampaignVisibleInBrand({ sourceName: null }, "liba")) {
+    throw new Error("facebook row without an account id must not count as liba");
   }
-  if (!facebookCampaignVisibleInBrand({ sourceName: null }, "shemesh")) {
-    throw new Error("unmapped facebook campaign must stay on shemesh");
+  if (facebookCampaignVisibleInBrand({ sourceName: null }, "shemesh")) {
+    throw new Error("facebook row without an account id must not count as shemesh");
+  }
+  if (
+    !facebookCampaignVisibleInBrand(
+      { sourceName: null, adAccountId: "2542541459538449" },
+      "shemesh",
+    )
+  ) {
+    throw new Error("shemesh ad account id must appear on shemesh");
+  }
+  if (
+    facebookCampaignVisibleInBrand(
+      { sourceName: "שיחות נכנסות", adAccountId: "1111111111" },
+      "liba",
+    )
+  ) {
+    throw new Error("unknown ad account must not count as liba");
   }
   if (sourceNameVisibleInBrand("שיחות נכנסות", "shemesh", false)) {
     throw new Error("שיחות נכנסות must not appear on shemesh without shemesh rows");

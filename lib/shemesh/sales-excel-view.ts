@@ -81,7 +81,9 @@ function prioritizeColumns(sheet: WorkbookSheet): WorkbookSheet {
 export function presentShemeshWorkbook(workbook: SalesWorkbookPayload): SalesWorkbookPayload {
   const sheets = workbook.sheets
     .map((sheet) => {
-      const view = SHEET_VIEW[sheet.name];
+      const view =
+        SHEET_VIEW[sheet.name] ??
+        Object.entries(SHEET_VIEW).find(([key]) => key.toLowerCase() === sheet.name.trim().toLowerCase())?.[1];
       const repaired = prioritizeColumns(repairContacts(repairPivot(sheet)));
       return {
         rank: view?.rank ?? 20,

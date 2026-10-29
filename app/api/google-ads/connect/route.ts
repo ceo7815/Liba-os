@@ -38,8 +38,9 @@ export async function GET() {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", GOOGLE_ADS_OAUTH_SCOPE);
   url.searchParams.set("access_type", "offline");
-  // Don't force re-login. prompt=consent asks for a passkey this PC doesn't have.
-  url.searchParams.set("prompt", "select_account");
+  // consent shows the grant screen so Google issues a refresh_token again.
+  // It is not prompt=login, so it does not force a fresh sign-in.
+  url.searchParams.set("prompt", "consent select_account");
   url.searchParams.set("include_granted_scopes", "true");
   url.searchParams.set("login_hint", "ceo@beosystem.com");
   url.searchParams.set("state", state);

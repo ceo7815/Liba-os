@@ -8,9 +8,10 @@ import { envRefreshToken } from "@/lib/google-ads/config";
 import { CAMPAIGNS_PATH, SALES_EXCEL_REPORT_PATH } from "@/lib/sales-dashboard/access";
 import { LEAD_CONTROL_PATH } from "@/lib/lead-control/rules";
 import { surenseConfigured } from "@/lib/surense/client";
+import { loadShemeshLinks } from "@/lib/shemesh/connect";
 
 export type ConnectedInterface = {
-  id: "voicenter" | "google-ads" | "facebook" | "sales-excel" | "surense";
+  id: string;
   name: string;
   description: string;
   href: string;
@@ -20,6 +21,7 @@ export type ConnectedInterface = {
   warning: string | null;
   actionHref: string | null;
   actionLabel: string | null;
+  group: "liba" | "shemesh";
 };
 
 const CATALOG: Pick<ConnectedInterface, "id" | "name" | "description" | "href">[] = [
@@ -161,5 +163,20 @@ export async function loadConnectedInterfaces(): Promise<ConnectedInterface[]> {
     },
   };
 
-  return CATALOG.map((item) => ({ ...item, ...byId[item.id] }));
+  const liba = CATALOG.map((item) => ({ ...item, ...byId[item.id as keyof typeof byId], group: "liba" as const }));
+  const shemesh = await loadShemeshLinks().catch(() => ({ links: [] }));
+  const shemeshItems: ConnectedInterface[] = shemesh.links.map((link) => ({
+    id: link.id,
+    name: link.name,
+    description: "חיבור של שמש, בנפרד מהשורה של ליבה.",
+    href: link.href,
+    connected: link.connected,
+    syncedAt: link.syncedAt,
+    note: link.note,
+    warning: null,
+    actionHref: null,
+    actionLabel: null,
+    group: "shemesh",
+  }));
+  return [...liba, ...shemeshItems];
 }
