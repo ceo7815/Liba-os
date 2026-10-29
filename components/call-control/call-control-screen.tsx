@@ -25,6 +25,7 @@ import {
 } from "@/components/call-control/agent-ops-panel";
 import { CallCard } from "@/components/call-control/call-card";
 import { FilterChip, StatusPill } from "@/components/call-control/visual";
+import { CDR_POST_OUTCOMES } from "@/lib/voicenter/outcomes";
 import {
   formatCallClock,
   formatDuration,
@@ -68,6 +69,20 @@ function formatSeen(iso: string | null): string {
     timeZone: "Asia/Jerusalem",
     day: "2-digit",
     month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
+
+function cdrSinceLabel(iso: string | null): string {
+  if (!iso) return "never";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "never";
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Jerusalem",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   }).format(d);
@@ -270,6 +285,34 @@ export function CallControlScreen({
           </div>
         </div>
       </header>
+
+      <div
+        role="status"
+        className={cn(
+          "rounded-xl px-4 py-3 text-sm",
+          management.cdrStale
+            ? "border border-amber-300 bg-amber-50 text-amber-950"
+            : "border border-black/[0.06] bg-white",
+        )}
+      >
+        <p>
+          CDR אחרון מ־Voicenter: {formatSeen(management.cdrLastReceivedAt)}
+          {management.cdrLastStage ? ` · שלב ${management.cdrLastStage}` : ""}
+        </p>
+        {management.cdrStale ? (
+          <p className="mt-1 font-semibold">
+            no CDR from Voicenter since {cdrSinceLabel(management.cdrLastReceivedAt)}
+          </p>
+        ) : null}
+        <p className="mt-1 text-xs">
+          אחרון לפי תוצאה:{" "}
+          {CDR_POST_OUTCOMES.map((outcome) => (
+            <span key={outcome} className="me-3 inline-block">
+              {outcome} {formatSeen(management.cdrLastByOutcome[outcome])}
+            </span>
+          ))}
+        </p>
+      </div>
 
       <div className="dash-enter flex gap-1 border-b border-black/[0.08]" style={{ animationDelay: "30ms" }}>
         {tabs

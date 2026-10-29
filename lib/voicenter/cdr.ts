@@ -4,9 +4,18 @@ export const SOFIA_USER_ID = "211361";
 
 export type CdrRecord = Record<string, unknown>;
 
+/**
+ * ring = NEWCALL / callstatus Ringing|Dialing.
+ * answer = reason ANSWER / callstatus Talking, before the recording exists.
+ * hangup = reason HANGUP, or the end-of-call CDR (terminal DialStatus, or record/aiData).
+ * Voicenter Real Time API + CDR Notification System API.
+ */
+export type CallStage = "ring" | "answer" | "hangup";
+
 export type ParsedCdr = {
   callId: string;
   sofia: boolean;
+  stage: CallStage | null;
   callDate: string | null;
   durationSec: number | null;
   recordUrl: string | null;
@@ -96,7 +105,7 @@ function isSofiaExtension(value: string | null): boolean {
 export function isSofiaCall(cdr: CdrRecord): boolean {
   const extensionFields = [
     field(cdr, ["extenUser", "ExtenUser", "extension", "Extension"]),
-    field(cdr, ["targetextension", "targetExtension", "TargetExtension"]),
+    field(cdr, ["targetextension", "targetExtension", "TargetExtension", "Targetextension"]),
     field(cdr, ["callerextension", "callerExtension", "CallerExtension"]),
     field(cdr, ["target", "Target"]),
     field(cdr, ["caller", "Caller"]),
@@ -105,6 +114,7 @@ export function isSofiaCall(cdr: CdrRecord): boolean {
   const userId = field(cdr, [
     "representative_code",
     "representativeCode",
+    "RepresentativeCode",
     "UserId",
     "userId",
     "userID",
@@ -114,6 +124,7 @@ export function isSofiaCall(cdr: CdrRecord): boolean {
   const name = field(cdr, [
     "representative_name",
     "representativeName",
+    "RepresentativeName",
     "targetextension_name",
     "callerextension_name",
     "UserName",
@@ -129,10 +140,89 @@ function callIdOf(cdr: CdrRecord): string | null {
     "ivrUniqueId",
     "IVRUniqueID",
     "IvrUniqueId",
+    "Ivruniqueid",
+    "ivrid",
+    "ivrId",
+    "IVRID",
     "callId",
     "CallID",
     "call_id",
   ]);
+}
+
+/** Real-time socket payloads nest the leg under data.currentCall. CDR posts are flat. */
+export function flattenCdr(raw: CdrRecord): CdrRecord {
+  const data = asRecord(raw.data) ?? asRecord(raw.Data);
+  const current = data
+    ? (asRecord(data.currentCall) ?? asRecord(data.CurrentCall))
+    : null;
+  return {
+    ...raw,
+    ...(data ?? {}),
+    ...(current ?? {}),
+    reason: raw.reason ?? data?.reason ?? current?.reason,
+    eventName: raw.eventName ?? data?.eventName,
+  };
+}
+
+const RING_TOKENS = new Set(["ring", "ringing", "dial", "dialing", "newcall", "new_call"]);
+const ANSWER_TOKENS = new Set(["answer", "answered", "talking"]);
+const HANGUP_TOKENS = new Set(["hangup", "hang-up", "hang_up", "ended", "end"]);
+/** CDR Notification `status` / `DialStatus` values sent when the call is finished. */
+const TERMINAL_DIAL = new Set([
+  "noanswer",
+  "no-answer",
+  "busy",
+  "cancel",
+  "abandone",
+  "abandoned",
+  "te",
+  "voend",
+  "notcalled",
+  "congestion",
+  "chanunavail",
+  "invalidargs",
+  "sswpreauth",
+]);
+
+function token(value: string | null): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
+/**
+ * Which push this is. Recording URL and aiData mean the hangup/end CDR even when
+ * `status` is ANSWER (that field is the dial result, not the live stage).
+ */
+export function callStage(cdr: CdrRecord): CallStage | null {
+  const record = flattenCdr(cdr);
+  const reason = token(field(record, ["reason", "Reason", "event", "Event"]));
+  const callStatus = token(field(record, ["callstatus", "CallStatus", "callStatus"]));
+  const dialStatus = token(
+    field(record, [
+      "status",
+      "Status",
+      "DialStatus",
+      "dialStatus",
+      "leg1DialStatusName",
+      "StatusName",
+    ]),
+  );
+  const hasMedia = Boolean(recordUrlOf(record) || transcriptOf(aiOf(record)).fullText);
+  if (hasMedia) return "hangup";
+  if (RING_TOKENS.has(reason) || RING_TOKENS.has(callStatus) || RING_TOKENS.has(dialStatus)) {
+    return "ring";
+  }
+  if (HANGUP_TOKENS.has(reason) || HANGUP_TOKENS.has(callStatus) || HANGUP_TOKENS.has(dialStatus)) {
+    return "hangup";
+  }
+  if (ANSWER_TOKENS.has(reason) || ANSWER_TOKENS.has(callStatus)) return "answer";
+  if (dialStatus === "answer" || dialStatus === "answered") {
+    const duration = durationOf(record);
+    if (duration != null && duration > 0) return "hangup";
+    return "answer";
+  }
+  if (TERMINAL_DIAL.has(dialStatus)) return "hangup";
+  return null;
 }
 
 function recordUrlOf(cdr: CdrRecord): string | null {
@@ -222,26 +312,40 @@ function summaryOf(ai: CdrRecord | null): string | null {
 }
 
 export function parseCdr(cdr: CdrRecord): ParsedCdr | null {
-  const callId = callIdOf(cdr);
+  const record = flattenCdr(cdr);
+  const callId = callIdOf(record);
   if (!callId) return null;
-  const ai = aiOf(cdr);
+  const ai = aiOf(record);
   const transcript = transcriptOf(ai);
   return {
     callId,
-    sofia: isSofiaCall(cdr),
-    callDate: callDateOf(cdr),
-    durationSec: durationOf(cdr),
-    recordUrl: recordUrlOf(cdr),
-    callerPhone: field(cdr, ["callerPhone", "caller", "Caller", "caller_phone"]),
-    representativeName: field(cdr, [
+    sofia: isSofiaCall(record),
+    stage: callStage(record),
+    callDate: callDateOf(record),
+    durationSec: durationOf(record),
+    recordUrl: recordUrlOf(record),
+    callerPhone: field(record, ["callerPhone", "caller", "Caller", "caller_phone", "callerphone"]),
+    representativeName: field(record, [
       "representative_name",
       "representativeName",
+      "RepresentativeName",
       "targetextension_name",
       "callerextension_name",
+      "userName",
+      "UserName",
     ]),
-    direction: field(cdr, ["direction", "Direction"]),
-    callType: field(cdr, ["type", "Type"]),
-    dialStatus: field(cdr, ["status", "Status"]),
+    direction: field(record, ["direction", "Direction"]),
+    callType: field(record, ["type", "Type"]),
+    dialStatus: field(record, [
+      "status",
+      "Status",
+      "DialStatus",
+      "dialStatus",
+      "leg1DialStatusName",
+      "StatusName",
+      "callstatus",
+      "CallStatus",
+    ]),
     fullText: transcript.fullText,
     segments: transcript.segments,
     aiSummary: summaryOf(ai),

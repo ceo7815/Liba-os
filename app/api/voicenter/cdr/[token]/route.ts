@@ -1,9 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { hashAgentApiKey } from "@/lib/agents/api-key";
-import { listCdrRecords, parseCdr } from "@/lib/voicenter/cdr";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ingestVoicenterCdr } from "@/lib/voicenter/ingest";
+import type { CdrReceiptInsert, CdrReceiptPatch } from "@/lib/voicenter/webhook";
+import { handleVoicenterPost } from "@/lib/voicenter/webhook";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -34,29 +35,64 @@ async function authorized(token: string): Promise<boolean> {
   return tokenOk(token, data.token_sha256);
 }
 
-async function readPayload(request: Request): Promise<unknown> {
-  const type = request.headers.get("content-type") ?? "";
-  const text = await request.text();
-  const trimmed = text.trim();
-  if (!trimmed) return null;
-  if (
-    type.includes("application/json") ||
-    trimmed.startsWith("{") ||
-    trimmed.startsWith("[")
-  ) {
-    return JSON.parse(trimmed);
+function missingTable(message: string): boolean {
+  return /does not exist|schema cache|could not find the table/i.test(message);
+}
+
+async function insertReceipt(row: CdrReceiptInsert): Promise<string | null> {
+  const admin = createAdminClient();
+  const full = {
+    call_id: row.callId,
+    sofia: row.sofia,
+    stored: row.stored,
+    has_transcript: row.transcript,
+    outcome: row.outcome,
+    token_hash_prefix: row.token_hash_prefix,
+    content_type: row.content_type,
+    body_bytes: row.body_bytes,
+    stage: row.stage,
+  };
+  const inserted = await admin.from("voicenter_cdr_receipts").insert(full).select("id").maybeSingle();
+  if (!inserted.error && inserted.data?.id) return String(inserted.data.id);
+  const message = inserted.error?.message ?? "";
+  if (missingTable(message)) return null;
+  if (/token_hash_prefix|content_type|body_bytes|stage/i.test(message)) {
+    const legacy = await admin
+      .from("voicenter_cdr_receipts")
+      .insert({
+        call_id: row.callId,
+        sofia: row.sofia,
+        stored: row.stored,
+        has_transcript: row.transcript,
+        outcome: row.outcome,
+      })
+      .select("id")
+      .maybeSingle();
+    if (legacy.error && !missingTable(legacy.error.message)) {
+      console.error("voicenter receipt", legacy.error.message);
+    }
+    return legacy.data?.id ? String(legacy.data.id) : null;
   }
-  if (type.includes("application/x-www-form-urlencoded")) {
-    const params = new URLSearchParams(trimmed);
-    const blob = params.get("json") ?? params.get("data") ?? params.get("cdr");
-    if (blob) return JSON.parse(blob);
-    const record: Record<string, string> = {};
-    params.forEach((value, key) => {
-      record[key] = value;
-    });
-    return record;
+  console.error("voicenter receipt", message);
+  return null;
+}
+
+async function updateReceipt(id: string, patch: CdrReceiptPatch): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("voicenter_cdr_receipts")
+    .update({
+      outcome: patch.outcome,
+      call_id: patch.callId,
+      sofia: patch.sofia,
+      stored: patch.stored,
+      has_transcript: patch.transcript,
+      stage: patch.stage,
+    })
+    .eq("id", id);
+  if (error && !missingTable(error.message)) {
+    console.error("voicenter receipt", error.message);
   }
-  return JSON.parse(trimmed);
 }
 
 export async function POST(
@@ -64,74 +100,15 @@ export async function POST(
   { params }: { params: { token: string } },
 ) {
   const token = params.token ?? "";
-  let allowed = false;
-  try {
-    allowed = await authorized(token);
-  } catch {
-    return json({ status: "ERROR" }, 500);
-  }
-  if (!allowed) return json({ status: "ERROR" }, 401);
-
-  let payload: unknown;
-  try {
-    payload = await readPayload(request);
-  } catch {
-    return json({ status: "ERROR", message: "expected JSON" }, 400);
-  }
-
-  const records = listCdrRecords(payload);
-  if (records.length === 0) return json({ status: "ERROR", message: "expected JSON" }, 400);
-
-  const admin = createAdminClient();
-  let stored = 0;
-  let errors = 0;
-  for (const cdr of records) {
-    const parsed = parseCdr(cdr);
-    try {
-      if (!parsed) {
-        await rememberReceipt(admin, { callId: null, sofia: false, stored: false, transcript: false, outcome: "missing_call_id" });
-        continue;
-      }
-      const result = await ingestVoicenterCdr(admin, cdr);
-      if (result.stored) stored += 1;
-      await rememberReceipt(admin, {
-        callId: result.callId,
-        sofia: parsed.sofia,
-        stored: result.stored,
-        transcript: result.transcript,
-        outcome: result.stored ? "stored" : "other_extension",
-      });
-    } catch (err) {
-      errors += 1;
-      const message = err instanceof Error ? err.message : "ingest failed";
-      console.error("voicenter cdr failed", message);
-      await rememberReceipt(admin, {
-        callId: parsed?.callId ?? null,
-        sofia: parsed?.sofia ?? false,
-        stored: false,
-        transcript: false,
-        outcome: "error",
-      });
-    }
-  }
-
-  console.info("voicenter cdr", JSON.stringify({ received: records.length, stored, errors }));
-  if (errors > 0 && stored === 0) return json({ status: "ERROR" }, 500);
-  return json({ status: "OK" });
-}
-
-async function rememberReceipt(
-  admin: ReturnType<typeof createAdminClient>,
-  row: { callId: string | null; sofia: boolean; stored: boolean; transcript: boolean; outcome: string },
-) {
-  const { error } = await admin.from("voicenter_cdr_receipts").insert({
-    call_id: row.callId,
-    sofia: row.sofia,
-    stored: row.stored,
-    has_transcript: row.transcript,
-    outcome: row.outcome,
+  const bodyText = await request.text();
+  const result = await handleVoicenterPost({
+    token,
+    contentType: request.headers.get("content-type"),
+    bodyText,
+    authorize: authorized,
+    insertReceipt,
+    updateReceipt,
+    ingest: (cdr) => ingestVoicenterCdr(createAdminClient(), cdr),
   });
-  if (error && !/does not exist|schema cache|could not find the table/i.test(error.message)) {
-    console.error("voicenter receipt", error.message);
-  }
+  return json(result.body, result.status);
 }
