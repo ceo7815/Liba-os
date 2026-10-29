@@ -1,4 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { localDemoAdmin, localDemoEnabled, type LocalQuery } from "@/lib/shemesh/local-demo";
+
+export function asRows(data: unknown): Record<string, any>[] {
+  return Array.isArray(data) ? data : [];
+}
+
+export function shemeshAdmin(): { from: (table: string) => LocalQuery } {
+  if (localDemoEnabled()) return localDemoAdmin();
+  return createAdminClient() as unknown as { from: (table: string) => LocalQuery };
+}
 
 export function isMissingRelation(message: string | undefined): boolean {
   if (!message) return false;
@@ -15,7 +25,7 @@ export async function readTable<T>(
   select: string,
 ): Promise<{ rows: T[]; missing: boolean; error: string | null }> {
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     const { data, error } = await admin.from(table).select(select);
     if (error) {
       if (isMissingRelation(error.message)) return { rows: [], missing: true, error: null };

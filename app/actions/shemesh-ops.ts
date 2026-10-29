@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/auth";
-import { canManageShemesh } from "@/lib/permissions/access";
+import { shemeshManageActor } from "@/lib/shemesh/actor";
 import {
   addCaseChild,
   insertCase,
@@ -12,13 +11,12 @@ import {
   patchLedgerStatus,
   patchRuleActive,
   saveFeeSettings,
+  setCaseDocumentReceived,
 } from "@/lib/shemesh/ops";
 import { rateOrNull } from "@/lib/shemesh/fees";
 
 async function actor() {
-  const profile = await getCurrentProfile();
-  if (!profile || !canManageShemesh(profile)) return null;
-  return profile.full_name || profile.email || profile.id;
+  return shemeshManageActor();
 }
 
 function refresh() {
@@ -147,6 +145,13 @@ export async function saveShemeshFeesForm(formData: FormData) {
 
 export async function createShemeshCaseChildForm(formData: FormData) {
   await createShemeshCaseChild({ error: null }, formData);
+}
+
+export async function setShemeshDocumentForm(formData: FormData) {
+  const name = await actor();
+  if (!name) return;
+  await setCaseDocumentReceived(String(formData.get("id") ?? ""), String(formData.get("received") ?? "") === "true", name);
+  refresh();
 }
 
 export async function createShemeshCaseChild(_state: { error: string | null }, formData: FormData) {

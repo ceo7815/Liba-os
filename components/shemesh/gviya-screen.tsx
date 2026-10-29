@@ -76,7 +76,7 @@ export function GviyaScreen({
         <ShemeshEmpty
           icon={FileSpreadsheet}
           title="הדוח עוד לא הגיע"
-          body="המסך נדלק מגיליון GVIYA שבקובץ המכירות של שמש, אחרי שהוא נשמר ב־shemesh_sales_workbooks. לחצו סנכרון מערכת, או הגדירו SHEMESH_EXCEL_LOCAL_PATH. אין כאן נתוני דוגמה."
+          body="המסך נדלק מגיליון הגבייה אחרי שהקובץ «דוח מכירות שמש פדיונות 2» נשמר מהתיקייה תפעול שמש. עד אז, ספר הפדיונות למטה הוא המקור. אין כאן סכום קבוע."
         />
       </ShemeshPage>
     );

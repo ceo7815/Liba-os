@@ -3,14 +3,17 @@ import { CaseBoard } from "@/components/shemesh/case-board";
 import { Panel } from "@/components/shemesh/widgets";
 import { field } from "@/lib/shemesh/field";
 import { Button } from "@/components/ui/button";
-import { createShemeshCase, createShemeshCaseChildForm, saveShemeshFeesForm } from "@/app/actions/shemesh-ops";
+import { createShemeshCase, createShemeshCaseChildForm, saveShemeshFeesForm, setShemeshDocumentForm, updateShemeshCase } from "@/app/actions/shemesh-ops";
+import { shemeshProfile } from "@/lib/shemesh/actor";
+import { canManageShemesh } from "@/lib/permissions/access";
 import { loadCaseBoard } from "@/lib/shemesh/ops";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "תיקים · שמש" };
 
 export default async function Page({ searchParams }: { searchParams: { open?: string } }) {
-  const board = await loadCaseBoard();
+  const [board, profile] = await Promise.all([loadCaseBoard(), shemeshProfile()]);
+  const canManage = canManageShemesh(profile);
   return (
     <div className="space-y-4">
       <CaseBoard
@@ -19,8 +22,11 @@ export default async function Page({ searchParams }: { searchParams: { open?: st
         error={board.error}
         audit={board.audit}
         initialOpenId={searchParams.open}
+        canManage={canManage}
         createAction={createShemeshCase}
+        updateAction={updateShemeshCase}
         childAction={createShemeshCaseChildForm}
+        documentAction={setShemeshDocumentForm}
       />
       {!board.missing ? (
         <Panel title="שיעורי עמלה ו־SLA">

@@ -3,6 +3,7 @@ import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
 import { formatShemeshCount, formatShemeshDay, formatShemeshMoney } from "@/lib/shemesh/format";
 import type { ShemeshLibaSettlement } from "@/lib/shemesh/liba-settlement";
+import type { ShemeshBooks } from "@/lib/shemesh/story";
 
 const EMPTY_VIEW: ShemeshLibaSettlement = {
   missing: true,
@@ -12,7 +13,7 @@ const EMPTY_VIEW: ShemeshLibaSettlement = {
   owed: null,
 };
 
-export function SettlementScreen({ view = EMPTY_VIEW }: { view?: ShemeshLibaSettlement }) {
+export function SettlementScreen({ view = EMPTY_VIEW, books = null }: { view?: ShemeshLibaSettlement; books?: ShemeshBooks | null }) {
   const hasSales = view.sales.length > 0 && !view.missing && !view.error;
   return (
     <ShemeshPage
@@ -77,6 +78,13 @@ export function SettlementScreen({ view = EMPTY_VIEW }: { view?: ShemeshLibaSett
           }
         />
       )}
+      {books && !books.missing ? (
+        <Panel title="מה לא נכנס לכאן">
+          <p className="text-sm">
+            שכר הטרחה שנגבה בספרי שמש החודש הוא {formatShemeshMoney(books.collectedNet)}. עמלת הרישיון {formatShemeshMoney(books.licenseCommission)} שייכת לליבה ולא נספרת כהכנסה של שמש.
+          </p>
+        </Panel>
+      ) : null}
       {(view.licenseCommissions ?? []).length ? (
         <Panel title="עמלות ביטוח של ליבה">
           <p className="pb-2 text-xs text-muted-foreground">העמלה שייכת לבעל הרישיון, ליבה, גם כששמש מטפלת בתיק.</p>

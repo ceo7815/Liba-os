@@ -36,7 +36,7 @@ export function MonthSheet({
 const TITLES: Record<string, { title: string; description: string }> = {
   cost: { title: "הוצאות קבועות", description: "כלל חוזר וסכום שנשמרים במסד. תצוגת החודש נגזרת מהכללים הפעילים." },
   debt: { title: "חובות", description: "חוב או הלוואה כרשומה, עם תשלום חודשי אם הוגדר. אין סכום קבוע בקוד." },
-  income: { title: "הכנסות", description: "הכנסה חוזרת או חד־פעמית. החודש מציג רק כללים פעילים שנכנסו לתוקף." },
+  income: { title: "הכנסות חוזרות", description: "כלל הכנסה חודשי. באוקטובר הוא שווה לנטו שנגבה בספר, בלי עמלת הרישיון של ליבה." },
   payroll: { title: "שכר", description: "רשומת שכר לפי שם וסכום שהוזנו. אין שיעור או שם שכר בקוד." },
   commission: { title: "עמלות", description: "עמלת נציג כרשומה חודשית. השיעור נשמר על הרשומה, לא בקוד." },
 };

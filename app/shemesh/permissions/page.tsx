@@ -6,8 +6,8 @@ import { ShemeshPage, Panel } from "@/components/shemesh/widgets";
 export const metadata: Metadata = { title: "הרשאות · שמש" };
 
 const KEYS = [
-  { key: "shemesh.view", label: "צפייה", detail: "תיקים, כספים וממשקים של שמש." },
-  { key: "shemesh.manage", label: "ניהול", detail: "יצירה, סטטוס, שיוך ושמירת חיבורים." },
+  { key: "shemesh.view", label: "צפייה", detail: "תיקים, כספים, ייצוא לאקסל וממשקים של שמש." },
+  { key: "shemesh.manage", label: "ניהול", detail: "יצירה, שינוי סטטוס, שיוך מטפל, מסמכים ושמירת חיבורים." },
 ];
 
 export default function Page() {

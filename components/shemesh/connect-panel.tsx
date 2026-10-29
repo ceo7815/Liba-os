@@ -3,11 +3,19 @@
 import { useFormState } from "react-dom";
 import { field } from "@/components/shemesh/module-shell";
 import { Panel } from "@/components/shemesh/widgets";
-import { chooseShemeshGoogleCustomer, connectShemeshSurense, saveGrowForm, saveRivhitForm, testRivhitForm } from "@/app/actions/shemesh-connect";
+import { chooseShemeshGoogleCustomer, connectShemeshSurense, saveGrowForm, saveRivhitForm, testRivhitForm, testShemeshLinkForm } from "@/app/actions/shemesh-connect";
 import type { ShemeshLink } from "@/lib/shemesh/connect";
 
 const idle = { error: null as string | null };
 const growIdle = { error: null as string | null, webhookToken: "" };
+const testIdle = { error: null as string | null, link: "" };
+
+function when(iso: string | null): string {
+  if (!iso) return "אין";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString("he-IL", { timeZone: "Asia/Jerusalem", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
 
 export function ShemeshConnectPanel({
   links,
@@ -22,6 +30,7 @@ export function ShemeshConnectPanel({
   const [growState, growAction] = useFormState(saveGrowForm, growIdle);
   const [surenseState, surenseAction] = useFormState(connectShemeshSurense, idle);
   const [googleState, googleAction] = useFormState(chooseShemeshGoogleCustomer, idle);
+  const [testState, testAction] = useFormState(testShemeshLinkForm, testIdle);
   return (
     <div className="space-y-3">
       {missing ? (
@@ -38,7 +47,16 @@ export function ShemeshConnectPanel({
                 {link.connected ? "מחובר" : "לא מחובר"}
               </span>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">{link.note || "אין סטטוס"}</p>
+            <p className="mt-2 text-sm">{link.detail || "אין פרטים"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">סנכרון אחרון: {when(link.syncedAt)}</p>
+            <p className="text-xs text-muted-foreground">בדיקה אחרונה: {when(link.checkedAt)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{link.note || "אין סטטוס"}</p>
+            <form action={testAction} className="mt-3">
+              <input type="hidden" name="link" value={link.id} />
+              <button type="submit" className="h-9 rounded-xl bg-muted px-3 text-sm">בדיקה</button>
+            </form>
+            {testState.link === link.id && testState.error ? <p className="mt-2 text-sm text-destructive">{testState.error}</p> : null}
+            {testState.link === link.id && !testState.error ? <p className="mt-2 text-sm text-muted-foreground">הבדיקה הסתיימה בלי שגיאה.</p> : null}
           </article>
         ))}
       </div>
@@ -51,7 +69,7 @@ export function ShemeshConnectPanel({
             חיבור גוגל שמש
           </a>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">חשבון המודעות של שמש קבוע. בגוגל בוחרים את החשבון מתוך ה־MCC אחרי ההתחברות.</p>
+        <p className="mt-2 text-xs text-muted-foreground">חשבון המודעות של שמש הוא act_2542541459538449, דרך אפליקציית מטא של ליבה. בגוגל בוחרים את החשבון מהרשימה אחרי ההתחברות. בלי אסימון שמור הבדיקה לא יוצאת החוצה.</p>
         {googleChoices.length ? (
           <form action={googleAction} className="mt-3 flex flex-wrap items-center gap-2">
             <select className={field} name="customerId" aria-label="חשבון גוגל">
@@ -109,6 +127,11 @@ export function ShemeshConnectPanel({
           <button type="submit" className="h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground">שמירה מוצפנת</button>
         </form>
         {growState.webhookToken ? <p className="mt-2 text-xs text-muted-foreground">וובהוק: /api/shemesh/grow/webhook/{growState.webhookToken}</p> : null}
+        <form action={testAction} className="mt-2">
+          <input type="hidden" name="link" value="shemesh-grow" />
+          <button type="submit" className="h-9 rounded-xl bg-muted px-3 text-sm">בדיקת חיבור</button>
+        </form>
+        <p className="mt-2 text-xs text-muted-foreground">בלי userId ו־pageCode אין קריאה. גם אחרי השמירה, אישור עסקה יוצא רק מוובהוק עם מזהה עסקה.</p>
         {growState.error ? <p className="mt-2 text-sm text-destructive">{growState.error}</p> : null}
       </Panel>
       <Panel title="חברות ביטוח">

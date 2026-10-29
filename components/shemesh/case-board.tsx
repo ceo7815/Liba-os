@@ -8,7 +8,7 @@ import { Panel, ShemeshPage } from "@/components/shemesh/widgets";
 import { field } from "@/lib/shemesh/field";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { CASE_STAGES } from "@/lib/shemesh/catalog";
+import { CASE_STAGES, SHEMESH_HANDLERS } from "@/lib/shemesh/catalog";
 import { cn } from "@/lib/utils";
 import type { CaseFile } from "@/lib/shemesh/ops";
 
@@ -22,14 +22,20 @@ export function CaseBoard({
   initialOpenId,
   createAction,
   childAction,
+  updateAction,
+  documentAction,
+  canManage,
 }: {
   cases: CaseFile[];
   missing: boolean;
   error: string | null;
   audit: { id: string; summary: string; createdAt: string }[];
   initialOpenId?: string | null;
+  canManage: boolean;
   createAction: (state: { error: string | null }, formData: FormData) => Promise<{ error: string | null }>;
+  updateAction: (state: { error: string | null }, formData: FormData) => Promise<{ error: string | null }>;
   childAction: (formData: FormData) => Promise<void>;
+  documentAction: (formData: FormData) => Promise<void>;
 }) {
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [query, setQuery] = useState("");
@@ -55,7 +61,10 @@ export function CaseBoard({
         />
       ) : (
         <div className="space-y-4">
-          <Panel title="תיק חדש">
+          <div className="flex justify-end">
+            <a className="text-sm font-medium text-highlight" href="/api/shemesh/export?kind=cases">ייצוא לאקסל</a>
+          </div>
+          {canManage ? <Panel title="תיק חדש">
             <form action={formAction} className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 text-xs text-muted-foreground">
                 שם לקוח
@@ -75,7 +84,10 @@ export function CaseBoard({
               </label>
               <label className="grid gap-1 text-xs text-muted-foreground">
                 מטפל
-                <input className={field} name="handler" />
+                <select className={field} name="handler" defaultValue="">
+                  <option value="">בלי מטפל</option>
+                  {SHEMESH_HANDLERS.map((handler) => <option key={handler} value={handler}>{handler}</option>)}
+                </select>
               </label>
               <label className="grid gap-1 text-xs text-muted-foreground">
                 נפתח
@@ -89,7 +101,7 @@ export function CaseBoard({
               {state.error ? <p className="text-sm text-destructive sm:col-span-2">{state.error}</p> : null}
               <Button type="submit" className="sm:col-span-2 sm:w-fit">שמירת תיק</Button>
             </form>
-          </Panel>
+          </Panel> : null}
           <div className="flex gap-3 overflow-x-auto pb-1">
             {CASE_STAGES.map((stage) => {
               const cards = visible.filter((item) => item.stage === stage.id);
@@ -129,7 +141,7 @@ export function CaseBoard({
           </Panel>
           {selected ? (
             <Panel title={selected.clientName}>
-              <CaseDetail item={selected} audit={audit} childAction={childAction} />
+              <CaseDetail item={selected} audit={audit} childAction={childAction} updateAction={updateAction} documentAction={documentAction} canManage={canManage} />
             </Panel>
           ) : null}
           <Sheet open={Boolean(selected)} onOpenChange={(open) => { if (!open) setOpenId(null); }}>
@@ -139,7 +151,7 @@ export function CaseBoard({
                   <SheetHeader>
                     <SheetTitle>{selected.clientName}</SheetTitle>
                   </SheetHeader>
-                  <CaseDetail item={selected} audit={audit} childAction={childAction} />
+                  <CaseDetail item={selected} audit={audit} childAction={childAction} updateAction={updateAction} documentAction={documentAction} canManage={canManage} />
                 </div>
               ) : null}
             </SheetContent>
@@ -150,27 +162,87 @@ export function CaseBoard({
   );
 }
 
+const STATUSES = [
+  { id: "open", label: "פתוח" },
+  { id: "waiting", label: "ממתין" },
+  { id: "done", label: "הושלם" },
+  { id: "cancelled", label: "בוטל" },
+];
+
 function CaseDetail({
   item,
   audit,
   childAction,
+  updateAction,
+  documentAction,
+  canManage,
 }: {
   item: CaseFile;
   audit: { id: string; summary: string }[];
   childAction: (formData: FormData) => Promise<void>;
+  updateAction: (state: { error: string | null }, formData: FormData) => Promise<{ error: string | null }>;
+  documentAction: (formData: FormData) => Promise<void>;
+  canManage: boolean;
 }) {
+  const [state, formAction] = useFormState(updateAction, idle);
+  const handlers = Array.from(new Set([item.handler, ...SHEMESH_HANDLERS].filter(Boolean)));
   return (
     <div className="space-y-4 text-start" dir="rtl">
       <SlaBadge overdue={item.overdue} deadline={item.deadline} />
       <p className="text-sm text-muted-foreground">{item.stageLabel} · {item.handler || "בלי מטפל"} · {item.phone}</p>
       {item.notes ? <p className="text-sm">{item.notes}</p> : null}
+      {canManage ? (
+        <form action={formAction} className="grid gap-2">
+          <input type="hidden" name="id" value={item.id} />
+          <label className="grid gap-1 text-xs text-muted-foreground">
+            סטטוס
+            <select className={field} name="status" defaultValue={item.status}>
+              {STATUSES.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs text-muted-foreground">
+            שלב
+            <select className={field} name="stage" defaultValue={item.stage}>
+              {CASE_STAGES.map((stage) => <option key={stage.id} value={stage.id}>{stage.label}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs text-muted-foreground">
+            מטפל
+            <select className={field} name="handler" defaultValue={item.handler}>
+              <option value="">בלי מטפל</option>
+              {handlers.map((handler) => <option key={handler} value={handler}>{handler}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs text-muted-foreground">
+            הערה
+            <input className={field} name="notes" defaultValue={item.notes} />
+          </label>
+          {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+          <Button type="submit" variant="secondary">שמירת תיק</Button>
+        </form>
+      ) : (
+        <p className="text-xs text-muted-foreground">צפייה בלבד. שינוי סטטוס, מטפל ומסמכים דורש shemesh.manage. הייצוא פתוח ל־shemesh.view.</p>
+      )}
       <section>
         <h3 className="text-sm font-semibold">משימות</h3>
         <ul className="mt-1 space-y-1 text-sm">{item.tasks.map((task) => <li key={task.id}>{task.title} · {task.assignee || "בלי מטפל"} · {task.dueOn || "בלי יעד"}</li>)}</ul>
       </section>
       <section>
         <h3 className="text-sm font-semibold">מסמכים</h3>
-        <ul className="mt-1 space-y-1 text-sm">{item.documents.map((doc) => <li key={doc.id}>{doc.received ? "✓" : "○"} {doc.label}</li>)}</ul>
+        <ul className="mt-1 space-y-2 text-sm">
+          {item.documents.map((doc) => (
+            <li key={doc.id} className="flex items-center justify-between gap-2">
+              <span>{doc.received ? "✓" : "○"} {doc.label}</span>
+              {canManage ? (
+                <form action={documentAction}>
+                  <input type="hidden" name="id" value={doc.id} />
+                  <input type="hidden" name="received" value={doc.received ? "false" : "true"} />
+                  <button type="submit" className="text-xs font-medium text-highlight">{doc.received ? "סמן כחסר" : "התקבל"}</button>
+                </form>
+              ) : null}
+            </li>
+          ))}
+        </ul>
       </section>
       <section>
         <h3 className="text-sm font-semibold">הערות</h3>
@@ -180,7 +252,7 @@ function CaseDetail({
         <h3 className="text-sm font-semibold">יומן</h3>
         <ul className="mt-1 space-y-1 text-sm text-muted-foreground">{audit.map((entry) => <li key={entry.id}>{entry.summary}</li>)}</ul>
       </section>
-      <form action={childAction} className="grid gap-2">
+      {canManage ? <form action={childAction} className="grid gap-2">
         <input type="hidden" name="caseId" value={item.id} />
         <select className={field} name="child" defaultValue="task" aria-label="סוג">
           <option value="task">משימה</option>
@@ -192,7 +264,7 @@ function CaseDetail({
         <input className={field} name="dueOn" type="date" aria-label="יעד" />
         <input className={field} name="body" placeholder="נוסח הערה" />
         <Button type="submit" variant="secondary">הוספה לתיק</Button>
-      </form>
+      </form> : null}
     </div>
   );
 }

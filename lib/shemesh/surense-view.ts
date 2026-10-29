@@ -76,7 +76,7 @@ export async function loadShemeshSurenseView(): Promise<ShemeshSurenseView> {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "שורנס לא נקרא";
-    if (isMissingRelation(message)) return { ...empty, missing: true };
+    if (isMissingRelation(message) || /missing supabase|missing next_public/i.test(message)) return { ...empty, missing: true };
     return { ...empty, error: message };
   }
 }

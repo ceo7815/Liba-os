@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { isMissingRelation } from "@/lib/shemesh/db";
+import { asRows, isMissingRelation, shemeshAdmin } from "@/lib/shemesh/db";
+import { formatShemeshMoney } from "@/lib/shemesh/format";
 import {
   EMPTY_FEE_SETTINGS,
   deadlineFromSla,
@@ -53,7 +53,7 @@ function text(value: unknown): string {
 
 export async function loadFeeSettings(): Promise<{ settings: FeeSettings; missing: boolean }> {
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     const { data, error } = await admin.from("shemesh_fee_settings").select("*").eq("id", 1).maybeSingle();
     if (error) {
       if (isMissingRelation(error.message)) return { settings: EMPTY_FEE_SETTINGS, missing: true };
@@ -79,14 +79,14 @@ export async function loadFeeSettings(): Promise<{ settings: FeeSettings; missin
 
 async function loadAudit(): Promise<DeskPayload["audit"]> {
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     const { data, error } = await admin
       .from("shemesh_audit")
       .select("id, summary, created_at")
       .order("created_at", { ascending: false })
       .limit(12);
     if (error || !data) return [];
-    return data.map((row) => ({
+    return asRows(data).map((row) => ({
       id: String(row.id),
       summary: text(row.summary),
       createdAt: text(row.created_at),
@@ -98,7 +98,7 @@ async function loadAudit(): Promise<DeskPayload["audit"]> {
 
 export async function writeAudit(actor: string, action: string, entity: string, entityId: string, summary: string) {
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     await admin.from("shemesh_audit").insert({
       actor,
       action,
@@ -115,7 +115,7 @@ export async function loadDesk(kind: DeskKind, filterKind?: string): Promise<Des
   const fees = await loadFeeSettings();
   const empty: DeskPayload = { missing: fees.missing, error: null, rows: [], settings: fees.settings, audit: [] };
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     if (kind === "cases") {
       const { data, error } = await admin.from("shemesh_cases").select("*").order("updated_at", { ascending: false }).limit(400);
       if (error) {
@@ -127,7 +127,7 @@ export async function loadDesk(kind: DeskKind, filterKind?: string): Promise<Des
         ...empty,
         missing: false,
         audit: await loadAudit(),
-        rows: (data ?? []).map((row) => ({
+        rows: asRows(data).map((row) => ({
           id: String(row.id),
           title: text(row.client_name),
           subtitle: `${text(row.stage)} · ${text(row.phone)}`,
@@ -152,10 +152,10 @@ export async function loadDesk(kind: DeskKind, filterKind?: string): Promise<Des
         ...empty,
         missing: false,
         audit: await loadAudit(),
-        rows: (data ?? []).map((row) => ({
+        rows: asRows(data).map((row) => ({
           id: String(row.id),
           title: text(row.client_name),
-          subtitle: row.fee == null ? "בלי שיעור עמלה" : `עמלה ${row.fee} · נטו ${row.net}`,
+          subtitle: row.fee == null ? "בלי שיעור עמלה" : `עמלה ${formatShemeshMoney(num(row.fee))} · נטו ${formatShemeshMoney(num(row.net))}`,
           status: text(row.status) || "open",
           amount: num(row.gross),
           when: text(row.day),
@@ -176,7 +176,7 @@ export async function loadDesk(kind: DeskKind, filterKind?: string): Promise<Des
       ...empty,
       missing: false,
       audit: await loadAudit(),
-      rows: (data ?? []).map((row) => ({
+      rows: asRows(data).map((row) => ({
         id: String(row.id),
         title: text(row.title),
         subtitle: `${text(row.cadence)} · ${row.active ? "פעיל" : "כבוי"}`,
@@ -216,13 +216,13 @@ export async function loadMonthView(kind: string, month: string) {
   const desk = await loadDesk("rules", kind);
   if (desk.missing || desk.error) return { ...desk, monthRows: [] as { ruleId: string; title: string; amount: number | null; kind: string }[] };
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     const { data, error } = await admin.from("shemesh_rules").select("*").eq("kind", kind);
     if (error) {
       if (isMissingRelation(error.message)) return { ...desk, missing: true, monthRows: [] };
       return { ...desk, error: error.message, monthRows: [] };
     }
-    const rules = (data ?? []).map((row) => ({
+    const rules = asRows(data).map((row) => ({
       id: String(row.id),
       kind: text(row.kind),
       title: text(row.title),
@@ -274,7 +274,7 @@ export async function insertCase(input: {
   const fees = await loadFeeSettings();
   const opened = input.openedOn || todayIso();
   const deadline = deadlineFromSla(opened, fees.settings.slaDays);
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { data, error } = await admin
     .from("shemesh_cases")
     .insert({
@@ -295,7 +295,7 @@ export async function insertCase(input: {
 }
 
 export async function patchCase(id: string, patch: Record<string, string>, actor: string) {
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const next: Record<string, string | null> = { updated_at: new Date().toISOString() };
   if (patch.status) {
     if (!CASE_STATUS.has(patch.status)) return { error: "סטטוס לא מוכר" };
@@ -326,7 +326,7 @@ export async function insertLedger(input: {
   if (!CASE_STATUS.has(input.status)) return { error: "סטטוס לא מוכר" };
   const fees = await loadFeeSettings();
   const money = feeForKind(input.kind, input.gross, fees.settings);
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { data, error } = await admin
     .from("shemesh_ledger")
     .insert({
@@ -349,7 +349,7 @@ export async function insertLedger(input: {
 
 export async function patchLedgerStatus(id: string, status: string, actor: string) {
   if (!CASE_STATUS.has(status)) return { error: "סטטוס לא מוכר" };
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { error } = await admin.from("shemesh_ledger").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) return { error: error.message };
   await writeAudit(actor, "status", "ledger", id, status);
@@ -368,7 +368,7 @@ export async function insertRule(input: {
   const errorText = validateRule(input);
   if (errorText) return { error: errorText };
   if (input.cadence !== "monthly" && input.cadence !== "once") return { error: "תדירות לא מוכרת" };
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { data, error } = await admin
     .from("shemesh_rules")
     .insert({
@@ -388,7 +388,7 @@ export async function insertRule(input: {
 }
 
 export async function patchRuleActive(id: string, active: boolean, actor: string) {
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { error } = await admin.from("shemesh_rules").update({ active, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) return { error: error.message };
   await writeAudit(actor, "status", "rule", id, active ? "פעיל" : "כבוי");
@@ -396,7 +396,7 @@ export async function patchRuleActive(id: string, active: boolean, actor: string
 }
 
 export async function saveFeeSettings(input: FeeSettings, actor: string) {
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { error } = await admin.from("shemesh_fee_settings").upsert({
     id: 1,
     redemption_fee_rate: input.redemptionFeeRate,
@@ -410,13 +410,22 @@ export async function saveFeeSettings(input: FeeSettings, actor: string) {
   return { error: null };
 }
 
+export async function setCaseDocumentReceived(id: string, received: boolean, actor: string) {
+  if (!id) return { error: "חסר מסמך" };
+  const admin = shemeshAdmin();
+  const { error } = await admin.from("shemesh_case_documents").update({ received }).eq("id", id);
+  if (error) return { error: isMissingRelation(error.message) ? "הטבלה עדיין לא הורצה" : error.message };
+  await writeAudit(actor, "update", "document", id, received ? "התקבל" : "חסר");
+  return { error: null };
+}
+
 export async function addCaseChild(
   kind: "task" | "document" | "note",
   input: { caseId: string; title: string; assignee: string; dueOn: string; body: string },
   actor: string,
 ) {
   if (!input.caseId) return { error: "חסר תיק" };
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   if (kind === "note") {
     if (!input.body.trim()) return { error: "חובה הערה" };
     const { error } = await admin.from("shemesh_case_notes").insert({
@@ -473,7 +482,7 @@ export async function loadCaseBoard(): Promise<{
   const fees = await loadFeeSettings();
   const empty = { missing: fees.missing, error: null as string | null, cases: [] as CaseFile[], audit: [] as DeskPayload["audit"], settings: fees.settings };
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     const [cases, tasks, documents, notes] = await Promise.all([
       admin.from("shemesh_cases").select("*").order("updated_at", { ascending: false }).limit(200),
       admin.from("shemesh_case_tasks").select("*").limit(800),
@@ -504,7 +513,7 @@ export async function loadCaseBoard(): Promise<{
       error: null,
       settings: fees.settings,
       audit: await loadAudit(),
-      cases: (cases.data ?? []).map((row) => {
+      cases: asRows(cases.data).map((row) => {
         const id = String(row.id);
         const stage = text(row.stage);
         return {
@@ -556,7 +565,7 @@ export async function loadCaseDetail(caseId: string) {
   const empty = { missing: false, error: null as string | null, tasks: [] as { id: string; title: string; status: string; assignee: string; dueOn: string }[], documents: [] as { id: string; label: string; received: boolean }[], notes: [] as { id: string; body: string; author: string }[] };
   if (!caseId) return empty;
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     const [tasks, documents, notes] = await Promise.all([
       admin.from("shemesh_case_tasks").select("*").eq("case_id", caseId).order("created_at", { ascending: false }),
       admin.from("shemesh_case_documents").select("*").eq("case_id", caseId).order("created_at", { ascending: false }),
@@ -570,19 +579,19 @@ export async function loadCaseDetail(caseId: string) {
     return {
       missing: false,
       error: null,
-      tasks: (tasks.data ?? []).map((row) => ({
+      tasks: asRows(tasks.data).map((row) => ({
         id: String(row.id),
         title: text(row.title),
         status: text(row.status),
         assignee: text(row.assignee),
         dueOn: text(row.due_on),
       })),
-      documents: (documents.data ?? []).map((row) => ({
+      documents: asRows(documents.data).map((row) => ({
         id: String(row.id),
         label: text(row.label),
         received: Boolean(row.received),
       })),
-      notes: (notes.data ?? []).map((row) => ({
+      notes: asRows(notes.data).map((row) => ({
         id: String(row.id),
         body: text(row.body),
         author: text(row.author),

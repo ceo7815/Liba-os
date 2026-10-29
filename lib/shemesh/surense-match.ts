@@ -200,7 +200,10 @@ export async function matchStoredSnapshot(deals: GviyaDeal[], contacts: SheetCon
     }
     return indexPeople(people, deals, contacts);
   } catch (error) {
-    const message = publicErrorText(error instanceof Error ? error.message : "הצילום לא נקרא");
-    return { ...EMPTY, error: message };
+    const raw = error instanceof Error ? error.message : "הצילום לא נקרא";
+    if (/missing supabase|missing next_public/i.test(raw)) {
+      return { ...EMPTY, error: "צילום שורנס עדיין לא קיים במסד. אחרי «סנכרון מערכת» תופיע כאן ההצלבה." };
+    }
+    return { ...EMPTY, error: publicErrorText(raw) };
   }
 }

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { getCurrentProfile } from "@/lib/auth";
 import { canViewShemesh } from "@/lib/permissions/access";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { isMissingRelation } from "@/lib/shemesh/db";
+import { shemeshProfile } from "@/lib/shemesh/actor";
+import { isMissingRelation, shemeshAdmin } from "@/lib/shemesh/db";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +13,7 @@ const TABLES: Record<string, string> = {
 };
 
 export async function GET(request: Request) {
-  const profile = await getCurrentProfile();
+  const profile = await shemeshProfile();
   if (!profile || !canViewShemesh(profile)) {
     return NextResponse.json({ error: "אין הרשאה" }, { status: 401 });
   }
@@ -23,7 +22,7 @@ export async function GET(request: Request) {
   const table = TABLES[tableKey];
   if (!table) return NextResponse.json({ error: "סוג לא מוכר" }, { status: 400 });
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     let query = admin.from(table).select("*").limit(2000);
     if (tableKey === "rules" && filter) query = query.eq("kind", filter);
     if (tableKey === "ledger" && filter) query = query.eq("kind", filter);

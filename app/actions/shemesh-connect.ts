@@ -3,13 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
 import { canManageShemesh } from "@/lib/permissions/access";
-import { pickShemeshGoogleCustomer, saveShemeshProvider, saveShemeshSurense, syncShemeshSources, testShemeshProvider } from "@/lib/shemesh/connect";
+import { shemeshManageActor } from "@/lib/shemesh/actor";
+import { pickShemeshGoogleCustomer, saveShemeshProvider, saveShemeshSurense, syncShemeshSources, testShemeshLink, testShemeshProvider } from "@/lib/shemesh/connect";
 import { importInsurerRows, saveGrow, saveRivhit, testRivhit } from "@/lib/shemesh/connector-store";
 import { INSURERS, type ColumnMapping, type InsurerId } from "@/lib/shemesh/insurer-import";
 
 async function allowed() {
-  const profile = await getCurrentProfile();
-  return Boolean(profile && canManageShemesh(profile));
+  return Boolean(await shemeshManageActor());
 }
 
 export async function connectShemeshProvider(_state: { error: string | null }, formData: FormData) {
@@ -94,6 +94,14 @@ export async function importInsurerForm(_state: { error: string | null; headers?
   };
 }
 
+export async function testShemeshLinkForm(_state: { error: string | null; link: string }, formData: FormData) {
+  const link = String(formData.get("link") ?? "");
+  if (!(await allowed())) return { error: "אין הרשאה", link };
+  const result = await testShemeshLink(link);
+  revalidatePath("/shemesh/sources");
+  return { error: result.error, link };
+}
+
 export async function testShemeshProviderForm(formData: FormData) {
   if (!(await allowed())) return;
   const provider = String(formData.get("provider") ?? "");
@@ -104,7 +112,7 @@ export async function testShemeshProviderForm(formData: FormData) {
 
 export async function runShemeshSync() {
   const profile = await getCurrentProfile();
-  if (!profile || !canManageShemesh(profile)) return { ok: true, notes: [] };
+  if (!profile || !canManageShemesh(profile)) return { ok: true, notes: [] as string[] };
   const result = await syncShemeshSources();
   revalidatePath("/shemesh/sources");
   revalidatePath("/interfaces");

@@ -88,8 +88,8 @@ export async function loadShemeshMetaReport(): Promise<ShemeshMetaReport> {
     return { accountId, connected: true, missing: false, error: null, rows, fetchedAt: new Date().toISOString() };
   } catch (error) {
     const message = publicErrorText(error instanceof Error ? error.message : "פייסבוק לא נקרא");
-    if (isMissingRelation(message)) {
-      return { ...empty, missing: true, error: "נתוני המודעות עדיין לא במסד." };
+    if (isMissingRelation(message) || /missing supabase|missing next_public/i.test(message)) {
+      return { ...empty, missing: true, error: "נתוני המודעות עדיין לא במסד. אחרי סנכרון פייסבוק יופיעו כאן מספרים." };
     }
     console.error("[facebook-sync] shemesh ads read failed", { accountId, message });
     return { ...empty, error: message };

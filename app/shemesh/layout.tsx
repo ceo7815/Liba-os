@@ -9,7 +9,8 @@ import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
 import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
 import { ShemeshTheme } from "@/components/shemesh/theme";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
-import { requireProfile } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { shemeshProfile } from "@/lib/shemesh/actor";
 import { canViewShemesh } from "@/lib/permissions/access";
 import { assessShemeshSources } from "@/lib/shemesh/connectors";
 import { loadShemeshPulse } from "@/lib/shemesh/load-pulse";
@@ -50,7 +51,8 @@ export default async function ShemeshLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await requireProfile();
+  const profile = await shemeshProfile();
+  if (!profile) redirect("/login");
   const sources = assessShemeshSources(process.env);
   const pulse = await loadShemeshPulse().catch(() => null);
   const live = pulse ?? {

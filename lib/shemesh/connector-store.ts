@@ -1,6 +1,5 @@
 import { randomBytes } from "crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { isMissingRelation } from "@/lib/shemesh/db";
+import { asRows, isMissingRelation, shemeshAdmin } from "@/lib/shemesh/db";
 import { decryptVaultSecret, encryptVaultSecret } from "@/lib/vault/crypto";
 import { growApproveTransaction, growBase, growReady } from "@/lib/shemesh/grow";
 import {
@@ -19,7 +18,7 @@ function missing(error: { message: string } | null): string | null {
 
 export async function saveRivhit(companyId: string, apiToken: string) {
   if (!companyId.trim() || !apiToken.trim()) return { error: "חובה מזהה חברה ומפתח" };
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { error } = await admin.from("shemesh_rivhit_settings").upsert({
     id: 1,
     company_id: companyId.trim(),
@@ -31,7 +30,7 @@ export async function saveRivhit(companyId: string, apiToken: string) {
 }
 
 export async function testRivhit() {
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { data, error } = await admin.from("shemesh_rivhit_settings").select("*").eq("id", 1).maybeSingle();
   if (error) return { error: missing(error) };
   const companyId = typeof data?.company_id === "string" ? data.company_id : "";
@@ -71,7 +70,7 @@ export async function readRivhit(method: (typeof RIVHIT_READS)[number], extra: R
   if (!RIVHIT_READS.includes(method)) return { error: "פעולה לא מוכרת", rows: null };
   const tested = await testRivhit();
   if (tested.error && tested.error !== "מהמטמון") return { error: tested.error, rows: null };
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { data } = await admin.from("shemesh_rivhit_settings").select("company_id, api_token_encrypted, cache, ops_count, ops_month, monthly_quota").eq("id", 1).maybeSingle();
   const companyId = typeof data?.company_id === "string" ? data.company_id : "";
   const token = typeof data?.api_token_encrypted === "string" ? decryptVaultSecret(data.api_token_encrypted) : "";
@@ -100,7 +99,7 @@ export async function readRivhit(method: (typeof RIVHIT_READS)[number], extra: R
 export async function saveGrow(input: { userId: string; pageCode: string; apiKey: string; environment: string }) {
   if (!input.userId.trim() || !input.pageCode.trim()) return { error: "חובה userId ו־pageCode", webhookToken: "" };
   if (input.environment !== "sandbox" && input.environment !== "production") return { error: "סביבה לא מוכרת", webhookToken: "" };
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const existing = await admin.from("shemesh_grow_settings").select("webhook_token").eq("id", 1).maybeSingle();
   const token = typeof existing.data?.webhook_token === "string" && existing.data.webhook_token
     ? existing.data.webhook_token
@@ -119,7 +118,7 @@ export async function saveGrow(input: { userId: string; pageCode: string; apiKey
 }
 
 export async function growPublicStatus() {
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { data, error } = await admin.from("shemesh_grow_settings").select("user_id, environment, webhook_token, last_checked_at, last_error, page_code_encrypted").eq("id", 1).maybeSingle();
   if (error) return { missing: isMissingRelation(error.message), connected: false, environment: "sandbox", webhookToken: null as string | null, lastCheckedAt: null as string | null, lastError: null as string | null };
   return {
@@ -132,8 +131,20 @@ export async function growPublicStatus() {
   };
 }
 
+export async function testGrow() {
+  const status = await growPublicStatus();
+  if (status.missing) return { error: "הטבלה עדיין לא הורצה" };
+  if (!status.connected) {
+    const message = "אין קריאה לגרואו לפני שמירת userId ו־pageCode";
+    await noteGrow({ lastError: message });
+    return { error: message };
+  }
+  await noteGrow({ lastError: null });
+  return { error: null as string | null };
+}
+
 export async function loadGrowForWebhook(token: string) {
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { data } = await admin.from("shemesh_grow_settings").select("*").eq("webhook_token", token).maybeSingle();
   if (!data?.user_id || !data.page_code_encrypted) return null;
   return {
@@ -145,7 +156,7 @@ export async function loadGrowForWebhook(token: string) {
 }
 
 export async function noteGrow(patch: { lastError?: string | null; transactionId?: string | null }) {
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   await admin.from("shemesh_grow_settings").update({
     last_checked_at: new Date().toISOString(),
     last_error: patch.lastError ?? null,
@@ -181,7 +192,7 @@ export function growEndpointLabel(environment: string): string {
 }
 
 export async function saveInsurerMapping(company: InsurerId, mapping: ColumnMapping) {
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const { error } = await admin.from("shemesh_insurer_mappings").upsert({
     company,
     mapping,
@@ -199,7 +210,7 @@ export async function importInsurerRows(input: {
   const parsed = parseInsurerFile(input.fileName, input.bytes);
   const applied = applyMapping(parsed, input.mapping);
   if (!input.mapping.policy) return { error: "חסרה עמודת פוליסה", preview: applied, headers: parsed.headers, kind: parsed.kind };
-  const admin = createAdminClient();
+  const admin = shemeshAdmin();
   const history = await admin.from("shemesh_insurer_imports").insert({
     company: input.company,
     kind: parsed.kind,
@@ -237,13 +248,13 @@ export async function importInsurerRows(input: {
 
 export async function loadInsurerSettlement() {
   try {
-    const admin = createAdminClient();
+    const admin = shemeshAdmin();
     const [rows, history] = await Promise.all([
       admin.from("shemesh_insurer_rows").select("company, policy_ref, client_name, commission, premium, produced_on").order("created_at", { ascending: false }).limit(80),
       admin.from("shemesh_insurer_imports").select("id, company, kind, file_name, inserted, skipped, created_at").order("created_at", { ascending: false }).limit(12),
     ]);
     if (rows.error && isMissingRelation(rows.error.message)) return { missing: true, rows: [], history: [], commission: 0 };
-    const list = (rows.data ?? []).map((row) => ({
+    const list = asRows(rows.data).map((row) => ({
       company: String(row.company),
       policy: String(row.policy_ref ?? ""),
       client: String(row.client_name ?? ""),
@@ -254,7 +265,7 @@ export async function loadInsurerSettlement() {
     return {
       missing: false,
       rows: list,
-      history: (history.data ?? []).map((row) => ({
+      history: asRows(history.data).map((row) => ({
         id: String(row.id),
         company: String(row.company),
         kind: String(row.kind),

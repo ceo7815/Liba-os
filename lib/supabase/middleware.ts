@@ -40,6 +40,14 @@ function isProtectedPath(pathname: string) {
  * Authoritative profile / is_active checks happen in the authenticated layout.
  */
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  if (
+    process.env.SHEMESH_LOCAL_DEMO === "1" &&
+    (pathname === "/shemesh" || pathname.startsWith("/shemesh/"))
+  ) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -69,8 +77,6 @@ export async function updateSession(request: NextRequest) {
     const { data: userData } = await supabase.auth.getUser();
     userId = userData.user?.id;
   }
-
-  const pathname = request.nextUrl.pathname;
 
   if (!userId) {
     if (isProtectedPath(pathname) || pathname === "/") {
