@@ -12,6 +12,7 @@ import {
   facebookAdsOAuthConfigured,
 } from "@/lib/facebook-ads/config";
 import { facebookTokenExpiryWarning } from "@/lib/facebook-ads/expiry";
+import { facebookSettingsSyncStamp } from "@/lib/facebook-ads/sync-stamp";
 import {
   extendFacebookToken,
   facebookMeName,
@@ -494,8 +495,7 @@ export async function syncFacebookAds(): Promise<{
       id: 1,
       ad_account_id: syncedAccounts.map((row) => row.id).join(","),
       ad_account_name: syncedAccounts.map((row) => row.name).join(" · "),
-      last_synced_at: now,
-      last_error: warning || null,
+      ...facebookSettingsSyncStamp(now, warning),
       updated_by: profile.id,
       updated_at: now,
     });

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { reapStaleAgentRuns } from "@/lib/agents/reap-stale-runs";
+import { touchOpenRunHeartbeats, touchRunHeartbeat } from "@/lib/agents/run-heartbeat";
 import { hasProcessablePendingCalls } from "@/lib/call-control/pending-work";
 import type { AuthenticatedAgent } from "@/lib/mcp/auth";
 import { executeSocialTool, SOCIAL_MCP_TOOLS } from "@/lib/mcp/social-tools";
@@ -184,6 +185,8 @@ async function pollWork(
     return { ok: true, data: { has_work: false } };
   }
 
+  await touchRunHeartbeat(admin, String(row.id));
+
   return {
     ok: true,
     data: {
@@ -219,6 +222,7 @@ async function heartbeat(
     .single();
 
   if (error || !data) throw new Error(error?.message ?? "Failed to update heartbeat");
+  await touchOpenRunHeartbeats(admin, agent.agentId);
   return { ok: true, data };
 }
 
@@ -236,6 +240,7 @@ async function startRun(
   if (existingRunId) {
     const existing = await requireRunForAgent(admin, existingRunId, agent.agentId);
     if (existing.status === "running") {
+      await touchRunHeartbeat(admin, existing.id);
       return {
         ok: true,
         data: {
@@ -266,6 +271,7 @@ async function startRun(
     if (error) throw new Error(error.message);
     if (!data) throw new Error("Failed to promote queued run (already taken?)");
 
+    await touchRunHeartbeat(admin, data.id);
     await admin
       .from("agents")
       .update({ last_run_at: data.started_at, last_run_status: "running" })
@@ -308,6 +314,7 @@ async function startRun(
       .limit(1)
       .maybeSingle();
     if (openPending) {
+      await touchRunHeartbeat(admin, openPending.id);
       return {
         ok: true,
         data: {
@@ -340,6 +347,7 @@ async function startRun(
         : {};
     const ingest = String(meta.ingest ?? meta.source ?? "");
     if (ingest === "pending_calls" || ingest === "upload") {
+      await touchRunHeartbeat(admin, activeRunning.id);
       return {
         ok: true,
         data: {
@@ -368,6 +376,7 @@ async function startRun(
     throw new Error(error?.message ?? "Failed to start run");
   }
 
+  await touchRunHeartbeat(admin, data.id);
   await admin
     .from("agents")
     .update({ last_run_at: data.started_at, last_run_status: "running" })
@@ -467,6 +476,7 @@ async function reportCost(
 
   const nextTotal = Number(run?.cost_usd ?? 0) + costUsd;
   await admin.from("agent_runs").update({ cost_usd: nextTotal }).eq("id", runId);
+  await touchRunHeartbeat(admin, runId);
 
   return {
     ok: true,
@@ -562,6 +572,7 @@ async function logLine(
     throw new Error(error?.message ?? "Failed to write log");
   }
 
+  await touchRunHeartbeat(admin, runId);
   return { ok: true, data };
 }
 
@@ -762,6 +773,8 @@ async function getPendingCalls(
   admin: SupabaseClient,
   params: Params,
 ): Promise<McpResult> {
+  const linkedRun = optStr(params.run_id);
+  if (linkedRun) await touchRunHeartbeat(admin, linkedRun);
   const limit = Math.trunc(num(params.limit, "limit", 10));
   const { data, error } = await admin.rpc("claim_pending_calls", {
     p_limit: limit,
@@ -831,6 +844,8 @@ async function setCallStatus(
   admin: SupabaseClient,
   params: Params,
 ): Promise<McpResult> {
+  const linkedRun = optStr(params.run_id);
+  if (linkedRun) await touchRunHeartbeat(admin, linkedRun);
   const callId = str(params.call_id, "call_id");
   const status = str(params.status, "status");
   const allowed = ["pending", "claimed", "processing", "done", "failed", "skipped"];
@@ -854,6 +869,8 @@ async function saveTranscript(
   admin: SupabaseClient,
   params: Params,
 ): Promise<McpResult> {
+  const linkedRun = optStr(params.run_id);
+  if (linkedRun) await touchRunHeartbeat(admin, linkedRun);
   const callId = str(params.call_id, "call_id");
   // Official field: full_text. Alias: text (accepted for convenience / retries).
   const fullText = str(params.full_text ?? params.text, "full_text");
@@ -914,6 +931,7 @@ async function saveAnalysis(
 
   if (runId) {
     await requireRunForAgent(admin, runId, agent.agentId);
+    await touchRunHeartbeat(admin, runId);
   }
 
   const { data: call } = await admin

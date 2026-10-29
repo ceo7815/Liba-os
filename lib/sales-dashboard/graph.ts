@@ -1,9 +1,19 @@
+import { publicErrorText } from "@/lib/sync-log";
+import { isRetryableHttpStatus, RetryableError, withRetry } from "@/lib/sync-retry";
+
 type GraphToken = {
   accessToken: string;
   expiresAt: number;
 };
 
 let cachedToken: GraphToken | null = null;
+
+const GRAPH_TIMEOUT_MS = 25_000;
+const GRAPH_ATTEMPTS = 3;
+
+export function resetGraphAuthCache(): void {
+  cachedToken = null;
+}
 
 export function isGraphConfigured(): boolean {
   const azure = Boolean(
@@ -21,6 +31,36 @@ export function isGraphConfigured(): boolean {
   if (driveId && (itemId || filePath)) return true;
   if (user && filePath) return true;
   return false;
+}
+
+/** One Graph/OneDrive call. Transient HTTP statuses, timeouts, and network errors are retried. */
+async function graphRequest(url: string, init: RequestInit): Promise<Response> {
+  return withRetry(
+    async () => {
+      const signal =
+        typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
+          ? AbortSignal.timeout(GRAPH_TIMEOUT_MS)
+          : undefined;
+      let res: Response;
+      try {
+        res = await fetch(url, { ...init, cache: "no-store", signal });
+      } catch (err) {
+        if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
+          throw new RetryableError("OneDrive request timed out");
+        }
+        const message = err instanceof Error ? err.message : "OneDrive request failed";
+        throw new RetryableError(publicErrorText(message));
+      }
+      if (isRetryableHttpStatus(res.status)) {
+        const text = await res.text().catch(() => "");
+        throw new RetryableError(
+          publicErrorText(`OneDrive request failed (${res.status}): ${text.slice(0, 180)}`),
+        );
+      }
+      return res;
+    },
+    { attempts: GRAPH_ATTEMPTS },
+  );
 }
 
 async function getGraphToken(): Promise<string> {
@@ -42,19 +82,18 @@ async function getGraphToken(): Promise<string> {
     scope: "https://graph.microsoft.com/.default",
   });
 
-  const res = await fetch(
+  const res = await graphRequest(
     `https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/token`,
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
-      cache: "no-store",
     },
   );
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`Graph token failed (${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(publicErrorText(`Graph token failed (${res.status}): ${text.slice(0, 180)}`));
   }
 
   const json = (await res.json()) as {
@@ -125,13 +164,12 @@ export async function getSalesExcelMeta(): Promise<ExcelMeta> {
   const token = await getGraphToken();
   const base = itemUrl();
   const url = `${base}?$select=name,eTag,lastModifiedDateTime`;
-  const res = await fetch(url, {
+  const res = await graphRequest(url, {
     headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`Graph item lookup failed (${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(publicErrorText(`Graph item lookup failed (${res.status}): ${text.slice(0, 180)}`));
   }
   const meta = (await res.json()) as {
     name?: string;
@@ -152,10 +190,10 @@ export async function downloadSalesExcel(meta?: ExcelMeta): Promise<DownloadedEx
   const info = meta ?? (await getSalesExcelMeta());
 
   const contentUrl = base.includes("/root:/") ? `${base}:/content` : `${base}/content`;
-  const contentRes = await fetch(contentUrl, { headers, cache: "no-store" });
+  const contentRes = await graphRequest(contentUrl, { headers });
   if (!contentRes.ok) {
     const text = await contentRes.text().catch(() => "");
-    throw new Error(`Graph download failed (${contentRes.status}): ${text.slice(0, 200)}`);
+    throw new Error(publicErrorText(`Graph download failed (${contentRes.status}): ${text.slice(0, 180)}`));
   }
 
   return {

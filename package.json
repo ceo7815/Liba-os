@@ -7,7 +7,7 @@
     "build": "node scripts/next-with-env.mjs build",
     "start": "node scripts/next-with-env.mjs start",
     "lint": "next lint",
-    "test": "node --import tsx --test lib/voicenter/cdr.test.ts lib/sync-retry.test.ts lib/agents/run-error.test.ts lib/sales-dashboard/excel-sync-guard.test.ts",
+    "test": "node --import tsx --test lib/voicenter/cdr.test.ts lib/sync-retry.test.ts lib/agents/run-error.test.ts lib/agents/reap-stale-runs.test.ts lib/agents/cron-auth.test.ts lib/sales-dashboard/excel-sync-guard.test.ts lib/sales-dashboard/graph-retry.test.ts lib/facebook-ads/sync-stamp.test.ts",
     "mcp:e2e": "node scripts/mcp-e2e.mjs",
     "sales:watch": "node scripts/watch-sales-excel.mjs",
     "shemesh:sales:watch": "node scripts/watch-shemesh-excel.mjs"

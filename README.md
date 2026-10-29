@@ -28,6 +28,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 | `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` | **שרת בלבד** | אפליקציית Graph לדשבורד המכירות |
 | `SALES_EXCEL_DRIVE_ID` + `SALES_EXCEL_ITEM_ID` | **שרת בלבד** | קובץ האקסל ב-OneDrive/SharePoint |
 | `SALES_TV_KIOSK_TOKEN` | **שרת בלבד** | טוקן לכתובת הטלוויזיה `/sales-tv?token=` |
+| `AGENT_REAPER_CRON_SECRET` | **שרת בלבד** | סוד לשעון של קוצר ההרצות. השם בלבד. ראו `docs/agent-reaper.md` |
 
 מפתחות: [Settings → API](https://supabase.com/dashboard/project/cuqaftpkcdxtjogiyqtu/settings/api)
 
