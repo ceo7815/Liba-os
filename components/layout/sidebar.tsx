@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bot,
   Cable,
@@ -46,6 +46,7 @@ import {
 } from "@/lib/sales-dashboard/access";
 import { canViewFormulas, FORMULAS_PATH } from "@/lib/formulas/access";
 import { LEAD_CONTROL_PATH } from "@/lib/lead-control/rules";
+import { activePath } from "@/lib/nav-path";
 import { canViewInterfaces, INTERFACES_PATH } from "@/lib/interfaces/access";
 import {
   canManageUsers,
@@ -77,7 +78,7 @@ function sectionFromPath(pathname: string): OpenSection {
 }
 
 export function Sidebar({ profile, className }: SidebarProps) {
-  const pathname = usePathname();
+  const pathname = activePath(usePathname(), useSearchParams().get("view"));
   const showAgents = canViewAgents(profile);
   const showVault = canViewVault(profile);
   const showFinance = canAccessFinance(profile);
@@ -170,7 +171,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
             href="/dashboard"
             label="לוח בקרה"
             icon={LayoutDashboard}
-            active={pathname === "/dashboard" || pathname === "/design-lab"}
+            active={pathname === "/dashboard"}
           />
           {showSalesDashboard ? (
             <NavItem

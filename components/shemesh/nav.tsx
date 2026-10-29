@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Cable,
   Calculator,
@@ -16,6 +16,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import { activePath } from "@/lib/nav-path";
 import { cn } from "@/lib/utils";
 
 const SECTIONS: {
@@ -55,7 +56,7 @@ function isActive(pathname: string, href: string, exact?: boolean) {
 }
 
 export function ShemeshSidebar({ className }: { className?: string }) {
-  const pathname = usePathname();
+  const pathname = activePath(usePathname(), useSearchParams().get("view"));
 
   return (
     <aside

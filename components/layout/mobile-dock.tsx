@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LayoutDashboard, ListChecks, Megaphone, Menu, Wallet } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { canAccessFinance } from "@/lib/finance/access";
 import { LEAD_CONTROL_PATH } from "@/lib/lead-control/rules";
 import { CAMPAIGNS_PATH, canAccessSalesDashboard } from "@/lib/sales-dashboard/access";
+import { activePath } from "@/lib/nav-path";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 
@@ -18,7 +19,7 @@ type Item = {
 };
 
 export function MobileDock({ profile }: { profile: Profile }) {
-  const pathname = usePathname();
+  const pathname = activePath(usePathname(), useSearchParams().get("view"));
   const items: Item[] = [{ href: "/dashboard", label: "בקרה", icon: LayoutDashboard }];
   if (canAccessSalesDashboard(profile)) {
     items.push({ href: LEAD_CONTROL_PATH, label: "לידים", icon: ListChecks });
@@ -33,7 +34,7 @@ export function MobileDock({ profile }: { profile: Profile }) {
       {items.slice(0, 4).map((item) => {
         const active =
           item.href === "/dashboard"
-            ? pathname === "/dashboard" || pathname === "/design-lab"
+            ? pathname === "/dashboard"
             : pathname === item.href || pathname.startsWith(`${item.href}/`);
         const Icon = item.icon;
         return (

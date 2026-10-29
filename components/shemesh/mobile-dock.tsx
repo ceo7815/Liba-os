@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LayoutDashboard, Megaphone, Menu, Users, Wallet } from "lucide-react";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { activePath } from "@/lib/nav-path";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
@@ -15,7 +16,7 @@ const ITEMS = [
 ];
 
 export function ShemeshMobileDock() {
-  const pathname = usePathname();
+  const pathname = activePath(usePathname(), useSearchParams().get("view"));
 
   return (
     <nav className="mobile-dock shemesh-os lg:hidden print:hidden" aria-label="ניווט שמש">
