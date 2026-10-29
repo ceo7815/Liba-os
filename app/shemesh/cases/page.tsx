@@ -6,13 +6,17 @@ import { Button } from "@/components/ui/button";
 import { createShemeshCase, createShemeshCaseChildForm, saveShemeshFeesForm, setShemeshDocumentForm, updateShemeshCase } from "@/app/actions/shemesh-ops";
 import { shemeshProfile } from "@/lib/shemesh/actor";
 import { canEditShemeshCases, handlerOnlyName } from "@/lib/permissions/access";
-import { loadCaseBoard } from "@/lib/shemesh/ops";
+import { ensureStoredChecklists, loadCaseBoard, writeAudit } from "@/lib/shemesh/ops";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "תיקים · שמש" };
 
 export default async function Page({ searchParams }: { searchParams: { open?: string } }) {
   const profile = await shemeshProfile();
+  await ensureStoredChecklists();
+  if (searchParams.open && profile) {
+    await writeAudit(profile.full_name || profile.email || profile.id, "access", "case", searchParams.open, "נצפה תיק");
+  }
   const board = await loadCaseBoard(handlerOnlyName(profile));
   const canManage = canEditShemeshCases(profile);
   return (

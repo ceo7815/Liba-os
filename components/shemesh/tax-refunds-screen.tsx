@@ -112,7 +112,7 @@ export function TaxRefundsScreen({
         <ShemeshEmpty
           icon={Upload}
           title="עוד אין דוח החזרי מס"
-          body="העלו את הקובץ מתיקיית שמש תפעול, ב־Excel או CSV. הוא נשמר כמו דוח המכירות, בלי טבלה חדשה. עד אז המסך נשאר ריק בכוונה."
+          body="העלו את דוח החזרי המס מתיקיית תפעול שמש, ב־Excel או CSV. אחרי ההעלאה השורות נכנסות לספר לפי הסטטוס שבקובץ. אין סכום מומצא."
           action={
             <label className="inline-flex cursor-pointer">
               <input

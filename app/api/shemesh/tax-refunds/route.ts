@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { getCurrentProfile } from "@/lib/auth";
+import { shemeshCaseActor } from "@/lib/shemesh/actor";
+import { importTaxRowsToLedger } from "@/lib/shemesh/ops";
+import { taxRowsFromSheet } from "@/lib/shemesh/tax-refunds";
 import { saveTaxRefundUpload } from "@/lib/shemesh/tax-refunds-store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const profile = await getCurrentProfile();
-  if (profile?.role !== "admin") {
+  const actor = await shemeshCaseActor();
+  if (!actor) {
     return NextResponse.json({ error: "אין הרשאה" }, { status: 401 });
   }
   const form = await request.formData();
@@ -25,8 +27,17 @@ export async function POST(request: Request) {
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
     const saved = await saveTaxRefundUpload(buffer, file.name);
+    const parsed = saved.sheets.flatMap((sheet) => taxRowsFromSheet(sheet));
+    const imported = await importTaxRowsToLedger(parsed, actor.name);
     const rows = saved.sheets.reduce((sum, sheet) => sum + sheet.rows.length, 0);
-    return NextResponse.json({ ok: true, fileName: saved.fileName, rows });
+    return NextResponse.json({
+      ok: !imported.error,
+      fileName: saved.fileName,
+      rows,
+      inserted: imported.inserted,
+      skipped: imported.skipped,
+      error: imported.error,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "ההעלאה נכשלה";
     return NextResponse.json({ error: message }, { status: 500 });

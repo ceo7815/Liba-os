@@ -25,7 +25,7 @@ export default async function Page() {
     <div className="space-y-6">
       <Panel title="נפרעים">
         <div className="grid gap-3 sm:grid-cols-3">
-          <Stat label="שורות שנסגרו" value={productions.missing ? "—" : formatShemeshCount(settled.length)} hint="רק fully_settled" />
+          <Stat label="שורות שנסגרו" value={productions.missing ? "—" : formatShemeshCount(settled.length)} hint="רק שורה שסומנה כנסגרה במלואה" />
           <Stat label="הכנסת עמלה" value={fees.settings.multiplierPending || fees.settings.feeMultiplier == null ? "—" : formatShemeshMoney(income)} hint={fees.settings.multiplierPending ? "המכפיל ממתין לאימות" : "הפקה כפול המכפיל השמור"} />
           <Stat label="כל השורות שיובאו" value={productions.missing ? "—" : formatShemeshCount(productions.rows.length)} />
         </div>

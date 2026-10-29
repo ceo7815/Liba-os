@@ -55,6 +55,7 @@ export function ShemeshConnectPanel({
               <input type="hidden" name="link" value={link.id} />
               <button type="submit" className="h-9 rounded-xl bg-muted px-3 text-sm">בדיקה</button>
             </form>
+            {!link.connected ? <p className="mt-2 text-xs text-muted-foreground">השלב הבא: שמרו את הפרטים, ואז בדיקה. בלי פרטים שמורים אין קריאה החוצה.</p> : null}
             {testState.link === link.id && testState.error ? <p className="mt-2 text-sm text-destructive">{testState.error}</p> : null}
             {testState.link === link.id && !testState.error ? <p className="mt-2 text-sm text-muted-foreground">הבדיקה הסתיימה בלי שגיאה.</p> : null}
           </article>

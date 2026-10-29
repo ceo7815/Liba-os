@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFormState } from "react-dom";
 import { importInsurerForm } from "@/app/actions/shemesh-connect";
 import { field } from "@/lib/shemesh/field";
@@ -10,6 +11,7 @@ const idle = { error: null as string | null, headers: [] as string[], inserted: 
 
 export function InsurerImport({ history }: { history: { id: string; company: string; kind: string; fileName: string; inserted: number; skipped: number; createdAt: string }[] }) {
   const [state, action] = useFormState(importInsurerForm, idle);
+  const [fileLabel, setFileLabel] = useState("לא נבחר קובץ");
   const headers = state.headers ?? [];
   return (
     <div className="space-y-3">
@@ -28,7 +30,18 @@ export function InsurerImport({ history }: { history: { id: string; company: str
           </label>
           <label className="grid gap-1 text-xs text-muted-foreground">
             קובץ אקסל או XML
-            <input className={field} name="file" type="file" accept=".xlsx,.xls,.xml,.csv" required />
+            <span className="flex flex-wrap items-center gap-2">
+              <input
+                className="sr-only"
+                name="file"
+                type="file"
+                accept=".xlsx,.xls,.xml,.csv"
+                required
+                onChange={(event) => setFileLabel(event.target.files?.[0]?.name || "לא נבחר קובץ")}
+              />
+              <span className="inline-flex h-9 items-center rounded-xl border border-border bg-muted px-3 text-sm text-foreground">בחירת קובץ</span>
+              <span className="text-sm text-foreground">{fileLabel}</span>
+            </span>
           </label>
           {headers.length ? (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -56,7 +69,7 @@ export function InsurerImport({ history }: { history: { id: string; company: str
         </form>
       </Panel>
       <Panel title="היסטוריית ייבוא">
-        {history.length === 0 ? <p className="text-sm text-muted-foreground">עדיין אין ייבוא.</p> : (
+        {history.length === 0 ? <p className="text-sm text-muted-foreground">עדיין אין ייבוא. בחרו חברה וקובץ, ואז תצוגה וייבוא.</p> : (
           <ul className="space-y-1 text-sm">
             {history.map((row) => (
               <li key={row.id}>{row.company} · {row.kind} · {row.fileName} · נכנסו {row.inserted} · דולגו {row.skipped}</li>

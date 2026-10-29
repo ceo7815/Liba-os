@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { BadgeDollarSign, FileSpreadsheet } from "lucide-react";
 import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
@@ -76,7 +77,8 @@ export function GviyaScreen({
         <ShemeshEmpty
           icon={FileSpreadsheet}
           title="הדוח עוד לא הגיע"
-          body="המסך נדלק מגיליון הגבייה אחרי שהקובץ «דוח מכירות שמש פדיונות 2» נשמר מהתיקייה תפעול שמש. עד אז, ספר הפדיונות למטה הוא המקור. אין כאן סכום קבוע."
+          body="נמכר, נגבה ומחזור יופיעו רק אחרי ייבוא «דוח מכירות שמש פדיונות 2» מתיקיית תפעול שמש. הספר למטה הוא שכר טרחה, לא דוח המכירות."
+          action={<Link href="/shemesh/sources" className="inline-flex h-9 items-center rounded-xl bg-primary px-3 text-sm text-primary-foreground">לחיבור הדוח</Link>}
         />
       </ShemeshPage>
     );

@@ -9,6 +9,7 @@ import {
   type FeeSettings,
 } from "@/lib/shemesh/fees";
 import { CASE_STAGES } from "@/lib/shemesh/catalog";
+import { SERVICE_CHECKLIST, stageMoveAllowed, mapTaxStatus, type ServiceTypeId } from "@/lib/shemesh/lifecycle";
 
 export type DeskKind = "cases" | "ledger" | "rules";
 
@@ -279,9 +280,12 @@ export async function insertCase(input: {
   handler: string;
   openedOn: string;
   notes: string;
+  serviceType?: string;
 }, actor: string) {
-  const errorText = validateCase(input);
+  const errorText = validateCase({ ...input, stage: "lead" });
   if (errorText) return { error: errorText };
+  if (input.stage && input.stage !== "lead") return { error: "תיק חדש נפתח כליד. ההתקדמות היא שלב אחד בכל פעם." };
+  const serviceType = input.serviceType && input.serviceType in SERVICE_CHECKLIST ? input.serviceType as ServiceTypeId : null;
   const fees = await loadFeeSettings();
   const opened = input.openedOn || todayIso();
   const deadline = deadlineFromSla(opened, fees.settings.slaDays);
@@ -291,22 +295,28 @@ export async function insertCase(input: {
     .insert({
       client_name: input.clientName.trim(),
       phone: input.phone.trim() || null,
-      stage: input.stage,
-      status: input.status,
+      stage: "lead",
+      status: input.status || "open",
       handler: input.handler.trim() || null,
+      service_type: serviceType,
       opened_on: opened,
       deadline,
+      sla_due_at: deadline,
       notes: input.notes.trim() || null,
     })
     .select("id")
     .single();
   if (error) return { error: isMissingRelation(error.message) ? "הטבלה עדיין לא הורצה" : error.message };
-  await writeAudit(actor, "create", "case", String(data.id), input.clientName.trim());
+  const id = String(data.id);
+  if (serviceType) await seedChecklist(id, serviceType);
+  await writeAudit(actor, "create", "case", id, input.clientName.trim());
   return { error: null };
 }
 
 export async function patchCase(id: string, patch: Record<string, string>, actor: string) {
   const admin = shemeshAdmin();
+  const current = await admin.from("shemesh_cases").select("stage, service_type").eq("id", id).maybeSingle();
+  if (current.error) return { error: current.error.message };
   const next: Record<string, string | null> = { updated_at: new Date().toISOString() };
   if (patch.status) {
     if (!CASE_STATUS.has(patch.status)) return { error: "סטטוס לא מוכר" };
@@ -314,14 +324,38 @@ export async function patchCase(id: string, patch: Record<string, string>, actor
   }
   if (patch.stage) {
     if (!STAGE_IDS.has(patch.stage)) return { error: "שלב לא מוכר" };
+    const from = text(current.data?.stage) || "lead";
+    if (!stageMoveAllowed(from, patch.stage)) return { error: "אפשר להישאר בשלב או להתקדם שלב אחד. אי אפשר לדלג." };
     next.stage = patch.stage;
+  }
+  let serviceType: ServiceTypeId | null = null;
+  if (patch.serviceType && patch.serviceType in SERVICE_CHECKLIST) {
+    serviceType = patch.serviceType as ServiceTypeId;
+    next.service_type = serviceType;
   }
   if ("handler" in patch) next.handler = patch.handler.trim() || null;
   if ("notes" in patch) next.notes = patch.notes.trim() || null;
   const { error } = await admin.from("shemesh_cases").update(next).eq("id", id);
   if (error) return { error: isMissingRelation(error.message) ? "הטבלה עדיין לא הורצה" : error.message };
+  if (serviceType) await seedChecklist(id, serviceType);
   await writeAudit(actor, "update", "case", id, patch.status || patch.stage || patch.handler || "עודכן");
   return { error: null };
+}
+
+async function seedChecklist(caseId: string, serviceType: ServiceTypeId) {
+  const admin = shemeshAdmin();
+  const existing = await admin.from("shemesh_case_documents").select("label").eq("case_id", caseId).limit(40);
+  const labels = new Set(asRows(existing.data).map((row) => text(row.label)));
+  for (const label of SERVICE_CHECKLIST[serviceType]) {
+    if (labels.has(label)) continue;
+    await admin.from("shemesh_case_documents").insert({
+      case_id: caseId,
+      label,
+      state: "missing",
+      received: false,
+      required: true,
+    });
+  }
 }
 
 export async function insertLedger(input: {
@@ -425,12 +459,21 @@ export async function saveFeeSettings(input: FeeSettings, actor: string) {
   return { error: null };
 }
 
-export async function setCaseDocumentReceived(id: string, received: boolean, actor: string) {
+export async function setCaseDocumentReceived(id: string, received: boolean, actor: string, state?: string) {
   if (!id) return { error: "חסר מסמך" };
+  const nextState = state === "received" || state === "invalid" || state === "missing"
+    ? state
+    : received ? "received" : "missing";
   const admin = shemeshAdmin();
-  const { error } = await admin.from("shemesh_case_documents").update({ received }).eq("id", id);
+  const doc = await admin.from("shemesh_case_documents").select("label").eq("id", id).maybeSingle();
+  const { error } = await admin.from("shemesh_case_documents").update({
+    received: nextState === "received",
+    state: nextState,
+  }).eq("id", id);
   if (error) return { error: isMissingRelation(error.message) ? "הטבלה עדיין לא הורצה" : error.message };
-  await writeAudit(actor, "update", "document", id, received ? "התקבל" : "חסר");
+  const label = text(doc.data?.label);
+  const consent = nextState === "received" && label.includes("ייפוי");
+  await writeAudit(actor, "update", "document", id, consent ? `הסכמה נחתמה: ${label}` : nextState === "invalid" ? "לא תקין" : nextState === "received" ? "התקבל" : "חסר");
   return { error: null };
 }
 
@@ -482,8 +525,9 @@ export type CaseFile = {
   deadline: string | null;
   notes: string;
   overdue: boolean;
+  serviceType: string;
   tasks: { id: string; title: string; status: string; assignee: string; dueOn: string }[];
-  documents: { id: string; label: string; received: boolean; required: boolean }[];
+  documents: { id: string; label: string; received: boolean; required: boolean; state: string }[];
   notesList: { id: string; body: string; author: string }[];
 };
 
@@ -544,6 +588,7 @@ export async function loadCaseBoard(handlerOnly?: string | null): Promise<{
           openedOn: text(row.opened_on),
           deadline: text(row.deadline) || null,
           notes: text(row.notes),
+          serviceType: text(row.service_type),
           overdue: slaOverdue(text(row.deadline) || null, text(row.status), today),
           tasks: (taskMap.get(id) ?? []).map((item) => {
             const task = item as { id?: string; title?: string; status?: string; assignee?: string; due_on?: string };
@@ -556,12 +601,13 @@ export async function loadCaseBoard(handlerOnly?: string | null): Promise<{
             };
           }),
           documents: (docMap.get(id) ?? []).map((item) => {
-            const doc = item as { id?: string; label?: string; received?: boolean; required?: boolean };
+            const doc = item as { id?: string; label?: string; received?: boolean; required?: boolean; state?: string };
             return {
               id: String(doc.id),
               label: text(doc.label),
               received: Boolean(doc.received),
               required: doc.required !== false,
+              state: text(doc.state) || (doc.received ? "received" : "missing"),
             };
           }),
           notesList: (noteMap.get(id) ?? []).map((item) => {
@@ -701,6 +747,59 @@ async function existingCaseId(excel: string, surense: string): Promise<string | 
     if (found.data?.id) return String(found.data.id);
   }
   return null;
+}
+
+export async function ensureStoredChecklists() {
+  try {
+    const admin = shemeshAdmin();
+    const { data, error } = await admin.from("shemesh_cases").select("id, service_type").limit(200);
+    if (error) return;
+    for (const row of asRows(data)) {
+      const type = text(row.service_type);
+      if (type in SERVICE_CHECKLIST) await seedChecklist(String(row.id), type as ServiceTypeId);
+    }
+  } catch {
+    // Checklist fill waits until the documents table exists.
+  }
+}
+
+export async function importTaxRowsToLedger(
+  rows: { id: string; name: string; status: string; amount: number }[],
+  actor: string,
+) {
+  const admin = shemeshAdmin();
+  let inserted = 0;
+  let skipped = 0;
+  for (const row of rows) {
+    if (!row.name.trim()) continue;
+    const key = `tax:${row.id}`;
+    const existing = await admin.from("shemesh_ledger").select("id").eq("kind", "tax_refund").eq("external_key", key).maybeSingle();
+    if (existing.data?.id) {
+      skipped += 1;
+      continue;
+    }
+    const taxStatus = mapTaxStatus(row.status);
+    const { error } = await admin.from("shemesh_ledger").insert({
+      kind: "tax_refund",
+      client_name: row.name.trim(),
+      gross: Number.isFinite(row.amount) ? row.amount : 0,
+      fee_rate: null,
+      fee: null,
+      net: null,
+      status: taxStatus === "fee_billed" ? "done" : taxStatus === "received" || taxStatus === "filed" ? "waiting" : "open",
+      tax_status: taxStatus,
+      external_key: key,
+      notes: taxStatus ? "ייבוא דוח החזרי מס" : `ייבוא דוח. סטטוס לא מוכר: ${row.status}`,
+    });
+    if (error) {
+      if (/duplicate|unique|external_key/i.test(error.message)) skipped += 1;
+      else return { error: error.message, inserted, skipped };
+    } else {
+      inserted += 1;
+    }
+  }
+  if (inserted) await writeAudit(actor, "import", "ledger", "tax_refund", `יובאו ${inserted} שורות`);
+  return { error: null, inserted, skipped };
 }
 
 export async function loadRuleKind(id: string): Promise<string | null> {

@@ -9,6 +9,7 @@ import { field } from "@/lib/shemesh/field";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CASE_STAGES, SHEMESH_HANDLERS } from "@/lib/shemesh/catalog";
+import { SERVICE_TYPES } from "@/lib/shemesh/lifecycle";
 import { cn } from "@/lib/utils";
 import type { CaseFile } from "@/lib/shemesh/ops";
 
@@ -75,13 +76,14 @@ export function CaseBoard({
                 <input className={field} name="phone" />
               </label>
               <label className="grid gap-1 text-xs text-muted-foreground">
-                שלב
-                <select className={field} name="stage" defaultValue="lead">
-                  {CASE_STAGES.map((stage) => (
-                    <option key={stage.id} value={stage.id}>{stage.label}</option>
+                סוג שירות
+                <select className={field} name="serviceType" defaultValue="redemption">
+                  {SERVICE_TYPES.map((item) => (
+                    <option key={item.id} value={item.id}>{item.label}</option>
                   ))}
                 </select>
               </label>
+              <input type="hidden" name="stage" value="lead" />
               <label className="grid gap-1 text-xs text-muted-foreground">
                 מטפל
                 <select className={field} name="handler" defaultValue="">
@@ -204,7 +206,16 @@ function CaseDetail({
           <label className="grid gap-1 text-xs text-muted-foreground">
             שלב
             <select className={field} name="stage" defaultValue={item.stage}>
-              {CASE_STAGES.map((stage) => <option key={stage.id} value={stage.id}>{stage.label}</option>)}
+              {CASE_STAGES.filter((stage, index) => {
+                const current = CASE_STAGES.findIndex((itemStage) => itemStage.id === item.stage);
+                return index === current || index === current + 1;
+              }).map((stage) => <option key={stage.id} value={stage.id}>{stage.label}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs text-muted-foreground">
+            סוג שירות
+            <select className={field} name="serviceType" defaultValue={item.serviceType || "redemption"}>
+              {SERVICE_TYPES.map((service) => <option key={service.id} value={service.id}>{service.label}</option>)}
             </select>
           </label>
           <label className="grid gap-1 text-xs text-muted-foreground">
@@ -235,12 +246,16 @@ function CaseDetail({
             <li key={doc.id} className="flex items-center justify-between gap-2">
               <span>{doc.received ? "✓" : "○"} {doc.label}</span>
               {canManage ? (
-                <form action={documentAction}>
+                <form action={documentAction} className="flex items-center gap-2">
                   <input type="hidden" name="id" value={doc.id} />
-                  <input type="hidden" name="received" value={doc.received ? "false" : "true"} />
-                  <button type="submit" className="text-xs font-medium text-highlight">{doc.received ? "סמן כחסר" : "התקבל"}</button>
+                  <select className={field} name="state" defaultValue={doc.state || (doc.received ? "received" : "missing")} aria-label="מצב מסמך">
+                    <option value="missing">חסר</option>
+                    <option value="received">התקבל</option>
+                    <option value="invalid">לא תקין</option>
+                  </select>
+                  <button type="submit" className="text-xs font-medium text-highlight">עדכון</button>
                 </form>
-              ) : null}
+              ) : <span className="text-xs text-muted-foreground">{doc.state === "invalid" ? "לא תקין" : doc.received ? "התקבל" : "חסר"}</span>}
             </li>
           ))}
         </ul>

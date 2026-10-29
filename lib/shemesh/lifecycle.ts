@@ -1,3 +1,5 @@
+import { CASE_STAGES } from "@/lib/shemesh/catalog";
+
 /** Named lifecycle rules. Rates stay null until a setting is saved. Pending means not verified. */
 
 export const SERVICE_TYPES = [
@@ -9,6 +11,25 @@ export const SERVICE_TYPES = [
 ] as const;
 
 export type ServiceTypeId = (typeof SERVICE_TYPES)[number]["id"];
+
+/** Document names only. No amounts. ייפוי כוח is the consent document. */
+export const SERVICE_CHECKLIST: Record<ServiceTypeId, string[]> = {
+  redemption: ["תעודת זהות", "ייפוי כוח", "אישור קופה"],
+  tax_refund: ["תעודת זהות", "טופס 106", "ייפוי כוח"],
+  claim: ["תעודת זהות", "מסמכי תביעה", "ייפוי כוח"],
+  national_insurance: ["תעודת זהות", "טפסי ביטוח לאומי", "ייפוי כוח"],
+  other: ["תעודת זהות"],
+};
+
+const STAGE_ORDER = CASE_STAGES.map((stage) => stage.id);
+
+/** A case may stay or move one stage forward. Jumps are rejected. */
+export function stageMoveAllowed(from: string, to: string): boolean {
+  const current = STAGE_ORDER.indexOf(from as (typeof STAGE_ORDER)[number]);
+  const next = STAGE_ORDER.indexOf(to as (typeof STAGE_ORDER)[number]);
+  if (current < 0 || next < 0) return false;
+  return next === current || next === current + 1;
+}
 
 export const TAX_PIPELINE = [
   { id: "open_lead", label: "ליד פתוח" },
@@ -103,6 +124,9 @@ function assertLifecycleMath(): void {
   if (!waiting.counted || waiting.income !== null) throw new Error("settled row without a verified multiplier stays empty");
   if (settledCommission(1000, 0.1, "fully_settled", false).income !== 100) throw new Error("commission must be production times multiplier");
   if (mapTaxStatus("הוגש") !== "filed" || mapTaxStatus("לא מוכר") !== null) throw new Error("tax status map drifted");
+  if (!stageMoveAllowed("lead", "eligibility") || stageMoveAllowed("lead", "filed")) {
+    throw new Error("case stage may move only one step");
+  }
 }
 
 assertLifecycleMath();

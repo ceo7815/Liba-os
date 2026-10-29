@@ -17,12 +17,12 @@ export function ShemeshPage({
 }) {
   return (
     <section className="mx-auto max-w-[72rem] space-y-6">
-      <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
+      <div className="app-surface bg-card/80 px-5 py-5 backdrop-blur-xl sm:px-7 sm:py-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">שמש</p>
             <div className="mt-1 flex items-center gap-2.5">
-              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
+              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight text-highlight-foreground shadow-sm">
                 <Icon className="size-5" />
               </span>
               <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -33,7 +33,7 @@ export function ShemeshPage({
           </div>
         </div>
         {filters ? <div className="mt-5 border-t border-border pt-4">{filters}</div> : null}
-        {stats ? <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats}</div> : null}
+        {stats ? <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 [&>*:first-child]:bg-highlight [&>*:first-child]:text-highlight-foreground">{stats}</div> : null}
       </div>
       {children}
     </section>
@@ -42,10 +42,22 @@ export function ShemeshPage({
 
 export function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl bg-muted px-4 py-3">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+    <div className="rounded-2xl border border-border/70 bg-card/80 px-4 py-3 shadow-sm backdrop-blur-md">
+      <p className="text-[11px] text-current/80">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
-      {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-[11px] text-current/70">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function ShemeshSkeleton() {
+  return (
+    <div className="mx-auto max-w-[72rem] space-y-4" aria-busy="true" aria-live="polite">
+      <div className="app-surface h-36 animate-pulse bg-muted/70" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="h-28 animate-pulse rounded-xl bg-muted" />
+        <div className="h-28 animate-pulse rounded-xl bg-muted" />
+      </div>
     </div>
   );
 }

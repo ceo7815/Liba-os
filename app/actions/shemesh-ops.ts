@@ -51,6 +51,7 @@ export async function createShemeshCase(_state: { error: string | null }, formDa
       handler: String(formData.get("handler") ?? ""),
       openedOn: String(formData.get("openedOn") ?? ""),
       notes: String(formData.get("notes") ?? ""),
+      serviceType: String(formData.get("serviceType") ?? ""),
     },
     name,
   );
@@ -69,7 +70,7 @@ export async function updateShemeshCase(_state: { error: string | null }, formDa
   const name = who.name;
   if (!id) return { error: "חסר תיק" };
   const patch: Record<string, string> = {};
-  for (const key of ["status", "stage", "handler", "notes"] as const) {
+  for (const key of ["status", "stage", "handler", "notes", "serviceType"] as const) {
     const value = formData.get(key);
     if (typeof value === "string") patch[key] = value;
   }
@@ -193,7 +194,8 @@ export async function openQueuedCaseForm(formData: FormData) {
 export async function setShemeshDocumentForm(formData: FormData) {
   const name = await caseActor();
   if (!name) return;
-  await setCaseDocumentReceived(String(formData.get("id") ?? ""), String(formData.get("received") ?? "") === "true", name);
+  const state = String(formData.get("state") ?? "");
+  await setCaseDocumentReceived(String(formData.get("id") ?? ""), state === "received" || String(formData.get("received") ?? "") === "true", name, state);
   refresh();
 }
 

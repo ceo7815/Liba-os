@@ -9,6 +9,7 @@ import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
 import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
 import { ShemeshTheme } from "@/components/shemesh/theme";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
+import { ShemeshSkeleton } from "@/components/shemesh/widgets";
 import { redirect } from "next/navigation";
 import { shemeshProfile } from "@/lib/shemesh/actor";
 import { canViewShemesh } from "@/lib/permissions/access";
@@ -105,7 +106,7 @@ export default async function ShemeshLayout({
           </div>
           <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5 print:block print:h-auto print:overflow-visible print:p-0">
             <ShemeshBreadcrumbs />
-            <Suspense fallback={<p className="text-sm text-muted-foreground">טוען...</p>}>
+            <Suspense fallback={<ShemeshSkeleton />}>
               <ShemeshPulseProvider pulse={live}>
                 <ShemeshSourceProvider sources={sources}>{children}</ShemeshSourceProvider>
               </ShemeshPulseProvider>
