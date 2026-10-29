@@ -83,9 +83,11 @@ function summarizeFixed(
 
 type ExpensesScreenProps = {
   initialFixedCosts: FinanceFixedCostWithMeta[];
+  /** Dev preview. Keeps the supplied rows and does not reload them. */
+  preview?: boolean;
 };
 
-export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
+export function ExpensesScreen({ initialFixedCosts, preview = false }: ExpensesScreenProps) {
   const { brand } = useOperatingBrand();
   const router = useRouter();
   const pathname = usePathname();
@@ -108,7 +110,7 @@ export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
   const [rangeTo, setRangeTo] = useState(rangeToUrl ?? "");
   const [fixedCosts, setFixedCosts] =
     useState<FinanceFixedCostWithMeta[]>(initialFixedCosts);
-  const [loading, setLoading] = useState(initialFixedCosts.length === 0);
+  const [loading, setLoading] = useState(preview ? false : initialFixedCosts.length === 0);
 
   const period = useMemo(
     () =>
@@ -129,6 +131,10 @@ export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
   }, [presetFromUrl]);
 
   useEffect(() => {
+    if (preview) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -143,7 +149,7 @@ export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
     return () => {
       cancelled = true;
     };
-  }, [period.from, period.to]);
+  }, [period.from, period.to, preview]);
 
   function writeUrl(next: {
     tab?: ExpensesTab;

@@ -1,33 +1,58 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { Wallet } from "lucide-react";
+import { Contact, Wallet } from "lucide-react";
+import AgentsPage from "@/app/(authenticated)/agents/page";
 import { AuthCard } from "@/components/auth/auth-card";
 import { LoginForm } from "@/components/auth/login-form";
+import { AcademyDashboardScreen } from "@/components/academy/academy-dashboard";
 import { ControlCenterScreen } from "@/components/dashboard/control-center-screen";
 import { DashHero } from "@/components/dashboard/dash-hero";
+import { EmployeesPageClient } from "@/components/employees/employees-page-client";
+import { PayrollScreen } from "@/components/employees/payroll-screen";
+import { ExpensesScreen } from "@/components/finance/expenses-screen";
 import { FinancePanel } from "@/components/finance/finance-panel";
 import { GeneralPlScreen } from "@/components/finance/general-pl-screen";
+import { InsuranceAgreementsScreen } from "@/components/finance/insurance-agreements-screen";
 import { CampaignsScreen } from "@/components/campaigns/campaigns-screen";
+import { InterfacesScreen } from "@/components/interfaces/interfaces-screen";
 import { LeadControlScreen } from "@/components/lead-control/screen";
 import { AppShell } from "@/components/layout/app-shell";
 import type { OsModule } from "@/components/layout/shell-frame";
+import { SalesBySourceScreen } from "@/components/sales-dashboard/sales-by-source-screen";
+import { SalesExcelReportScreen } from "@/components/sales-dashboard/sales-excel-report-screen";
 import { Aurora } from "@/components/brand/aurora";
 import { ShemeshMobileDock } from "@/components/shemesh/mobile-dock";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { ShemeshDashboard } from "@/components/shemesh/dashboard-screen";
+import { ShemeshExpenses } from "@/components/shemesh/expenses-screen";
+import { ShemeshLeads } from "@/components/shemesh/leads-screen";
 import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
+import { ShemeshReports } from "@/components/shemesh/reports-screen";
+import { ShemeshRevenue } from "@/components/shemesh/revenue-screen";
+import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
+import { ShemeshSources } from "@/components/shemesh/sources-screen";
+import { UsersAccessScreen } from "@/components/users/users-access-screen";
 import {
+  designLabAcademy,
   designLabCampaignPulse,
   designLabCampaigns,
   designLabDashboard,
+  designLabExpenses,
   designLabFinance,
+  designLabInterfaces,
   designLabLeads,
+  designLabPeople,
   designLabPl,
   designLabShemesh,
+  designLabShemeshSources,
+  designLabShemeshWorkbook,
+  designLabUsers,
+  designLabWorkbook,
 } from "@/lib/design-lab/fixtures";
 import { formatIls } from "@/lib/finance/categories";
 import { PERMISSION_KEYS } from "@/lib/permissions/catalog";
+import type { ShemeshSourceStatus } from "@/lib/shemesh/connectors/types";
 import type { Profile } from "@/lib/types";
 
 const previewProfile: Profile = {
@@ -43,8 +68,44 @@ const previewProfile: Profile = {
 function moduleFor(view?: string): OsModule {
   if (view === "leads") return "leads";
   if (view === "campaigns") return "campaigns";
-  if (view === "finance" || view === "pl") return "finance";
+  if (view === "funnel" || view === "sales-rows") return "sales";
+  if (view === "finance" || view === "pl" || view === "expenses" || view === "insurance") return "finance";
+  if (view === "employees" || view === "payroll") return "people";
+  if (view === "academy") return "academy";
+  if (view === "agents" || view === "users" || view === "settings") return "system";
   return "dashboard";
+}
+
+function ShemeshLab({
+  now,
+  sources,
+  children,
+  flush = false,
+}: {
+  now: Date;
+  sources?: ShemeshSourceStatus[];
+  children: React.ReactNode;
+  flush?: boolean;
+}) {
+  return (
+    <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background">
+      <Aurora tone="shemesh" />
+      <ShemeshPulseProvider pulse={designLabShemesh(now)}>
+        <Suspense fallback={null}>
+          <ShemeshSidebar className="hidden lg:flex" />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <ShemeshTopbar profile={previewProfile} />
+            <div className={flush ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6"}>
+              <ShemeshSourceProvider sources={sources ?? designLabShemeshSources(now)}>
+                {children}
+              </ShemeshSourceProvider>
+            </div>
+            <ShemeshMobileDock />
+          </div>
+        </Suspense>
+      </ShemeshPulseProvider>
+    </div>
+  );
 }
 
 /** Local visual preview of the shell. Production builds return 404. */
@@ -83,25 +144,70 @@ export default function DesignLabPage({
 
   if (view === "shemesh") {
     return (
-      <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background">
-        <Aurora tone="shemesh" />
-        <ShemeshPulseProvider pulse={designLabShemesh(now)}>
-          <Suspense fallback={null}>
-            <ShemeshSidebar className="hidden lg:flex" />
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <ShemeshTopbar profile={previewProfile} />
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-                <ShemeshDashboard />
-              </div>
-              <ShemeshMobileDock />
-            </div>
-          </Suspense>
-        </ShemeshPulseProvider>
-      </div>
+      <ShemeshLab now={now}>
+        <ShemeshDashboard />
+      </ShemeshLab>
+    );
+  }
+
+  if (view === "shemesh-leads") {
+    return (
+      <ShemeshLab now={now}>
+        <ShemeshLeads />
+      </ShemeshLab>
+    );
+  }
+
+  if (view === "shemesh-revenue") {
+    return (
+      <ShemeshLab now={now}>
+        <ShemeshRevenue workbook={designLabShemeshWorkbook(now)} />
+      </ShemeshLab>
+    );
+  }
+
+  if (view === "shemesh-expenses") {
+    return (
+      <ShemeshLab now={now}>
+        <ShemeshExpenses />
+      </ShemeshLab>
+    );
+  }
+
+  if (view === "shemesh-reports") {
+    return (
+      <ShemeshLab now={now}>
+        <ShemeshReports />
+      </ShemeshLab>
+    );
+  }
+
+  if (view === "shemesh-sources") {
+    return (
+      <ShemeshLab now={now}>
+        <ShemeshSources openId="google_ads" />
+      </ShemeshLab>
+    );
+  }
+
+  if (view === "shemesh-case" || view === "shemesh-queue") {
+    const workbook = designLabShemeshWorkbook(now);
+    const queue = view === "shemesh-queue";
+    return (
+      <ShemeshLab now={now} flush>
+        <SalesExcelReportScreen
+          initial={workbook}
+          company="shemesh"
+          frozen
+          initialSheet={queue ? "אנשי קשר" : "תפעול"}
+          initialRowId={queue ? null : "Tiful-1"}
+        />
+      </ShemeshLab>
     );
   }
 
   const finance = view === "finance" ? designLabFinance(now) : null;
+  const people = designLabPeople(now);
   const income = finance?.entries.filter((row) => row.kind === "income").reduce((sum, row) => sum + row.amount, 0) ?? 0;
   const adjustments = finance?.entries
     .filter((row) => row.kind === "income_adjustment")
@@ -119,8 +225,52 @@ export default function DesignLabPage({
         <LeadControlScreen snapshot={designLabLeads(now)} />
       ) : view === "campaigns" ? (
         <CampaignsScreen initial={designLabCampaigns(now)} brand="liba" />
+      ) : view === "funnel" ? (
+        <SalesBySourceScreen preview />
+      ) : view === "sales-rows" ? (
+        <div className="flex h-full min-h-0 flex-1 flex-col">
+          <SalesExcelReportScreen initial={designLabWorkbook(now)} frozen />
+        </div>
       ) : view === "pl" ? (
         <GeneralPlScreen preview={designLabPl(now)} />
+      ) : view === "expenses" ? (
+        <ExpensesScreen initialFixedCosts={designLabExpenses(now)} preview />
+      ) : view === "insurance" ? (
+        <InsuranceAgreementsScreen />
+      ) : view === "employees" ? (
+        <section className="w-full space-y-4">
+          <header>
+            <p className="text-[11px] font-medium tracking-wide text-muted-foreground">עובדים · הסכמים ונוכחות</p>
+            <div className="mt-1 flex items-center gap-2.5">
+              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ffe7a3] to-[#fff] text-[#1a1204]">
+                <Contact className="size-5" />
+              </span>
+              <h1 className="text-2xl font-semibold tracking-tight">עובדים</h1>
+            </div>
+          </header>
+          <EmployeesPageClient initialEmployees={people} preview />
+        </section>
+      ) : view === "payroll" ? (
+        <section className="w-full space-y-4">
+          <header>
+            <p className="text-[11px] font-medium tracking-wide text-muted-foreground">עובדים · משכורות לפי הסכם</p>
+            <div className="mt-1 flex items-center gap-2.5">
+              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ffe7a3] to-[#fff] text-[#1a1204]">
+                <Wallet className="size-5" />
+              </span>
+              <h1 className="text-2xl font-semibold tracking-tight">משכורות</h1>
+            </div>
+          </header>
+          <PayrollScreen initialEmployees={people} preview />
+        </section>
+      ) : view === "academy" ? (
+        <AcademyDashboardScreen data={designLabAcademy()} />
+      ) : view === "agents" ? (
+        <AgentsPage />
+      ) : view === "users" ? (
+        <UsersAccessScreen users={designLabUsers(now)} currentUserId={previewProfile.id} />
+      ) : view === "settings" ? (
+        <InterfacesScreen items={designLabInterfaces(now)} />
       ) : view === "finance" && finance ? (
         <section className="data-sheet w-full space-y-6">
           <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">

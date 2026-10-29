@@ -51,15 +51,14 @@ export default function AgentsPage() {
               </span>
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-medium",
+                  "status-chip",
                   agent.status === "ready"
-                    ? "bg-highlight/40 text-foreground"
-                    : "bg-background text-muted-foreground",
+                    ? "status-chip-ok"
+                    : agent.status === "connecting"
+                      ? "status-chip-wait"
+                      : "status-chip-muted",
                 )}
               >
-                {agent.status === "ready" ? (
-                  <span className="status-live-dot" aria-hidden />
-                ) : null}
                 {getAgentStatusLabel(agent.status)}
               </span>
             </div>

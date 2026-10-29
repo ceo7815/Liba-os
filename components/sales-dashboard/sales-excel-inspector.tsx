@@ -53,8 +53,10 @@ export function SalesExcelInspector({
 }) {
   const premiumCol = premiumColumnIndex(sheet.headers);
   const premium = row && premiumCol >= 0 ? parsePremiumCell(row.cells[premiumCol] ?? "") : 0;
-  const client = sheet.headers.findIndex((header) => header.includes("לקוח") && !header.includes("ת.ז"));
-  const agent = sheet.headers.findIndex((header) => header.includes("משווק"));
+  const client = sheet.headers.findIndex(
+    (header) => (header.includes("לקוח") && !header.includes("ת.ז")) || header === "שם מלא" || header === "שם",
+  );
+  const agent = sheet.headers.findIndex((header) => header.includes("משווק") || header.includes("נציג"));
   const status = sheet.headers.findIndex((header) => header.includes("סטטוס") || header.includes("סטאטוס"));
   const process = sheet.headers.findIndex((header) => header.includes("תהליך"));
   const title = row ? (client >= 0 ? row.cells[client] : "") || `שורה ${row.excelRow}` : "";

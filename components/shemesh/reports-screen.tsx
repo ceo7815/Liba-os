@@ -5,7 +5,7 @@ import { LineChart } from "lucide-react";
 import { ShemeshFilters } from "@/components/shemesh/filters";
 import { useShemeshPulse } from "@/components/shemesh/pulse-context";
 import { useShemeshFilter } from "@/components/shemesh/use-shemesh-view";
-import { Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
+import { EmptyLine, Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
 import { formatShemeshMoney, formatShemeshMonth } from "@/lib/shemesh/format";
 import { sliceAds, sliceMoney, type PulseChannel, type PulseRange } from "@/lib/shemesh/pulse";
 
@@ -42,9 +42,9 @@ export function ShemeshReports() {
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel title="לפי חודש">
           {money.byMonth.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">אין גבייה או פרסום בתקופה הזו.</p>
+            <EmptyLine>אין גבייה או פרסום בתקופה הזו.</EmptyLine>
           ) : (
-            <table className="w-full text-sm">
+            <table className="data-sheet w-full text-sm">
               <thead>
                 <tr className="text-xs text-muted-foreground">
                   <th className="py-2 text-right font-medium">חודש</th>
@@ -70,7 +70,7 @@ export function ShemeshReports() {
         </Panel>
         <Panel title="פרסום לפי מקור">
           {ads.byChannel.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">אין פרסום בתקופה הזו.</p>
+            <EmptyLine>אין פרסום בתקופה הזו.</EmptyLine>
           ) : (
             <ul className="divide-y divide-black/[0.06]">
               {ads.byChannel.map((row) => (

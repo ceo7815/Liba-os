@@ -1,11 +1,16 @@
 import type { DashboardCampaignPulse } from "@/app/actions/dashboard-pulse";
 import type { GeneralPlSnapshot } from "@/app/actions/finance-general-pl";
+import type { ManagedUser } from "@/app/actions/users";
+import type { AcademyDashboard } from "@/lib/academy/types";
 import type { CampaignBoard, CampaignPoint, GoogleCallLine } from "@/lib/campaigns/board";
-import { emptyPayContract } from "@/lib/employees/contract";
-import type { FinanceEmployee, FinanceEntry, FinanceSupplier } from "@/lib/finance/categories";
+import { emptyPayContract, type EmployeePayContract } from "@/lib/employees/contract";
+import type { FinanceEmployee, FinanceEntry, FinanceFixedCostWithMeta, FinanceSupplier } from "@/lib/finance/categories";
+import type { ConnectedInterface } from "@/lib/interfaces/status";
 import type { LeadControlSnapshot } from "@/lib/lead-control/load";
 import type { ControlItem, ControlLane, ControlState } from "@/lib/lead-control/rules";
+import type { ShemeshSourceStatus } from "@/lib/shemesh/connectors/types";
 import type { ShemeshPulse } from "@/lib/shemesh/pulse";
+import type { SalesWorkbookPayload, WorkbookSheet } from "@/lib/sales-dashboard/workbook-grid";
 import type {
   AgentStat,
   DashboardData,
@@ -706,4 +711,238 @@ export function designLabFinance(now = new Date()): {
     updated_at: stamp,
   }));
   return { entries, employees, suppliers, from: `${month}-01`, to: today };
+}
+
+function pay(patch: Partial<EmployeePayContract>): EmployeePayContract {
+  return { ...emptyPayContract(), ...patch };
+}
+
+export function designLabPeople(now = new Date()): FinanceEmployee[] {
+  const stamp = now.toISOString();
+  const rows: Array<[string, FinanceEmployee["employment_kind"], EmployeePayContract]> = [
+    ["ניב קובי", "salaried", pay({ salaryKind: "global", globalSalary: 14500, pensionEmployerPercent: 6.5, pensionEmployeePercent: 6 })],
+    ["סימונה", "freelancer", pay({ volumePercent: 18, settledPercent: 12, travelAmount: 400 })],
+    ["אסף בר און", "freelancer", pay({ hourlyRate: 62, salaryKind: "hourly", volumePercent: 8 })],
+    ["בן ביטון", "salaried", pay({ salaryKind: "salary_only", globalSalary: 9800 })],
+    ["חן בר און", "partnership", pay({ volumePercent: 30, settledPercent: 20 })],
+  ];
+  return rows.map(([name, kind, contract], index) => ({
+    id: `emp-${index}`,
+    full_name: name,
+    department: index < 3 ? "מכירות" : "תפעול",
+    short_dial: String(101 + index),
+    email: null,
+    direct_phone: index === 0 ? "03-5550101" : null,
+    outbound_number: null,
+    sim_provider: null,
+    wait_circle: null,
+    dialer_type: null,
+    notes: null,
+    is_active: index !== 4,
+    created_at: stamp,
+    employment_kind: kind,
+    pay_contract: contract,
+    agreements: [],
+  }));
+}
+
+export function designLabExpenses(now = new Date()): FinanceFixedCostWithMeta[] {
+  const today = jerusalemYmd(now);
+  const month = today.slice(0, 7);
+  const stamp = now.toISOString();
+  const rows: Array<[string, string, number, "office" | "sources", "fixed" | "variable", boolean]> = [
+    ["שכירות משרד", "בעל הנכס", 18500, "office", "fixed", true],
+    ["חשמל וארנונה", "עירייה", 2400, "office", "fixed", true],
+    ["גוגל ביטוחים", "גוגל", 11240, "sources", "variable", true],
+    ["פייסבוק לידים", "מטא", 8640, "sources", "variable", false],
+    ["תוכנות סוכנות", "שורנס", 980, "office", "fixed", false],
+  ];
+  return rows.map(([title, vendor, amount, allocation, kind, paid], index) => ({
+    id: `cost-${index}`,
+    title,
+    category: allocation === "office" ? "office" : "advertising",
+    vendor_name: vendor,
+    default_amount: amount,
+    due_day: 10 + index,
+    notes: null,
+    sort_order: index,
+    is_active: true,
+    allocation_type: allocation,
+    expense_kind: kind,
+    invoice_storage_path: paid ? `demo/${index}.pdf` : null,
+    invoice_file_name: paid ? `${vendor}.pdf` : null,
+    invoice_mime_type: paid ? "application/pdf" : null,
+    invoice_uploaded_at: paid ? stamp : null,
+    created_at: stamp,
+    updated_at: stamp,
+    payments: paid
+      ? [{
+          id: `pay-${index}`,
+          amount,
+          occurred_at: `${month}-0${index + 2}`,
+          description: title,
+          reference_number: `EX-${3100 + index}`,
+          vat_included: true,
+          notes: null,
+          created_at: stamp,
+        }]
+      : [],
+    paid_this_month: paid,
+    this_month_amount: paid ? amount : null,
+    last_paid_at: paid ? `${month}-0${index + 2}` : null,
+    allocations: allocation === "sources" ? [{ source_name: "שיחות נכנסות", share_percent: 100 }] : [],
+  }));
+}
+
+function grid(name: string, headers: string[], rows: string[][]): WorkbookSheet {
+  return {
+    name,
+    kind: "report",
+    headers,
+    rows: rows.map((cells, index) => ({
+      id: `${name}-${index + 1}`,
+      excelRow: index + 2,
+      cells,
+    })),
+  };
+}
+
+export function designLabWorkbook(now = new Date()): SalesWorkbookPayload {
+  const today = jerusalemYmd(now);
+  const day = (n: number) => `${today.slice(0, 7)}-${String(Math.min(28, n)).padStart(2, "0")}`;
+  return {
+    fileName: "דוח המנהלים — הדגמה.xlsx",
+    syncedAt: now.toISOString(),
+    stored: false,
+    sheets: [
+      grid(
+        "דוח",
+        ["סטאטוס פוליסה", "שם לקוח", "משווק", "סוג תהליך", "פרמיה", "חברת הביטוח", "מקור הפנייה", "תאריך העברה ליצרן"],
+        [
+          ["פעילה", "דנה מזרחי", "ניב קובי", "מכירה", "4200", "מגדל", "שיחות נכנסות", day(3)],
+          ["פעילה", "יוסי דהן", "סימונה", "מינוי סוכן", "1860", "הראל", "לקוחות ליבה", day(6)],
+          ["טרם הופקה", "חיים פאטיטיף", "אסף בר און", "מכירה", "3100", "הפניקס", "קמפיין אישי", day(9)],
+          ["בוטלה", "תקווה פרץ", "בן ביטון", "מכירה", "940", "כלל", "לידים קרים", day(12)],
+          ["פעילה", "נועה ביטון", "ניב קובי", "מינוי סוכן", "2500", "מנורה", "שיחות נכנסות", day(16)],
+          ["פעילה", "מאיר אזולאי", "חן בר און", "מכירה", "6700", "מגדל", "רועי אזולאי", day(20)],
+        ],
+      ),
+    ],
+  };
+}
+
+export function designLabShemeshWorkbook(now = new Date()): SalesWorkbookPayload {
+  const today = jerusalemYmd(now);
+  const day = (n: number) => `${today.slice(0, 7)}-${String(Math.min(28, n)).padStart(2, "0")}`;
+  return {
+    fileName: "דוח מכירות שמש — הדגמה.xlsx",
+    syncedAt: now.toISOString(),
+    stored: false,
+    sheets: [
+      grid("גבייה", ["סטטוס גבייה", "שם מלא", "תאריך", "סכום עסקה", "סכום שנגבה", "שם נציג", "מקור", "הערות"], [
+        ["שולם", "אביגיל שמש", day(2), "8200", "8200", "ניב - שמש", "גוגל", ""],
+        ["טרם שולם", "רון מזרחי", day(8), "6400", "2500", "שמש", "פייסבוק", "יתרה פתוחה"],
+        ["בוטל", "ליאור דהן", day(14), "1800", "0", "חן בר און", "גוגל", "הלקוח ביטל"],
+        ["שולם", "ענת ביטון", day(18), "4700", "4700", "שמש", "פייסבוק", ""],
+      ]),
+      grid("חשבוניות", ["שם מלא", "תאריך", "טיפול", "סכום", "סכום בהפחתת מעמ", "נציג", "חשבונית", "תגמול עובד"], [
+        ["אביגיל שמש", day(4), "פדיון", "2400", "2034", "ניב - שמש", "כן", "720"],
+        ["רון מזרחי", day(11), "החזר מס", "1800", "1525", "שמש", "כן", "540"],
+        ["ענת ביטון", day(19), "פדיון", "960", "814", "חן בר און", "לא", "280"],
+      ]),
+      grid("פיננסים", ["שם מלא", "חברת מקבלת", "גמל השתלמות", "הפקדות", "פנסיה", "הפקדות", "עמלות", "נפרע עד היום"], [
+        ["אביגיל שמש", "הראל", "42000", "1800", "86000", "2400", "960", "640"],
+        ["רון מזרחי", "מגדל", "18000", "600", "54000", "900", "420", "210"],
+        ["ענת ביטון", "כלל", "0", "0", "31000", "700", "280", "140"],
+      ]),
+      grid("Tiful", ["סטטוס", "שם מלא", "טלפון", "טיפול", "תאריך", "נציג"], [
+        ["פעיל", "אביגיל שמש", "050-5550101", "פדיון קופת גמל", day(2), "ניב - שמש"],
+        ["טרם טופל", "רון מזרחי", "052-5550144", "החזר מס", day(8), "שמש"],
+        ["בוטל", "ליאור דהן", "054-5550190", "בדיקת זכאות", day(14), "חן בר און"],
+      ]),
+      grid("Sheet6", ["שם", "טלפון", "סטטוס", "תור", "תאריך"], [
+        ["מירב חדד", "050-5550202", "פעיל", "ממתין לשיחה", day(5)],
+        ["יונתן פרץ", "053-5550288", "טרם", "חסר מסמך", day(9)],
+        ["הילה אברהם", "058-5550330", "בוטל", "לא ענה", day(15)],
+        ["גיל חדד", "052-5550411", "שולם", "הועבר לתיק", day(21)],
+      ]),
+    ],
+  };
+}
+
+export function designLabAcademy(): AcademyDashboard {
+  return {
+    firstName: "סימונה",
+    trackTitle: "משמרת סוכן",
+    lessonCount: 6,
+    completedCount: 3,
+    percent: 50,
+    canLearn: true,
+    canViewTeam: true,
+    canManage: false,
+    lastScore: 78,
+    lastPassed: true,
+    exam: null,
+    course: {
+      id: "course-demo",
+      trackId: "track-demo",
+      slug: "agent-shift",
+      title: "משמרת סוכן",
+      description: "מסלול פנימי לסוכנות.",
+      sortOrder: 1,
+      version: 1,
+      status: "approved",
+      passScore: 80,
+    },
+    nextLesson: {
+      id: "lesson-4",
+      courseId: "course-demo",
+      slug: "claims",
+      title: "שיחת פתיחה וזיהוי צורך",
+      sortOrder: 4,
+      estimatedMinutes: 18,
+      status: "approved",
+    },
+    stations: [
+      { id: "lesson-1", title: "מי אנחנו", estimatedMinutes: 12, completed: true },
+      { id: "lesson-2", title: "מוצרים", estimatedMinutes: 16, completed: true },
+      { id: "lesson-3", title: "דוח המנהלים", estimatedMinutes: 14, completed: true },
+      { id: "lesson-4", title: "שיחת פתיחה", estimatedMinutes: 18, completed: false },
+      { id: "lesson-5", title: "התנגדויות", estimatedMinutes: 15, completed: false },
+      { id: "lesson-6", title: "סגירה", estimatedMinutes: 12, completed: false },
+    ],
+  };
+}
+
+export function designLabUsers(now = new Date()): ManagedUser[] {
+  const stamp = now.toISOString();
+  return [
+    { id: "design-lab", email: "preview@liba.invalid", full_name: "מנהל הדגמה", role: "admin", is_active: true, created_at: stamp, permissionKeys: ["dashboard.view", "org.users", "finance.ledger", "employees.view", "agents.view"] },
+    { id: "user-2", email: "simona@liba.invalid", full_name: "סימונה", role: "employee", is_active: true, created_at: stamp, permissionKeys: ["dashboard.view", "sales.view", "academy.learn"] },
+    { id: "user-3", email: "asaf@liba.invalid", full_name: "אסף בר און", role: "employee", is_active: true, created_at: stamp, permissionKeys: ["dashboard.view", "sales.view", "finance.pl_general"] },
+    { id: "user-4", email: "chen@liba.invalid", full_name: "חן בר און", role: "employee", is_active: false, created_at: stamp, permissionKeys: ["dashboard.view"] },
+  ];
+}
+
+export function designLabInterfaces(now = new Date()): ConnectedInterface[] {
+  const synced = now.toISOString();
+  return [
+    { id: "voicenter", name: "Voicenter", description: "שיחות שיקוף של סופיה נכנסות לבקרת השיחות.", href: "/agents/call-control", connected: true, syncedAt: synced, note: "הדגמה" },
+    { id: "google-ads", name: "גוגל אדס", description: "הוצאות ולידים מהקמפיינים בגוגל.", href: "/sales-dashboard/campaigns", connected: true, syncedAt: synced, note: null },
+    { id: "facebook", name: "פייסבוק", description: "הוצאות ולידים מהקמפיינים בפייסבוק.", href: "/sales-dashboard/campaigns", connected: true, syncedAt: synced, note: null },
+    { id: "sales-excel", name: "דוח אקסל מכירות", description: "דוח המנהלים המסונכרן. ממנו נספרות המכירות וההפקות.", href: "/sales-dashboard/excel", connected: true, syncedAt: synced, note: null },
+    { id: "surense", name: "שורנס", description: "לידים, תהליכים ומינוי סוכן נכנסים לבקרת הלידים.", href: "/lead-control", connected: false, syncedAt: null, note: "ממתין לגישה" },
+  ];
+}
+
+export function designLabShemeshSources(now = new Date()): ShemeshSourceStatus[] {
+  const synced = now.toISOString();
+  return [
+    { id: "insurance", label: "ביטוח", pulls: "לידים ונתוני עסקאות", connection: "credentials_present", lastSyncedAt: synced, message: "מחובר ומסונכרן." },
+    { id: "facebook_ads", label: "פייסבוק", pulls: "קמפיינים, עלות ולידים מחשבון המודעות של שמש", connection: "credentials_present", lastSyncedAt: synced, message: "מחובר ומסונכרן." },
+    { id: "google_ads", label: "גוגל", pulls: "קמפיינים של פיננסים, עלות ולידים", connection: "awaiting_access", lastSyncedAt: null, message: "ממתין לגישה. אין כאן שדה מפתח." },
+    { id: "rivhit", label: "ריווחית", pulls: "חשבוניות והוצאות", connection: "awaiting_access", lastSyncedAt: null, message: "ממתין לגישה. אין כאן שדה מפתח." },
+    { id: "grow", label: "Grow", pulls: "סליקה ותשלומים", connection: "credentials_present", lastSyncedAt: synced, message: "מחובר ומסונכרן." },
+    { id: "shared_folder", label: "דוח מכירות", pulls: "גבייה, חשבוניות ופיננסים", connection: "awaiting_access", lastSyncedAt: null, message: "ממתין לגישה. אין כאן שדה מפתח." },
+  ];
 }
