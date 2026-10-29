@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, Megaphone, UserRound, type LucideIcon } from "lucide-react";
+import { ChevronLeft, Megaphone, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import { ShemeshFilters } from "@/components/shemesh/filters";
 import { useShemeshPulse } from "@/components/shemesh/pulse-context";
 import { useShemeshFilter } from "@/components/shemesh/use-shemesh-view";
+import { CountUp } from "@/components/ui/count-up";
+import { cn } from "@/lib/utils";
 import { formatShemeshCount, formatShemeshDay, formatShemeshMoney } from "@/lib/shemesh/format";
 import { readBoard, sliceAds, sliceMoney, type PulseChannel, type PulseRange } from "@/lib/shemesh/pulse";
 
@@ -87,29 +89,37 @@ export function ShemeshDashboard() {
         <ShemeshFilters showPlatform />
       </header>
 
-      <section className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
-        <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-        <div className="grid grid-cols-2 gap-px bg-black/[0.06] lg:grid-cols-4">
+      <section className="relative">
+        <div className="kpi-band grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <HeroCell
+            hero
+            tone="sun"
+            icon={Wallet}
             href="/shemesh/revenue"
             kicker="בתאריכים"
             label="מכרנו"
-            value={formatShemeshMoney(board.sold)}
+            amount={board.sold}
+            text={formatShemeshMoney}
             hint={board.soldCount ? `${formatShemeshCount(board.soldCount)} עסקאות` : "אין עסקאות בתאריכים האלה"}
-            tint
           />
           <HeroCell
+            tone="green"
+            icon={Wallet}
             href="/shemesh/revenue"
             kicker="כל הקובץ"
             label="פתוח לגבייה"
-            value={formatShemeshMoney(board.openBalance)}
+            amount={board.openBalance}
+            text={formatShemeshMoney}
             hint={board.openCount ? `${formatShemeshCount(board.openCount)} עסקאות שעדיין לא נגבו` : "אין יתרה פתוחה"}
           />
           <HeroCell
+            tone="violet"
+            icon={Megaphone}
             href="/shemesh/marketing"
             kicker="בתאריכים"
             label="עלות קמפיינים"
-            value={formatShemeshMoney(ads.spend)}
+            amount={ads.spend}
+            text={formatShemeshMoney}
             hint={
               ads.byCampaign.length
                 ? `${formatShemeshCount(ads.byCampaign.length)} קמפיינים${ads.cpl != null ? ` · ${formatShemeshMoney(ads.cpl)} לליד` : ""}`
@@ -117,14 +127,17 @@ export function ShemeshDashboard() {
             }
           />
           <HeroCell
+            tone="teal"
+            icon={Users}
             href="/shemesh/leads"
             kicker="בתאריכים"
             label="לידים"
-            value={formatShemeshCount(ads.leads)}
+            amount={ads.leads}
+            text={formatShemeshCount}
             hint={ads.leads ? "נכנסו מהקמפיינים" : "אין לידים בתקופה"}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-black/[0.06] px-4 py-2 text-[11px] sm:px-5">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px]">
           <QuietLink href="/shemesh/revenue" label="נגבה" value={formatShemeshMoney(board.collectedInRange)} />
           <QuietLink href="/shemesh/expenses" label="תגמול עובדים" value={formatShemeshMoney(money.reward)} />
           <QuietLink
@@ -136,22 +149,23 @@ export function ShemeshDashboard() {
       </section>
 
       {campaigns.length > 0 ? (
-        <section className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]">
-          <div className="flex items-baseline justify-between gap-3 border-b border-black/[0.06] px-4 py-2 sm:px-5">
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-3 px-1">
             <h2 className="text-sm font-semibold tracking-tight">קמפיינים בתקופה</h2>
             <Link href="/shemesh/marketing" className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
               לשיווק
               <ChevronLeft className="size-3.5" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-px bg-black/[0.06] sm:grid-cols-4">
+          <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))]">
             {campaigns.map((row) => (
               <Link
                 key={row.id}
                 href="/shemesh/marketing"
-                className="group bg-white px-4 py-3 text-start transition-colors hover:bg-highlight/10 sm:px-5"
+                className="group rounded-[20px] border border-black/[0.06] bg-white px-4 py-3 text-start shadow-card transition-colors hover:bg-[#f7f7f8] sm:px-5"
               >
                 <p className="truncate text-[11px] font-medium text-muted-foreground" title={row.name}>
+                  <span className="kpi-badge me-1 inline-flex !size-5" data-tone={row.channel === "facebook" ? "meta" : "google"} aria-hidden />
                   {CHANNEL_LABEL[row.channel]}
                 </p>
                 <p className="mt-1 truncate text-base font-semibold tracking-tight" title={row.name}>
@@ -181,17 +195,17 @@ export function ShemeshDashboard() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="group relative min-w-0 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white px-3 py-2.5 text-start transition-[background-color,border-color] hover:border-black/10 hover:bg-highlight/10 sm:rounded-[var(--radius)] sm:px-4 sm:py-3"
+                className="group relative min-w-0 overflow-hidden rounded-[20px] border border-black/[0.06] bg-white px-3 py-3 text-start shadow-card transition-colors hover:bg-[#f7f7f8] sm:px-4 sm:py-4"
               >
-                <span className="absolute inset-y-0 start-0 w-1 bg-highlight" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight/35">
+                    <span className="size-1.5 shrink-0 rounded-full bg-highlight" aria-hidden />
+                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f2f2f4]">
                       <Icon className="size-4" />
                     </span>
                     <p className="truncate text-[11px] font-medium text-muted-foreground">{item.label}</p>
                   </div>
-                  <ChevronLeft className="size-3.5 shrink-0 text-black/30 transition-transform group-hover:-translate-x-0.5" />
+                  <ChevronLeft className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5" />
                 </div>
                 <p className="mt-2 truncate text-base font-semibold tracking-tight">{item.name}</p>
                 <p className="mt-1 truncate text-[11px] tabular-nums text-muted-foreground">{item.detail}</p>
@@ -208,31 +222,44 @@ function HeroCell({
   href,
   kicker,
   label,
-  value,
+  amount,
+  text,
   hint,
-  tint,
+  hero,
+  tone = "teal",
+  icon: Icon = Wallet,
 }: {
   href: string;
   kicker: string;
   label: string;
-  value: string;
+  amount: number;
+  text: (value: number) => string;
   hint: string;
-  tint?: boolean;
+  hero?: boolean;
+  tone?: "sun" | "green" | "violet" | "teal";
+  icon?: LucideIcon;
 }) {
   return (
     <Link
       href={href}
-      className={
-        tint
-          ? "group bg-highlight/15 px-4 py-3 text-start transition-colors hover:bg-highlight/25 sm:px-5 sm:py-4"
-          : "group bg-white px-4 py-3 text-start transition-colors hover:bg-highlight/10 sm:px-5 sm:py-4"
-      }
+      data-accent={hero ? undefined : tone}
+      className={cn(
+        "kpi-cube group px-4 py-3 text-start transition-colors sm:px-5 sm:py-4",
+        hero ? "kpi-hero" : "",
+      )}
     >
-      <span className={tint ? "rounded-full bg-highlight px-2.5 py-0.5 text-[11px] font-semibold text-white" : "rounded-full bg-black/[0.04] px-2.5 py-0.5 text-[11px] font-semibold"}>
-        {kicker}
+      <span className="flex items-center justify-between gap-2">
+        <span className="kpi-badge" data-tone={tone} aria-hidden>
+          <Icon className="size-4" />
+        </span>
+        <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+          {kicker}
+        </span>
       </span>
       <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">{value}</p>
+      <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+        <CountUp value={amount} text={text} />
+      </p>
       <p className="mt-2 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
         <span className="min-w-0 truncate">{hint}</span>
         <ChevronLeft className="size-3.5 shrink-0 opacity-40 transition-transform group-hover:-translate-x-0.5" />

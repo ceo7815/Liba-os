@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import Link from "next/link";
 import { BarChart3, ChevronDown, ChevronLeft, ChevronUp, Receipt, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -84,7 +85,6 @@ import {
   Money,
   type CampaignLineKind,
 } from "@/components/marketing-dashboard/campaign-dialog";
-import { Input } from "@/components/ui/input";
 import { GoogleAdsAccountPicker } from "@/components/marketing-dashboard/google-ads-panel";
 import { FacebookAdsAccountPicker, FacebookAdsMapper } from "@/components/marketing-dashboard/facebook-ads-panel";
 
@@ -740,10 +740,12 @@ export function SourcePnlScreen({
       denied: "החיבור לפייסבוק בוטל",
       auth: "צריך להתחבר למערכת קודם",
     };
+    const reason = params.get("reason");
     if (googleFlag) {
       const ok = googleFlag === "connected" || googleFlag === "pick";
-      if (ok) toast.success(googleMessages[googleFlag] ?? googleFlag);
-      else toast.error(googleMessages[googleFlag] ?? googleFlag);
+      const base = googleMessages[googleFlag] ?? googleFlag;
+      if (ok) toast.success(base);
+      else toast.error(reason ? `${base}: ${reason}` : base);
     }
     if (facebookFlag) {
       const ok = facebookFlag === "connected" || facebookFlag === "pick";
@@ -1074,7 +1076,7 @@ export function SourcePnlScreen({
   const TitleIcon = kind === "settled" ? Receipt : BarChart3;
 
   return (
-    <section className="mx-auto w-full max-w-[72rem] space-y-3.5 sm:space-y-6">
+    <section className="w-full space-y-3.5 sm:space-y-6">
       <header className="dash-enter px-0.5 sm:px-0">
         <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
           כספים · {copy.processLabel}
@@ -1096,7 +1098,7 @@ export function SourcePnlScreen({
                     aria-selected={kind === "volume"}
                     className={cn(
                       "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                      kind === "volume" ? "bg-[#1a1a1a] text-white" : "text-muted-foreground hover:bg-white",
+                      kind === "volume" ? "bg-[#1a1a1a] text-white" : "text-muted-foreground hover:bg-card",
                     )}
                   >
                     היקף
@@ -1107,7 +1109,7 @@ export function SourcePnlScreen({
                     aria-selected={kind === "settled"}
                     className={cn(
                       "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                      kind === "settled" ? "bg-[#1a1a1a] text-white" : "text-muted-foreground hover:bg-white",
+                      kind === "settled" ? "bg-[#1a1a1a] text-white" : "text-muted-foreground hover:bg-card",
                     )}
                   >
                     נפרעים
@@ -1153,7 +1155,7 @@ export function SourcePnlScreen({
       </header>
 
       <div
-        className="dash-enter relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5"
+        className="dash-enter relative overflow-hidden rounded-lg border border-border bg-card p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5"
         style={{ animationDelay: "40ms" }}
       >
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
@@ -1183,19 +1185,11 @@ export function SourcePnlScreen({
           </span>
         </div>
         {preset === "custom" ? (
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
-            <Input
-              type="date"
-              className="h-11 w-full rounded-xl border-black/[0.06] sm:h-10 sm:w-40"
-              value={custom.from ?? ""}
-              onChange={(e) => setCustom((prev) => ({ ...prev, from: e.target.value || null }))}
-            />
-            <span className="hidden text-xs text-muted-foreground sm:inline">עד</span>
-            <Input
-              type="date"
-              className="h-11 w-full rounded-xl border-black/[0.06] sm:h-10 sm:w-40"
-              value={custom.to ?? ""}
-              onChange={(e) => setCustom((prev) => ({ ...prev, to: e.target.value || null }))}
+          <div className="mt-3">
+            <DateRangeField
+              from={custom.from ?? ""}
+              to={custom.to ?? ""}
+              onChange={(next) => setCustom({ from: next.from || null, to: next.to || null })}
             />
           </div>
         ) : null}
@@ -1303,7 +1297,7 @@ export function SourcePnlScreen({
       ) : null}
 
       {financeReady && employerBase.unassignedTotal + orphanBase > 0 ? (
-        <div className="rounded-2xl border border-black/[0.06] bg-white px-4 py-3.5 sm:px-5">
+        <div className="rounded-2xl border border-border bg-card px-4 py-3.5 sm:px-5">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-sm font-semibold">שכר שעתי בלי מקור</p>
             <p className="text-sm font-semibold tabular-nums">{formatIls(employerBase.unassignedTotal + orphanBase)}</p>
@@ -1361,7 +1355,7 @@ export function SourcePnlScreen({
               onOpen={() => setSelected(highlightSources.loser!.name)}
             />
           ) : (
-            <div className="relative overflow-hidden rounded-[1.25rem] border border-dashed border-black/[0.08] bg-white/70 px-4 py-4 sm:rounded-[var(--radius)] sm:px-5">
+            <div className="relative overflow-hidden rounded-lg border border-dashed border-border bg-card/70 px-4 py-4 sm:rounded-[var(--radius)] sm:px-5">
               <p className="text-[11px] font-medium text-muted-foreground">מקור מופסד</p>
               <p className="mt-2 text-sm font-semibold text-muted-foreground">
                 אין מקורות בהפסד בטווח
@@ -1372,18 +1366,18 @@ export function SourcePnlScreen({
       ) : null}
 
       {!financeReady && data?.source === "live" ? (
-        <div className="rounded-[1.25rem] border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-[var(--radius)]">
+        <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-[var(--radius)]">
           טוענים הסכמי שכר והוצאות שיווק. סגירות מהאקסל כבר מוצגות — אל תסתמכו על
           ₪0 בשכר/שיווק עד שמופיע האימות.
         </div>
       ) : null}
 
       {financeReady ? (
-        <div className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+        <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
           <button
             type="button"
             onClick={() => setVerificationOpen((open) => !open)}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-start transition-colors hover:bg-[#fffcf0] active:scale-[0.995] sm:px-5"
+            className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-start transition-colors hover:bg-highlight/15 active:scale-[0.995] sm:px-5"
             aria-expanded={verificationOpen}
           >
             <div>
@@ -1404,7 +1398,7 @@ export function SourcePnlScreen({
             )}
           </button>
           {verificationOpen ? (
-            <div className="space-y-1.5 border-t border-black/[0.06] px-4 py-3.5 text-xs leading-relaxed text-muted-foreground sm:px-5">
+            <div className="space-y-1.5 border-t border-border px-4 py-3.5 text-xs leading-relaxed text-muted-foreground sm:px-5">
               <ul className="space-y-1.5">
                 <li className="flex gap-2">
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-highlight" />
@@ -1486,14 +1480,14 @@ export function SourcePnlScreen({
       ) : null}
 
       {preset !== "all" && allCards.length > 0 && allCards.every((card) => card.activeCount === 0) ? (
-        <div className="rounded-[1.25rem] border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-[var(--radius)]">
+        <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-[var(--radius)]">
           בטווח «{DATE_PRESET_LABEL[preset]}» אין הפקות מסוג {copy.processLabel}. לחצו
           «הכל» כדי לראות את כל מקורות הפנייה.
         </div>
       ) : null}
 
       {allCards.length === 0 ? (
-        <div className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-10 text-center text-sm text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+        <div className="rounded-lg border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
           {!data && quietRefreshing
             ? "טוען נתונים — אין עדיין נתונים שמורים להצגה…"
             : loadState === "error" && !data
@@ -1514,7 +1508,7 @@ export function SourcePnlScreen({
                   : `${visibleCards.length} מקורות בהפסד`}
           </p>
           {visibleCards.length === 0 ? (
-            <div className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-10 text-center text-sm text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+            <div className="rounded-lg border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
               אין מקורות בתצוגה הזו.
             </div>
           ) : (
@@ -1538,7 +1532,7 @@ export function SourcePnlScreen({
                   setSelected(card.name);
                 }
               }}
-              className="group relative flex cursor-pointer flex-col overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:p-5"
+              className="group relative flex cursor-pointer flex-col overflow-hidden rounded-lg border border-border bg-card p-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:p-5"
             >
               <span
                 className={cn(
@@ -1616,7 +1610,7 @@ export function SourcePnlScreen({
                     event.stopPropagation();
                     setLineDetail({ name: card.name, kind: "net" });
                   }}
-                  className="mt-auto flex min-h-12 w-full items-end justify-between gap-3 border-t border-black/[0.06] pt-3 text-start active:opacity-80"
+                  className="mt-auto flex min-h-12 w-full items-end justify-between gap-3 border-t border-border pt-3 text-start active:opacity-80"
                   aria-label="פירוט רווח והפסד"
                 >
                   <p className="text-[11px] font-medium text-muted-foreground">
@@ -1642,11 +1636,11 @@ export function SourcePnlScreen({
       )}
 
       {kind === "volume" ? (
-      <div className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
         <button
           type="button"
           onClick={() => setMarketingOpen((prev) => !prev)}
-          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-start transition-colors hover:bg-[#fffcf0] active:scale-[0.995] sm:px-5"
+          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-start transition-colors hover:bg-highlight/15 active:scale-[0.995] sm:px-5"
         >
           <div>
             <p className="text-sm font-semibold tracking-tight">חיבור שיווק ושיוך פייסבוק</p>
@@ -1661,7 +1655,7 @@ export function SourcePnlScreen({
           )}
         </button>
         {marketingOpen ? (
-          <div className="space-y-4 border-t border-black/[0.06] p-4 sm:p-5">
+          <div className="space-y-4 border-t border-border p-4 sm:p-5">
             <FacebookAdsMapper
               cubeNames={campaignNames}
               range={range}
@@ -1769,7 +1763,7 @@ function CubeLine({
         event.stopPropagation();
         onOpen();
       }}
-      className="-mx-1.5 flex min-h-11 w-[calc(100%+0.75rem)] items-center justify-between gap-3 rounded-xl px-1.5 py-2 text-start transition-colors hover:bg-black/[0.03] active:scale-[0.99] sm:min-h-0 sm:items-baseline sm:py-1.5"
+      className="-mx-1.5 flex min-h-11 w-[calc(100%+0.75rem)] items-center justify-between gap-3 rounded-xl px-1.5 py-2 text-start transition-colors hover:bg-muted active:scale-[0.99] sm:min-h-0 sm:items-baseline sm:py-1.5"
       aria-label={`פירוט ${label}`}
     >
       <span className="max-w-[55%] shrink text-[12px] leading-snug text-muted-foreground sm:max-w-none sm:shrink-0 sm:text-[13px]">
@@ -1802,7 +1796,7 @@ function LastSyncPanel({
   syncingFacebook?: boolean;
 }) {
   return (
-    <div className="w-full rounded-[1.25rem] border border-black/[0.06] bg-white px-3 py-2.5 text-xs shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:min-w-[18rem] sm:rounded-[var(--radius)] sm:px-3.5 sm:py-3">
+    <div className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-xs shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:min-w-[18rem] sm:rounded-[var(--radius)] sm:px-3.5 sm:py-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-semibold tracking-wide text-foreground">עדכון אחרון</p>
         {liveUpdating ? (
@@ -1896,7 +1890,7 @@ function HighlightSourceCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white px-4 py-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:px-5"
+      className="group relative overflow-hidden rounded-lg border border-border bg-card px-4 py-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:px-5"
     >
       <span
         className={cn(
@@ -1935,7 +1929,7 @@ function HighlightSourceCard({
       <p className="mt-1.5 text-[11px] tabular-nums text-muted-foreground">
         {closures} סגירות · פרמיה {formatIls(premium)}
       </p>
-      <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-black/35">
+      <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
         פתיחה
         <ChevronLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
       </p>
@@ -1953,7 +1947,7 @@ function SummaryStat({
   emphasize?: "profit" | "loss";
 }) {
   return (
-    <div className="relative overflow-hidden rounded-[1.15rem] border border-black/[0.06] bg-white px-2.5 py-2.5 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:px-3.5 sm:py-3.5">
+    <div className="relative overflow-hidden rounded-[1.15rem] border border-border bg-card px-2.5 py-2.5 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:px-3.5 sm:py-3.5">
       <p className="truncate text-[10px] font-medium text-muted-foreground sm:text-[11px]">
         {label}
       </p>

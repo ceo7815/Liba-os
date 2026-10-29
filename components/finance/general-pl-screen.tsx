@@ -28,7 +28,7 @@ import {
   type DateRange,
 } from "@/lib/sales-dashboard/campaign-math";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
-import { Input } from "@/components/ui/input";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { cn } from "@/lib/utils";
 import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
 import { OPERATING_BRAND_LABEL } from "@/lib/finance/operating-brand";
@@ -114,10 +114,13 @@ export function GeneralPlScreen({
   initialPreset = "ytd",
   initialFrom = null,
   initialTo = null,
+  preview = null,
 }: {
   initialPreset?: DatePreset;
   initialFrom?: string | null;
   initialTo?: string | null;
+  /** Dev preview only. Skips the live report fetch. */
+  preview?: GeneralPlSnapshot | null;
 }) {
   const seedCustom: DateRange = {
     from: initialPreset === "custom" ? initialFrom : null,
@@ -125,7 +128,7 @@ export function GeneralPlScreen({
   };
   const { brand } = useOperatingBrand();
 
-  const [snapshot, setSnapshot] = useState<GeneralPlSnapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<GeneralPlSnapshot | null>(preview);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [preset, setPreset] = useState<DatePreset>(initialPreset);
   const [custom, setCustom] = useState<DateRange>(seedCustom);
@@ -146,11 +149,12 @@ export function GeneralPlScreen({
   }, []);
 
   useLayoutEffect(() => {
+    if (preview) return;
     const key = rangeCacheKey(brand, initialPreset, seedCustom);
     const entry = readCacheEntry(key);
     if (entry) applyCached(entry);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brand]);
+  }, [brand, preview]);
 
   const fetchSnapshot = useCallback(
     async (nextPreset: DatePreset, nextCustom: DateRange) => {
@@ -194,9 +198,10 @@ export function GeneralPlScreen({
   );
 
   useEffect(() => {
+    if (preview) return;
     void fetchSnapshot(initialPreset, seedCustom);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brand, fetchSnapshot]);
+  }, [brand, fetchSnapshot, preview]);
 
   useEffect(() => {
     const onGlobalSync = () => {
@@ -315,7 +320,7 @@ export function GeneralPlScreen({
   );
 
   return (
-    <section className="mx-auto w-full max-w-[72rem] space-y-6" dir="rtl">
+    <section className="w-full space-y-6" dir="rtl">
       {showBanner ? (
         <LoadProgressBanner excel={excelStep} fixed={fixedStep} />
       ) : null}
@@ -365,7 +370,7 @@ export function GeneralPlScreen({
       </header>
 
       <div
-        className="dash-enter relative overflow-hidden rounded-[var(--radius)] border border-black/[0.06] bg-white p-5 shadow-[0_1px_0_rgba(17,17,17,0.03)]"
+        className="dash-enter relative overflow-hidden rounded-[var(--radius)] border border-border bg-card p-5 shadow-[0_1px_0_rgba(17,17,17,0.03)]"
         style={{ animationDelay: "40ms" }}
       >
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
@@ -398,28 +403,13 @@ export function GeneralPlScreen({
         </div>
         {preset === "custom" ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Input
-              type="date"
-              className="h-10 w-40 rounded-xl border-black/[0.06]"
-              value={custom.from ?? ""}
-              onChange={(e) => {
-                const next = {
-                  ...custom,
-                  from: e.target.value || null,
-                };
-                setCustom(next);
-                if (next.from && next.to) applyPreset("custom", next);
-              }}
-            />
-            <span className="text-xs text-muted-foreground">עד</span>
-            <Input
-              type="date"
-              className="h-10 w-40 rounded-xl border-black/[0.06]"
-              value={custom.to ?? ""}
-              onChange={(e) => {
-                const next = { ...custom, to: e.target.value || null };
-                setCustom(next);
-                if (next.from && next.to) applyPreset("custom", next);
+            <DateRangeField
+              from={custom.from ?? ""}
+              to={custom.to ?? ""}
+              onChange={(next) => {
+                const range = { from: next.from || null, to: next.to || null };
+                setCustom(range);
+                if (range.from && range.to) applyPreset("custom", range);
               }}
             />
           </div>
@@ -476,8 +466,8 @@ export function GeneralPlScreen({
           className="dash-enter flex flex-col gap-5"
           style={{ animationDelay: "100ms" }}
         >
-          <div className="overflow-hidden rounded-[var(--radius)] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)]">
-            <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] px-5 py-3.5">
+          <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)]">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5">
               <div>
                 <p className="text-sm font-semibold tracking-tight">פירוט הדוח</p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -488,7 +478,7 @@ export function GeneralPlScreen({
             <div className="overflow-x-auto">
               <table className="w-full min-w-[36rem] text-sm">
                 <thead>
-                  <tr className="border-b border-black/[0.06] bg-[#f7f7f7] text-muted-foreground">
+                  <tr className="border-b border-border bg-[#f7f7f7] text-muted-foreground">
                     <th className="px-5 py-3 text-start text-[11px] font-semibold tracking-tight">
                       סעיף
                     </th>
@@ -575,9 +565,9 @@ export function GeneralPlScreen({
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[var(--radius)] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)]">
+          <div className="relative overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)]">
             <span className="absolute inset-y-0 start-0 w-1 bg-highlight" />
-            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-black/[0.06] px-5 py-3.5 ps-6">
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border px-5 py-3.5 ps-6">
               <div>
                 <p className="text-sm font-semibold tracking-tight">
                   תקורות קבועות
@@ -610,7 +600,7 @@ export function GeneralPlScreen({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-black/[0.06] bg-[#f7f7f7] text-[11px] text-muted-foreground">
+                  <tr className="border-b border-border bg-[#f7f7f7] text-[11px] text-muted-foreground">
                     <th className="px-5 py-2.5 text-start font-semibold">הוצאה</th>
                     <th className="w-[12rem] px-4 py-2.5 text-end font-semibold">
                       צפוי
@@ -665,7 +655,7 @@ export function GeneralPlScreen({
           <Link
             key={item.href}
             href={item.href}
-            className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] ring-1 ring-black/[0.06] transition-colors hover:bg-[#fffcf0] hover:text-foreground"
+            className="rounded-full bg-card px-3.5 py-1.5 text-xs font-semibold text-muted-foreground shadow-[0_1px_0_rgba(17,17,17,0.03)] ring-1 ring-black/[0.06] transition-colors hover:bg-highlight/15 hover:text-foreground"
           >
             {item.label}
           </Link>
@@ -683,7 +673,7 @@ function LoadProgressBanner({
   fixed: LoadStepStatus;
 }) {
   return (
-    <div className="overflow-hidden rounded-[var(--radius)] border border-black/[0.06] bg-white px-4 py-3 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:px-5">
+    <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-card px-4 py-3 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:px-5">
       <p className="text-xs font-semibold text-foreground">טוען נתונים…</p>
       <div className="mt-2 space-y-2">
         <LoadProgressStep label="מושך נתונים מהאקסל" status={excel} />
@@ -737,7 +727,7 @@ function LastUpdatedPanel({
   fromCache: boolean;
 }) {
   return (
-    <div className="w-full min-w-[16rem] rounded-[var(--radius)] border border-black/[0.06] bg-white px-3.5 py-3 text-xs shadow-[0_1px_0_rgba(17,17,17,0.03)] lg:w-[18rem]">
+    <div className="w-full min-w-[16rem] rounded-[var(--radius)] border border-border bg-card px-3.5 py-3 text-xs shadow-[0_1px_0_rgba(17,17,17,0.03)] lg:w-[18rem]">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-semibold tracking-wide text-foreground">
           עדכון אחרון
@@ -818,7 +808,7 @@ function SummaryCube({
           : "bg-zinc-300";
 
   return (
-    <div className="relative overflow-hidden rounded-[var(--radius)] border border-black/[0.06] bg-white px-4 py-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:px-5">
+    <div className="relative overflow-hidden rounded-[var(--radius)] border border-border bg-card px-4 py-4 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:px-5">
       <span className={cn("absolute inset-y-0 start-0 w-1", accentClass)} />
       <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
       <p

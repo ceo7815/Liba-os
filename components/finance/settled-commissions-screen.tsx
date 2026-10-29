@@ -41,15 +41,15 @@ export function SettledCommissionsScreen() {
           {SETTLED_SCREEN.notFromManagersExcel}
         </p>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-black/[0.06] bg-background/60 px-4 py-3">
+          <div className="rounded-xl border border-border bg-background/60 px-4 py-3">
             <dt className="text-xs font-semibold text-muted-foreground">דוח נפרעים</dt>
             <dd className="mt-1 text-sm font-medium">טרם הוגדר — ממתין לקובץ</dd>
           </div>
-          <div className="rounded-xl border border-black/[0.06] bg-background/60 px-4 py-3">
+          <div className="rounded-xl border border-border bg-background/60 px-4 py-3">
             <dt className="text-xs font-semibold text-muted-foreground">עובד אחראי</dt>
             <dd className="mt-1 text-sm font-medium">טרם שויך</dd>
           </div>
-          <div className="rounded-xl border border-black/[0.06] bg-background/60 px-4 py-3 sm:col-span-2">
+          <div className="rounded-xl border border-border bg-background/60 px-4 py-3 sm:col-span-2">
             <dt className="text-xs font-semibold text-muted-foreground">שיעורי עמלה</dt>
             <dd className="mt-1 text-sm">
               <Link
@@ -81,7 +81,7 @@ export function SettledCommissionsScreen() {
           {SETTLED_KPI_PLACEHOLDERS.map((kpi) => (
             <div
               key={kpi.id}
-              className="rounded-2xl border border-black/[0.06] bg-background/60 px-4 py-4 text-center"
+              className="rounded-2xl border border-border bg-background/60 px-4 py-4 text-center"
             >
               <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
               <p className="mt-2 text-2xl font-semibold tabular-nums text-muted-foreground/50">
@@ -100,7 +100,7 @@ export function SettledCommissionsScreen() {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[40rem] text-sm">
             <thead>
-              <tr className="border-b border-black/[0.08] text-muted-foreground">
+              <tr className="border-b border-border text-muted-foreground">
                 <th className="pb-2 pe-3 text-right font-medium">שדה צפוי</th>
                 <th className="pb-2 pe-3 text-right font-medium">תפקיד</th>
                 <th className="pb-2 text-right font-medium">חובה</th>
@@ -131,7 +131,7 @@ export function SettledCommissionsScreen() {
 
       <section className="app-surface px-5 py-5 sm:px-7 sm:py-6">
         <h2 className="text-lg font-semibold">שורות נפרעים</h2>
-        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-black/[0.12] bg-black/[0.02] px-6 py-14 text-center">
+        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-black/[0.02] px-6 py-14 text-center">
           <CircleDashed className="size-8 text-muted-foreground/50" />
           <p className="mt-3 text-sm font-medium">אין נתונים עדיין</p>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
@@ -157,7 +157,7 @@ export function SettledCommissionsScreen() {
           {SETTLED_PENDING.map((item, idx) => (
             <li
               key={item.id}
-              className="flex gap-3 rounded-xl border border-black/[0.06] bg-background/60 px-4 py-3"
+              className="flex gap-3 rounded-xl border border-border bg-background/60 px-4 py-3"
             >
               <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold tabular-nums">
                 {idx + 1}

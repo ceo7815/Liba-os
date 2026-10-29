@@ -139,7 +139,7 @@ export function SocialCalendar({
                 className={cn(
                   "min-h-[6.5rem] rounded-lg border border-transparent p-2 text-right transition-colors hover:border-black/10 hover:bg-background/80",
                   isToday && "border-highlight/60 bg-highlight/10",
-                  primary && "border-black/[0.06] bg-background/60",
+                  primary && "border-border bg-background/60",
                 )}
               >
                 <div className="flex items-start justify-between gap-1">

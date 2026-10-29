@@ -4,6 +4,7 @@ import { useMemo, useState, Fragment } from "react";
 import {
   Building2,
   ChevronLeft,
+  Inbox,
   Package,
   PhoneIncoming,
   UserRound,
@@ -34,7 +35,80 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CountUp } from "@/components/ui/count-up";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+function MiniArea({ title, counts, from, to }: { title: string; counts: number[]; from: string; to: string }) {
+  if (counts.length < 2) return null;
+  const width = 280;
+  const height = 72;
+  const max = Math.max(...counts, 1);
+  const min = Math.min(...counts);
+  const span = max - min || 1;
+  const points = counts.map((value, index) => {
+    const x = (index / (counts.length - 1)) * width;
+    const y = height - 8 - ((value - min) / span) * (height - 16);
+    return { x, y };
+  });
+  const d = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const area = `${d} L${width} ${height} L0 ${height} Z`;
+  const id = title.replace(/\s/g, "");
+  return (
+    <div className="kpi-cube p-4">
+      <p className="text-sm font-semibold tracking-tight">{title}</p>
+      <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-16 w-full" role="img" aria-label={title}>
+        <defs>
+          <linearGradient id={`${id}-fill`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={from} stopOpacity="0.55" />
+            <stop offset="100%" stopColor={to} stopOpacity="0.02" />
+          </linearGradient>
+          <linearGradient id={`${id}-line`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={from} />
+            <stop offset="100%" stopColor={to} />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${id}-fill)`} />
+        <path d={d} fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.5" strokeLinecap="round" className="chart-line" pathLength={100} />
+      </svg>
+    </div>
+  );
+}
+
+function SalesSpark({ counts }: { counts: number[] }) {
+  if (counts.length < 2) return null;
+  const width = 76;
+  const height = 26;
+  const max = Math.max(...counts, 1);
+  const min = Math.min(...counts);
+  const span = max - min || 1;
+  const points = counts.map((value, index) => {
+    const x = (index / (counts.length - 1)) * width;
+    const y = height - 3 - ((value - min) / span) * (height - 6);
+    return { x, y };
+  });
+  const d = points
+    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(" ");
+  const area = `${d} L${width} ${height} L0 ${height} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-6 w-[4.75rem]" role="img" aria-label="מגמת המכירות השמורה">
+      <defs>
+        <linearGradient id="sales-spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffb000" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ff5c7a" stopOpacity="0.05" />
+        </linearGradient>
+        <linearGradient id="sales-spark-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ffb000" />
+          <stop offset="100%" stopColor="#ff5c7a" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#sales-spark-fill)" />
+      <path d={d} pathLength={100} fill="none" stroke="url(#sales-spark-line)" strokeWidth="2" strokeLinecap="round" className="chart-line" />
+    </svg>
+  );
+}
 
 function formatDay(iso: string): string {
   if (!/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso || "—";
@@ -74,13 +148,10 @@ export function ControlCenterScreen() {
   if (!ready) {
     return (
       <div className="space-y-3 sm:space-y-4">
-        <div className="h-44 animate-pulse rounded-[1.25rem] border border-black/[0.06] bg-white sm:h-40 sm:rounded-[var(--radius)]" />
+        <Skeleton className="h-44 rounded-lg border border-border sm:h-40" />
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-28 animate-pulse rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]"
-            />
+            <Skeleton key={i} className="h-28 rounded-lg border border-border" />
           ))}
         </div>
       </div>
@@ -89,9 +160,10 @@ export function ControlCenterScreen() {
 
   if (!snap) {
     return (
-      <div className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-8 sm:rounded-[var(--radius)] sm:px-8 sm:py-10">
+      <div className="glass relative overflow-hidden rounded-[1.15rem] border border-border px-5 py-8 sm:px-8 sm:py-10">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-        <p className="text-base font-semibold text-foreground">אין נתונים שמורים עדיין</p>
+        <Inbox className="size-8 text-muted-foreground" aria-hidden />
+        <p className="mt-3 text-base font-semibold text-foreground">אין נתונים שמורים עדיין</p>
         <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
           לחצו על סנכרון בשורה העליונה כדי לטעון את האקסל. אחרי הסנכרון יופיעו כאן
           הפקות, פרמיה ומובילים.
@@ -172,23 +244,25 @@ export function ControlCenterScreen() {
   ];
 
   return (
-    <div className="space-y-3">
-      <section className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
-        <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-        <div className="grid grid-cols-2 gap-px bg-black/[0.06] lg:grid-cols-4">
+    <div className="space-y-6">
+      <section className="enter space-y-3">
+        <div className="kpi-band grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <button
             type="button"
             onClick={() => setOpenKind("upcoming")}
-            className="group bg-[#fffcf0] px-4 py-3 text-start transition-[background-color,transform] active:scale-[0.995] hover:bg-highlight/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-hero kpi-cube group px-4 py-4 text-start active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
           >
-            <span className="rounded-full bg-highlight px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
-              {snap.upcomingDateLabel}
+            <span className="flex items-center justify-between gap-2">
+              <span className="kpi-badge" data-tone="sun" aria-hidden><Package className="size-4" /></span>
+              <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+                {snap.upcomingDateLabel}
+              </span>
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               הפקות ב־{snap.upcomingDateLabel}
             </p>
-            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
-              {snap.upcomingPremiumLabel}
+            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+              <CountUp value={snap.upcomingPremium} text={formatIls} />
             </p>
             <p className="mt-2 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
               <span className="min-w-0 truncate">
@@ -201,16 +275,20 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("premium")}
-            className="group bg-white px-4 py-3 text-start transition-colors hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
+            data-accent="green"
           >
-            <span className="rounded-full bg-highlight/45 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
-              {snap.monthLabel}
+            <span className="flex items-center justify-between gap-2">
+              <span className="kpi-badge" data-tone="green" aria-hidden><Package className="size-4" /></span>
+              <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+                {snap.monthLabel}
+              </span>
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               הפקות החודש
             </p>
-            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
-              {snap.premiumLabel}
+            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+              <CountUp value={snap.premium} text={formatIls} />
             </p>
             <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
               <span>{snap.productions.toLocaleString("he-IL")} הפקות פעילות</span>
@@ -221,16 +299,20 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("monthSales")}
-            className="group bg-white px-4 py-3 text-start transition-colors hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
+            data-accent="violet"
           >
-            <span className="rounded-full bg-black/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
-              העברה ליצרן
+            <span className="flex items-center justify-between gap-2">
+              <span className="kpi-badge" data-tone="violet" aria-hidden><PhoneIncoming className="size-4" /></span>
+              <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+                העברה ליצרן
+              </span>
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               מכירות
             </p>
-            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
-              {formatIls(snap.salesPremium)}
+            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+              <CountUp value={snap.salesPremium} text={formatIls} />
             </p>
             <p className="mt-2 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
               <span className="min-w-0 truncate">
@@ -238,21 +320,26 @@ export function ControlCenterScreen() {
               </span>
               <ChevronLeft className="size-3.5 shrink-0 opacity-40 transition-transform group-hover:-translate-x-0.5" />
             </p>
+            <SalesSpark counts={dashboard?.sales?.counts ?? []} />
           </button>
 
           <button
             type="button"
             onClick={() => setOpenKind("agentAppointment")}
-            className="group bg-white px-4 py-3 text-start transition-colors hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/15 sm:px-5 sm:py-4"
+            className="kpi-cube group px-4 py-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 sm:py-5"
+            data-accent="teal"
           >
-            <span className="rounded-full bg-black/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
-              העברה ליצרן
+            <span className="flex items-center justify-between gap-2">
+              <span className="kpi-badge" data-tone="teal" aria-hidden><UserRound className="size-4" /></span>
+              <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+                העברה ליצרן
+              </span>
             </span>
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               מינוי סוכן
             </p>
-            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
-              {snap.agentAppointmentPremiumLabel}
+            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+              <CountUp value={snap.agentAppointmentPremium} text={formatIls} />
             </p>
             <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
               <span>{snap.agentAppointmentCount.toLocaleString("he-IL")} מינויים</span>
@@ -260,7 +347,7 @@ export function ControlCenterScreen() {
             </p>
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-black/[0.06] px-4 py-2 text-[11px] sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 py-1 text-[11px]">
           {syncedLabel ? (
             <span className="tabular-nums text-muted-foreground">עודכן {syncedLabel}</span>
           ) : null}
@@ -269,14 +356,14 @@ export function ControlCenterScreen() {
               key={kpi.kind}
               type="button"
               onClick={() => setOpenKind(kpi.kind)}
-              className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-[#fffcf0]"
+              className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-highlight/15"
             >
               <span className="text-muted-foreground">{kpi.label}</span>
               <span
                 className={cn(
                   "font-semibold tabular-nums",
-                  kpi.tone === "warn" && "text-amber-800",
-                  kpi.tone === "danger" && "text-red-700",
+                  kpi.tone === "warn" && "text-warning",
+                  kpi.tone === "danger" && "text-destructive",
                 )}
               >
                 {kpi.value}
@@ -286,27 +373,34 @@ export function ControlCenterScreen() {
           <button
             type="button"
             onClick={() => setOpenKind("pendingMonth")}
-            className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-[#fffcf0]"
+            className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-highlight/15"
           >
             <span className="text-muted-foreground">בתהליך</span>
-            <span className="font-semibold tabular-nums text-amber-800">
+            <span className="font-semibold tabular-nums text-warning">
               {snap.pendingInMonth.toLocaleString("he-IL")}
             </span>
           </button>
         </div>
       </section>
 
-      <DashboardCampaignStrip />
+      <div className="enter grid gap-3 sm:grid-cols-2" style={{ ["--i" as string]: 1 }}>
+        <MiniArea title="מגמת מכירות" counts={dashboard?.sales?.counts ?? []} from="#FFD60A" to="#FF6B81" />
+        <MiniArea title="מגמת מינויים" counts={dashboard?.appointments?.counts ?? []} from="#5AC8FA" to="#6D5EFC" />
+      </div>
 
-      <section className="space-y-2">
+      <div className="enter" style={{ ["--i" as string]: 2 }}>
+        <DashboardCampaignStrip />
+      </div>
+
+      <section className="enter space-y-4" style={{ ["--i" as string]: 3 }}>
         <div className="flex items-baseline justify-between gap-3 px-0.5">
-          <h2 className="text-sm font-semibold tracking-tight">מובילים החודש</h2>
+          <h2 className="text-[1.35rem] font-semibold tracking-tight">מובילים החודש</h2>
           <p className="text-[11px] text-muted-foreground">
             לחצו על קובייה לפירוט
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+        <div className="leader-grid grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           {leaders.map((item, index) => {
             const Icon = item.icon;
             return (
@@ -314,21 +408,20 @@ export function ControlCenterScreen() {
                 key={item.kind}
                 type="button"
                 onClick={() => setOpenKind(item.kind)}
-                className="group relative min-w-0 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white px-3 py-2.5 text-start transition-[transform,background-color,border-color] active:scale-[0.98] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)] sm:px-4 sm:py-3"
+                className="kpi-cube group relative min-w-0 overflow-hidden border border-black/[0.06] bg-card px-3 py-3 text-start transition-[transform,background-color,border-color] active:scale-[0.98] hover:bg-[#f7f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:px-4 sm:py-4"
               >
-                <span className="absolute inset-y-0 start-0 w-1 origin-top scale-y-100 bg-highlight transition-transform duration-300 group-hover:scale-y-110" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight/35 sm:size-8">
+                    <span className="tone-well inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f2f2f4]">
                       <Icon className="size-3.5 text-foreground sm:size-4" />
                     </span>
+                    <span className="size-1.5 shrink-0 rounded-full bg-highlight" aria-hidden />
                     <p className="truncate text-[11px] font-medium text-muted-foreground">
                       {item.label}
                     </p>
                   </div>
-                  <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold tabular-nums text-black/30">
+                  <span className={cn("medal", index < 3 && "shrink-0")} data-rank={index < 3 ? String(index + 1) : undefined}>
                     #{index + 1}
-                    <ChevronLeft className="size-3.5 opacity-50 transition-transform group-hover:-translate-x-0.5" />
                   </span>
                 </div>
                 <p className="mt-2 truncate text-base font-semibold tracking-tight">
@@ -427,10 +520,10 @@ function ControlCenterDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92dvh] max-w-[96vw] flex-col gap-0 overflow-hidden rounded-[1.35rem] p-0 sm:max-w-5xl sm:rounded-[var(--radius)]">
+      <DialogContent data-peek className="flex max-h-[92dvh] max-w-[96vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
         {detail ? (
           <>
-            <DialogHeader className="border-b border-black/[0.06] px-4 py-4 text-start sm:px-6">
+            <DialogHeader className="border-b border-border px-4 py-4 text-start sm:px-6">
               {detail.kind === "agentAppointment" ? (
                 <div className="mb-3 flex flex-wrap items-center gap-1.5 pe-8">
                   {(
@@ -447,7 +540,7 @@ function ControlCenterDetailDialog({
                         "rounded-full px-3 py-1 text-[12px] font-semibold transition-colors",
                         appointmentPeriod.preset === item.preset
                           ? "bg-highlight text-foreground"
-                          : "bg-black/[0.04] text-muted-foreground hover:bg-black/[0.06]",
+                          : "bg-muted text-muted-foreground hover:bg-border",
                       )}
                     >
                       {item.label}
@@ -464,7 +557,7 @@ function ControlCenterDetailDialog({
                       "rounded-full px-3 py-1 text-[12px] font-semibold outline-none",
                       appointmentPeriod.preset === "pick"
                         ? "bg-highlight text-foreground"
-                        : "bg-black/[0.04] text-muted-foreground",
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     <option value="">חודש לפי בחירה</option>
@@ -481,7 +574,7 @@ function ControlCenterDetailDialog({
                       "rounded-full px-3 py-1 text-[12px] font-semibold transition-colors",
                       appointmentPeriod.preset === "ytd"
                         ? "bg-highlight text-foreground"
-                        : "bg-black/[0.04] text-muted-foreground hover:bg-black/[0.06]",
+                        : "bg-muted text-muted-foreground hover:bg-border",
                     )}
                   >
                     מתחילת שנה
@@ -552,7 +645,7 @@ function ControlCenterDetailDialog({
                   <h3 className="text-xs font-semibold text-muted-foreground">
                     דירוג לפי פרמיה
                   </h3>
-                  <div className="mt-2 overflow-hidden rounded-2xl border border-black/[0.06]">
+                  <div className="mt-2 overflow-hidden rounded-2xl border border-border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-black/[0.05] bg-background/60 text-[11px] text-muted-foreground">
@@ -614,7 +707,7 @@ function ControlCenterDetailDialog({
                             {section.rows.map((row) => (
                               <li
                                 key={row.key}
-                                className="rounded-2xl border border-black/[0.06] bg-white px-3.5 py-3"
+                                className="rounded-2xl border border-border bg-card px-3.5 py-3"
                               >
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="min-w-0">
@@ -642,10 +735,10 @@ function ControlCenterDetailDialog({
                     </ul>
 
                     {/* Desktop table */}
-                    <div className="mt-2 hidden overflow-hidden rounded-xl border border-black/[0.06] sm:block">
+                    <div className="mt-2 hidden overflow-hidden rounded-xl border border-border sm:block">
                       <div className="max-h-[42vh] overflow-auto">
                         <table className="w-full min-w-[52rem] text-sm">
-                          <thead className="sticky top-0 bg-white">
+                          <thead className="sticky top-0 bg-card">
                             <tr className="border-b border-black/[0.05] text-[11px] text-muted-foreground">
                               <th className="px-3 py-2 text-start font-medium">תחילת ביטוח</th>
                               <th className="whitespace-nowrap px-3 py-2 text-start font-medium">

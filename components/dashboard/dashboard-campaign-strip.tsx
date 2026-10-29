@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpLeft } from "lucide-react";
 import { loadDashboardCampaignPulse, type DashboardCampaignPulse } from "@/app/actions/dashboard-pulse";
+import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CAMPAIGNS_PATH } from "@/lib/sales-dashboard/access";
 import { formatIls } from "@/lib/sales-dashboard/campaign-math";
@@ -20,10 +21,17 @@ function money(value: number): string {
 }
 
 export function DashboardCampaignStrip() {
-  const [pulse, setPulse] = useState<DashboardCampaignPulse | null | undefined>(undefined);
+  const { campaignPulse } = useLiveDashboard();
+  const [pulse, setPulse] = useState<DashboardCampaignPulse | null | undefined>(
+    campaignPulse === undefined ? undefined : campaignPulse,
+  );
   const [open, setOpen] = useState<"spend" | "calls" | "forms" | "today" | null>(null);
 
   useEffect(() => {
+    if (campaignPulse) {
+      setPulse(campaignPulse);
+      return;
+    }
     let alive = true;
     void loadDashboardCampaignPulse()
       .then((next) => {
@@ -35,10 +43,10 @@ export function DashboardCampaignStrip() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [campaignPulse]);
 
   if (pulse === undefined) {
-    return <div className="h-24 animate-pulse rounded-[1.25rem] border border-black/[0.06] bg-white" />;
+    return <div className="skeleton h-24 rounded-lg border border-border" />;
   }
   if (!pulse) return null;
 
@@ -47,10 +55,10 @@ export function DashboardCampaignStrip() {
   const formPrice = pulse.facebookForms > 0 ? pulse.facebookSpend / pulse.facebookForms : null;
 
   return (
-    <section className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white sm:rounded-[var(--radius)]">
-      <div className="flex items-baseline justify-between gap-3 border-b border-black/[0.06] px-4 py-2 sm:px-5">
+    <section>
+      <div className="flex items-baseline justify-between gap-3 px-1">
         <div>
-          <h2 className="text-sm font-semibold tracking-tight">קמפיינים של ליבה</h2>
+          <h2 className="text-[1.35rem] font-semibold tracking-tight">קמפיינים של ליבה</h2>
           <p className="text-[11px] text-muted-foreground">
             {dayLabel(pulse.from)} עד {dayLabel(pulse.to)}
             {synced ? ` · עודכן ${synced}` : ""}
@@ -61,7 +69,7 @@ export function DashboardCampaignStrip() {
           <ArrowUpLeft className="size-3.5" />
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-px bg-black/[0.06] sm:grid-cols-4">
+      <div className="pulse-grid mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <PulseCell label="הוצאה" value={money(pulse.spend)} hint="גוגל ופייסבוק של ליבה" onClick={() => setOpen("spend")} />
         <PulseCell label="שיחות גוגל" value={pulse.googleCalls.toLocaleString("he-IL")} hint={callPrice == null ? "אין שיחות" : `${money(callPrice)} לשיחה`} onClick={() => setOpen("calls")} />
         <PulseCell label="טפסי פייסבוק" value={pulse.facebookForms.toLocaleString("he-IL")} hint={formPrice == null ? "אין טפסים" : `${money(formPrice)} לטופס`} onClick={() => setOpen("forms")} />
@@ -93,7 +101,7 @@ function PulseCell({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="bg-white px-4 py-2.5 text-start hover:bg-[#fffcf0]">
+    <button type="button" onClick={onClick} className="kpi-cube bg-card px-4 py-3 text-start hover:bg-[#f7f7f8]">
       <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
       <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{hint}</p>
@@ -103,7 +111,7 @@ function PulseCell({
 
 function Line({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-3 border-t border-black/[0.06] py-2 text-sm">
+    <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-3 border-t border-border py-2 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="tabular-nums">{value}</span>
     </div>

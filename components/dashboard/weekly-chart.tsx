@@ -24,8 +24,8 @@ export function WeeklyChart() {
                 <span className="absolute inset-x-1 bottom-0 h-px bg-black/[0.08]" />
                 {isToday && (
                   <>
-                    <span className="w-[36%] rounded-t-md bg-[#d8d8d4]" style={{ height: "24%" }} />
-                    <span className="w-[36%] rounded-t-md bg-highlight" style={{ height: "40%" }} />
+                    <span className="chart-draw w-[36%] rounded-t-md bg-muted-foreground/30" style={{ height: "24%" }} />
+                    <span className="chart-draw w-[36%] rounded-t-md bg-highlight" style={{ height: "40%", animationDelay: "120ms" }} />
                   </>
                 )}
               </div>

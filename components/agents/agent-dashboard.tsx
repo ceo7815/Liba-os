@@ -550,7 +550,7 @@ export function AgentDashboard({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1 border-b border-black/[0.08] pb-px">
+      <div className="flex flex-wrap gap-1 border-b border-border pb-px">
         {visibleTabs.map((item) => (
           <button
             key={item.id}
@@ -684,7 +684,7 @@ export function AgentDashboard({
                     <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
                       {toolDetailLine(tool.tool_name, tool.tool_type)}
                     </p>
-                    <div className="mt-4 border-t border-black/[0.06] pt-3">
+                    <div className="mt-4 border-t border-border pt-3">
                       <p className="text-[11px] text-muted-foreground">
                         בדיקה אחרונה
                       </p>
@@ -767,7 +767,7 @@ export function AgentDashboard({
                       </div>
                     ) : null}
 
-                    <div className="mt-4 grid gap-4 border-t border-black/[0.06] pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-3">
                       <Field
                         label="התחלה"
                         value={fmtDate(run.started_at)}
@@ -839,7 +839,7 @@ export function AgentDashboard({
                         סיכום
                       </span>
                     </div>
-                    <div className="mt-4 border-t border-black/[0.06] pt-3">
+                    <div className="mt-4 border-t border-border pt-3">
                       <p className="text-[11px] text-muted-foreground">
                         עלות מצטברת החודש
                       </p>
@@ -889,7 +889,7 @@ export function AgentDashboard({
                       </div>
                     </div>
 
-                    <div className="mt-4 grid gap-4 border-t border-black/[0.06] pt-4 sm:grid-cols-3">
+                    <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-3">
                       <Field
                         label="זמן החיוב"
                         value={fmtDate(c.occurred_at)}
@@ -952,7 +952,7 @@ export function AgentDashboard({
                       {callStatusLabel(call.status)}
                     </span>
                   </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2 border-t border-black/[0.06] pt-3 text-[11px]">
+                  <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border pt-3 text-[11px]">
                     <div>
                       <p className="text-muted-foreground">תאריך</p>
                       <p className="mt-0.5 font-medium text-foreground">

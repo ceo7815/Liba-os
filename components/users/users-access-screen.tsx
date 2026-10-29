@@ -78,7 +78,7 @@ export function UsersAccessScreen({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]">
         <aside className="app-surface overflow-hidden">
-          <div className="flex items-center justify-between border-b border-black/[0.06] px-4 py-3">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="text-xs font-semibold text-muted-foreground">
               {users.length} משתמשים
             </p>
@@ -126,7 +126,7 @@ export function UsersAccessScreen({
                             "rounded-full border-0 px-2 py-0 text-[10px] font-medium",
                             user.is_active
                               ? "bg-emerald-100 text-emerald-900"
-                              : "bg-black/[0.06] text-muted-foreground",
+                              : "bg-border text-muted-foreground",
                           )}
                         >
                           {user.is_active ? "פעיל" : "מושבת"}
@@ -284,7 +284,7 @@ function UserPermissionEditor({
               onValueChange={onRoleChange}
               disabled={pending}
             >
-              <SelectTrigger className="h-9 w-[8rem] rounded-lg bg-white">
+              <SelectTrigger className="h-9 w-[8rem] rounded-lg bg-card">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -347,7 +347,7 @@ function UserPermissionEditor({
               key={category.id}
               className="app-surface overflow-hidden"
             >
-              <div className="flex items-center gap-2 border-b border-black/[0.06] px-4 py-3">
+              <div className="flex items-center gap-2 border-b border-border px-4 py-3">
                 <button
                   type="button"
                   className="flex min-w-0 flex-1 items-center gap-2 text-start"
@@ -400,7 +400,7 @@ function UserPermissionEditor({
                               "flex size-5 shrink-0 items-center justify-center rounded-md border",
                               on
                                 ? "border-emerald-600 bg-emerald-500 text-white"
-                                : "border-black/15 bg-white",
+                                : "border-black/15 bg-card",
                             )}
                           >
                             {on ? <Check className="size-3.5" strokeWidth={3} /> : null}

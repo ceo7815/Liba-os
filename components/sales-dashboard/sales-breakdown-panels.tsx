@@ -325,7 +325,7 @@ export function EmployeeBreakdown({
   );
 
   if (!ready) {
-    return <p className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-8 text-center text-sm text-muted-foreground">טוען שכר, הסכמים ולידים…</p>;
+    return <p className="rounded-lg border border-border bg-card px-5 py-8 text-center text-sm text-muted-foreground">טוען שכר, הסכמים ולידים…</p>;
   }
 
   return (
@@ -335,9 +335,9 @@ export function EmployeeBreakdown({
         שכר לפי ההסכם. הפרמיה היא תהליך מכירה, כל הסטטוסים, לפי תאריך העברה ליצרן.
       </p>
       {rows.length === 0 ? (
-        <p className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-10 text-center text-sm text-muted-foreground">אין עובדים בטווח הזה.</p>
+        <p className="rounded-lg border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">אין עובדים בטווח הזה.</p>
       ) : (
-        <div className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white">
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full min-w-[40rem] text-sm">
             <thead className="bg-[#fafaf8] text-[11px] text-muted-foreground">
               <tr>
@@ -366,7 +366,7 @@ export function EmployeeBreakdown({
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-black/[0.08] bg-[#fafaf8] font-semibold">
+              <tr className="border-t border-border bg-[#fafaf8] font-semibold">
                 <td className="px-3 py-2.5">סה״כ</td>
                 <td className="px-3 py-2.5 text-[12px] text-muted-foreground">
                   {rows.length.toLocaleString("he-IL")} עובדים
@@ -407,7 +407,7 @@ function EmployeeDetail({ row, onClose }: { row: EmployeeSplitRow | null; onClos
   return (
     <Dialog open={row != null} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent className="flex max-h-[min(92dvh,52rem)] w-[min(96vw,68rem)] max-w-none flex-col gap-0 overflow-hidden p-0">
-        <DialogHeader className="space-y-1 border-b border-black/[0.06] px-5 py-4 pe-14 text-start">
+        <DialogHeader className="space-y-1 border-b border-border px-5 py-4 pe-14 text-start">
           <DialogTitle>{row?.name}</DialogTitle>
           <DialogDescription>{row?.agreement}</DialogDescription>
         </DialogHeader>
@@ -457,7 +457,7 @@ function payEquation(wage: EmployeeBucket): string {
 
 function MonthBlock({ audit }: { audit: ReviewMonthAudit }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-black/[0.06]">
+    <section className="overflow-hidden rounded-2xl border border-border">
       <div className="bg-[#1a1a1a] px-3 py-2 text-sm font-semibold text-white">
         {audit.label || monthLabel(audit.month)}
         <span className="ms-2 text-[11px] font-normal text-white/70">{monthKind(audit)}</span>
@@ -606,7 +606,7 @@ function leadSentence(group: LeadCostSourceMonth): string {
 
 function PlainSales({ rows }: { rows: MarketingProduction[] }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-black/[0.06]">
+    <div className="overflow-x-auto rounded-2xl border border-border">
       <table className="w-full text-[12px]">
         <thead className="bg-[#fafaf8] text-[11px] text-muted-foreground">
           <tr>
@@ -683,7 +683,7 @@ export function CompanyBreakdown({
   );
 
   if (rows.length === 0) {
-    return <p className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-10 text-center text-sm text-muted-foreground">אין חברות בטווח הזה.</p>;
+    return <p className="rounded-lg border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">אין חברות בטווח הזה.</p>;
   }
 
   return (
@@ -696,7 +696,7 @@ export function CompanyBreakdown({
         <Stat label="פרמיה" value={formatIls(totals.premium)} />
         <Stat label="לתשלום מהחברות" value={formatIls(totals.income)} />
       </div>
-      <div className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <table className="w-full min-w-[36rem] text-sm">
           <thead className="bg-[#fafaf8] text-[11px] text-muted-foreground">
             <tr>
@@ -748,7 +748,7 @@ export function CompanyBreakdown({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.15rem] border border-black/[0.06] bg-white px-3 py-3 text-center">
+    <div className="rounded-[1.15rem] border border-border bg-card px-3 py-3 text-center">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-semibold tabular-nums">{value}</p>
     </div>

@@ -8,16 +8,12 @@ import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { SalesEntryAudit } from "@/components/sales-dashboard/sales-entry-audit";
 import { SalesExcelGrid, type SortState } from "@/components/sales-dashboard/sales-excel-grid";
 import { SalesExcelInspector } from "@/components/sales-dashboard/sales-excel-inspector";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import {
-  assignOperatingBrand,
-  matchesOperatingBrand,
-  OPERATING_BRAND_LABEL,
-  type OperatingBrandId,
-} from "@/lib/finance/operating-brand";
 import { formatIls } from "@/lib/sales-dashboard/campaign-math";
+import { includeInLibaSalesReport, salesExcelPremium } from "@/lib/sales-dashboard/sales-report-rows";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
 import { presentShemeshWorkbook, shemeshSheetHint } from "@/lib/shemesh/sales-excel-view";
 import {
@@ -25,7 +21,6 @@ import {
   formatWorkbookDateDisplay,
   isDateHeader,
   isPolicyHeader,
-  parsePremiumCell,
   parseWorkbookDate,
   premiumColumnIndex,
   workbookFromDashboard,
@@ -116,7 +111,6 @@ export function SalesExcelReportScreen({
   const [sort, setSort] = useState<SortState>(null);
   const [filters, setFilters] = useState<Record<number, string[]>>({});
   const [quick, setQuick] = useState({ status: "", process: "", agent: "" });
-  const [brand, setBrand] = useState<OperatingBrandId>("all");
   const [policyQuery, setPolicyQuery] = useState("");
   const deferredPolicy = useDeferredValue(policyQuery);
   const [dateCol, setDateCol] = useState(-1);
@@ -252,19 +246,6 @@ export function SalesExcelReportScreen({
     () => (sheet && processCol >= 0 ? uniqueSorted(sheet.rows, processCol) : []),
     [sheet, processCol],
   );
-  const brandCounts = useMemo(() => {
-    const counts = { liba: 0, shemesh: 0 };
-    if (!sheet || (agentCol < 0 && sourceCol < 0)) return counts;
-    for (const row of sheet.rows) {
-      const assigned = assignOperatingBrand({
-        agent: agentCol >= 0 ? row.cells[agentCol] : "",
-        source: sourceCol >= 0 ? row.cells[sourceCol] : "",
-      });
-      counts[assigned] += 1;
-    }
-    return counts;
-  }, [sheet, agentCol, sourceCol]);
-
   const visible = useMemo(() => {
     if (!sheet) return [];
     const needle = deferredQuery.trim().toLowerCase();
@@ -275,12 +256,13 @@ export function SalesExcelReportScreen({
       if (quick.status && statusCol >= 0 && (row.cells[statusCol] ?? "") !== quick.status) return false;
       if (quick.process && processCol >= 0 && (row.cells[processCol] ?? "") !== quick.process) return false;
       if (quick.agent && agentCol >= 0 && (row.cells[agentCol] ?? "") !== quick.agent) return false;
-      if (brand !== "all") {
-        const assigned = assignOperatingBrand({
+      if (
+        !includeInLibaSalesReport({
           agent: agentCol >= 0 ? row.cells[agentCol] : "",
           source: sourceCol >= 0 ? row.cells[sourceCol] : "",
-        });
-        if (!matchesOperatingBrand(assigned, brand)) return false;
+        })
+      ) {
+        return false;
       }
       if (policyNeedle && policyCol >= 0) {
         const policy = (row.cells[policyCol] ?? "").replace(/\s/g, "").toLowerCase();
@@ -319,7 +301,6 @@ export function SalesExcelReportScreen({
     processCol,
     agentCol,
     sourceCol,
-    brand,
     policyCol,
     dateCol,
     dateFrom,
@@ -339,12 +320,12 @@ export function SalesExcelReportScreen({
 
   useEffect(() => {
     setPage(0);
-  }, [deferredQuery, deferredPolicy, sort, filters, quick, brand, dateFrom, dateTo, dateCol]);
+  }, [deferredQuery, deferredPolicy, sort, filters, quick, dateFrom, dateTo, dateCol]);
 
   const premiumSum = useMemo(() => {
     if (premiumCol < 0) return 0;
-    return visible.reduce((sum, row) => sum + parsePremiumCell(row.cells[premiumCol] ?? ""), 0);
-  }, [visible, premiumCol]);
+    return salesExcelPremium(visible, premiumCol, agentCol, sourceCol);
+  }, [visible, premiumCol, agentCol, sourceCol]);
 
   const selected = visible.find((row) => row.id === selectedId) ?? null;
 
@@ -379,7 +360,6 @@ export function SalesExcelReportScreen({
     (quick.status ? 1 : 0) +
     (quick.process ? 1 : 0) +
     (quick.agent ? 1 : 0) +
-    (brand !== "all" ? 1 : 0) +
     (policyQuery ? 1 : 0) +
     (dateActive ? 1 : 0);
 
@@ -399,14 +379,13 @@ export function SalesExcelReportScreen({
     setQuery("");
     setSort(null);
     setQuick({ status: "", process: "", agent: "" });
-    setBrand("all");
     setPolicyQuery("");
     setDateFrom("");
     setDateTo("");
   }
   const syncedLabel = formatLastUpdatedAt(workbook.syncedAt);
   const selectClass =
-    "h-8 max-w-[12rem] rounded-full border border-black/[0.08] bg-white px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
+    "h-8 max-w-[12rem] rounded-full border border-border bg-card px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
   const monthPreset = presetDates("month");
   const prevPreset = presetDates("prev");
   const yearPreset = presetDates("year");
@@ -455,7 +434,7 @@ export function SalesExcelReportScreen({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="חיפוש בכל השדות…"
-            className="h-9 rounded-full border-black/[0.08] bg-white pe-9"
+            className="h-9 rounded-full border-border bg-card pe-9"
           />
         </div>
       </header>
@@ -474,7 +453,7 @@ export function SalesExcelReportScreen({
                     "inline-flex shrink-0 items-center gap-2 rounded-full border py-1 pe-1.5 ps-3 text-sm transition-colors",
                     active
                       ? "border-transparent bg-highlight font-medium text-highlight-foreground"
-                      : "border-black/[0.06] bg-white text-foreground hover:bg-[#fafaf8]",
+                      : "border-border bg-card text-foreground hover:bg-[#fafaf8]",
                   )}
                 >
                   <span className="whitespace-nowrap">{item.name}</span>
@@ -493,38 +472,7 @@ export function SalesExcelReportScreen({
         ) : null}
 
         {sheet?.kind === "report" ? (
-          <div className="space-y-2.5 rounded-2xl border border-black/[0.06] bg-white px-3 py-2.5">
-            {company !== "shemesh" && (agentCol >= 0 || sourceCol >= 0) ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">מותג</span>
-                <div className="flex items-center gap-1 rounded-full bg-[#f6f5f1] p-1" role="tablist" aria-label="ליבה או שמש">
-                  {(["all", "liba", "shemesh"] as const).map((id) => {
-                    const selected = brand === id;
-                    const count =
-                      id === "all" ? sheet.rows.length : id === "liba" ? brandCounts.liba : brandCounts.shemesh;
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        role="tab"
-                        aria-selected={selected}
-                        onClick={() => setBrand(id)}
-                        className={cn(
-                          "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs transition-colors",
-                          selected && id === "shemesh" && "bg-amber-700 font-medium text-white",
-                          selected && id === "liba" && "bg-[#1a1a1a] font-medium text-white",
-                          selected && id === "all" && "bg-highlight font-medium text-highlight-foreground",
-                          !selected && "text-muted-foreground hover:bg-white",
-                        )}
-                      >
-                        {OPERATING_BRAND_LABEL[id]}
-                        <span className="tabular-nums opacity-80">{count.toLocaleString("he-IL")}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
+          <div className="space-y-2.5 rounded-2xl border border-border bg-card px-3 py-2.5">
             {dateColumns.length ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">תאריך</span>
@@ -557,27 +505,20 @@ export function SalesExcelReportScreen({
                         "h-7 rounded-full px-2.5 text-xs transition-colors",
                         activePreset === id
                           ? "bg-highlight font-medium text-highlight-foreground"
-                          : "text-muted-foreground hover:bg-white",
+                          : "text-muted-foreground hover:bg-card",
                       )}
                     >
                       {label}
                     </button>
                   ))}
                 </div>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(event) => setDateFrom(event.target.value)}
-                  aria-label="מתאריך"
-                  className={selectClass}
-                />
-                <span className="text-xs text-muted-foreground">עד</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(event) => setDateTo(event.target.value)}
-                  aria-label="עד תאריך"
-                  className={selectClass}
+                <DateRangeField
+                  from={dateFrom}
+                  to={dateTo}
+                  onChange={(next) => {
+                    setDateFrom(next.from);
+                    setDateTo(next.to);
+                  }}
                 />
               </div>
             ) : null}
@@ -589,7 +530,7 @@ export function SalesExcelReportScreen({
                   onChange={(event) => setPolicyQuery(event.target.value)}
                   placeholder="מספר פוליסה"
                   aria-label="מספר פוליסה"
-                  className="h-8 w-40 rounded-full border-black/[0.08] bg-white"
+                  className="h-8 w-40 rounded-full border-border bg-card"
                 />
               ) : null}
               {statuses.length ? (
@@ -659,7 +600,7 @@ export function SalesExcelReportScreen({
               : "אין נתונים — סנכרנו את דוח המנהלים"}
         </div>
       ) : (
-        <div className="mx-3 mb-2 flex min-h-[28rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-5">
+        <div className="mx-3 mb-2 flex min-h-[28rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-5">
           <SalesExcelGrid
             sheet={sheet}
             rows={pageRows}

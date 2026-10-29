@@ -17,7 +17,7 @@ export default function PortalsOverviewPage() {
   const connecting = portals.filter((p) => p.status === "connecting").length;
 
   return (
-    <section className="mx-auto max-w-[72rem] space-y-6">
+    <section className="w-full space-y-6">
       <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>

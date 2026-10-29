@@ -1,7 +1,4 @@
-import {
-  OperatingBrandBar,
-  OperatingBrandProvider,
-} from "@/components/finance/operating-brand-bar";
+import { OperatingBrandProvider } from "@/components/finance/operating-brand-bar";
 
 export default function FinanceLayout({
   children,
@@ -9,10 +6,7 @@ export default function FinanceLayout({
   children: React.ReactNode;
 }) {
   return (
-    <OperatingBrandProvider>
-      <div className="mb-4 sm:mb-6">
-        <OperatingBrandBar />
-      </div>
+    <OperatingBrandProvider lockedBrand="liba">
       {children}
     </OperatingBrandProvider>
   );

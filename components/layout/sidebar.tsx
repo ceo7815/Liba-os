@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bot,
   Cable,
@@ -35,6 +35,7 @@ import {
   EXPENSES_PATH,
   GENERAL_PNL_PATH,
   INSURANCE_AGREEMENTS_PATH,
+  LEDGER_PATH,
   SETTLED_COMMISSIONS_PATH,
   SOURCE_PNL_PATH,
 } from "@/lib/finance/access";
@@ -46,6 +47,7 @@ import {
 } from "@/lib/sales-dashboard/access";
 import { canViewFormulas, FORMULAS_PATH } from "@/lib/formulas/access";
 import { LEAD_CONTROL_PATH } from "@/lib/lead-control/rules";
+import { activePath } from "@/lib/nav-path";
 import { canViewInterfaces, INTERFACES_PATH } from "@/lib/interfaces/access";
 import {
   canManageUsers,
@@ -77,7 +79,7 @@ function sectionFromPath(pathname: string): OpenSection {
 }
 
 export function Sidebar({ profile, className }: SidebarProps) {
-  const pathname = usePathname();
+  const pathname = activePath(usePathname(), useSearchParams().get("view"));
   const showAgents = canViewAgents(profile);
   const showVault = canViewVault(profile);
   const showFinance = canAccessFinance(profile);
@@ -152,14 +154,15 @@ export function Sidebar({ profile, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-e border-black/[0.08] bg-white",
+        "flex w-[18.5rem] shrink-0 flex-col bg-transparent p-4 pe-3",
         className,
       )}
     >
+      <div className="side-glass flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] bg-white/70 text-sidebar-foreground shadow-card backdrop-blur-xl backdrop-saturate-150">
       <div className="flex flex-col items-center px-5 pb-5 pt-7">
         <LogoBadge centered className="w-full" />
-        <div className="mt-5 h-px w-full bg-black/[0.06]">
-          <div className="mx-auto h-px w-10 bg-highlight" />
+        <div className="mt-5 h-px w-full bg-sidebar-border">
+          <div className="mx-auto h-px w-10 bg-module" />
         </div>
       </div>
 
@@ -169,6 +172,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
             href="/dashboard"
             label="לוח בקרה"
             icon={LayoutDashboard}
+            tone="sun"
             active={pathname === "/dashboard"}
           />
           {showSalesDashboard ? (
@@ -176,6 +180,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
               href={LEAD_CONTROL_PATH}
               label="בקרת לידים"
               icon={ListChecks}
+              tone="teal"
               active={leadControlActive}
             />
           ) : null}
@@ -192,6 +197,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
               href={CAMPAIGNS_PATH}
               label="קמפיינים"
               icon={Megaphone}
+              tone="violet"
               active={campaignsActive}
             />
           ) : null}
@@ -207,11 +213,19 @@ export function Sidebar({ profile, className }: SidebarProps) {
 
         {showFinance ? (
           <NavSection title="כספים">
+            <NavItem
+              href={LEDGER_PATH}
+              label="רישום תנועות"
+              icon={Wallet}
+              tone="green"
+              active={pathname === LEDGER_PATH}
+            />
             {showPlGeneral ? (
               <NavItem
                 href={GENERAL_PNL_PATH}
                 label="רווח והפסד"
                 icon={LineChart}
+                tone="green"
                 active={generalPnlActive}
               />
             ) : null}
@@ -370,11 +384,12 @@ export function Sidebar({ profile, className }: SidebarProps) {
         </div>
       ) : null}
 
-      <div className="border-t border-black/[0.06] px-5 py-4 text-center">
+      <div className="border-t border-sidebar-border px-5 py-4 text-center">
         <p className="text-[11px] font-semibold text-foreground">ליבה OS</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">
           מערכת ניהול פנימית
         </p>
+      </div>
       </div>
     </aside>
   );
@@ -407,19 +422,17 @@ function ExpandableNav({
         <Link
           href={href}
           className={cn(
-            "relative flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+            "relative flex min-w-0 flex-1 items-center gap-2.5 rounded-full px-3 py-2 text-[13px] font-medium transition-colors duration-rise ease-out",
             sectionActive
-              ? "bg-background text-foreground"
-              : "text-black/55 hover:bg-background/80 hover:text-foreground",
+              ? "nav-live"
+              : "text-muted-foreground hover:bg-white/70 hover:text-foreground",
           )}
         >
-          {overviewActive && (
-            <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-highlight" />
-          )}
+          {overviewActive && <span className="size-1.5 shrink-0 rounded-full bg-white/80" />}
           <Icon
             className={cn(
               "h-4 w-4 shrink-0",
-              sectionActive ? "text-foreground" : "text-black/35",
+              sectionActive ? "text-sidebar-foreground" : "text-muted-foreground",
             )}
           />
           <span className="truncate">{label}</span>
@@ -430,7 +443,7 @@ function ExpandableNav({
           aria-expanded={open}
           onClick={onToggle}
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-black/40 transition-colors hover:bg-background hover:text-foreground",
+            "flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
             open && "text-foreground",
           )}
         >
@@ -440,7 +453,7 @@ function ExpandableNav({
         </button>
       </div>
       {open && (
-        <ul className="mt-0.5 space-y-0.5 border-s border-black/[0.06] ms-4 ps-2">
+        <ul className="mt-0.5 space-y-0.5 border-s border-sidebar-border ms-4 ps-2">
           {children}
         </ul>
       )}
@@ -462,15 +475,13 @@ function SubNavItem({
       <Link
         href={href}
         className={cn(
-          "relative block rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors",
-          active
-            ? "bg-background text-foreground"
-            : "text-black/50 hover:bg-background/80 hover:text-foreground",
+          "relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-[12px] font-medium transition-colors duration-rise ease-out",
+        active
+          ? "nav-live"
+          : "text-muted-foreground hover:bg-white/70 hover:text-foreground",
         )}
       >
-        {active && (
-          <span className="absolute inset-y-1 start-0 w-[2px] rounded-full bg-highlight" />
-        )}
+        {active && <span className="size-1.5 shrink-0 rounded-full bg-white/80" />}
         {label}
       </Link>
     </li>
@@ -486,7 +497,7 @@ function NavSection({
 }) {
   return (
     <div>
-      <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-black/35">
+      <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         {title}
       </p>
       <div className="space-y-0.5">{children}</div>
@@ -499,10 +510,12 @@ function NavItem({
   label,
   icon: Icon,
   active,
+  tone,
 }: {
   href: string;
   label: string;
   active: boolean;
+  tone?: "sun" | "teal" | "violet" | "green" | "coral";
   icon: React.ComponentType<{ className?: string }>;
 }) {
   const router = useRouter();
@@ -514,21 +527,16 @@ function NavItem({
       onMouseEnter={() => router.prefetch(href)}
       onFocus={() => router.prefetch(href)}
       className={cn(
-        "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+        "relative flex items-center gap-2.5 rounded-full px-3 py-2 text-[13px] font-medium text-foreground transition-colors duration-rise ease-out",
         active
-          ? "bg-background text-foreground"
-          : "text-black/55 hover:bg-background/80 hover:text-foreground",
+          ? "nav-live"
+          : "text-muted-foreground hover:bg-white/70 hover:text-foreground",
       )}
     >
-      {active && (
-        <span className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-highlight" />
-      )}
-      <Icon
-        className={cn(
-          "h-4 w-4 shrink-0",
-          active ? "text-foreground" : "text-black/35",
-        )}
-      />
+      {active && <span className="size-1.5 shrink-0 rounded-full bg-white/80" />}
+      <span data-tone={tone} className="nav-icon inline-flex">
+        <Icon className="h-4 w-4 shrink-0" />
+      </span>
       <span className="truncate">{label}</span>
     </Link>
   );

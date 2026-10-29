@@ -3,12 +3,18 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { LiveDashboardProvider } from "@/components/layout/live-dashboard-provider";
+import { ShemeshMobileDock } from "@/components/shemesh/mobile-dock";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
+import { ShemeshBreadcrumbs } from "@/components/shemesh/breadcrumbs";
 import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
 import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
+import { Aurora } from "@/components/brand/aurora";
 import { ShemeshTheme } from "@/components/shemesh/theme";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
-import { requireProfile } from "@/lib/auth";
+import { ShemeshSkeleton } from "@/components/shemesh/widgets";
+import { redirect } from "next/navigation";
+import { shemeshProfile } from "@/lib/shemesh/actor";
+import { canViewShemesh } from "@/lib/permissions/access";
 import { assessShemeshSources } from "@/lib/shemesh/connectors";
 import { loadShemeshPulse } from "@/lib/shemesh/load-pulse";
 
@@ -48,7 +54,8 @@ export default async function ShemeshLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await requireProfile();
+  const profile = await shemeshProfile();
+  if (!profile) redirect("/login");
   const sources = assessShemeshSources(process.env);
   const pulse = await loadShemeshPulse().catch(() => null);
   const live = pulse ?? {
@@ -74,13 +81,13 @@ export default async function ShemeshLayout({
     live.campaigns.some((campaign) => campaign.channel === "google"),
   );
 
-  if (profile.role !== "admin") {
+  if (!canViewShemesh(profile)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
         <div className="max-w-md">
           <h1 className="text-2xl font-semibold">שמש</h1>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            המערכת זמינה למשתמשים עם הרשאת ניהול.
+            המערכת זמינה למי שיש לו הרשאת שמש.
           </p>
           <Link href="/dashboard" className="mt-5 inline-block text-sm font-medium underline">
             חזרה לליבה
@@ -93,22 +100,25 @@ export default async function ShemeshLayout({
   return (
     <LiveDashboardProvider>
       <ShemeshTheme />
-      <div className="shemesh-os flex h-dvh min-h-0 overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
+      <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
+        <Aurora tone="shemesh" />
         <ShemeshSidebar className="hidden lg:flex print:hidden" />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col print:block print:h-auto print:overflow-visible">
           <div className="print:hidden">
             <ShemeshTopbar profile={profile} />
           </div>
-          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5 print:block print:h-auto print:overflow-visible print:p-0">
-            <Suspense fallback={<p className="text-sm text-muted-foreground">טוען...</p>}>
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-4 py-6 sm:px-6 lg:py-8 print:block print:h-auto print:overflow-visible print:p-0">
+            <ShemeshBreadcrumbs />
+            <Suspense fallback={<ShemeshSkeleton />}>
               <ShemeshPulseProvider pulse={live}>
                 <ShemeshSourceProvider sources={sources}>{children}</ShemeshSourceProvider>
               </ShemeshPulseProvider>
             </Suspense>
           </main>
+          <ShemeshMobileDock />
         </div>
       </div>
-      <Toaster dir="rtl" theme="light" position="top-center" />
+      <Toaster dir="rtl" position="top-center" />
     </LiveDashboardProvider>
   );
 }

@@ -230,7 +230,7 @@ export function SocialSettingsPanel({ settings }: { settings: SocialSettings }) 
       </div>
 
       <div className="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-        <div className="rounded-xl border border-black/[0.06] bg-white p-3">
+        <div className="rounded-xl border border-border bg-white p-3">
           <p className="mb-2 text-[11px] font-medium text-muted-foreground">לוגו</p>
           <Image
             src={settings.brand.logoPath ?? "/brand/liba-logo.png"}

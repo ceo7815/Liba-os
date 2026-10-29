@@ -41,7 +41,7 @@ export function AcademySectionNav({ tabs }: { tabs: AcademyTab[] }) {
             aria-selected={selected}
             className={cn(
               "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-              selected ? "bg-[#1a1a1a] text-white" : "bg-[#f6f5f1] text-muted-foreground hover:bg-white",
+              selected ? "bg-[#1a1a1a] text-white" : "bg-[#f6f5f1] text-muted-foreground hover:bg-card",
             )}
           >
             {tab.label}

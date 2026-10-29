@@ -12,7 +12,7 @@ export default async function AuthenticatedLayout({
   return (
     <>
       <AppShell profile={profile}>{children}</AppShell>
-      <Toaster dir="rtl" theme="light" position="top-center" />
+      <Toaster dir="rtl" position="top-center" />
     </>
   );
 }

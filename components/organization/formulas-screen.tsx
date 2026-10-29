@@ -56,7 +56,7 @@ export function FormulasScreen() {
   const open = CALCULATION_FORMULAS.find((row) => row.id === openId) ?? null;
 
   return (
-    <section className="mx-auto max-w-[72rem] space-y-6" dir="rtl">
+    <section className="w-full space-y-6" dir="rtl">
       <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -148,7 +148,7 @@ function FilterChip({
         "h-9 rounded-full border px-3 text-[13px] font-medium transition-colors",
         active
           ? "border-black bg-black text-white"
-          : "border-black/[0.08] bg-white text-foreground hover:border-black/20",
+          : "border-border bg-card text-foreground hover:border-black/20",
       )}
     >
       {label}
@@ -181,7 +181,7 @@ function FormulaDialog({
 }) {
   return (
     <Dialog open={Boolean(row)} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] max-w-[96vw] overflow-y-auto rounded-[1.35rem] sm:max-w-2xl" dir="rtl">
+      <DialogContent className="max-h-[90dvh] max-w-[96vw] overflow-y-auto rounded-lg sm:max-w-2xl" dir="rtl">
         {row ? (
           <>
             <DialogHeader className="text-start">
@@ -225,7 +225,7 @@ function FormulaDialog({
                   <Link
                     key={`${link.href}-${link.label}`}
                     href={link.href}
-                    className="font-medium text-foreground underline decoration-dotted underline-offset-4 hover:text-black"
+                    className="font-medium text-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
                   >
                     {link.label}
                   </Link>

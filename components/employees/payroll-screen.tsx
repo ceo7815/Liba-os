@@ -160,7 +160,7 @@ function SummaryCube({
           ? "bg-highlight"
           : "bg-zinc-300";
   return (
-    <div className="relative overflow-hidden rounded-[1.15rem] border border-black/[0.06] bg-white px-2.5 py-2.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:px-4 sm:py-4">
+    <div className="relative overflow-hidden rounded-[1.15rem] border border-border bg-card px-2.5 py-2.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:px-4 sm:py-4">
       <span className={cn("absolute inset-y-0 start-0 w-1", bar)} />
       <p className="truncate text-[10px] font-medium text-muted-foreground sm:text-[11px]">
         {label}
@@ -429,7 +429,7 @@ export function PayrollScreen({
             ? "טוען משכורות מהסנכרון האחרון…"
             : `${visible.length} עובדים · ${periodLabel}${syncedAt ? ` · ${formatLastUpdatedAt(syncedAt)}` : ""}`}
         </p>
-        <div className="grid w-full grid-cols-2 gap-1 rounded-2xl border border-black/[0.06] bg-white p-1 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex sm:w-auto sm:flex-wrap">
+        <div className="grid w-full grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex sm:w-auto sm:flex-wrap">
           <button
             type="button"
             onClick={() => setView("employees")}
@@ -453,7 +453,7 @@ export function PayrollScreen({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5">
+      <div className="relative overflow-hidden rounded-lg border border-border bg-card p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 hide-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {PRESETS.map((item) => (
@@ -553,7 +553,7 @@ export function PayrollScreen({
               <span className="text-xs font-medium text-muted-foreground">מ</span>
               <Input
                 type="month"
-                className="h-11 rounded-xl border-black/[0.06] sm:h-10"
+                className="h-11 rounded-xl border-border sm:h-10"
                 value={rangeFrom}
                 onChange={(e) => setRangeFrom(e.target.value)}
               />
@@ -562,7 +562,7 @@ export function PayrollScreen({
               <span className="text-xs font-medium text-muted-foreground">עד</span>
               <Input
                 type="month"
-                className="h-11 rounded-xl border-black/[0.06] sm:h-10"
+                className="h-11 rounded-xl border-border sm:h-10"
                 value={rangeTo}
                 onChange={(e) => setRangeTo(e.target.value)}
               />
@@ -576,7 +576,7 @@ export function PayrollScreen({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="חיפוש עובד…"
-              className="h-11 rounded-xl border-black/[0.06] bg-[#fafafa] ps-10 text-start sm:h-10"
+              className="h-11 rounded-xl border-border bg-[#fafafa] ps-10 text-start sm:h-10"
             />
           </div>
           <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 hide-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
@@ -605,14 +605,14 @@ export function PayrollScreen({
         </div>
       </div>
 
-      <details className="group rounded-[1.25rem] border border-black/[0.06] bg-[#fafafa] open:pb-0 sm:rounded-[var(--radius)] sm:open:pb-0">
+      <details className="group rounded-lg border border-border bg-[#fafafa] open:pb-0 sm:rounded-[var(--radius)] sm:open:pb-0">
         <summary className="cursor-pointer list-none px-3.5 py-3 text-[12px] font-semibold text-foreground marker:content-none sm:px-4 sm:py-3.5 sm:text-sm [&::-webkit-details-marker]:hidden">
           <span className="flex items-center justify-between gap-2">
             מה כולל כל רכיב שכר?
             <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </span>
         </summary>
-        <div className="grid gap-3 border-t border-black/[0.06] px-3.5 py-3 text-[12px] leading-relaxed text-muted-foreground sm:grid-cols-3 sm:px-4 sm:py-3.5">
+        <div className="grid gap-3 border-t border-border px-3.5 py-3 text-[12px] leading-relaxed text-muted-foreground sm:grid-cols-3 sm:px-4 sm:py-3.5">
           <div>
             <p className="font-semibold text-foreground">שכר קבוע</p>
             <p className="mt-0.5">
@@ -666,14 +666,14 @@ export function PayrollScreen({
       </div>
 
       {view === "months" ? (
-        <section className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
-          <div className="border-b border-black/[0.06] px-3.5 py-3 sm:px-5 sm:py-3.5">
+        <section className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+          <div className="border-b border-border px-3.5 py-3 sm:px-5 sm:py-3.5">
             <p className="text-sm font-semibold tracking-tight">סיכום לפי חודש</p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               אותם רכיבי שכר — מצטבר על כל העובדים בטווח
             </p>
           </div>
-          <div className="hidden gap-y-3 border-b border-black/[0.06] bg-[#f7f7f7] px-4 py-2.5 text-[11px] font-semibold text-muted-foreground sm:grid sm:grid-cols-6">
+          <div className="hidden gap-y-3 border-b border-border bg-[#f7f7f7] px-4 py-2.5 text-[11px] font-semibold text-muted-foreground sm:grid sm:grid-cols-6">
             <span>חודש</span>
             <span className="text-end">שכר קבוע</span>
             <span className="text-end">פרמיית היקף</span>
@@ -743,14 +743,14 @@ export function PayrollScreen({
           </div>
         </section>
       ) : (
-        <section className="overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
-          <div className="border-b border-black/[0.06] px-3.5 py-3 sm:px-5 sm:py-3.5">
+        <section className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+          <div className="border-b border-border px-3.5 py-3 sm:px-5 sm:py-3.5">
             <p className="text-sm font-semibold tracking-tight">פירוט לפי עובד</p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               שם לפתיחת כרטיס · חץ לפירוט הסכם וחודשים
             </p>
           </div>
-          <div className="hidden gap-3 border-b border-black/[0.06] bg-[#f7f7f7] px-4 py-2.5 text-[11px] font-semibold text-muted-foreground lg:grid lg:grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))_minmax(0,1.05fr)]">
+          <div className="hidden gap-3 border-b border-border bg-[#f7f7f7] px-4 py-2.5 text-[11px] font-semibold text-muted-foreground lg:grid lg:grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))_minmax(0,1.05fr)]">
             <span>עובד · מעמד · מודל</span>
             <span className="text-end">שכר קבוע</span>
             <span className="text-end">פרמיית היקף</span>
@@ -848,7 +848,7 @@ function EmployeePayrollRows({
   const model = payModelTitle(row);
 
   return (
-    <div className="hover:bg-[#fffcf0]/60">
+    <div className="hover:bg-highlight/15/60">
       <div className="grid gap-2.5 px-3.5 py-3 sm:gap-3 sm:px-4 sm:py-3.5 lg:grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))_minmax(0,1.05fr)] lg:items-center">
         <div className="flex min-w-0 items-start gap-1">
           <button
@@ -925,7 +925,7 @@ function EmployeePayrollRows({
 
       {open ? (
         <div className="border-t border-black/[0.04] bg-[#fafafa] px-3.5 py-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4 sm:py-4 lg:px-5 lg:pb-4">
-          <div className="mb-3 rounded-xl border border-black/[0.06] bg-white px-3.5 py-3">
+          <div className="mb-3 rounded-xl border border-border bg-card px-3.5 py-3">
             <p className="text-[11px] font-semibold text-muted-foreground">הסכם</p>
             <p className="mt-1 text-[13px] leading-relaxed text-foreground sm:text-sm">
               {row.agreementLabel || "אין הסכם"}
@@ -953,8 +953,8 @@ function EmployeePayrollRows({
           <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
             פירוט חודשי
           </p>
-          <div className="overflow-hidden rounded-xl border border-black/[0.06] bg-white">
-            <div className="hidden gap-2 border-b border-black/[0.06] bg-[#f7f7f7] px-3 py-2 text-[11px] font-semibold text-muted-foreground sm:grid sm:grid-cols-6">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="hidden gap-2 border-b border-border bg-[#f7f7f7] px-3 py-2 text-[11px] font-semibold text-muted-foreground sm:grid sm:grid-cols-6">
               <span>חודש</span>
               <span className="text-end">שכר קבוע</span>
               <span className="text-end">פרמיית היקף</span>

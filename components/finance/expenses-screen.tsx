@@ -15,7 +15,7 @@ import {
   type FinanceFixedCostWithMeta,
 } from "@/lib/finance/categories";
 import { listFinanceFixedCosts } from "@/app/actions/finance-fixed-costs";
-import { Input } from "@/components/ui/input";
+import { DateRangeField } from "@/components/ui/date-range-field";
 
 export type ExpensesTab = "all" | "fixed" | "variable";
 
@@ -226,7 +226,7 @@ export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6"
+      className="flex w-full flex-col gap-5 px-4 py-6 sm:px-6"
       dir="rtl"
     >
       <header className="space-y-1 text-start">
@@ -242,7 +242,7 @@ export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
       </header>
 
       <div
-        className="flex gap-1 rounded-2xl border border-black/[0.06] bg-white p-1"
+        className="flex gap-1 rounded-2xl border border-border bg-card p-1"
         role="tablist"
         aria-label="סוג הוצאה"
       >
@@ -257,7 +257,7 @@ export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
               "flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4",
               tab === item.id
                 ? "bg-foreground text-background"
-                : "text-muted-foreground hover:bg-black/[0.04] hover:text-foreground",
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             {item.label}
@@ -298,35 +298,20 @@ export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
 
         {preset === "range" ? (
           <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">מתאריך</label>
-              <Input
-                type="date"
-                value={rangeFrom}
-                onChange={(e) => {
-                  setRangeFrom(e.target.value);
-                  writeUrl({ from: e.target.value });
-                }}
-                className="h-9 w-[11rem] rounded-xl"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">עד תאריך</label>
-              <Input
-                type="date"
-                value={rangeTo}
-                onChange={(e) => {
-                  setRangeTo(e.target.value);
-                  writeUrl({ to: e.target.value });
-                }}
-                className="h-9 w-[11rem] rounded-xl"
-              />
-            </div>
+            <DateRangeField
+              from={rangeFrom}
+              to={rangeTo}
+              onChange={(next) => {
+                setRangeFrom(next.from);
+                setRangeTo(next.to);
+                writeUrl({ from: next.from, to: next.to });
+              }}
+            />
           </div>
         ) : null}
 
         <div className="grid grid-cols-2 gap-3 border-t border-black/[0.05] pt-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-black/[0.06] bg-background/70 px-3 py-3 text-center sm:px-4">
+          <div className="rounded-2xl border border-border bg-background/70 px-3 py-3 text-center sm:px-4">
             <p className="text-[11px] font-medium text-muted-foreground">הוצאות</p>
             <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">
               {summary.count}

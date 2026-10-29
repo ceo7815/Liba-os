@@ -64,7 +64,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
 
   if (agent.status !== "ready") {
     return (
-      <section className="mx-auto max-w-[72rem] space-y-6">
+      <section className="w-full space-y-6">
         <AgentInDevelopmentDialog agentName={agent.name} />
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -142,7 +142,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
       .maybeSingle();
 
     return (
-      <section className="mx-auto max-w-[72rem] space-y-6">
+      <section className="w-full space-y-6">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Link href="/agents" className="font-medium hover:text-foreground">
             סוכני AI
@@ -332,7 +332,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
   };
 
   return (
-    <section className="mx-auto max-w-[72rem] space-y-6">
+    <section className="w-full space-y-6">
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Link href="/agents" className="font-medium hover:text-foreground">
           סוכני AI

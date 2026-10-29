@@ -42,7 +42,7 @@ function MediaFrame({
           src={url}
           alt={label}
           className={cn(
-            "w-full rounded-xl border border-black/[0.08] bg-white object-cover shadow-sm",
+            "w-full rounded-xl border border-border bg-white object-cover shadow-sm",
             story ? "aspect-[9/16] max-h-[28rem] object-contain bg-[#111]" : "aspect-square",
           )}
         />
@@ -66,8 +66,8 @@ function PostCard({ post }: { post: SocialReportPost }) {
   const showStory = post.formats.includes("story");
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-black/[0.08] bg-white shadow-sm">
-      <header className="border-b border-black/[0.06] bg-[#F7F4EE] px-4 py-3">
+    <article className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+      <header className="border-b border-border bg-[#F7F4EE] px-4 py-3">
         <p className="text-sm font-bold text-[#1B2A4A]">{post.dateLabel}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           שעת פרסום {post.time} · {post.statusLabel}
@@ -225,7 +225,7 @@ export function SocialReportView({
       )}
 
       {shareMode === "current-url" ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.08] bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
           {shareButtons}
         </div>
       ) : null}

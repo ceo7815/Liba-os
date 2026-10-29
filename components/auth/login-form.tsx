@@ -65,7 +65,7 @@ export function LoginForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5" autoComplete="on">
+    <form onSubmit={onSubmit} className="space-y-5" autoComplete="off">
       {error && (
         <p className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-bold text-destructive break-words">
           {error}
@@ -80,10 +80,9 @@ export function LoginForm({
           name="email"
           type="email"
           required
-          autoComplete="username"
+          autoComplete="off"
           dir="ltr"
-          placeholder="ceo@beosystem.com"
-          defaultValue="ceo@beosystem.com"
+          placeholder=""
           className={authFieldClass}
         />
       </div>
@@ -99,7 +98,7 @@ export function LoginForm({
       <p className="pt-1 text-center text-sm font-bold">
         <Link
           href="/forgot-password"
-          className="text-foreground underline-offset-4 transition-colors hover:text-black hover:underline"
+          className="text-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
         >
           שכחתי סיסמה
         </Link>

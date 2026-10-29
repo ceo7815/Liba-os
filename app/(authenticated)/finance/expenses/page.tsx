@@ -22,7 +22,7 @@ export default async function ExpensesPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-muted-foreground">
+        <div className="w-full px-4 py-6 text-sm text-muted-foreground">
           טוען הוצאות…
         </div>
       }

@@ -307,8 +307,8 @@ function InsurerCardDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-[1.25rem] p-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-auto sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,72rem)] sm:max-w-[72rem] sm:translate-x-[-50%] sm:translate-y-[-50%]">
-        <DialogHeader className="relative shrink-0 space-y-0 border-b border-black/[0.06] bg-white px-4 pb-4 pt-5 text-start sm:px-7 sm:pb-5 sm:pt-6">
+      <DialogContent className="fixed inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] flex h-auto max-h-none w-auto max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-lg p-0 sm:inset-auto sm:bottom-auto sm:left-[50%] sm:right-auto sm:top-[50%] sm:h-auto sm:max-h-[min(92dvh,calc(100dvh-1.5rem))] sm:w-[min(96vw,72rem)] sm:max-w-[72rem] sm:translate-x-[-50%] sm:translate-y-[-50%]">
+        <DialogHeader className="relative shrink-0 space-y-0 border-b border-border bg-card px-4 pb-4 pt-5 text-start sm:px-7 sm:pb-5 sm:pt-6">
           <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
             הסכם חברת ביטוח
@@ -334,7 +334,7 @@ function InsurerCardDialog({
                 onClick={() => setTab(id)}
                 className={cn(
                   "shrink-0 rounded-xl px-3.5 py-2 text-sm font-medium",
-                  tab === id ? "bg-foreground text-background" : "bg-black/[0.04] text-muted-foreground",
+                  tab === id ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
                 )}
               >
                 {label}
@@ -909,7 +909,7 @@ function MigdalPanel({ insurer }: { insurer: InsurerAgreement }) {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[40rem] text-sm">
             <thead>
-              <tr className="border-b border-black/[0.08] text-muted-foreground">
+              <tr className="border-b border-border text-muted-foreground">
                 <th className="pb-2 pe-2 text-right font-medium">בדוח</th>
                 <th className="pb-2 pe-2 text-right font-medium">בחוזה</th>
                 <th className="pb-2 pe-2 text-right font-medium">נפרעים (א׳)</th>
@@ -944,7 +944,7 @@ function MigdalPanel({ insurer }: { insurer: InsurerAgreement }) {
             {MIGDAL_NOT_IN_EXCEL.map((item) => (
               <li
                 key={item.id}
-                className="rounded-lg border border-amber-200/50 bg-white/80 px-3 py-2.5 text-sm"
+                className="rounded-lg border border-amber-200/50 bg-card/80 px-3 py-2.5 text-sm"
               >
                 <p className="font-medium">{item.title}</p>
                 <p className="mt-1 text-muted-foreground">{item.why}</p>
@@ -963,7 +963,7 @@ function MigdalPanel({ insurer }: { insurer: InsurerAgreement }) {
                 {MIGDAL_EXCEL_GAPS.map((gap) => (
                   <li
                     key={gap.id}
-                    className="rounded-lg border border-amber-200/40 bg-white/60 px-3 py-2 text-xs"
+                    className="rounded-lg border border-amber-200/40 bg-card/60 px-3 py-2 text-xs"
                   >
                     <span className="font-medium">{gap.topic}</span>
                     {gap.excelColumn ? (
@@ -987,7 +987,7 @@ function MigdalPanel({ insurer }: { insurer: InsurerAgreement }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[36rem] text-sm">
             <thead>
-              <tr className="border-b border-black/[0.08] text-muted-foreground">
+              <tr className="border-b border-border text-muted-foreground">
                 <th className="pb-2 pe-3 text-right font-medium">עמודה</th>
                 <th className="pb-2 pe-3 text-right font-medium">תפקיד</th>
                 <th className="pb-2 pe-3 text-right font-medium">בשימוש</th>
@@ -1115,7 +1115,7 @@ function ContractDocumentsPanel({ docs }: { docs: ContractDoc[] }) {
               "rounded-xl border px-4 py-4 text-right transition-all",
               openId === doc.id
                 ? "border-foreground/25 bg-foreground/[0.03] ring-2 ring-foreground/10"
-                : "border-black/[0.08] bg-background/60 hover:border-black/15 hover:bg-background",
+                : "border-border bg-background/60 hover:border-black/15 hover:bg-background",
             )}
           >
             <div className="flex items-start justify-between gap-2">
@@ -1177,7 +1177,7 @@ function IncomeModelSection({ insurer }: { insurer: InsurerAgreement }) {
           >
             <p className="text-sm font-bold">{comp.label}</p>
             <p className="mt-1 text-xs font-medium text-muted-foreground">{comp.timing}</p>
-            <p className="mt-3 rounded-lg bg-white/80 px-3 py-2.5 text-sm font-semibold leading-snug">
+            <p className="mt-3 rounded-lg bg-card/80 px-3 py-2.5 text-sm font-semibold leading-snug">
               {comp.formula}
             </p>
             <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">{comp.explain}</p>
@@ -1185,7 +1185,7 @@ function IncomeModelSection({ insurer }: { insurer: InsurerAgreement }) {
         ))}
       </div>
 
-      <ul className="mt-5 space-y-2 rounded-xl border border-black/[0.06] bg-muted/15 px-4 py-4">
+      <ul className="mt-5 space-y-2 rounded-xl border border-border bg-muted/15 px-4 py-4">
         {MIGDAL_INCOME_MODEL.notes.map((note) => (
           <li key={note} className="flex gap-2 text-sm leading-relaxed text-muted-foreground">
             <span className="mt-2 size-1.5 shrink-0 rounded-full bg-foreground/40" aria-hidden />
@@ -1196,10 +1196,10 @@ function IncomeModelSection({ insurer }: { insurer: InsurerAgreement }) {
 
       <div className="mt-5">
         <p className="text-sm font-semibold">3 מושגי «פרמיה» — אל תערבב</p>
-        <div className="mt-2 overflow-x-auto rounded-xl border border-black/[0.06]">
+        <div className="mt-2 overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[28rem] text-sm">
             <thead>
-              <tr className="border-b border-black/[0.08] bg-muted/30 text-muted-foreground">
+              <tr className="border-b border-border bg-muted/30 text-muted-foreground">
                 <th className="px-3 py-2.5 pe-3 text-right font-medium">מונח</th>
                 <th className="px-3 py-2.5 pe-3 text-right font-medium">משמעות</th>
                 <th className="px-3 py-2.5 text-right font-medium">משמש ל</th>
@@ -1318,7 +1318,7 @@ function PaymentSectionBlock({
 
 function CalcRuleCard({ rule }: { rule: MigdalCalcRule }) {
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-white/80 px-4 py-3">
+    <div className="rounded-xl border border-border bg-card/80 px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-medium text-sm">{rule.name}</p>
         <span className="text-[11px] text-muted-foreground">{rule.contractRef}</span>
@@ -1347,7 +1347,7 @@ function VolumeTierTable({ tiers }: { tiers: MigdalPaymentSection["rateTiers"] }
       <p className="mb-2 text-sm font-semibold">מדרגות היקף — אחוז מהפרמיה הקובעת</p>
       <table className="w-full min-w-[32rem] text-sm">
         <thead>
-          <tr className="border-b border-black/[0.08] text-muted-foreground">
+          <tr className="border-b border-border text-muted-foreground">
             <th className="pb-2 pe-3 text-right font-medium">מדרגה</th>
             <th className="pb-2 pe-3 text-right font-medium">בריאות</th>
             <th className="pb-2 pe-3 text-right font-medium">ריסק</th>
@@ -1377,7 +1377,7 @@ function PolicyTermTable() {
       <p className="mb-2 text-sm font-semibold">שיקול תקופת ביטוח — ריסק (noname 3)</p>
       <table className="w-full min-w-[24rem] text-sm">
         <thead>
-          <tr className="border-b border-black/[0.08] text-muted-foreground">
+          <tr className="border-b border-border text-muted-foreground">
             <th className="pb-2 pe-3 text-right font-medium">תקופה</th>
             <th className="pb-2 pe-3 text-right font-medium">שיקול</th>
             <th className="pb-2 text-right font-medium">חל על</th>
@@ -1404,7 +1404,7 @@ function TransferTierTable({ tiers }: { tiers: MigdalPaymentSection["transferTie
       <p className="mb-2 text-sm font-semibold">העברות / ניוד — ₪ למיליון</p>
       <table className="w-full min-w-[28rem] text-sm">
         <thead>
-          <tr className="border-b border-black/[0.08] text-muted-foreground">
+          <tr className="border-b border-border text-muted-foreground">
             <th className="pb-2 pe-3 text-right font-medium">העברה נטו</th>
             <th className="pb-2 pe-3 text-right font-medium">עמלה</th>
             <th className="pb-2 text-right font-medium">היקף</th>
@@ -1430,7 +1430,7 @@ function ExamplesList({ examples }: { examples: string[] }) {
       <p className="text-sm font-semibold">דוגמאות</p>
       <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
         {examples.map((ex) => (
-          <li key={ex} className="rounded-lg bg-white/70 px-3 py-2">{ex}</li>
+          <li key={ex} className="rounded-lg bg-card/70 px-3 py-2">{ex}</li>
         ))}
       </ul>
     </div>
@@ -1525,7 +1525,7 @@ function OpenQuestionRow({ question, index }: { question: MigdalOpenQuestion; in
           </div>
 
           {answered && question.answer ? (
-            <div className="rounded-xl border border-emerald-200/60 bg-white/70 px-3 py-2.5">
+            <div className="rounded-xl border border-emerald-200/60 bg-card/70 px-3 py-2.5">
               <p className="text-xs font-semibold text-emerald-800">תשובה שאושרה</p>
               <p className="mt-1 text-sm font-medium text-emerald-950">{question.answer}</p>
             </div>
@@ -1545,7 +1545,7 @@ function OpenQuestionRow({ question, index }: { question: MigdalOpenQuestion; in
                   <p className="mt-1 text-sm leading-relaxed">{question.why}</p>
                 </div>
                 {question.askFor ? (
-                  <div className="rounded-xl border border-foreground/10 bg-white/80 px-3 py-2.5">
+                  <div className="rounded-xl border border-foreground/10 bg-card/80 px-3 py-2.5">
                     <p className="text-xs font-semibold text-muted-foreground">מה לבקש כתשובה</p>
                     <p className="mt-1 text-sm font-medium leading-relaxed">{question.askFor}</p>
                   </div>
@@ -1625,7 +1625,7 @@ function PnlStatusBadge({ status }: { status: MigdalPaymentSection["pnlStatus"] 
 
 function InfoCard({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-background/50 px-3 py-3">
+    <div className="rounded-xl border border-border bg-background/50 px-3 py-3">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className={cn("mt-1 text-sm leading-snug", mono && "font-mono text-[13px]")}>{value}</p>
     </div>
@@ -1706,7 +1706,7 @@ function FormulaTableBlock({
       <p className="mb-2 text-sm font-semibold">{title}</p>
       <table className="w-full min-w-[28rem] text-sm">
         <thead>
-          <tr className="border-b border-black/[0.08] text-muted-foreground">
+          <tr className="border-b border-border text-muted-foreground">
             <th className="pb-2 pe-4 text-right font-medium">מוצר</th>
             <th className="pb-2 pe-4 text-right font-medium">שיעור</th>
             <th className="pb-2 text-right font-medium">המשך / הערות</th>

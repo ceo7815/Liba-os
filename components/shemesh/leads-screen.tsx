@@ -60,7 +60,7 @@ export function ShemeshLeads() {
             </thead>
             <tbody>
               {ads.byCampaign.map((row) => (
-                <tr key={row.id} className="border-t border-black/[0.06]">
+                <tr key={row.id} className="border-t border-border">
                   <td className="max-w-[16rem] truncate py-2.5 font-medium">{row.name}</td>
                   <td className="py-2.5 text-muted-foreground">{CHANNEL_LABEL[row.channel]}</td>
                   <td className="py-2.5 tabular-nums">{formatShemeshCount(row.leads)}</td>

@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { Wallet } from "lucide-react";
 import { listFinanceEmployees } from "@/app/actions/finance-people";
 import { PayrollScreen } from "@/components/employees/payroll-screen";
-import {
-  OperatingBrandBar,
-  OperatingBrandProvider,
-} from "@/components/finance/operating-brand-bar";
+import { OperatingBrandProvider } from "@/components/finance/operating-brand-bar";
 import { requireEmployeesAccess } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -18,7 +15,7 @@ export default async function EmployeePayrollPage() {
   const activeCount = list.employees.filter((e) => e.is_active).length;
 
   return (
-    <OperatingBrandProvider>
+    <OperatingBrandProvider lockedBrand="liba">
       <section className="mx-auto max-w-[90rem] space-y-3.5 sm:space-y-5">
         <header className="dash-enter">
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground sm:text-xs">
@@ -48,7 +45,7 @@ export default async function EmployeePayrollPage() {
                 (רק עצמאי). שכיר לא מקבל נפרעים.
               </p>
             </div>
-            <div className="flex w-full shrink-0 items-center justify-between gap-3 rounded-[1.25rem] border border-black/[0.06] bg-white px-3.5 py-2.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:w-auto sm:flex-col sm:rounded-[var(--radius)] sm:px-4 sm:py-3 sm:text-center">
+            <div className="flex w-full shrink-0 items-center justify-between gap-3 rounded-lg border border-border bg-card px-3.5 py-2.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:w-auto sm:flex-col sm:rounded-[var(--radius)] sm:px-4 sm:py-3 sm:text-center">
               <p className="text-[11px] text-muted-foreground sm:order-2 sm:mt-1">
                 עובדים פעילים
               </p>
@@ -58,12 +55,11 @@ export default async function EmployeePayrollPage() {
             </div>
           </div>
           {list.error ? (
-            <p className="mt-3 rounded-[1.25rem] border border-amber-200/80 bg-amber-50 px-3.5 py-3 text-sm text-amber-950 sm:mt-4 sm:rounded-[var(--radius)] sm:px-4">
+            <p className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50 px-3.5 py-3 text-sm text-amber-950 sm:mt-4 sm:rounded-[var(--radius)] sm:px-4">
               {list.error}
             </p>
           ) : null}
         </header>
-        <OperatingBrandBar />
         <PayrollScreen initialEmployees={list.employees} />
       </section>
     </OperatingBrandProvider>

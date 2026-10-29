@@ -6,6 +6,7 @@ import {
 
 export type AccessProfile = {
   email?: string | null;
+  full_name?: string | null;
   role?: Profile["role"] | null;
   permissionKeys?: Profile["permissionKeys"] | null;
 };
@@ -68,6 +69,34 @@ export function canViewAgents(profile: AccessProfile | null | undefined): boolea
 
 export function canManageAgents(profile: AccessProfile | null | undefined): boolean {
   return hasPermission(profile, "agents.manage");
+}
+
+const SHEMESH_ENTRY = ["shemesh.view", "shemesh.manage", "shemesh.ops", "shemesh.handler", "shemesh.marketing", "shemesh.finance", "shemesh.sysadmin"] as const;
+const SHEMESH_ALL_CASES = ["shemesh.view", "shemesh.manage", "shemesh.ops", "shemesh.sysadmin"] as const;
+
+export function canViewShemesh(profile: AccessProfile | null | undefined): boolean {
+  return profile?.role === "admin" || hasAnyPermission(profile, SHEMESH_ENTRY);
+}
+
+export function canManageShemesh(profile: AccessProfile | null | undefined): boolean {
+  return profile?.role === "admin" || hasAnyPermission(profile, ["shemesh.manage", "shemesh.sysadmin"]);
+}
+
+export function canEditShemeshCases(profile: AccessProfile | null | undefined): boolean {
+  return profile?.role === "admin" || hasAnyPermission(profile, ["shemesh.manage", "shemesh.ops", "shemesh.handler"]);
+}
+
+export function seesAllShemeshCases(profile: AccessProfile | null | undefined): boolean {
+  return profile?.role === "admin" || hasAnyPermission(profile, SHEMESH_ALL_CASES);
+}
+
+export function handlerOnlyName(profile: AccessProfile | null | undefined): string | null {
+  if (!profile || !hasPermission(profile, "shemesh.handler") || seesAllShemeshCases(profile)) return null;
+  return profile.full_name || profile.email || null;
+}
+
+export function canViewShemeshPayroll(profile: AccessProfile | null | undefined): boolean {
+  return profile?.role === "admin" || hasAnyPermission(profile, ["shemesh.manage", "shemesh.finance"]);
 }
 
 export function canViewVault(profile: AccessProfile | null | undefined): boolean {

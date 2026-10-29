@@ -107,7 +107,7 @@ export function ImageGenDock({
                   ? "border-red-200"
                   : done
                     ? "border-emerald-200"
-                    : "border-black/[0.08]",
+                    : "border-border",
               )}
             >
               <button

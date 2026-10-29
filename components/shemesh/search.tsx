@@ -1,24 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Cable,
-  Calculator,
-  FileText,
-  LayoutDashboard,
-  LineChart,
-  Megaphone,
-  Receipt,
-  Rows3,
-  Search,
-  Users,
-  Wallet,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { LayoutDashboard, Search, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { shemeshPages } from "@/lib/shemesh/ia";
 import { cn } from "@/lib/utils";
 
 type SearchItem = {
@@ -30,131 +17,23 @@ type SearchItem = {
   keywords: string[];
 };
 
-const PAGES: SearchItem[] = [
-  {
-    id: "dashboard",
-    label: "לוח בקרה",
-    description: "פרסום, לידים ועלות לליד לחודש",
-    href: "/shemesh",
-    icon: LayoutDashboard,
-    keywords: ["לוח", "בקרה", "בית", "דשבורד", "סקירה", "חודש", "פרסום", "עלות", "cpl"],
-  },
-  {
-    id: "marketing",
-    label: "שיווק",
-    description: "קמפיינים בגוגל ובפייסבוק",
-    href: "/shemesh/marketing",
-    icon: Megaphone,
-    keywords: [
-      "שיווק",
-      "קמפיין",
-      "קמפיינים",
-      "גוגל",
-      "פייסבוק",
-      "מודעה",
-      "מודעות",
-      "פיננסים",
-      "ביטוחים",
-      "ליד",
-      "טופס",
-      "טפסים",
-      "שיחה",
-      "שיחות",
-      "מחיר",
-    ],
-  },
-  {
-    id: "leads",
-    label: "לידים",
-    description: "כמות, מקור הגעה, סטטוס והמרה",
-    href: "/shemesh/leads",
-    icon: Users,
-    keywords: ["ליד", "לידים", "המרה", "עסקה", "עסקאות", "סטטוס", "מקור", "הגעה"],
-  },
-  {
-    id: "sales",
-    label: "שורות מכירה",
-    description: "דוח המכירות של שמש, גיליון אחרי גיליון",
-    href: "/shemesh/sales",
-    icon: Rows3,
-    keywords: [
-      "מכירה",
-      "מכירות",
-      "דוח",
-      "אקסל",
-      "גיליון",
-      "פדיון",
-      "פדיונות",
-      "גביה",
-      "גבייה",
-      "חשבונית",
-      "נציג",
-      "לקוח",
-      "תפעול",
-    ],
-  },
-  {
-    id: "revenue",
-    label: "הכנסות",
-    description: "גבייה, חשבוניות ופיננסים מתוך דוח המכירות",
-    href: "/shemesh/revenue",
-    icon: Wallet,
-    keywords: ["הכנסה", "הכנסות", "גבייה", "גביה", "חשבונית", "פיננסים", "נציג", "שולם", "עמלה", "נפרע"],
-  },
-  {
-    id: "expenses",
-    label: "הוצאות",
-    description: "משכורות, הוצאות שוטפות וחשבוניות",
-    href: "/shemesh/expenses",
-    icon: Receipt,
-    keywords: ["הוצאה", "הוצאות", "משכורת", "משכורות", "עובד", "עובדים", "חשבונית", "חשבוניות", "שוטף"],
-  },
-  {
-    id: "reports",
-    label: "רווח והפסד",
-    description: "הכנסות פחות פרסום ופחות הוצאות",
-    href: "/shemesh/reports",
-    icon: LineChart,
-    keywords: ["רווח", "הפסד", "דוח", "דוחות", "תוצאה", "פלוס", "מינוס"],
-  },
-  {
-    id: "portfolio-report",
-    label: "השוואת תיק",
-    description: "דוח מצב קיים מול מצב חדש לפוליסות",
-    href: "/shemesh/portfolio-report",
-    icon: FileText,
-    keywords: ["השוואה", "השוואת", "תיק", "פוליסה", "פוליסות", "ביטוח", "מגדל", "מנורה", "דוח", "קיים", "חדש"],
-  },
-  {
-    id: "sources",
-    label: "מקורות",
-    description: "גוגל, פייסבוק, ביטוח, ריווחית, Grow והתיקייה",
-    href: "/shemesh/sources",
-    icon: Cable,
-    keywords: [
-      "מקור",
-      "מקורות",
-      "חיבור",
-      "סנכרון",
-      "גוגל",
-      "פייסבוק",
-      "ביטוח",
-      "insurance",
-      "ריווחית",
-      "grow",
-      "תיקייה",
-      "אקסל",
-    ],
-  },
-  {
-    id: "formulas",
-    label: "נוסחאות שמש",
-    description: "מודל מכפלה 8 וסטטוס 100% נפרע",
-    href: "/shemesh/formulas",
-    icon: Calculator,
-    keywords: ["נוסחה", "נוסחאות", "מכפלה", "נפרע", "אישור", "כלל", "כללים"],
-  },
-];
+const EXTRA_KEYWORDS: Record<string, string[]> = {
+  "/shemesh": ["דשבורד", "cpl"],
+  "/shemesh/marketing": ["מודעה", "טופס", "שיחה"],
+  "/shemesh/sales": ["גיליון", "פדיון", "נציג"],
+  "/shemesh/revenue": ["חשבונית", "נפרע"],
+  "/shemesh/portfolio-report": ["פוליסה", "מגדל"],
+  "/shemesh/formulas": ["מכפלה", "נפרע"],
+};
+
+const PAGES: SearchItem[] = shemeshPages().map((page) => ({
+  id: page.href,
+  label: page.label,
+  description: page.description,
+  href: page.href,
+  icon: LayoutDashboard,
+  keywords: [...page.keywords, ...(EXTRA_KEYWORDS[page.href] ?? [])],
+}));
 
 function foldSearch(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
@@ -165,6 +44,21 @@ export function ShemeshSearch() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
+      event.preventDefault();
+      if (window.innerWidth < 640) {
+        setSheetOpen(true);
+        return;
+      }
+      document.getElementById("shemesh-search")?.focus();
+      setOpen(true);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const q = foldSearch(query);
 
@@ -189,7 +83,7 @@ export function ShemeshSearch() {
 
   const field = (inputId: string) => (
     <div className="relative">
-      <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-black/35" />
+      <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <input
         id={inputId}
         value={query}
@@ -211,9 +105,9 @@ export function ShemeshSearch() {
             goTo(results[0].href);
           }
         }}
-        placeholder="חיפוש במערכת..."
+        placeholder="חיפוש או Ctrl+K"
         autoComplete="off"
-        className="h-10 w-full rounded-2xl border border-black/[0.06] bg-background pe-9 ps-9 text-sm text-foreground outline-none transition-[border-color,background-color,box-shadow] placeholder:text-muted-foreground focus:border-black/15 focus:bg-white focus:shadow-[0_0_0_3px_rgba(24,90,148,0.28)] sm:h-9 sm:rounded-lg"
+        className="h-10 w-full rounded-2xl border border-border bg-background pe-9 ps-9 text-sm text-foreground outline-none transition-[border-color,background-color,box-shadow] placeholder:text-muted-foreground focus:border-ring focus:bg-card focus:shadow-[0_0_0_3px_hsl(var(--ring)/0.28)] sm:h-9 sm:rounded-lg"
       />
       {query ? (
         <button
@@ -221,7 +115,7 @@ export function ShemeshSearch() {
           aria-label="ניקוי חיפוש"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => setQuery("")}
-          className="absolute end-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-black/35 hover:bg-black/[0.04] hover:text-black"
+          className="absolute end-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -289,10 +183,10 @@ export function ShemeshSearch() {
           </SheetTrigger>
           <SheetContent
             side="top"
-            className="shemesh-os flex h-[min(92dvh,40rem)] flex-col gap-0 border-b border-black/[0.08] bg-white p-0 [&>button]:hidden"
+            className="shemesh-os flex h-[min(92dvh,40rem)] flex-col gap-0 border-b border-border bg-card p-0 [&>button]:hidden"
           >
             <SheetTitle className="sr-only">חיפוש במערכת</SheetTitle>
-            <div className="flex items-center gap-2 border-b border-black/[0.06] px-3 py-3">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-3">
               <div className="min-w-0 flex-1">{field("shemesh-search-mobile")}</div>
               <Button
                 type="button"
@@ -317,7 +211,7 @@ export function ShemeshSearch() {
         </label>
         {field("shemesh-search")}
         {open ? (
-          <div className="absolute inset-x-0 top-[calc(100%+0.4rem)] z-50 overflow-hidden rounded-xl border border-black/[0.08] bg-white shadow-[0_16px_40px_-20px_rgba(17,17,17,0.35)]">
+          <div className="absolute inset-x-0 top-[calc(100%+0.4rem)] z-50 overflow-hidden rounded-xl border border-border bg-card shadow-md">
             {resultsList}
           </div>
         ) : null}

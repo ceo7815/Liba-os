@@ -260,7 +260,7 @@ export function EmployeesSection({
         onOpenEmployee={setSpotlightEmp}
       />
 
-      <div className="relative overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5">
+      <div className="relative overflow-hidden rounded-lg border border-border bg-card p-4 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
         <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="תצוגת עובדים">
           {(
@@ -297,14 +297,14 @@ export function EmployeesSection({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="חיפוש לפי שם, סוג העסקה, מחלקה או טלפון…"
-              className="h-11 rounded-2xl border-black/[0.06] bg-background ps-10 text-start focus-visible:ring-highlight/40 sm:h-10 sm:rounded-xl"
+              className="h-11 rounded-2xl border-border bg-background ps-10 text-start focus-visible:ring-highlight/40 sm:h-10 sm:rounded-xl"
             />
           </div>
         </div>
       </div>
 
       {visible.length === 0 ? (
-        <div className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-12 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+        <div className="rounded-lg border border-border bg-card px-5 py-12 text-center shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
           <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : (
@@ -503,7 +503,7 @@ function EmployeeCube({
         type="button"
         onClick={(event) => openCard(event)}
         className={cn(
-          "group relative flex flex-col items-stretch gap-4 overflow-hidden rounded-[1.25rem] border border-black/[0.06] bg-white p-5 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-[#fffcf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)]",
+          "group relative flex flex-col items-stretch gap-4 overflow-hidden rounded-lg border border-border bg-card p-5 text-start shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[transform,background-color,border-color] active:scale-[0.985] hover:border-black/10 hover:bg-highlight/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:rounded-[var(--radius)]",
           !emp.is_active && "bg-zinc-50 hover:bg-zinc-50",
         )}
       >
@@ -588,9 +588,9 @@ function EmployeeCube({
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-black/[0.06]">
-          <div className="grid grid-cols-2 gap-px bg-black/[0.06]">
-            <div className="bg-white px-3 py-2.5 text-start">
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="grid grid-cols-2 gap-px bg-border">
+            <div className="bg-card px-3 py-2.5 text-start">
               <p className="text-[11px] text-muted-foreground">
                 {emp.employment_kind === "partnership" ? "תשלום לשותף" : "היקף"}
               </p>
@@ -607,7 +607,7 @@ function EmployeeCube({
                     }`}
               </p>
             </div>
-            <div className="bg-white px-3 py-2.5 text-start">
+            <div className="bg-card px-3 py-2.5 text-start">
               <p className="text-[11px] text-muted-foreground">נפרעים</p>
               <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">
                 {wageLoading
@@ -628,7 +628,7 @@ function EmployeeCube({
             </div>
           </div>
           {emp.employment_kind === "unpaid" || emp.employment_kind === "partnership" ? null : (
-            <div className="border-t border-black/[0.06] bg-[#fff8f0] px-3 py-2.5 text-start">
+            <div className="border-t border-border bg-[#fff8f0] px-3 py-2.5 text-start">
               <p className="text-[11px] text-muted-foreground">עלויות שקוזזו</p>
               <p
                 className={cn(
@@ -650,7 +650,7 @@ function EmployeeCube({
           {emp.employment_kind === "freelancer" && paysLeadCosts ? (
             <div
               data-lead-costs
-              className="border-t border-black/[0.06] bg-[#f4f8ff] px-3 py-2.5 text-start underline decoration-dotted decoration-black/20 underline-offset-4"
+              className="border-t border-border bg-[#f4f8ff] px-3 py-2.5 text-start underline decoration-dotted decoration-black/20 underline-offset-4"
             >
               <p className="text-[11px] text-muted-foreground">עלויות לידים · לחצו לפירוט</p>
               <p
@@ -672,7 +672,7 @@ function EmployeeCube({
               </p>
             </div>
           ) : emp.employment_kind === "freelancer" ? (
-            <div className="border-t border-black/[0.06] bg-[#f4f8ff] px-3 py-2.5 text-start">
+            <div className="border-t border-border bg-[#f4f8ff] px-3 py-2.5 text-start">
               <p className="text-[11px] text-muted-foreground">עלויות לידים</p>
               <p className="mt-1 text-sm font-semibold tabular-nums tracking-tight">{formatIls(0)}</p>
               <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
@@ -682,11 +682,11 @@ function EmployeeCube({
           ) : null}
         </div>
 
-        <div className="mt-auto space-y-1.5 border-t border-black/[0.06] pt-3">
+        <div className="mt-auto space-y-1.5 border-t border-border pt-3">
           {emp.id !== SYNTHETIC_OSHRAN_ID ? (
             <div className="flex items-center justify-between gap-3" data-employee-status>
               <span className="text-[13px] text-muted-foreground">סטטוס</span>
-              <span className="inline-flex rounded-full bg-black/[0.04] p-0.5">
+              <span className="inline-flex rounded-full bg-muted p-0.5">
                 {(
                   [
                     { active: true, label: "פעיל" },

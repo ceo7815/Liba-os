@@ -27,7 +27,7 @@ function Kpi({
   hint?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-black/[0.06] bg-muted/20 px-4 py-3">
+    <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
       {hint ? <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p> : null}
@@ -135,7 +135,7 @@ function Split({
 
 function RankList({ title, rows }: { title: string; rows: EmployeeNamedRollup[] }) {
   return (
-    <section className="rounded-2xl border border-black/[0.06] p-4">
+    <section className="rounded-2xl border border-border p-4">
       <h3 className="text-sm font-semibold">{title}</h3>
       {rows.length === 0 ? (
         <p className="mt-2 text-xs text-muted-foreground">אין נתונים</p>
@@ -260,7 +260,7 @@ function ClickNum({
       type="button"
       onClick={onClick}
       className={cn(
-        "-mx-1 rounded-lg px-1 py-0.5 text-start tabular-nums underline decoration-dotted decoration-black/25 underline-offset-4 hover:bg-black/[0.06]",
+        "-mx-1 rounded-lg px-1 py-0.5 text-start tabular-nums underline decoration-dotted decoration-black/25 underline-offset-4 hover:bg-border",
         active && "bg-black text-white decoration-transparent",
       )}
     >
@@ -429,7 +429,7 @@ function SalaryBreakdown({ audit }: { audit: ReviewMonthAudit }) {
             amount={vacationPay}
           />
         ) : null}
-        <div className="border-t border-black/[0.08] pt-1.5">
+        <div className="border-t border-border pt-1.5">
           <SlipRow label="ברוטו לעובד" amount={gross} strong />
         </div>
       </div>
@@ -508,7 +508,7 @@ function SalaryBreakdown({ audit }: { audit: ReviewMonthAudit }) {
         </div>
       ) : null}
 
-      <div className="space-y-1.5 border-t border-black/[0.08] pt-3">
+      <div className="space-y-1.5 border-t border-border pt-3">
         <p className="text-[11px] font-semibold text-muted-foreground">אחרי הכל</p>
         {employeeDeduction > 0 ? (
           <SlipRow label="נטו לעובד" hint="ברוטו פחות ניכויי עובד" amount={gross - employeeDeduction} />
@@ -546,8 +546,8 @@ function LeadCostsBreakdown({
         לפי חודש מכירה. אלכסנדר: ₪60 לכל סגירה וגם לכל ליד שהתקבל ולא הופק.
       </p>
       {groups.map((group) => (
-        <div key={group.key} className="overflow-hidden rounded-xl border border-black/[0.06] bg-white">
-          <div className="space-y-1 border-b border-black/[0.06] bg-[#f4f8ff] px-3 py-2.5">
+        <div key={group.key} className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="space-y-1 border-b border-border bg-[#f4f8ff] px-3 py-2.5">
             <p className="text-sm font-semibold">
               {group.source} · {monthLabel(group.month)}
             </p>
@@ -739,7 +739,7 @@ function SettledBookTable({
         </div>
       </div>
       {groups.map((group) => (
-        <div key={group.saleMonth} className="overflow-hidden rounded-xl border border-black/[0.06] bg-background">
+        <div key={group.saleMonth} className="overflow-hidden rounded-xl border border-border bg-background">
           <div
             className={cn(
               "flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm",
@@ -818,7 +818,7 @@ function ProductionTable({
           {rows.map((row) => (
             <SaleRow key={row.key} row={row} salaried={salaried} />
           ))}
-          <tr className="border-t border-black/[0.08] bg-muted/30 font-semibold">
+          <tr className="border-t border-border bg-muted/30 font-semibold">
             <td className="px-3 py-2" colSpan={salaried ? 3 : 4}>
               {rows.length} הפקות
             </td>
@@ -968,7 +968,7 @@ export function EmployeeReviewPanel({
         />
       </div>
 
-      <section className="space-y-2 rounded-2xl border border-black/[0.06] bg-muted/15 p-4">
+      <section className="space-y-2 rounded-2xl border border-border bg-muted/15 p-4">
         <h3 className="text-sm font-semibold">
           {review.salaried ? "החודש — משכורת מול מדרגות" : review.partnership ? "החודש — תשלום לשותף" : "החודש — היקף מול נפרעים"}
         </h3>
@@ -988,7 +988,7 @@ export function EmployeeReviewPanel({
       {review.hasFreelancerMonths ? (
         <section
           ref={leadRef}
-          className="overflow-hidden rounded-2xl border border-black/[0.06]"
+          className="overflow-hidden rounded-2xl border border-border"
         >
           <button
             type="button"
@@ -1013,7 +1013,7 @@ export function EmployeeReviewPanel({
             </span>
           </button>
           {drill?.month === "all" && drill.kind === "leads" ? (
-            <div className="border-t border-black/[0.06] bg-muted/20">
+            <div className="border-t border-border bg-muted/20">
               <LeadCostsBreakdown
                 groups={review.leadBreakdown?.groups ?? []}
                 total={review.leadBreakdown?.total ?? review.all.leadCosts}
@@ -1039,7 +1039,7 @@ export function EmployeeReviewPanel({
           </p>
         ) : (
           <>
-          <div className="overflow-x-auto rounded-2xl border border-black/[0.06]">
+          <div className="overflow-x-auto rounded-2xl border border-border">
             <table className="w-full min-w-[40rem] text-start text-sm">
               <thead className="bg-muted/40 text-[11px] text-muted-foreground">
                 <tr>
@@ -1162,7 +1162,7 @@ export function EmployeeReviewPanel({
                       {open && kind ? (
                         <tr className="border-t border-black/[0.04] bg-muted/20">
                           <td colSpan={colSpan} className="p-0">
-                            <div className="border-t border-black/[0.06]">
+                            <div className="border-t border-border">
                               {audit ? (
                                 <>
                                   <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2.5">
@@ -1281,7 +1281,7 @@ export function EmployeeReviewPanel({
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-black/[0.12] bg-muted/50 font-semibold">
+                <tr className="border-t-2 border-border bg-muted/50 font-semibold">
                   <td className="px-3 py-2.5">סה״כ</td>
                   <td className="px-3 py-2.5 tabular-nums">{monthTotals.volumeCount}</td>
                   <td className="px-3 py-2.5 tabular-nums">{formatIls(monthTotals.volumePremium)}</td>
@@ -1338,7 +1338,7 @@ export function EmployeeReviewPanel({
         {review.recent.filter((row) => !hideSettledProcess || sourcePnlKindForProcess(row.process) !== "settled").length === 0 ? (
           <p className="text-sm text-muted-foreground">אין הפקות היקף.</p>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-black/[0.06]">
+          <div className="overflow-x-auto rounded-2xl border border-border">
             <table className="w-full min-w-[48rem] text-start text-sm">
               <thead className="bg-muted/40 text-[11px] text-muted-foreground">
                 <tr>

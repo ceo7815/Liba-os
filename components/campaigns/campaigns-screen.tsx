@@ -7,6 +7,8 @@ import { loadCampaignBoard, loadGoogleCallLines } from "@/app/actions/campaigns-
 import { syncFacebookAds } from "@/app/actions/facebook-ads";
 import { syncGoogleAds } from "@/app/actions/google-ads";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Segmented } from "@/components/ui/segmented";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Button } from "@/components/ui/button";
 import {
   campaignMatchesBrand,
@@ -174,18 +176,20 @@ export function CampaignsScreen({
 
   useEffect(() => {
     let cancel = false;
-    void loadGoogleCallLines(from, to).then((result) => {
-      if (cancel) return;
-      setBoard((current) => ({
-        ...current,
-        googleCalls: result.error
-          ? current.googleCalls
-          : result.rows.filter(
-              (row) => !brand || campaignMatchesBrand({ name: row.campaignName, channel: "google" }, brand),
-            ),
-        googleCallsError: result.error,
-      }));
-    });
+    void loadGoogleCallLines(from, to)
+      .then((result) => {
+        if (cancel) return;
+        setBoard((current) => ({
+          ...current,
+          googleCalls: result.error
+            ? current.googleCalls
+            : result.rows.filter(
+                (row) => !brand || campaignMatchesBrand({ name: row.campaignName, channel: "google" }, brand),
+              ),
+          googleCallsError: result.error,
+        }));
+      })
+      .catch(() => undefined);
     return () => {
       cancel = true;
     };
@@ -272,10 +276,10 @@ export function CampaignsScreen({
   }
 
   return (
-    <section className="mx-auto w-full max-w-[76rem] space-y-5">
+    <section className="w-full space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/40">
+          <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-[#f2f2f4]">
             <Megaphone className="size-5" />
           </span>
           <div>
@@ -299,7 +303,7 @@ export function CampaignsScreen({
       </header>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 rounded-full bg-[#f6f5f1] p-1" role="tablist" aria-label="ערוץ">
+        <Segmented value={channel} label="ערוץ" className="rounded-full p-1">
           {(
             [
               ["all", "הכל"],
@@ -312,20 +316,19 @@ export function CampaignsScreen({
               type="button"
               role="tab"
               aria-selected={channel === id}
+              data-selected={channel === id}
               onClick={() => {
                 setChannel(id);
                 setSelectedId(null);
               }}
-              className={cn(
-                "h-8 rounded-full px-4 text-sm transition-colors",
-                channel === id ? "bg-[#1a1a1a] font-medium text-white" : "text-muted-foreground hover:bg-white",
-              )}
+              className="h-8 rounded-full px-4 text-sm"
             >
               {label}
             </button>
           ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-1 rounded-full bg-[#f6f5f1] p-1">
+        </Segmented>
+        <div className="flex flex-wrap items-center gap-2">
+          <Segmented value={preset} label="טווח" className="rounded-full p-1">
           {(
             [
               ["today", "היום"],
@@ -339,37 +342,21 @@ export function CampaignsScreen({
               key={id}
               type="button"
               onClick={() => setPreset(id)}
-              className={cn(
-                "h-8 rounded-full px-3 text-sm transition-colors",
-                preset === id ? "bg-highlight font-medium text-highlight-foreground" : "text-muted-foreground hover:bg-white",
-              )}
+              data-selected={preset === id}
+              className="h-8 rounded-full px-3 text-sm"
             >
               {label}
             </button>
           ))}
-          <input
-            type="date"
-            value={preset === "custom" ? customFrom : from}
-            max={to}
-            aria-label="מתאריך"
-            onChange={(event) => {
+          </Segmented>
+          <DateRangeField
+            from={from}
+            to={to}
+            onChange={({ from: nextFrom, to: nextTo }) => {
               setPreset("custom");
-              setCustomFrom(event.target.value);
+              setCustomFrom(nextFrom);
+              setCustomTo(nextTo);
             }}
-            className="h-8 rounded-full border border-black/[0.08] bg-white px-2 text-xs"
-          />
-          <span className="text-xs text-muted-foreground">עד</span>
-          <input
-            type="date"
-            value={preset === "custom" ? customTo : to}
-            min={from}
-            max={board.today}
-            aria-label="עד תאריך"
-            onChange={(event) => {
-              setPreset("custom");
-              setCustomTo(event.target.value);
-            }}
-            className="h-8 rounded-full border border-black/[0.08] bg-white px-2 text-xs"
           />
         </div>
       </div>
@@ -380,7 +367,7 @@ export function CampaignsScreen({
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div key={channel} className="view-swap grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="הוצאה" value={money(totals.cost)} onClick={() => setExplain("spend")} />
         <Metric label={leadLabel(channel)} value={totals.leads.toLocaleString("he-IL")} onClick={() => setExplain("leads")} />
         <Metric label={priceLabel(channel)} value={cpl == null ? "—" : money(cpl)} onClick={() => setExplain("cpl")} />
@@ -405,13 +392,13 @@ export function CampaignsScreen({
         />
       ) : null}
 
-      <section className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] px-4 py-3">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
           <div>
             <h2 className="text-sm font-semibold">קמפיינים</h2>
             <p className="text-xs text-muted-foreground">לחיצה על שורה פותחת את הפירוק היומי ואת החישוב.</p>
           </div>
-          <div className="flex gap-1 rounded-full bg-[#f6f5f1] p-1">
+          <Segmented value={listMode} label="רשימה" className="rounded-full p-1">
             {(
               [
                 ["spent", "עם הוצאה"],
@@ -423,15 +410,13 @@ export function CampaignsScreen({
                 key={id}
                 type="button"
                 onClick={() => setListMode(id)}
-                className={cn(
-                  "h-7 rounded-full px-3 text-xs",
-                  listMode === id ? "bg-white font-medium text-[#1a1a1a]" : "text-muted-foreground",
-                )}
+                data-selected={listMode === id}
+                className="h-8 rounded-full px-3 text-xs"
               >
                 {label}
               </button>
             ))}
-          </div>
+          </Segmented>
         </header>
         {visible.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">אין קמפיינים בסינון הזה.</p>
@@ -439,7 +424,7 @@ export function CampaignsScreen({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[52rem] table-fixed text-sm">
               <thead>
-                <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+                <tr className="border-b border-border text-[11px] text-muted-foreground">
                   {channel === "all" ? <th className="px-4 py-2 text-start font-medium">ערוץ</th> : null}
                   <th className="px-4 py-2 text-start font-medium">קמפיין</th>
                   <th className="px-3 py-2 text-start font-medium">סטטוס</th>
@@ -533,7 +518,7 @@ function Metric({ label, value, onClick }: { label: string; value: string; onCli
       {onClick ? <p className="mt-2 text-[11px] text-muted-foreground">לחצו לפירוט</p> : null}
     </>
   );
-  const className = "w-full rounded-2xl border border-black/[0.06] bg-white px-4 py-3 text-start";
+  const className = "w-full rounded-2xl border border-border bg-card px-4 py-3 text-start";
   if (!onClick) return <div className={className}>{body}</div>;
   return (
     <button type="button" onClick={onClick} className={cn(className, "transition-colors hover:bg-[#fafaf8]")}>
@@ -570,8 +555,8 @@ function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string
   const totalDuration = groups.reduce((sum, group) => sum + group.duration, 0);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
-      <header className="border-b border-black/[0.06] px-4 py-3">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card">
+      <header className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold">שיחות שגוגל החזירה</h2>
         <p className="text-xs text-muted-foreground">
           {totalCount > 0
@@ -587,8 +572,8 @@ function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string
       ) : (
         <div className="max-h-96 overflow-auto">
           <table className="w-full min-w-[32rem] text-sm">
-            <thead className="sticky top-0 bg-white">
-              <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <thead className="sticky top-0 bg-card">
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
                 <th className="px-4 py-2 text-start font-medium">תאריך</th>
                 <th className="px-3 py-2 text-start font-medium">שיחות</th>
                 <th className="px-3 py-2 text-start font-medium">משך כולל</th>
@@ -599,7 +584,7 @@ function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string
               {groups.map((group) => (
                 <tr
                   key={group.day}
-                  className="cursor-pointer border-b border-black/[0.04] hover:bg-black/[0.03]"
+                  className="cursor-pointer border-b border-black/[0.04] hover:bg-muted"
                   onClick={() => setDay(group.day)}
                 >
                   <td className="px-4 py-2 tabular-nums">{dayLabel(group.day)}</td>
@@ -623,7 +608,7 @@ function GoogleCallDays({ rows, error }: { rows: GoogleCallLine[]; error: string
               <div className="max-h-80 overflow-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-background">
-                    <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+                    <tr className="border-b border-border text-[11px] text-muted-foreground">
                       <th className="py-2 text-start font-medium">שעה</th>
                       <th className="py-2 text-start font-medium">משך</th>
                       <th className="py-2 text-start font-medium">מה קרה</th>
@@ -691,8 +676,8 @@ function DayTable({
   );
   const price = total.leads > 0 ? total.cost / total.leads : null;
   return (
-    <section className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
-      <header className="border-b border-black/[0.06] px-4 py-3">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card">
+      <header className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold">{title}</h2>
         <p className="text-xs text-muted-foreground">{hint}</p>
       </header>
@@ -701,8 +686,8 @@ function DayTable({
       ) : (
         <div className="max-h-96 overflow-auto">
           <table className="w-full min-w-[40rem] text-sm">
-            <thead className="sticky top-0 bg-white">
-              <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <thead className="sticky top-0 bg-card">
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
                 <th className="px-4 py-2 text-start font-medium">תאריך</th>
                 <th className="px-3 py-2 text-start font-medium">הוצאה</th>
                 <th className="px-3 py-2 text-start font-medium">{leadName}</th>
@@ -717,7 +702,7 @@ function DayTable({
                 return (
                   <tr
                     key={row.day}
-                    className="cursor-pointer border-b border-black/[0.04] hover:bg-black/[0.03]"
+                    className="cursor-pointer border-b border-black/[0.04] hover:bg-muted"
                     onClick={() => onOpen(row.day)}
                   >
                     <td className="px-4 py-2 tabular-nums">{dayLabel(row.day)}</td>
@@ -731,7 +716,7 @@ function DayTable({
               })}
             </tbody>
             <tfoot>
-              <tr className="border-t border-black/[0.08] font-medium">
+              <tr className="border-t border-border font-medium">
                 <td className="px-4 py-2">סה״כ</td>
                 <td className="px-3 py-2 tabular-nums">{money(total.cost)}</td>
                 <td className="px-3 py-2 tabular-nums">{total.leads.toLocaleString("he-IL")}</td>
@@ -796,7 +781,7 @@ function DayDetail({
       </p>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+          <tr className="border-b border-border text-[11px] text-muted-foreground">
             <th className="py-2 text-start font-medium">קמפיין</th>
             <th className="py-2 text-start font-medium">הוצאה</th>
             <th className="py-2 text-start font-medium">{noun}</th>
@@ -864,7 +849,7 @@ function callStatusLabel(status: string): string {
 
 function ExplainLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-baseline gap-3 border-t border-black/[0.06] py-2 text-sm">
+    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-baseline gap-3 border-t border-border py-2 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="tabular-nums">{value}</span>
     </div>
@@ -978,7 +963,7 @@ function ExplainBody(props: {
       <div className="max-h-80 overflow-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-background">
-            <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+            <tr className="border-b border-border text-[11px] text-muted-foreground">
               <th className="py-2 text-start font-medium">קמפיין</th>
               {props.channel === "all" ? <th className="py-2 text-start font-medium">ערוץ</th> : null}
               <th className="py-2 text-start font-medium">הוצאה</th>
@@ -1050,7 +1035,7 @@ function CampaignDetail({
         <div className="max-h-72 overflow-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-background">
-              <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
                 <th className="py-2 text-start font-medium">תאריך</th>
                 <th className="py-2 text-start font-medium">הוצאה</th>
                 <th className="py-2 text-start font-medium">{noun}</th>

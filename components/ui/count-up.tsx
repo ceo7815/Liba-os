@@ -1,0 +1,39 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+/** Animates a number to its real value. The last frame is `text(value)`. */
+export function CountUp({
+  value,
+  text,
+}: {
+  value: number;
+  text: (value: number) => string;
+}) {
+  const [shown, setShown] = useState(value);
+
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || !Number.isFinite(value)) {
+      setShown(value);
+      return;
+    }
+    let frame = 0;
+    const start = performance.now();
+    const from = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / 720);
+      const eased = 1 - (1 - t) ** 3;
+      setShown(t === 1 ? value : from + (value - from) * eased);
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
+  return (
+    <span dir="ltr" className="tabular-nums" aria-label={text(value)}>
+      {text(shown)}
+    </span>
+  );
+}

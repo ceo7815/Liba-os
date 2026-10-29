@@ -19,7 +19,7 @@ export default async function AcademyCatalogPage() {
       </header>
       <div className="space-y-3">
         {result.courses.length === 0 ? (
-          <p className="rounded-2xl border border-black/[0.06] bg-white p-5 text-sm text-muted-foreground">
+          <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
             אין עדיין קורס מאושר.
           </p>
         ) : (
@@ -27,7 +27,7 @@ export default async function AcademyCatalogPage() {
             <Link
               key={course.id}
               href={`/academy/courses/${course.id}`}
-              className="block rounded-2xl border border-black/[0.06] bg-white p-5"
+              className="block rounded-2xl border border-border bg-card p-5"
             >
               <p className="text-[11px] text-muted-foreground">{course.trackTitle}</p>
               <h2 className="mt-1 text-lg font-semibold">{course.title}</h2>
