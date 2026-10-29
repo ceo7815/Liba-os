@@ -22,6 +22,12 @@ export default async function Page() {
             <label className="grid gap-1 text-xs text-muted-foreground">עמלת מס, 0 עד 1<input className={field} name="taxFeeRate" defaultValue={fees.settings.taxFeeRate ?? ""} /></label>
             <label className="grid gap-1 text-xs text-muted-foreground">מע״מ, 0 עד 1<input className={field} name="vatRate" defaultValue={fees.settings.vatRate ?? ""} /></label>
             <label className="grid gap-1 text-xs text-muted-foreground">ימי SLA<input className={field} name="slaDays" defaultValue={fees.settings.slaDays ?? ""} /></label>
+            <label className="grid gap-1 text-xs text-muted-foreground">מכפיל עמלה, אחרי אימות<input className={field} name="feeMultiplier" defaultValue={fees.settings.feeMultiplier ?? ""} /></label>
+            <input type="hidden" name="ratesPendingTouched" value="1" />
+            <input type="hidden" name="multiplierTouched" value="1" />
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="ratesPending" defaultChecked={fees.settings.ratesPending} /> שיעורי ההצלחה ממתינים לאימות</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="multiplierPending" defaultChecked={fees.settings.multiplierPending} /> המכפיל ממתין לאימות</label>
+            <p className="text-xs text-muted-foreground sm:col-span-2">כל עוד הדגל דלוק, שכר הטרחה והכנסת העמלה נשארים ריקים. אין שיעור קבוע בקוד.</p>
             <Button type="submit" className="sm:w-fit">שמירה</Button>
           </form>
         </Panel>

@@ -34,8 +34,24 @@ export type DeskPayload = {
 
 const LEDGER_KIND = new Set(["redemption", "tax_refund"]);
 const RULE_KIND = new Set(["cost", "debt", "income", "payroll", "commission"]);
-const CASE_STATUS = new Set(["open", "waiting", "done", "cancelled"]);
+const CASE_STATUS = new Set(["open", "waiting", "done", "cancelled", "on_hold"]);
 const STAGE_IDS = new Set<string>(CASE_STAGES.map((stage) => stage.id));
+
+function settingsFromRow(data: { redemption_fee_rate?: unknown; tax_fee_rate?: unknown; vat_rate?: unknown; sla_days?: unknown; success_fee_rates?: unknown; rates_pending?: unknown; fee_multiplier?: unknown; multiplier_pending?: unknown } | null): FeeSettings {
+  const named = data?.success_fee_rates && typeof data.success_fee_rates === "object" ? data.success_fee_rates as Record<string, unknown> : {};
+  const successFeeRates: Record<string, number | null> = {};
+  for (const [key, value] of Object.entries(named)) successFeeRates[key] = rateOrNull(value);
+  return {
+    redemptionFeeRate: rateOrNull(data?.redemption_fee_rate),
+    taxFeeRate: rateOrNull(data?.tax_fee_rate),
+    vatRate: rateOrNull(data?.vat_rate),
+    slaDays: data?.sla_days == null ? null : Number(data.sla_days),
+    successFeeRates,
+    ratesPending: data?.rates_pending !== false,
+    feeMultiplier: data?.fee_multiplier == null || data.fee_multiplier === "" ? null : (Number.isFinite(Number(data.fee_multiplier)) ? Number(data.fee_multiplier) : null),
+    multiplierPending: data?.multiplier_pending !== false,
+  };
+}
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -61,12 +77,7 @@ export async function loadFeeSettings(): Promise<{ settings: FeeSettings; missin
     }
     return {
       missing: false,
-      settings: {
-        redemptionFeeRate: rateOrNull(data?.redemption_fee_rate),
-        taxFeeRate: rateOrNull(data?.tax_fee_rate),
-        vatRate: rateOrNull(data?.vat_rate),
-        slaDays: data?.sla_days == null ? null : Number(data.sla_days),
-      },
+      settings: settingsFromRow(data),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
@@ -403,6 +414,10 @@ export async function saveFeeSettings(input: FeeSettings, actor: string) {
     tax_fee_rate: input.taxFeeRate,
     vat_rate: input.vatRate,
     sla_days: input.slaDays,
+    success_fee_rates: input.successFeeRates,
+    rates_pending: input.ratesPending,
+    fee_multiplier: input.feeMultiplier,
+    multiplier_pending: input.multiplierPending,
     updated_at: new Date().toISOString(),
   });
   if (error) return { error: isMissingRelation(error.message) ? "הטבלה עדיין לא הורצה" : error.message };
@@ -472,7 +487,7 @@ export type CaseFile = {
   notesList: { id: string; body: string; author: string }[];
 };
 
-export async function loadCaseBoard(): Promise<{
+export async function loadCaseBoard(handlerOnly?: string | null): Promise<{
   missing: boolean;
   error: string | null;
   cases: CaseFile[];
@@ -483,8 +498,10 @@ export async function loadCaseBoard(): Promise<{
   const empty = { missing: fees.missing, error: null as string | null, cases: [] as CaseFile[], audit: [] as DeskPayload["audit"], settings: fees.settings };
   try {
     const admin = shemeshAdmin();
+    let caseQuery = admin.from("shemesh_cases").select("*").order("updated_at", { ascending: false }).limit(200);
+    if (handlerOnly) caseQuery = caseQuery.eq("handler", handlerOnly);
     const [cases, tasks, documents, notes] = await Promise.all([
-      admin.from("shemesh_cases").select("*").order("updated_at", { ascending: false }).limit(200),
+      caseQuery,
       admin.from("shemesh_case_tasks").select("*").limit(800),
       admin.from("shemesh_case_documents").select("*").limit(800),
       admin.from("shemesh_case_notes").select("*").order("created_at", { ascending: false }).limit(800),
@@ -601,5 +618,126 @@ export async function loadCaseDetail(caseId: string) {
     const message = error instanceof Error ? error.message : "התיק לא נטען";
     if (isMissingRelation(message)) return { ...empty, missing: true };
     return { ...empty, error: message };
+  }
+}
+
+export type QueueLead = {
+  id: string;
+  clientName: string;
+  phone: string;
+  excelRowId: string;
+  surenseId: string;
+  openedCaseId: string | null;
+};
+
+export async function loadSheetQueue(): Promise<{ missing: boolean; rows: QueueLead[] }> {
+  try {
+    const admin = shemeshAdmin();
+    const { data, error } = await admin.from("shemesh_sheet6_queue").select("*").order("created_at", { ascending: false }).limit(100);
+    if (error) return { missing: isMissingRelation(error.message), rows: [] };
+    return {
+      missing: false,
+      rows: asRows(data).map((row) => ({
+        id: String(row.id),
+        clientName: text(row.client_name),
+        phone: text(row.phone),
+        excelRowId: text(row.excel_row_id),
+        surenseId: text(row.surense_id),
+        openedCaseId: row.opened_case_id ? String(row.opened_case_id) : null,
+      })),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    return { missing: isMissingRelation(message) || /missing supabase|missing next_public/i.test(message), rows: [] };
+  }
+}
+
+export async function openQueuedCase(queueId: string, actor: string) {
+  if (!queueId) return { error: "חסרה שורה" };
+  const admin = shemeshAdmin();
+  const { data, error } = await admin.from("shemesh_sheet6_queue").select("*").eq("id", queueId).maybeSingle();
+  if (error) return { error: isMissingRelation(error.message) ? "הטבלה עדיין לא הורצה" : error.message };
+  if (!data) return { error: "השורה לא נמצאה" };
+  if (data.opened_case_id) return { error: null };
+  const excel = text(data.excel_row_id);
+  const surense = text(data.surense_id);
+  const existingId = await existingCaseId(excel, surense);
+  if (existingId) {
+    await admin.from("shemesh_sheet6_queue").update({ opened_case_id: existingId }).eq("id", queueId);
+    return { error: null };
+  }
+  const inserted = await admin.from("shemesh_cases").insert({
+    client_name: text(data.client_name),
+    phone: text(data.phone) || null,
+    stage: "lead",
+    status: "open",
+    lead_source: excel ? "sheet6" : surense ? "surense" : null,
+    excel_row_id: excel || null,
+    surense_id: surense || null,
+    opened_on: todayIso(),
+  }).select("id").single();
+  if (inserted.error) {
+    if (/duplicate|unique/i.test(inserted.error.message)) {
+      const again = await existingCaseId(excel, surense);
+      if (again) await admin.from("shemesh_sheet6_queue").update({ opened_case_id: again }).eq("id", queueId);
+      return { error: null };
+    }
+    return { error: inserted.error.message };
+  }
+  const id = String(inserted.data.id);
+  await admin.from("shemesh_sheet6_queue").update({ opened_case_id: id }).eq("id", queueId);
+  await writeAudit(actor, "create", "case", id, text(data.client_name));
+  return { error: null };
+}
+
+async function existingCaseId(excel: string, surense: string): Promise<string | null> {
+  const admin = shemeshAdmin();
+  if (excel) {
+    const found = await admin.from("shemesh_cases").select("id").eq("excel_row_id", excel).maybeSingle();
+    if (found.data?.id) return String(found.data.id);
+  }
+  if (surense) {
+    const found = await admin.from("shemesh_cases").select("id").eq("surense_id", surense).maybeSingle();
+    if (found.data?.id) return String(found.data.id);
+  }
+  return null;
+}
+
+export async function loadRuleKind(id: string): Promise<string | null> {
+  if (!id) return null;
+  try {
+    const admin = shemeshAdmin();
+    const { data } = await admin.from("shemesh_rules").select("kind").eq("id", id).maybeSingle();
+    return data?.kind ? text(data.kind) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadInsurerProductions(): Promise<{ missing: boolean; rows: { premium: number | null; status: string }[] }> {
+  try {
+    const admin = shemeshAdmin();
+    const { data, error } = await admin.from("shemesh_insurer_rows").select("premium, settlement_status").limit(400);
+    if (error) return { missing: isMissingRelation(error.message), rows: [] };
+    return {
+      missing: false,
+      rows: asRows(data).map((row) => ({
+        premium: row.premium == null ? null : Number(row.premium),
+        status: text(row.settlement_status),
+      })),
+    };
+  } catch {
+    return { missing: true, rows: [] };
+  }
+}
+
+export async function loadTaxStatuses(): Promise<{ missing: boolean; statuses: Array<string | null> }> {
+  try {
+    const admin = shemeshAdmin();
+    const { data, error } = await admin.from("shemesh_ledger").select("tax_status").eq("kind", "tax_refund").limit(400);
+    if (error) return { missing: isMissingRelation(error.message), statuses: [] };
+    return { missing: false, statuses: asRows(data).map((row) => text(row.tax_status) || null) };
+  } catch {
+    return { missing: true, statuses: [] };
   }
 }

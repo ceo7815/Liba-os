@@ -208,7 +208,7 @@ export class LocalQuery implements PromiseLike<ShemeshResult> {
       await psql(sql);
       return { data: null, error: null, count: null };
     }
-    const text = await psql(sql);
+    const text = (await psql(sql)).split("\n").find((line) => line.startsWith("{") || line.startsWith("[")) ?? "";
     const data = text ? JSON.parse(text) : null;
     return { data, error: null, count: null };
   }

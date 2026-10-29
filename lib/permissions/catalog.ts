@@ -25,6 +25,11 @@ export const PERMISSION_KEYS = [
   "portals.view",
   "shemesh.view",
   "shemesh.manage",
+  "shemesh.ops",
+  "shemesh.handler",
+  "shemesh.marketing",
+  "shemesh.finance",
+  "shemesh.sysadmin",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -200,7 +205,32 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       {
         key: "shemesh.manage",
         label: "שמש — ניהול",
-        description: "יצירה, עריכה, סטטוס, שיוך וחיבור מערכות",
+        description: "בעלים או מנכ״ל: תיקים, כספים וחיבורים",
+      },
+      {
+        key: "shemesh.ops",
+        label: "שמש — תפעול",
+        description: "תיקים, SLA, Sheet-6 והחזרי מס. בלי שכר",
+      },
+      {
+        key: "shemesh.handler",
+        label: "שמש — מטפל",
+        description: "רק תיקים שהמטפל שלהם הוא המשתמש",
+      },
+      {
+        key: "shemesh.marketing",
+        label: "שמש — שיווק",
+        description: "לוח שיווק וחיבורי פרסום",
+      },
+      {
+        key: "shemesh.finance",
+        label: "שמש — כספים",
+        description: "שכר בלבד, בנוסף לבעלים ולמנכ״ל",
+      },
+      {
+        key: "shemesh.sysadmin",
+        label: "שמש — מערכת",
+        description: "חיבורים ויומן גישה",
       },
     ],
   },

@@ -106,3 +106,29 @@ ON CONFLICT (id) DO UPDATE SET user_id = NULL, page_code_encrypted = NULL, api_k
 INSERT INTO public.shemesh_surense_settings (id, mode, last_synced_at, last_error)
 VALUES (1, 'same', NULL, NULL)
 ON CONFLICT (id) DO UPDATE SET mode = 'same', client_id_encrypted = NULL, client_secret_encrypted = NULL, last_error = NULL;
+
+UPDATE public.shemesh_cases SET service_type = 'redemption', lead_source = 'הדגמה', deal_date = '2026-10-12', surense_id = 'surense-demo-michal'
+WHERE id = '11111111-1111-4111-8111-111111111111';
+UPDATE public.shemesh_cases SET service_type = 'tax_refund', lead_source = 'הדגמה', deal_date = '2026-10-21', invoice_date = '2026-10-25'
+WHERE id = '22222222-2222-4222-8222-222222222222';
+UPDATE public.shemesh_cases SET service_type = 'tax_refund', lead_source = 'הדגמה', deal_date = '2026-09-02', invoice_date = '2026-09-12', collected_date = '2026-10-18'
+WHERE id = '33333333-3333-4333-8333-333333333333';
+UPDATE public.shemesh_cases SET service_type = 'other', lead_source = 'הדגמה', deal_date = '2026-10-28'
+WHERE id = '44444444-4444-4444-8444-444444444444';
+
+UPDATE public.shemesh_ledger SET tax_status = 'filed' WHERE id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2';
+UPDATE public.shemesh_ledger SET tax_status = 'fee_billed' WHERE id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3';
+
+UPDATE public.shemesh_fee_settings SET
+  success_fee_rates = jsonb_build_object('redemption', redemption_fee_rate, 'tax_refund', tax_fee_rate),
+  rates_pending = true,
+  fee_multiplier = NULL,
+  multiplier_pending = true
+WHERE id = 1;
+
+INSERT INTO public.shemesh_sheet6_queue (id, client_name, phone, excel_row_id, surense_id)
+VALUES
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa10', 'יעל אביב', '050-1000010', 'sheet6-yael', NULL),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa11', 'תומר חדד', '050-1000011', 'sheet6-tomer', NULL),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa12', 'יונה פרץ', '050-1000012', NULL, 'surense-demo-yona')
+ON CONFLICT (id) DO NOTHING;

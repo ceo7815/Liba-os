@@ -33,6 +33,8 @@ It is safe to run more than once. It creates only new `public.shemesh_*` objects
 
 `supabase/migrations/20261029193000_shemesh_connectors.sql` is also idempotent and only adds `shemesh_*` objects.
 
+`supabase/migrations/20261029220000_shemesh_lifecycle.sql` adds case dates, dedup keys, named fee settings, tax status, and the Sheet-6 queue. It changes only `shemesh_*` objects.
+
 | Table | What it holds |
 | --- | --- |
 | `shemesh_rivhit_settings` | company id, encrypted api token, monthly op count, and a read cache |

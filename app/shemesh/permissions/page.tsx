@@ -6,8 +6,13 @@ import { ShemeshPage, Panel } from "@/components/shemesh/widgets";
 export const metadata: Metadata = { title: "הרשאות · שמש" };
 
 const KEYS = [
-  { key: "shemesh.view", label: "צפייה", detail: "תיקים, כספים, ייצוא לאקסל וממשקים של שמש." },
-  { key: "shemesh.manage", label: "ניהול", detail: "יצירה, שינוי סטטוס, שיוך מטפל, מסמכים ושמירת חיבורים." },
+  { key: "shemesh.view", label: "צפייה", detail: "כל התיקים, בלי עריכת שכר." },
+  { key: "shemesh.manage", label: "בעלים / מנכ״ל", detail: "תיקים, כספים, שכר וחיבורים." },
+  { key: "shemesh.ops", label: "תפעול", detail: "תיקים, SLA, Sheet-6 והחזרי מס. בלי שכר." },
+  { key: "shemesh.handler", label: "מטפל", detail: "רק תיקים שבהם שם המטפל הוא שם המשתמש." },
+  { key: "shemesh.marketing", label: "שיווק", detail: "לוח השיווק." },
+  { key: "shemesh.finance", label: "כספים", detail: "שכר בלבד." },
+  { key: "shemesh.sysadmin", label: "מערכת", detail: "חיבורים ויומן." },
 ];
 
 export default function Page() {

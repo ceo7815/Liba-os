@@ -79,6 +79,9 @@ export function ShemeshOverview({
             <li className="flex justify-between gap-3"><span>כלל הכנסה חודשי</span><span className="tabular-nums">{formatShemeshMoney(live.monthIncome)}</span></li>
             <li className="flex justify-between gap-3"><span>החזר מס ממתין, נטו</span><span className="tabular-nums">{formatShemeshMoney(live.waitingTaxNet)}</span></li>
             <li className="flex justify-between gap-3"><span>עמלת רישיון של ליבה</span><span className="tabular-nums">{formatShemeshMoney(live.licenseCommission)}</span></li>
+            <li className="flex justify-between gap-3"><span>נמכרו החודש לפי תאריך עסקה</span><span className="tabular-nums">{formatShemeshCount(live.soldThisMonth)}</span></li>
+            <li className="flex justify-between gap-3"><span>עסקה עד חשבונית</span><span className="tabular-nums">{live.cycleToInvoice == null ? "—" : `${formatShemeshCount(live.cycleToInvoice)} ימים`}</span></li>
+            <li className="flex justify-between gap-3"><span>חשבונית עד גבייה</span><span className="tabular-nums">{live.cycleToCollected == null ? "—" : `${formatShemeshCount(live.cycleToCollected)} ימים`}</span></li>
           </ul>
           <p className="mt-3 text-xs text-muted-foreground">עמלת הרישיון לא נכנסת לנגבה של שמש ולא לשכר. פדיון שטרם נגבה נשאר מחוץ לשורה.</p>
         </Panel>

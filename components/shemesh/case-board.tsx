@@ -167,6 +167,7 @@ const STATUSES = [
   { id: "waiting", label: "ממתין" },
   { id: "done", label: "הושלם" },
   { id: "cancelled", label: "בוטל" },
+  { id: "on_hold", label: "מושהה" },
 ];
 
 function CaseDetail({

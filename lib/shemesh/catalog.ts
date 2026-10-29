@@ -28,11 +28,11 @@ export const CASE_STAGES = [
   { id: "lead", label: "ליד" },
   { id: "eligibility", label: "בדיקת זכאות" },
   { id: "poa", label: "ייפוי כוח נחתם" },
-  { id: "documents", label: "מסמכים" },
-  { id: "filed", label: "הוגש" },
+  { id: "documents", label: "איסוף מסמכים" },
+  { id: "filed", label: "הגשה" },
   { id: "followup", label: "מעקב" },
-  { id: "refund", label: "החזר התקבל" },
-  { id: "collected", label: "חויב / נגבה" },
+  { id: "refund", label: "כסף אצל הלקוח" },
+  { id: "collected", label: "גביית שכר טרחה" },
 ] as const;
 
 export type CaseStageId = (typeof CASE_STAGES)[number]["id"];

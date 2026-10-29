@@ -5,15 +5,16 @@ import { field } from "@/lib/shemesh/field";
 import { Button } from "@/components/ui/button";
 import { createShemeshCase, createShemeshCaseChildForm, saveShemeshFeesForm, setShemeshDocumentForm, updateShemeshCase } from "@/app/actions/shemesh-ops";
 import { shemeshProfile } from "@/lib/shemesh/actor";
-import { canManageShemesh } from "@/lib/permissions/access";
+import { canEditShemeshCases, handlerOnlyName } from "@/lib/permissions/access";
 import { loadCaseBoard } from "@/lib/shemesh/ops";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "תיקים · שמש" };
 
 export default async function Page({ searchParams }: { searchParams: { open?: string } }) {
-  const [board, profile] = await Promise.all([loadCaseBoard(), shemeshProfile()]);
-  const canManage = canManageShemesh(profile);
+  const profile = await shemeshProfile();
+  const board = await loadCaseBoard(handlerOnlyName(profile));
+  const canManage = canEditShemeshCases(profile);
   return (
     <div className="space-y-4">
       <CaseBoard

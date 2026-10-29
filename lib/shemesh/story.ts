@@ -1,9 +1,17 @@
 import { CASE_STAGES, type CaseStageId } from "@/lib/shemesh/catalog";
-import { shemeshAdmin } from "@/lib/shemesh/db";
+import { isMissingRelation, shemeshAdmin } from "@/lib/shemesh/db";
 import { slaOverdue } from "@/lib/shemesh/fees";
+import { averageDays, daysBetween, soldInMonth } from "@/lib/shemesh/lifecycle";
 import { monthLinesFromRules } from "@/lib/shemesh/ops";
 
-export type StoryCase = { status: string; stage: string; deadline: string | null };
+export type StoryCase = {
+  status: string;
+  stage: string;
+  deadline: string | null;
+  dealDate?: string | null;
+  invoiceDate?: string | null;
+  collectedDate?: string | null;
+};
 export type StoryLedger = { kind: string; status: string; gross: number | null; fee: number | null; net: number | null };
 export type StoryRule = { id: string; kind: string; title: string; amount: number | null; cadence: string; startsOn: string | null; active: boolean };
 
@@ -23,6 +31,9 @@ export type ShemeshBooks = {
   licenseCommission: number;
   openCases: number;
   overdueCases: number;
+  soldThisMonth: number;
+  cycleToInvoice: number | null;
+  cycleToCollected: number | null;
   stageCounts: Record<CaseStageId, number>;
   incomeMatchesCollected: boolean;
 };
@@ -70,6 +81,11 @@ export function summarizeShemeshBooks(input: {
   const monthPayroll = monthTotal(input.rules, "payroll", input.month);
   const monthCommission = monthTotal(input.rules, "commission", input.month);
   const monthDebt = monthTotal(input.rules, "debt", input.month);
+  const dated = input.cases.map((item) => ({
+    dealDate: item.dealDate ?? null,
+    invoiceDate: item.invoiceDate ?? null,
+    collectedDate: item.collectedDate ?? null,
+  }));
   return {
     missing: false,
     month: input.month,
@@ -86,6 +102,9 @@ export function summarizeShemeshBooks(input: {
     licenseCommission: input.licenseCommission,
     openCases: input.cases.filter((item) => !CLOSED.has(item.status)).length,
     overdueCases: input.cases.filter((item) => slaOverdue(item.deadline, item.status, input.today)).length,
+    soldThisMonth: soldInMonth(dated, input.month).length,
+    cycleToInvoice: averageDays(dated.map((item) => daysBetween(item.dealDate, item.invoiceDate))),
+    cycleToCollected: averageDays(dated.map((item) => daysBetween(item.invoiceDate, item.collectedDate))),
     stageCounts,
     incomeMatchesCollected: monthIncome === collectedNet,
   };
@@ -119,13 +138,20 @@ export async function loadShemeshBooks(month = "2026-10"): Promise<ShemeshBooks>
     licenseCommission: 0,
     openCases: 0,
     overdueCases: 0,
+    soldThisMonth: 0,
+    cycleToInvoice: null,
+    cycleToCollected: null,
     stageCounts: emptyCounts,
     incomeMatchesCollected: false,
   };
   try {
     const admin = shemeshAdmin();
-    const [cases, ledger, rules, insurer] = await Promise.all([
-      admin.from("shemesh_cases").select("status, stage, deadline").limit(500),
+    const caseSelect = "status, stage, deadline, deal_date, invoice_date, collected_date";
+    let cases = await admin.from("shemesh_cases").select(caseSelect).limit(500);
+    if (cases.error && isMissingRelation(cases.error.message)) {
+      cases = await admin.from("shemesh_cases").select("status, stage, deadline").limit(500);
+    }
+    const [ledger, rules, insurer] = await Promise.all([
       admin.from("shemesh_ledger").select("kind, status, gross, fee, net").limit(500),
       admin.from("shemesh_rules").select("id, kind, title, amount, cadence, starts_on, active").limit(500),
       admin.from("shemesh_insurer_rows").select("commission").limit(500),
@@ -141,7 +167,14 @@ export async function loadShemeshBooks(month = "2026-10"): Promise<ShemeshBooks>
       month,
       today: new Date().toISOString().slice(0, 10),
       licenseCommission: sum(commissions.map((row) => num(row.commission))),
-      cases: caseRows.map((row) => ({ status: text(row.status), stage: text(row.stage), deadline: text(row.deadline) || null })),
+      cases: caseRows.map((row) => ({
+        status: text(row.status),
+        stage: text(row.stage),
+        deadline: text(row.deadline) || null,
+        dealDate: text(row.deal_date) || null,
+        invoiceDate: text(row.invoice_date) || null,
+        collectedDate: text(row.collected_date) || null,
+      })),
       ledger: ledgerRows.map((row) => ({
         kind: text(row.kind),
         status: text(row.status),
@@ -170,10 +203,10 @@ function assertOctoberStory(): void {
     today: "2026-10-29",
     licenseCommission: 900,
     cases: [
-      { status: "open", stage: "documents", deadline: "2026-10-08" },
-      { status: "waiting", stage: "filed", deadline: "2026-11-10" },
-      { status: "done", stage: "collected", deadline: "2026-09-20" },
-      { status: "open", stage: "lead", deadline: "2026-11-04" },
+      { status: "open", stage: "documents", deadline: "2026-10-08", dealDate: "2026-10-12", invoiceDate: null, collectedDate: null },
+      { status: "waiting", stage: "filed", deadline: "2026-11-10", dealDate: "2026-10-21", invoiceDate: "2026-10-25", collectedDate: null },
+      { status: "done", stage: "collected", deadline: "2026-09-20", dealDate: "2026-09-02", invoiceDate: "2026-09-12", collectedDate: "2026-10-18" },
+      { status: "open", stage: "lead", deadline: "2026-11-04", dealDate: "2026-10-28", invoiceDate: null, collectedDate: null },
     ],
     ledger: [
       { kind: "redemption", status: "open", gross: 10000, fee: 1500, net: 8500 },
@@ -196,6 +229,7 @@ function assertOctoberStory(): void {
   if (books.openRedemptionGross !== 10000 || books.waitingTaxNet !== 5400) throw new Error("open ledger drifted");
   if (books.licenseCommission !== 900 || books.overdueCases !== 1 || books.openCases !== 3) throw new Error("case story drifted");
   if (books.monthCost !== 8450 || books.operatingResult !== 3600 - 8450 - 9000 - 1800) throw new Error("month result drifted");
+  if (books.soldThisMonth !== 3 || books.cycleToInvoice !== 7 || books.cycleToCollected !== 36) throw new Error("deal cycle drifted");
 }
 
 assertOctoberStory();

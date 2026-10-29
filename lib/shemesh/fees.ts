@@ -5,6 +5,10 @@ export type FeeSettings = {
   taxFeeRate: number | null;
   vatRate: number | null;
   slaDays: number | null;
+  successFeeRates: Record<string, number | null>;
+  ratesPending: boolean;
+  feeMultiplier: number | null;
+  multiplierPending: boolean;
 };
 
 export const EMPTY_FEE_SETTINGS: FeeSettings = {
@@ -12,6 +16,10 @@ export const EMPTY_FEE_SETTINGS: FeeSettings = {
   taxFeeRate: null,
   vatRate: null,
   slaDays: null,
+  successFeeRates: {},
+  ratesPending: true,
+  feeMultiplier: null,
+  multiplierPending: true,
 };
 
 export function rateOrNull(value: unknown): number | null {
