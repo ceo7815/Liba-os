@@ -124,7 +124,7 @@ export default function DesignLabPage({
               <div className="min-w-0">
                 <p className="text-xs font-medium text-muted-foreground">חשבונות ליבה</p>
                 <div className="mt-1 flex items-center gap-2.5">
-                  <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
+                  <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-[#f2f2f4]">
                     <Wallet className="size-5" />
                   </span>
                   <h1 className="text-2xl font-semibold tracking-tight">רישום תנועות</h1>

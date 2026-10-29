@@ -278,7 +278,7 @@ export function CampaignsScreen({
     <section className="w-full space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/40">
+          <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-[#f2f2f4]">
             <Megaphone className="size-5" />
           </span>
           <div>
