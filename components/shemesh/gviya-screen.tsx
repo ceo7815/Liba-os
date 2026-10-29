@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BadgeDollarSign, FileSpreadsheet } from "lucide-react";
 import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
+import { formatCount } from "@/lib/format/numbers";
 import { formatShemeshCount, formatShemeshDay, formatShemeshMoney, formatShemeshMonth } from "@/lib/shemesh/format";
 import {
   currentMonthKey,
@@ -122,10 +123,10 @@ export function GviyaScreen({
     >
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel title="לפי נציג">
-          <Bars rows={byRep.map((row) => ({ label: row.key, value: row.sold, hint: `${row.count} עסקאות` }))} />
+          <Bars rows={byRep.map((row) => ({ label: row.key, value: row.sold, hint: `${formatCount(row.count)} עסקאות` }))} />
         </Panel>
         <Panel title="לפי מקור ליד">
-          <Bars rows={bySource.map((row) => ({ label: row.key, value: row.sold, hint: `${row.count} עסקאות` }))} />
+          <Bars rows={bySource.map((row) => ({ label: row.key, value: row.sold, hint: `${formatCount(row.count)} עסקאות` }))} />
         </Panel>
       </div>
       <Panel title="מגמה חודשית" action={<span className="text-[11px] text-muted-foreground">{syncedAt ? `עודכן ${formatShemeshDay(syncedAt.slice(0, 10))}` : ""}</span>}>

@@ -189,22 +189,27 @@ export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; s
 
       <div className="grid gap-3 lg:grid-cols-2">
         <section className="glass px-4 py-4">
-          <h2 className="text-sm font-semibold">גבייה בדוח שמש</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">גבייה בדוח שמש</h2>
+            <Link href="/shemesh/gviya" className="text-[11px] font-medium text-[#2f86ea]">לפדיונות</Link>
+          </div>
           {view.trend.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">אין עמודת גבייה. השלב הבא: ייבוא «דוח מכירות שמש פדיונות 2» במסך החיבורים.</p>
           ) : (
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-4 flex items-end gap-2">
               {view.trend.map((row) => {
                 const max = Math.max(...view.trend.map((item) => item.collected), 1);
                 return (
-                  <li key={row.month}>
-                    <div className="mb-1 flex justify-between text-xs">
-                      <span>{formatShemeshMonth(row.month)}</span>
-                      <span className="tabular-nums">{formatIls(row.collected)}</span>
+                  <li key={row.month} className="group flex min-w-0 flex-1 flex-col items-center gap-1">
+                    <span className="text-[10px] font-semibold tabular-nums opacity-0 transition-opacity group-hover:opacity-100">{formatIls(row.collected)}</span>
+                    <div className="flex h-28 w-full items-end">
+                      <div
+                        className="w-full rounded-t-xl transition-transform group-hover:scale-[1.03]"
+                        style={{ height: `${Math.max(8, (row.collected / max) * 100)}%`, background: "linear-gradient(180deg, #fff1a8, #ffd60a 42%, #ff7a3c)" }}
+                        title={formatIls(row.collected)}
+                      />
                     </div>
-                    <div className="h-2 rounded-full bg-white/80">
-                      <div className="h-2 rounded-full" style={{ width: `${(row.collected / max) * 100}%`, background: "linear-gradient(90deg, #fff1a8, #ff9f0a)" }} />
-                    </div>
+                    <span className="text-[10px] text-muted-foreground">{formatShemeshMonth(row.month)}</span>
                   </li>
                 );
               })}
@@ -227,7 +232,10 @@ export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; s
 
       <div className="grid gap-3 lg:grid-cols-2">
         <section className="glass px-4 py-4">
-          <h2 className="text-sm font-semibold">שיווק</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">שיווק</h2>
+            <Link href="/shemesh/marketing" className="text-[11px] font-medium text-[#2f86ea]">לקמפיינים</Link>
+          </div>
           {view.sources.length === 0 && view.cpl == null ? (
             <p className="mt-3 text-sm text-muted-foreground">אין מקורות בדוח ואין לידים מקמפיין. השלב הבא: ייבוא הדוח וסנכרון חשבון המודעות.</p>
           ) : (
@@ -237,44 +245,76 @@ export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; s
                 {" · "}
                 ליד לתיק {view.leadToCase == null ? "ממתין ללידים" : `${formatCount(view.leadToCase)}%`}
               </p>
-              <ul className="mt-3 space-y-1 text-sm">
-                {view.sources.map((row) => (
-                  <li key={row.name} className="flex justify-between gap-3">
-                    <span>{row.name}</span>
-                    <span className="tabular-nums">{formatCount(row.deals)} עסקאות בדוח</span>
-                  </li>
-                ))}
+              <ul className="mt-3 space-y-2">
+                {view.sources.map((row) => {
+                  const max = Math.max(1, ...view.sources.map((item) => item.deals));
+                  return (
+                    <li key={row.name}>
+                      <Link href="/shemesh/sales" className="block rounded-xl px-2 py-1.5 transition-colors hover:bg-white/80">
+                        <div className="mb-1 flex justify-between gap-3 text-sm">
+                          <span className="truncate font-medium">{row.name}</span>
+                          <span className="tabular-nums">{formatCount(row.deals)} עסקאות</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/80">
+                          <div className="h-1.5 rounded-full" style={{ width: `${(row.deals / max) * 100}%`, background: "linear-gradient(90deg, #b7b0ff, #5b4de0)" }} />
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </>
           )}
         </section>
         <section className="glass px-4 py-4">
-          <h2 className="text-sm font-semibold">צוות</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">צוות</h2>
+            <Link href="/shemesh/cases" className="text-[11px] font-medium text-[#2f86ea]">לתיקים</Link>
+          </div>
           {view.team.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">אין תיקים שנפתחו בתקופה. תיק חדש נפתח ממסך התיקים.</p>
           ) : (
-            <ul className="mt-3 space-y-1 text-sm">
-              {view.team.map((row) => (
-                <li key={row.handler} className="flex justify-between gap-3">
-                  <span>{row.handler}</span>
-                  <span className="tabular-nums">{formatCount(row.cases)} תיקים · {formatCount(row.sla)} חריגות</span>
-                </li>
-              ))}
+            <ul className="mt-3 space-y-2">
+              {view.team.map((row, index) => {
+                const max = Math.max(1, ...view.team.map((item) => item.cases));
+                const tones = ["sun", "teal", "violet", "green", "coral"] as const;
+                return (
+                  <li key={row.handler}>
+                    <Link href="/shemesh/cases" className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-white/80">
+                      <span className="kpi-badge !size-8 text-[11px] font-bold" data-tone={tones[index % tones.length]}>{row.handler.slice(0, 1)}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex justify-between gap-2 text-sm">
+                          <span className="truncate font-medium">{row.handler}</span>
+                          <span className="tabular-nums text-muted-foreground">{formatCount(row.cases)} · {formatCount(row.sla)} חריגות</span>
+                        </span>
+                        <span className="mt-1 block h-1.5 rounded-full bg-white/80">
+                          <span className="block h-1.5 rounded-full" style={{ width: `${(row.cases / max) * 100}%`, background: "linear-gradient(90deg, #7eefe8, #0e8f9c)" }} />
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
       </div>
 
       <section className="glass px-4 py-4">
-        <h2 className="text-sm font-semibold">פעילות אחרונה</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">פעילות אחרונה</h2>
+          <Link href="/shemesh/access" className="text-[11px] font-medium text-[#2f86ea]">ליומן הגישה</Link>
+        </div>
         {view.activity.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">אין שורות יומן בתקופה. פעולה על תיק או על ספר נרשמת כאן.</p>
         ) : (
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="mt-3 divide-y divide-white/70">
             {view.activity.map((row) => (
-              <li key={row.id} className="flex justify-between gap-3">
-                <span>{row.summary}</span>
-                <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">{row.createdAt.slice(0, 16).replace("T", " ")}</span>
+              <li key={row.id}>
+                <Link href="/shemesh/access" className="flex items-center justify-between gap-3 rounded-xl px-2 py-2 text-sm transition-colors hover:bg-white/80">
+                  <span>{row.summary}</span>
+                  <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">{row.createdAt.slice(0, 16).replace("T", " ")}</span>
+                </Link>
               </li>
             ))}
           </ul>

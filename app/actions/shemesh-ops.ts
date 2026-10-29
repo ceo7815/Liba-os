@@ -19,6 +19,7 @@ import {
   setCaseDocumentReceived,
 } from "@/lib/shemesh/ops";
 import { rateOrNull } from "@/lib/shemesh/fees";
+import { importBankLines, saveAdBudget, saveAdReceipt, saveMailDraft } from "@/lib/shemesh/closing";
 import { advanceSettlementDraft, createSettlementDraft } from "@/lib/shemesh/settlement-flow";
 
 async function actor() {
@@ -40,6 +41,11 @@ function refresh() {
   revalidatePath("/shemesh/income");
   revalidatePath("/shemesh/settlement");
   revalidatePath("/shemesh/alerts");
+  revalidatePath("/shemesh/bank");
+  revalidatePath("/shemesh/ad-receipts");
+  revalidatePath("/shemesh/accountant");
+  revalidatePath("/shemesh/marketing");
+  revalidatePath("/shemesh/access");
 }
 
 export async function createShemeshCase(_state: { error: string | null }, formData: FormData) {
@@ -227,6 +233,55 @@ export async function createShemeshSettlementDraft(state: { error: string | null
   const name = await actor();
   if (!name) return { error: "אין הרשאה" };
   const result = await createSettlementDraft(name, String(formData.get("sourceRef") ?? ""));
+  if (!result.error) refresh();
+  return result;
+}
+
+export async function importShemeshBank(_state: { error: string | null; matched: number; open: number }, formData: FormData) {
+  const name = await actor();
+  const idle = { error: "אין הרשאה", matched: 0, open: 0 };
+  if (!name) return idle;
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { error: "חסר קובץ", matched: 0, open: 0 };
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const result = await importBankLines(file.name, buffer, name);
+  if (!result.error) refresh();
+  return result;
+}
+
+export async function archiveShemeshReceipt(_state: { error: string | null }, formData: FormData) {
+  const name = await actor();
+  if (!name) return { error: "אין הרשאה" };
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { error: "חסר קובץ" };
+  const result = await saveAdReceipt({
+    month: String(formData.get("month") ?? ""),
+    campaign: String(formData.get("campaign") ?? ""),
+    source: String(formData.get("source") ?? "other"),
+    fileName: file.name,
+    byteSize: file.size,
+  }, name);
+  if (!result.error) refresh();
+  return result;
+}
+
+export async function saveShemeshMailDraft(_state: { error: string | null }, formData: FormData) {
+  const name = await actor();
+  if (!name) return { error: "אין הרשאה" };
+  const result = await saveMailDraft({
+    month: String(formData.get("month") ?? ""),
+    recipient: String(formData.get("recipient") ?? ""),
+    subject: String(formData.get("subject") ?? ""),
+    body: String(formData.get("body") ?? ""),
+  }, name);
+  if (!result.error) refresh();
+  return result;
+}
+
+export async function saveShemeshAdBudget(_state: { error: string | null }, formData: FormData) {
+  const name = await actor();
+  if (!name) return { error: "אין הרשאה" };
+  const result = await saveAdBudget(String(formData.get("month") ?? ""), Number(formData.get("amount") ?? ""), name);
   if (!result.error) refresh();
   return result;
 }
