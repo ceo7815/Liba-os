@@ -152,10 +152,11 @@ export function Sidebar({ profile, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground",
+        "flex w-64 shrink-0 flex-col bg-transparent p-2 pe-1",
         className,
       )}
     >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.15rem] border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-card">
       <div className="flex flex-col items-center px-5 pb-5 pt-7">
         <LogoBadge centered className="w-full" />
         <div className="mt-5 h-px w-full bg-sidebar-border">
@@ -375,6 +376,7 @@ export function Sidebar({ profile, className }: SidebarProps) {
         <p className="mt-0.5 text-[11px] text-muted-foreground">
           מערכת ניהול פנימית
         </p>
+      </div>
       </div>
     </aside>
   );

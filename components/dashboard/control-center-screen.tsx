@@ -34,6 +34,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CountUp } from "@/components/ui/count-up";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 function formatDay(iso: string): string {
@@ -74,13 +76,10 @@ export function ControlCenterScreen() {
   if (!ready) {
     return (
       <div className="space-y-3 sm:space-y-4">
-        <div className="h-44 animate-pulse rounded-lg border border-border bg-card sm:h-40 sm:rounded-[var(--radius)]" />
+        <Skeleton className="h-44 rounded-lg border border-border sm:h-40" />
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-28 animate-pulse rounded-lg border border-border bg-card sm:rounded-[var(--radius)]"
-            />
+            <Skeleton key={i} className="h-28 rounded-lg border border-border" />
           ))}
         </div>
       </div>
@@ -187,8 +186,8 @@ export function ControlCenterScreen() {
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               הפקות ב־{snap.upcomingDateLabel}
             </p>
-            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
-              {snap.upcomingPremiumLabel}
+            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+              <CountUp value={snap.upcomingPremium} text={formatIls} />
             </p>
             <p className="mt-2 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
               <span className="min-w-0 truncate">
@@ -209,8 +208,8 @@ export function ControlCenterScreen() {
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               הפקות החודש
             </p>
-            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
-              {snap.premiumLabel}
+            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+              <CountUp value={snap.premium} text={formatIls} />
             </p>
             <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
               <span>{snap.productions.toLocaleString("he-IL")} הפקות פעילות</span>
@@ -229,8 +228,8 @@ export function ControlCenterScreen() {
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               מכירות
             </p>
-            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
-              {formatIls(snap.salesPremium)}
+            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+              <CountUp value={snap.salesPremium} text={formatIls} />
             </p>
             <p className="mt-2 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
               <span className="min-w-0 truncate">
@@ -251,8 +250,8 @@ export function ControlCenterScreen() {
             <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">
               מינוי סוכן
             </p>
-            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">
-              {snap.agentAppointmentPremiumLabel}
+            <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
+              <CountUp value={snap.agentAppointmentPremium} text={formatIls} />
             </p>
             <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
               <span>{snap.agentAppointmentCount.toLocaleString("he-IL")} מינויים</span>
@@ -275,8 +274,8 @@ export function ControlCenterScreen() {
               <span
                 className={cn(
                   "font-semibold tabular-nums",
-                  kpi.tone === "warn" && "text-amber-800",
-                  kpi.tone === "danger" && "text-red-700",
+                  kpi.tone === "warn" && "text-warning",
+                  kpi.tone === "danger" && "text-destructive",
                 )}
               >
                 {kpi.value}

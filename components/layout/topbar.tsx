@@ -28,8 +28,8 @@ export function Topbar({ profile }: TopbarProps) {
   const initials = getInitials(displayName);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="flex h-14 items-center gap-1.5 px-3 sm:gap-3 sm:px-6 pt-[env(safe-area-inset-top)]">
+    <header className="sticky top-0 z-40 bg-transparent px-2 pt-2 sm:px-3">
+      <div className="float-bar flex h-12 items-center gap-1.5 px-2 sm:gap-3 sm:px-4">
         <Sheet>
           <SheetTrigger asChild>
             <Button

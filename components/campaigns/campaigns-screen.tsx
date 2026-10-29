@@ -318,7 +318,7 @@ export function CampaignsScreen({
               }}
               className={cn(
                 "h-8 rounded-full px-4 text-sm transition-colors",
-                channel === id ? "bg-[#1a1a1a] font-medium text-white" : "text-muted-foreground hover:bg-card",
+                channel === id ? "bg-primary font-medium text-primary-foreground shadow-[inset_0_-2px_0_hsl(var(--module))]" : "text-muted-foreground hover:bg-muted",
               )}
             >
               {label}
@@ -380,7 +380,7 @@ export function CampaignsScreen({
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div key={channel} className="view-swap grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="הוצאה" value={money(totals.cost)} onClick={() => setExplain("spend")} />
         <Metric label={leadLabel(channel)} value={totals.leads.toLocaleString("he-IL")} onClick={() => setExplain("leads")} />
         <Metric label={priceLabel(channel)} value={cpl == null ? "—" : money(cpl)} onClick={() => setExplain("cpl")} />

@@ -580,7 +580,7 @@ export function GlobalSearch({
             if (!next) setQuery("");
           }}
         >
-          <DialogContent className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg">
+          <DialogContent className="motion-instant top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg">
             <DialogTitle className="sr-only">חיפוש במערכת</DialogTitle>
             <div className="border-b border-border px-3 py-3">{field("global-search")}</div>
             <div className="max-h-[min(60vh,26rem)] overflow-auto">{resultsList}</div>

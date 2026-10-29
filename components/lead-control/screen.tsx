@@ -269,7 +269,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
 
         <p className="px-4 pt-3 text-xs text-muted-foreground">{rows.length.toLocaleString("he-IL")} רשומות</p>
 
-        <div className="overflow-x-auto">
+        <div key={board} className="view-swap overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="text-xs text-muted-foreground">

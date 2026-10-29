@@ -152,6 +152,7 @@
     /* Motion shared with the I Am Body admin system */
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     --dur-rise: 420ms;
     --dur-chart: 900ms;
 
@@ -186,7 +187,13 @@
     --chart-2: 168 32% 34%;
     --chart-3: 30 8% 22%;
     --chart-4: 28 72% 46%;
-    --chart-5: 210 28% 40%;
+    --chart-5: 210 42% 42%;
+    --success: 152 34% 32%;
+    --success-foreground: 140 30% 98%;
+    --warning: 36 78% 42%;
+    --warning-foreground: 36 40% 12%;
+    --info: 210 48% 40%;
+    --info-foreground: 210 40% 98%;
     --radius: 0.75rem;
     --sidebar: 0 0% 100%;
     --sidebar-foreground: 30 8% 12%;
@@ -227,7 +234,13 @@
     --chart-2: 168 38% 54%;
     --chart-3: 36 12% 76%;
     --chart-4: 28 82% 62%;
-    --chart-5: 210 42% 66%;
+    --chart-5: 210 50% 68%;
+    --success: 152 42% 58%;
+    --success-foreground: 152 30% 10%;
+    --warning: 38 86% 62%;
+    --warning-foreground: 36 40% 12%;
+    --info: 210 62% 70%;
+    --info-foreground: 210 40% 12%;
     --sidebar: 30 7% 10%;
     --sidebar-foreground: 40 18% 94%;
     --sidebar-primary: 50 100% 52%;
@@ -248,11 +261,31 @@
     --highlight: 208 72% 34%;
     --highlight-foreground: 0 0% 100%;
     --ring: 208 72% 34%;
+    --module: 208 72% 34%;
     --chart-1: 208 72% 34%;
+    --chart-2: 188 36% 36%;
     --chart-4: 208 48% 48%;
+    --chart-5: 230 28% 42%;
+    --success: 152 34% 32%;
+    --warning: 36 78% 42%;
+    --info: 208 55% 42%;
     --sidebar-primary: 208 72% 34%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-ring: 208 72% 34%;
+  }
+
+  .dark .shemesh-os {
+    --accent: 206 78% 68%;
+    --accent-foreground: 210 40% 10%;
+    --highlight: 206 78% 68%;
+    --highlight-foreground: 210 40% 10%;
+    --ring: 206 78% 68%;
+    --module: 206 78% 68%;
+    --chart-1: 206 78% 68%;
+    --primary: 206 78% 68%;
+    --primary-foreground: 210 40% 10%;
+    --sidebar-primary: 206 78% 68%;
+    --sidebar-primary-foreground: 210 40% 10%;
   }
 
   * {
@@ -475,6 +508,99 @@
   box-shadow: var(--shadow-lift);
 }
 
+.enter {
+  animation: dash-enter var(--dur-rise) var(--ease-out) backwards;
+  animation-delay: calc(40ms + var(--i, 0) * 45ms);
+}
+
+.enter-1 { --i: 1; }
+.enter-2 { --i: 2; }
+.enter-3 { --i: 3; }
+.enter-4 { --i: 4; }
+
+.view-swap {
+  animation: dash-enter 200ms var(--ease-out) both;
+}
+
+.float-bar {
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, hsl(var(--card)) 86%, transparent);
+  border: 1px solid hsl(var(--border));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.65),
+    var(--shadow-card);
+  backdrop-filter: blur(18px) saturate(1.25);
+}
+
+.dark .float-bar {
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.06),
+    var(--shadow-lift);
+}
+
+.work-sheet {
+  position: relative;
+  border-radius: var(--radius);
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.7),
+    var(--shadow-card);
+}
+
+.dark .work-sheet {
+  box-shadow: var(--shadow-card);
+}
+
+.menu-panel {
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, hsl(var(--popover)) 92%, transparent);
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: var(--shadow-pop);
+}
+
+.motion-instant,
+.motion-instant[data-state="open"],
+.motion-instant[data-state="closed"] {
+  animation-duration: 1ms !important;
+  transition-duration: 1ms !important;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--muted));
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, hsl(var(--card) / 0.72), transparent);
+  animation: skeleton-shimmer 1.35s var(--ease-in-out, ease-in-out) infinite;
+}
+
+html[dir="rtl"] .skeleton::after {
+  animation-name: skeleton-shimmer-rtl;
+}
+
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
+}
+
+@keyframes skeleton-shimmer-rtl {
+  from { transform: translateX(100%); }
+  to { transform: translateX(-100%); }
+}
+
+.admin-tabs button[aria-selected="true"],
+.admin-tabs button[aria-pressed="true"] {
+  box-shadow: inset 0 -2px 0 hsl(var(--module));
+}
+
 .chart-draw {
   transform-origin: bottom center;
   animation: chart-reveal var(--dur-chart) var(--ease-expo) both;
@@ -533,7 +659,11 @@
   .animate-auth-rise,
   .dash-enter,
   .rise,
+  .enter,
+  .view-swap,
   .chart-draw,
+  .menu-panel,
+  .skeleton::after,
   .agent-tool-cube,
   .status-live-dot,
   .status-run-bar,

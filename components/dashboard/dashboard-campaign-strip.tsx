@@ -38,7 +38,7 @@ export function DashboardCampaignStrip() {
   }, []);
 
   if (pulse === undefined) {
-    return <div className="h-24 animate-pulse rounded-lg border border-border bg-card" />;
+    return <div className="skeleton h-24 rounded-lg border border-border" />;
   }
   if (!pulse) return null;
 

@@ -16,7 +16,9 @@ export function MainRegion({ children }: { children: React.ReactNode }) {
           : "flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-8",
       )}
     >
-      {children}
+      <div key={pathname} className="enter flex min-h-0 flex-1 flex-col">
+        {children}
+      </div>
     </main>
   );
 }
