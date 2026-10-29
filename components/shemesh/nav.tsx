@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Building2,
   Cable,
   Calculator,
   FileText,
@@ -54,6 +55,7 @@ const SECTIONS: {
       { href: "/shemesh/insurance", label: "ביטוח", icon: Shield },
       { href: "/shemesh/settlement", label: "התחשבנות", icon: Wallet },
       { href: "/shemesh/payroll", label: "שכר", icon: Users },
+      { href: "/shemesh/agency", label: "שורנס", icon: Building2 },
       { href: "/shemesh/sources", label: "מקורות", icon: Cable },
       { href: "/shemesh/formulas", label: "נוסחאות שמש", icon: Calculator },
     ],
