@@ -6,6 +6,8 @@ import type { FinanceEmployee, FinanceEntry, FinanceSupplier } from "@/lib/finan
 import type { LeadControlSnapshot } from "@/lib/lead-control/load";
 import type { ControlItem, ControlLane, ControlState } from "@/lib/lead-control/rules";
 import type { ShemeshPulse } from "@/lib/shemesh/pulse";
+import type { DashInput } from "@/lib/shemesh/dashboard-model";
+import type { GviyaDeal } from "@/lib/shemesh/gviya";
 import type {
   AgentStat,
   DashboardData,
@@ -706,4 +708,51 @@ export function designLabFinance(now = new Date()): {
     updated_at: stamp,
   }));
   return { entries, employees, suppliers, from: `${month}-01`, to: today };
+}
+
+
+export function designLabShemeshDashboard(now = new Date()): { input: DashInput; sourceOptions: string[] } {
+  const today = jerusalemYmd(now);
+  const days = monthDays(today);
+  const agents = ["ניב - שמש", "שמש", "חן בר און"];
+  const clients = ["משפחת כהן", "דנה לוי", "יוסי מזרחי", "רונית אברהם", "אבי שמש"];
+  const deals: GviyaDeal[] = [
+    { id: "d1", client: clients[0], rep: agents[0], source: "גוגל", status: "פתוח", signed: true, dealDate: days[2] ?? today, dealAmount: 8200, collected: 4100, openAmount: 4100, invoiceDate: days[3] ?? today, cycleDays: 12, stage: "filed" },
+    { id: "d2", client: clients[1], rep: agents[1], source: "פייסבוק", status: "פתוח", signed: true, dealDate: days[6] ?? today, dealAmount: 6400, collected: 6400, openAmount: 0, invoiceDate: days[7] ?? today, cycleDays: 8, stage: "collected" },
+    { id: "d3", client: clients[2], rep: agents[0], source: "גוגל", status: "פתוח", signed: true, dealDate: days[9] ?? today, dealAmount: 9100, collected: 2500, openAmount: 6600, invoiceDate: null, cycleDays: null, stage: "documents" },
+    { id: "d4", client: clients[3], rep: agents[2], source: "גוגל", status: "בוטל", signed: false, dealDate: days[14] ?? today, dealAmount: 1800, collected: 0, openAmount: 1800, invoiceDate: null, cycleDays: null, stage: "lead" },
+    { id: "d5", client: clients[4], rep: agents[1], source: "פייסבוק", status: "פתוח", signed: true, dealDate: days[Math.max(0, days.length - 2)] ?? today, dealAmount: 4700, collected: 1200, openAmount: 3500, invoiceDate: null, cycleDays: null, stage: "filed" },
+  ];
+  const input: DashInput = {
+    hasWorkbook: true,
+    deals,
+    cases: [
+      { id: "c1", clientName: clients[0], stage: "documents", status: "open", handler: agents[0], openedOn: days[1] ?? today, deadline: days[Math.min(10, days.length - 1)] ?? today, overdue: false, missingDocs: 2 },
+      { id: "c2", clientName: clients[2], stage: "filed", status: "open", handler: agents[0], openedOn: days[4] ?? today, deadline: days[Math.min(5, days.length - 1)] ?? today, overdue: true, missingDocs: 0 },
+      { id: "c3", clientName: clients[4], stage: "lead", status: "open", handler: "", openedOn: days[8] ?? today, deadline: null, overdue: false, missingDocs: 1 },
+    ],
+    ledger: [
+      { id: "l1", client: clients[0], status: "open", fee: null, day: days[5] ?? today },
+      { id: "l2", client: clients[1], status: "open", fee: 1200, day: days[8] ?? today },
+    ],
+    ratesPending: true,
+    slaDays: 7,
+    drafts: [{ id: "s1", period: today.slice(0, 7), status: "draft", liba: 2400, insurance: 800, redemption: 1200 }],
+    campaigns: [
+      { name: "פיננסים — שיחות", channel: "google", spend: 4200, leads: 18, cpl: 233.33 },
+      { name: "פיננסים — טפסים", channel: "facebook", spend: 3100, leads: 22, cpl: 140.91 },
+    ],
+    audit: [
+      { id: "a1", summary: "נפתח תיק למשפחת כהן", createdAt: `${days[2] ?? today}T09:10:00.000Z` },
+      { id: "a2", summary: "עודכן סטטוס גבייה לדנה לוי", createdAt: `${days[6] ?? today}T14:22:00.000Z` },
+    ],
+    today,
+    salesFileName: "דוח מכירות שמש.xlsx",
+    salesSyncedAt: now.toISOString(),
+    salesColumns: { sheet: "גבייה", date: "תאריך עסקה", deal: "סכום עסקה", collected: "סכום שנגבה", open: "יתרה" },
+  };
+  return {
+    input,
+    sourceOptions: Array.from(new Set(deals.map((deal) => deal.source))).sort((a, b) => a.localeCompare(b, "he")),
+  };
 }

@@ -25,6 +25,7 @@ import {
   designLabLeads,
   designLabPl,
   designLabShemesh,
+  designLabShemeshDashboard,
 } from "@/lib/design-lab/fixtures";
 import { formatIls } from "@/lib/finance/categories";
 import { PERMISSION_KEYS } from "@/lib/permissions/catalog";
@@ -82,6 +83,7 @@ export default function DesignLabPage({
   }
 
   if (view === "shemesh") {
+    const shemeshDash = designLabShemeshDashboard(now);
     return (
       <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background">
         <Aurora tone="shemesh" />
@@ -91,7 +93,7 @@ export default function DesignLabPage({
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               <ShemeshTopbar profile={previewProfile} />
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-                <ShemeshDashboard />
+                <ShemeshDashboard input={shemeshDash.input} sourceOptions={shemeshDash.sourceOptions} />
               </div>
               <ShemeshMobileDock />
             </div>
