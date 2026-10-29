@@ -236,5 +236,3 @@ export async function downloadDriveItem(
   const file = await downloadGraphDriveItem(driveId, itemId);
   return { buffer: file.buffer, fileName: file.fileName.trim() || "shemesh-sales.xlsx" };
 }
-  };
-}
