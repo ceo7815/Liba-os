@@ -290,7 +290,7 @@ export function GlobalSyncButton({
         </span>
         <span className="flex min-w-0 flex-col items-start text-start leading-none">
           <span className="text-[12px] font-semibold tracking-tight sm:text-[13px]">סנכרון מערכת</span>
-          <span className="mt-1 whitespace-nowrap text-[10px] font-medium text-primary-foreground/70">
+          <span className="mt-1 max-w-[9rem] truncate text-[10px] font-medium text-primary-foreground/70 sm:max-w-none">
             {statusLine}
           </span>
         </span>

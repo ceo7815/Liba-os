@@ -37,6 +37,7 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      data-overlay="dialog"
       className={cn(
         "menu-panel fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-1.25rem)] max-h-[min(92dvh,calc(100dvh-1.25rem))] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain p-6 duration-200 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:w-full",
         className
@@ -44,7 +45,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute end-3 top-3 z-20 inline-flex size-9 cursor-pointer items-center justify-center rounded-md bg-muted opacity-90 ring-offset-background transition-opacity hover:bg-muted hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none sm:end-4 sm:top-4 sm:size-8 sm:bg-transparent">
+      <DialogPrimitive.Close className="absolute end-3 top-3 z-20 inline-flex size-11 cursor-pointer items-center justify-center rounded-md bg-muted opacity-90 ring-offset-background transition-opacity hover:bg-muted hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none sm:end-4 sm:top-4">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>

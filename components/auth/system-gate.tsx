@@ -40,7 +40,7 @@ export function SystemGate({
           <button
             type="button"
             onClick={() => choose("liba")}
-            className="flex w-full cursor-pointer flex-col items-center rounded-lg border border-border bg-card px-4 py-4 text-center shadow-card transition duration-rise ease-out hover:-translate-y-0.5 hover:border-highlight hover:shadow-lift"
+            className="auth-choice flex min-h-11 w-full cursor-pointer flex-col items-center rounded-lg border border-border bg-card px-4 py-4 text-center shadow-card"
           >
             <span className="logo-plate rounded-md px-3 py-1">
             <Image
@@ -58,7 +58,7 @@ export function SystemGate({
           <button
             type="button"
             onClick={() => choose("shemesh")}
-            className="flex w-full cursor-pointer flex-col items-center rounded-lg border border-border bg-card px-4 py-3 text-center shadow-card transition duration-rise ease-out hover:-translate-y-0.5 hover:border-[#185A94] hover:shadow-lift"
+            className="auth-choice auth-choice-shemesh flex min-h-11 w-full cursor-pointer flex-col items-center rounded-lg border border-border bg-card px-4 py-3 text-center shadow-card"
           >
             <span className="logo-plate rounded-md px-2 py-1">
             <Image
@@ -96,7 +96,7 @@ export function SystemGate({
         <button
           type="button"
           onClick={() => setSystem(null)}
-          className="text-sm font-bold text-[#5c5c5c] underline-offset-4 hover:text-foreground hover:underline"
+          className="inline-flex min-h-11 items-center text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           חזרה לבחירת מערכת
         </button>

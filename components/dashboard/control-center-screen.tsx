@@ -174,7 +174,7 @@ export function ControlCenterScreen() {
     <div className="space-y-3">
       <section className="relative overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-        <div className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-px bg-border min-[480px]:grid-cols-2 lg:grid-cols-4">
           <button
             type="button"
             onClick={() => setOpenKind("upcoming")}

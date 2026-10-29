@@ -21,29 +21,31 @@ export function AuthCard({
   return (
     <div
       className={cn(
-        "relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:py-12",
+        "auth-stage relative flex min-h-svh items-center justify-center overflow-hidden px-4 py-8",
         isShemesh && "shemesh-os",
       )}
     >
       <AuthAtmosphere tone={isShemesh ? "shemesh" : "liba"} />
+      <span aria-hidden className="brand-beam" />
 
-      <div className="relative z-10 w-full max-w-[440px] animate-auth-rise">
-        {brand === "chooser" ? null : (
-        <div className="mb-7 flex justify-center px-2">
+      <div className="relative z-10 w-full max-w-[440px]">
+        {brand === "chooser" ? (
+          <p className="auth-kicker mb-4 text-center">ליבה · שמש</p>
+        ) : (
+        <div className="auth-brand mb-6 flex justify-center px-2">
           <div className="relative w-full max-w-[300px]">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute left-1/2 top-1/2 h-[70%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-card/50 blur-2xl"
-            />
+            <p className="auth-kicker mb-3 text-center">{isShemesh ? "שמש" : "ליבה"}</p>
             {isShemesh ? (
-              <Image
-                src="/brand/shemesh-logo.png"
-                alt="שמש מימוש זכויות"
-                width={605}
-                height={782}
-                priority
-                className="relative z-10 mx-auto h-auto max-h-36 w-auto object-contain"
-              />
+              <span className="logo-plate relative z-10 mx-auto flex justify-center rounded-lg px-4 py-2">
+                <Image
+                  src="/brand/shemesh-logo.png"
+                  alt="שמש מימוש זכויות"
+                  width={605}
+                  height={782}
+                  priority
+                  className="h-auto max-h-32 w-auto object-contain"
+                />
+              </span>
             ) : (
               <LogoBadge full href="/login" className="relative z-10" />
             )}
@@ -53,10 +55,10 @@ export function AuthCard({
 
         <div
           data-auth-obstacle
-          className="relative overflow-hidden rounded-lg border border-border bg-card/95 p-8 shadow-pop backdrop-blur-xl sm:p-10"
+          className="auth-panel relative overflow-hidden rounded-[1.15rem] border border-border bg-card/95 p-6 shadow-pop backdrop-blur-xl sm:p-10"
         >
           <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-          <div className="mb-7 text-center">
+          <div className="mb-6 text-center">
             <h1 className="text-[1.65rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
               {title}
             </h1>
@@ -69,7 +71,7 @@ export function AuthCard({
           {children}
         </div>
 
-        <p className="mt-6 text-center text-xs font-medium tracking-wide text-muted-foreground">
+        <p className="auth-foot mt-6 text-center text-xs font-medium tracking-wide text-muted-foreground">
           {footer}
         </p>
       </div>

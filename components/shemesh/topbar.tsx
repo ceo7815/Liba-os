@@ -25,7 +25,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
               type="button"
               variant="ghost"
               size="icon"
-              className="size-10 shrink-0 rounded-xl active:scale-95 lg:hidden"
+              className="size-11 shrink-0 rounded-xl active:scale-95 lg:hidden"
               aria-label="תפריט ניווט"
             >
               <Menu className="size-4" />

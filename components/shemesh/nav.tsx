@@ -65,14 +65,14 @@ export function ShemeshSidebar({ className }: { className?: string }) {
       )}
     >
       <div className="flex flex-col items-center px-6 pb-3 pt-5">
-        <Link href="/shemesh" className="block">
+        <Link href="/shemesh" className="logo-plate block rounded-lg px-3 py-2">
           <Image
             src="/brand/shemesh-logo.png"
             alt="שמש מימוש זכויות"
             width={605}
             height={782}
             priority
-            className="h-28 w-auto object-contain"
+            className="mx-auto h-24 w-auto object-contain"
           />
         </Link>
         <div className="mt-3 h-px w-full bg-black/[0.06]">

@@ -33,7 +33,7 @@ export function ShellFrame({ children }: { children: React.ReactNode }) {
   return (
     <div
       data-module={moduleFromPath(pathname)}
-      className="flex min-h-screen bg-background text-foreground"
+      className="flex min-h-dvh bg-background text-foreground"
     >
       {children}
     </div>
