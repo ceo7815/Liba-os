@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ClipboardCheck, Download } from "lucide-react";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadEntryAuditExcel } from "@/lib/sales-dashboard/entry-audit-excel";
@@ -186,28 +187,15 @@ export function SalesEntryAudit({ sheets }: { sheets: WorkbookSheet[] }) {
                     </button>
                   ))}
                 </div>
-                <input
-                  type="date"
-                  value={mode === "custom" ? customFrom : ""}
-                  onChange={(event) => {
+                <DateRangeField
+                  from={mode === "custom" ? customFrom : ""}
+                  to={mode === "custom" ? customTo : ""}
+                  onChange={(next) => {
                     setMode("custom");
-                    setCustomFrom(event.target.value);
+                    setCustomFrom(next.from);
+                    setCustomTo(next.to);
                     resetSlice();
                   }}
-                  aria-label="מתאריך"
-                  className="h-8 rounded-full border border-border bg-card px-3 text-[13px]"
-                />
-                <span className="text-xs text-muted-foreground">עד</span>
-                <input
-                  type="date"
-                  value={mode === "custom" ? customTo : ""}
-                  onChange={(event) => {
-                    setMode("custom");
-                    setCustomTo(event.target.value);
-                    resetSlice();
-                  }}
-                  aria-label="עד תאריך"
-                  className="h-8 rounded-full border border-border bg-card px-3 text-[13px]"
                 />
               </div>
               {months.length > 0 ? (

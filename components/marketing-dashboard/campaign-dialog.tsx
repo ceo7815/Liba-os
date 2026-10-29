@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition, type FormEvent, type React
 import { Copy, ExternalLink, ChevronLeft, Search } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { DateField } from "@/components/ui/date-range-field";
 import { addCampaignExpense } from "@/app/actions/marketing-campaigns";
 import { cn } from "@/lib/utils";
 import {
@@ -1474,14 +1475,7 @@ export function QuickExpenseDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="expense-date">תאריך</Label>
-            <Input
-              id="expense-date"
-              className="h-11 rounded-xl border-border"
-              type="date"
-              value={occurredAt}
-              onChange={(e) => setOccurredAt(e.target.value)}
-              required
-            />
+            <DateField id="expense-date" value={occurredAt} onChange={setOccurredAt} />
           </div>
           <div className="space-y-1.5">
             <Label>מקור הוצאה</Label>

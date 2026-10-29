@@ -200,3 +200,79 @@ export function DateRangeField({
     </div>
   );
 }
+
+/** One calendar day, same Hebrew face as the range picker. */
+export function DateField({
+  value,
+  onChange,
+  id,
+}: {
+  value: string;
+  onChange: (iso: string) => void;
+  id?: string;
+}) {
+  const today = jerusalemToday();
+  const panelId = useId();
+  const root = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [cursor, setCursor] = useState((value || today).slice(0, 7));
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointer);
+    return () => document.removeEventListener("mousedown", onPointer);
+  }, [open]);
+
+  const cells = monthCells(cursor);
+  const monthLabel = `${MONTHS[Number(cursor.slice(5, 7)) - 1]} ${cursor.slice(0, 4)}`;
+
+  return (
+    <div ref={root} className="relative">
+      <button
+        id={id}
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((next) => !next)}
+        className="inline-flex h-10 w-full items-center gap-2 rounded-xl border border-white/80 bg-white/80 px-3 text-sm font-medium text-[#1d1d1f]"
+      >
+        <Calendar className="size-3.5 text-[#c2410c]" />
+        <span dir="ltr" className="tabular-nums">{value ? formatHebrewDay(value) : "בחרו תאריך"}</span>
+      </button>
+      {open ? (
+        <div id={panelId} className="absolute end-0 z-50 mt-2 w-[18.5rem] rounded-[20px] border border-white/80 bg-white/90 p-3 shadow-pop backdrop-blur-2xl">
+          <div className="mb-2 flex items-center justify-between">
+            <button type="button" className="size-7 rounded-full hover:bg-black/5" onClick={() => setCursor(shiftMonth(cursor, 1))} aria-label="חודש הבא">‹</button>
+            <p className="text-sm font-semibold">{monthLabel}</p>
+            <button type="button" className="size-7 rounded-full hover:bg-black/5" onClick={() => setCursor(shiftMonth(cursor, -1))} aria-label="חודש קודם">›</button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-[#3a3a3c]">
+            {WEEK.map((day) => <span key={day}>{day}</span>)}
+          </div>
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {cells.map((cell) => (
+              <button
+                key={cell.iso}
+                type="button"
+                onClick={() => {
+                  onChange(cell.iso);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "h-8 rounded-full text-xs tabular-nums",
+                  cell.outside && "opacity-40",
+                  cell.iso === value ? "bg-[#ffd60a] font-semibold text-[#1a1204]" : "hover:bg-black/5",
+                )}
+              >
+                {cell.day}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

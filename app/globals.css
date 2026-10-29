@@ -172,7 +172,7 @@
     --secondary: 240 5% 94%;
     --secondary-foreground: 240 6% 11%;
     --muted: 240 5% 94%;
-    --muted-foreground: 240 2% 42%;
+    --muted-foreground: 240 3% 23%;
     --accent: 48 96% 50%;
     --accent-foreground: 36 40% 16%;
     --highlight: 48 96% 50%;
@@ -506,12 +506,12 @@
 }
 
 .kpi-cube {
-  background: rgb(255 255 255 / 0.58);
+  background: rgb(255 255 255 / 0.74);
   color: hsl(var(--foreground));
   border: 1px solid transparent;
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 0.95),
-    0 16px 36px rgb(255 140 0 / 0.12);
+    0 16px 36px rgb(255 140 0 / 0.1);
   -webkit-backdrop-filter: blur(24px) saturate(1.8);
   backdrop-filter: blur(24px) saturate(1.8);
   transition:
@@ -520,20 +520,20 @@
 }
 
 .kpi-cube[data-accent="green"] {
-  background: linear-gradient(180deg, rgb(31 157 98 / 0.2), rgb(255 255 255 / 0.62));
-  box-shadow: inset 0 0 0 1px #fff, 0 14px 32px rgb(20 120 60 / 0.16);
+  background: linear-gradient(180deg, rgb(31 157 98 / 0.16), rgb(255 255 255 / 0.78));
+  box-shadow: inset 0 0 0 1px #fff, 0 14px 32px rgb(20 120 60 / 0.12);
 }
 .kpi-cube[data-accent="violet"] {
-  background: linear-gradient(180deg, rgb(109 94 252 / 0.18), rgb(255 255 255 / 0.62));
-  box-shadow: inset 0 0 0 1px #fff, 0 14px 32px rgb(70 50 180 / 0.16);
+  background: linear-gradient(180deg, rgb(109 94 252 / 0.14), rgb(255 255 255 / 0.78));
+  box-shadow: inset 0 0 0 1px #fff, 0 14px 32px rgb(70 50 180 / 0.12);
 }
 .kpi-cube[data-accent="teal"] {
-  background: linear-gradient(180deg, rgb(18 158 174 / 0.18), rgb(255 255 255 / 0.62));
-  box-shadow: inset 0 0 0 1px #fff, 0 14px 32px rgb(10 110 120 / 0.16);
+  background: linear-gradient(180deg, rgb(18 158 174 / 0.14), rgb(255 255 255 / 0.78));
+  box-shadow: inset 0 0 0 1px #fff, 0 14px 32px rgb(10 110 120 / 0.12);
 }
 .kpi-cube[data-accent="coral"] {
-  background: linear-gradient(180deg, rgb(255 107 129 / 0.18), rgb(255 255 255 / 0.62));
-  box-shadow: inset 0 0 0 1px #fff, 0 14px 32px rgb(180 40 60 / 0.14);
+  background: linear-gradient(180deg, rgb(255 107 129 / 0.14), rgb(255 255 255 / 0.78));
+  box-shadow: inset 0 0 0 1px #fff, 0 14px 32px rgb(180 40 60 / 0.1);
 }
 
 .kpi-cube,
@@ -729,13 +729,13 @@
 }
 
 .glass {
-  background: rgb(255 255 255 / 0.66);
-  border: 1px solid rgb(255 255 255 / 0.82);
+  background: rgb(255 255 255 / 0.74);
+  border: 1px solid rgb(255 255 255 / 0.9);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.95),
+    inset 0 0 0 1px rgb(255 255 255 / 0.95),
     0 12px 32px rgb(90 40 0 / 0.08);
-  -webkit-backdrop-filter: blur(20px) saturate(1.55);
-  backdrop-filter: blur(20px) saturate(1.55);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
 }
 
 .dark .glass {
@@ -1136,40 +1136,40 @@ button,
   z-index: 0 !important;
   overflow: hidden;
   pointer-events: none;
-  background: #fff6ea;
+  background: #fffaf6;
 }
 
 .aurora span {
   position: absolute;
-  width: 62vw;
-  height: 62vw;
+  width: 46vw;
+  height: 46vw;
   border-radius: 999px;
-  filter: blur(28px);
-  opacity: 0.92;
+  filter: blur(56px);
+  opacity: 0.38;
   mix-blend-mode: multiply;
   animation: blob-drift 32s ease-in-out infinite alternate;
   will-change: transform;
 }
 
-.aurora span:nth-child(1) { background: #ffd60a; top: -18%; inset-inline-start: -12%; }
-.aurora span:nth-child(2) { background: #ff9f0a; top: -8%; inset-inline-end: -18%; width: 54vw; height: 54vw; animation-duration: 26s; }
-.aurora span:nth-child(3) { background: #ffb38a; top: 38%; inset-inline-start: 18%; width: 48vw; height: 48vw; animation-duration: 36s; }
-.aurora span:nth-child(4) { background: #ff6b81; bottom: -16%; inset-inline-end: 8%; width: 46vw; height: 46vw; opacity: 0.72; animation-duration: 30s; }
-.aurora span:nth-child(5) { background: #ffe14a; bottom: -8%; inset-inline-start: -8%; width: 40vw; height: 40vw; animation-duration: 22s; }
+.aurora span:nth-child(1) { background: #ffd60a; top: -22%; inset-inline-start: -14%; width: 42vw; height: 42vw; }
+.aurora span:nth-child(2) { background: #ffb38a; top: -16%; inset-inline-end: -12%; width: 36vw; height: 36vw; opacity: 0.32; animation-duration: 26s; }
+.aurora span:nth-child(3) { background: #fff; top: 28%; inset-inline-start: 22%; width: 58vw; height: 42vw; opacity: 0.92; mix-blend-mode: normal; filter: blur(36px); animation-duration: 36s; }
+.aurora span:nth-child(4) { background: #ff6b81; bottom: -20%; inset-inline-end: -8%; width: 34vw; height: 34vw; opacity: 0.28; animation-duration: 30s; }
+.aurora span:nth-child(5) { background: #ffe7c2; bottom: -18%; inset-inline-start: -10%; width: 32vw; height: 32vw; opacity: 0.34; animation-duration: 22s; }
 
-.aurora-shemesh { background: #eef6ff; }
-.aurora-shemesh span:nth-child(1) { background: #5ac8fa; }
-.aurora-shemesh span:nth-child(2) { background: #0a84ff; opacity: 0.72; }
-.aurora-shemesh span:nth-child(3) { background: #ffd60a; }
-.aurora-shemesh span:nth-child(4) { background: #7b6cff; opacity: 0.55; }
-.aurora-shemesh span:nth-child(5) { background: #9fd8ff; }
+.aurora-shemesh { background: #f7fbff; }
+.aurora-shemesh span:nth-child(1) { background: #5ac8fa; top: -20%; inset-inline-start: -12%; opacity: 0.36; }
+.aurora-shemesh span:nth-child(2) { background: #0a84ff; top: auto; bottom: -22%; inset-inline-start: -8%; inset-inline-end: auto; opacity: 0.28; }
+.aurora-shemesh span:nth-child(3) { background: #fff; top: 30%; inset-inline-start: 24%; opacity: 0.94; mix-blend-mode: normal; }
+.aurora-shemesh span:nth-child(4) { background: #7b6cff; bottom: -18%; inset-inline-end: -10%; inset-inline-start: auto; opacity: 0.26; }
+.aurora-shemesh span:nth-child(5) { background: #ffd60a; top: -24%; inset-inline-end: -6%; inset-inline-start: auto; bottom: auto; width: 28vw; height: 28vw; opacity: 0.34; }
 
 .aurora-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgb(255 255 255 / 0.55) 1.1px, transparent 1.2px);
-  background-size: 18px 18px;
-  opacity: 0.55;
+  background-image: radial-gradient(rgb(90 70 40 / 0.18) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  opacity: 0.35;
 }
 
 .dark .aurora { background: #16120c; }

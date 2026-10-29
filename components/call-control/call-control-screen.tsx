@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Headphones, KeyRound, PhoneOff } from "lucide-react";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import {
   Dialog,
   DialogContent,
@@ -375,24 +376,14 @@ export function CallControlScreen({
                   קריטי
                 </FilterChip>
               </div>
-              <label className="text-[11px] font-medium text-muted-foreground">
-                מתאריך
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="mt-1 block h-9 w-full rounded-xl border border-border bg-background px-3 text-sm sm:w-36"
-                />
-              </label>
-              <label className="text-[11px] font-medium text-muted-foreground">
-                עד
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="mt-1 block h-9 w-full rounded-xl border border-border bg-background px-3 text-sm sm:w-36"
-                />
-              </label>
+              <DateRangeField
+                from={dateFrom}
+                to={dateTo}
+                onChange={(next) => {
+                  setDateFrom(next.from);
+                  setDateTo(next.to);
+                }}
+              />
               <p className="ms-auto pb-1 text-xs text-muted-foreground">
                 {filtered.length} שיחות
                 {filtered.length !== rows.length ? ` מתוך ${rows.length}` : ""}

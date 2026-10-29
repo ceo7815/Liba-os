@@ -8,6 +8,7 @@ import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { SalesEntryAudit } from "@/components/sales-dashboard/sales-entry-audit";
 import { SalesExcelGrid, type SortState } from "@/components/sales-dashboard/sales-excel-grid";
 import { SalesExcelInspector } from "@/components/sales-dashboard/sales-excel-inspector";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -564,20 +565,13 @@ export function SalesExcelReportScreen({
                     </button>
                   ))}
                 </div>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(event) => setDateFrom(event.target.value)}
-                  aria-label="מתאריך"
-                  className={selectClass}
-                />
-                <span className="text-xs text-muted-foreground">עד</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(event) => setDateTo(event.target.value)}
-                  aria-label="עד תאריך"
-                  className={selectClass}
+                <DateRangeField
+                  from={dateFrom}
+                  to={dateTo}
+                  onChange={(next) => {
+                    setDateFrom(next.from);
+                    setDateTo(next.to);
+                  }}
                 />
               </div>
             ) : null}

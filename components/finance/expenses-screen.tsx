@@ -15,6 +15,7 @@ import {
   type FinanceFixedCostWithMeta,
 } from "@/lib/finance/categories";
 import { listFinanceFixedCosts } from "@/app/actions/finance-fixed-costs";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Input } from "@/components/ui/input";
 
 export type ExpensesTab = "all" | "fixed" | "variable";
@@ -298,30 +299,15 @@ export function ExpensesScreen({ initialFixedCosts }: ExpensesScreenProps) {
 
         {preset === "range" ? (
           <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">מתאריך</label>
-              <Input
-                type="date"
-                value={rangeFrom}
-                onChange={(e) => {
-                  setRangeFrom(e.target.value);
-                  writeUrl({ from: e.target.value });
-                }}
-                className="h-9 w-[11rem] rounded-xl"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">עד תאריך</label>
-              <Input
-                type="date"
-                value={rangeTo}
-                onChange={(e) => {
-                  setRangeTo(e.target.value);
-                  writeUrl({ to: e.target.value });
-                }}
-                className="h-9 w-[11rem] rounded-xl"
-              />
-            </div>
+            <DateRangeField
+              from={rangeFrom}
+              to={rangeTo}
+              onChange={(next) => {
+                setRangeFrom(next.from);
+                setRangeTo(next.to);
+                writeUrl({ from: next.from, to: next.to });
+              }}
+            />
           </div>
         ) : null}
 

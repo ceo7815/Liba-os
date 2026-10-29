@@ -74,6 +74,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DateField } from "@/components/ui/date-range-field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { MarketingProduction } from "@/lib/sales-dashboard/types";
@@ -651,20 +652,10 @@ export function EmployeeCardDialog({
                   <>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field label="מתאריך" hint="ריק = מתחילת האקסל">
-                        <Input
-                          type="date"
-                          className="h-11 rounded-xl tabular-nums"
-                          value={selected.from}
-                          onChange={(e) => patchAgreement(selected.id, { from: e.target.value })}
-                        />
+                        <DateField value={selected.from} onChange={(iso) => patchAgreement(selected.id, { from: iso })} />
                       </Field>
                       <Field label="עד תאריך" hint="ריק = בתוקף עד היום">
-                        <Input
-                          type="date"
-                          className="h-11 rounded-xl tabular-nums"
-                          value={selected.to}
-                          onChange={(e) => patchAgreement(selected.id, { to: e.target.value })}
-                        />
+                        <DateField value={selected.to} onChange={(iso) => patchAgreement(selected.id, { to: iso })} />
                       </Field>
                     </div>
 

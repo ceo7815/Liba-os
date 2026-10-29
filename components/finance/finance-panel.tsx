@@ -52,7 +52,7 @@ import {
   type PlReport,
 } from "@/lib/finance/categories";
 import { cn } from "@/lib/utils";
-import { DateRangeField } from "@/components/ui/date-range-field";
+import { DateField, DateRangeField } from "@/components/ui/date-range-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -1565,14 +1565,9 @@ function EntryDialog({
             ) : (
               <div className="space-y-1.5">
                 <Label className="block text-start">תאריך</Label>
-                <Input
-                  type="date"
-                  required
+                <DateField
                   value={form.occurred_at}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, occurred_at: e.target.value }))
-                  }
-                  className="rounded-xl text-start"
+                  onChange={(iso) => setForm((f) => ({ ...f, occurred_at: iso }))}
                 />
               </div>
             )}

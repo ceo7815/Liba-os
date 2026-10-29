@@ -28,6 +28,7 @@ import {
   type DateRange,
 } from "@/lib/sales-dashboard/campaign-math";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
@@ -403,28 +404,13 @@ export function GeneralPlScreen({
         </div>
         {preset === "custom" ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Input
-              type="date"
-              className="h-10 w-40 rounded-xl border-border"
-              value={custom.from ?? ""}
-              onChange={(e) => {
-                const next = {
-                  ...custom,
-                  from: e.target.value || null,
-                };
-                setCustom(next);
-                if (next.from && next.to) applyPreset("custom", next);
-              }}
-            />
-            <span className="text-xs text-muted-foreground">עד</span>
-            <Input
-              type="date"
-              className="h-10 w-40 rounded-xl border-border"
-              value={custom.to ?? ""}
-              onChange={(e) => {
-                const next = { ...custom, to: e.target.value || null };
-                setCustom(next);
-                if (next.from && next.to) applyPreset("custom", next);
+            <DateRangeField
+              from={custom.from ?? ""}
+              to={custom.to ?? ""}
+              onChange={(next) => {
+                const range = { from: next.from || null, to: next.to || null };
+                setCustom(range);
+                if (range.from && range.to) applyPreset("custom", range);
               }}
             />
           </div>

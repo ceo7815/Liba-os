@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import type { FacebookAdsConnection } from "@/app/actions/facebook-ads";
 import type { GoogleAdsConnection } from "@/app/actions/google-ads";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
 import { Money } from "@/components/marketing-dashboard/campaign-dialog";
@@ -703,23 +704,11 @@ export function SalesBySourceScreen() {
           </span>
         </div>
         {preset === "custom" ? (
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
-            <Input
-              type="date"
-              className="h-11 w-full rounded-xl border-border sm:h-10 sm:w-40"
-              value={custom.from ?? ""}
-              onChange={(e) =>
-                setCustom((prev) => ({ ...prev, from: e.target.value || null }))
-              }
-            />
-            <span className="hidden text-xs text-muted-foreground sm:inline">עד</span>
-            <Input
-              type="date"
-              className="h-11 w-full rounded-xl border-border sm:h-10 sm:w-40"
-              value={custom.to ?? ""}
-              onChange={(e) =>
-                setCustom((prev) => ({ ...prev, to: e.target.value || null }))
-              }
+          <div className="mt-3">
+            <DateRangeField
+              from={custom.from ?? ""}
+              to={custom.to ?? ""}
+              onChange={(next) => setCustom({ from: next.from || null, to: next.to || null })}
             />
           </div>
         ) : null}

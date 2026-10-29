@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, Megaphone, UserRound, type LucideIcon } from "lucide-react";
+import { ChevronLeft, Megaphone, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import { ShemeshFilters } from "@/components/shemesh/filters";
 import { useShemeshPulse } from "@/components/shemesh/pulse-context";
 import { useShemeshFilter } from "@/components/shemesh/use-shemesh-view";
@@ -93,6 +93,8 @@ export function ShemeshDashboard() {
         <div className="kpi-band grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <HeroCell
             hero
+            tone="sun"
+            icon={Wallet}
             href="/shemesh/revenue"
             kicker="בתאריכים"
             label="מכרנו"
@@ -101,6 +103,8 @@ export function ShemeshDashboard() {
             hint={board.soldCount ? `${formatShemeshCount(board.soldCount)} עסקאות` : "אין עסקאות בתאריכים האלה"}
           />
           <HeroCell
+            tone="green"
+            icon={Wallet}
             href="/shemesh/revenue"
             kicker="כל הקובץ"
             label="פתוח לגבייה"
@@ -109,6 +113,8 @@ export function ShemeshDashboard() {
             hint={board.openCount ? `${formatShemeshCount(board.openCount)} עסקאות שעדיין לא נגבו` : "אין יתרה פתוחה"}
           />
           <HeroCell
+            tone="violet"
+            icon={Megaphone}
             href="/shemesh/marketing"
             kicker="בתאריכים"
             label="עלות קמפיינים"
@@ -121,6 +127,8 @@ export function ShemeshDashboard() {
             }
           />
           <HeroCell
+            tone="teal"
+            icon={Users}
             href="/shemesh/leads"
             kicker="בתאריכים"
             label="לידים"
@@ -218,6 +226,8 @@ function HeroCell({
   text,
   hint,
   hero,
+  tone = "teal",
+  icon: Icon = Wallet,
 }: {
   href: string;
   kicker: string;
@@ -226,17 +236,25 @@ function HeroCell({
   text: (value: number) => string;
   hint: string;
   hero?: boolean;
+  tone?: "sun" | "green" | "violet" | "teal";
+  icon?: LucideIcon;
 }) {
   return (
     <Link
       href={href}
+      data-accent={hero ? undefined : tone}
       className={cn(
         "kpi-cube group px-4 py-3 text-start transition-colors sm:px-5 sm:py-4",
-        hero ? "kpi-hero" : "bg-white hover:bg-[#f7f7f8]",
+        hero ? "kpi-hero" : "",
       )}
     >
-      <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-        {kicker}
+      <span className="flex items-center justify-between gap-2">
+        <span className="kpi-badge" data-tone={tone} aria-hidden>
+          <Icon className="size-4" />
+        </span>
+        <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+          {kicker}
+        </span>
       </span>
       <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">

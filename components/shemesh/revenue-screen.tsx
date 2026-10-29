@@ -3,6 +3,7 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, Wallet } from "lucide-react";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
@@ -354,28 +355,15 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
               {label}
             </button>
           ))}
-          <input
-            type="date"
-            dir="ltr"
-            aria-label="מתאריך"
-            value={from}
-            onChange={(event) => {
+          <DateRangeField
+            from={from}
+            to={to}
+            onChange={(next) => {
               setPreset("custom");
-              resetPageAnd(setFrom)(event.target.value);
+              resetPageAnd(setFrom)(next.from);
+              setTo(next.to);
+              setPage(0);
             }}
-            className={fieldClass}
-          />
-          <span className="text-xs text-muted-foreground">עד</span>
-          <input
-            type="date"
-            dir="ltr"
-            aria-label="עד תאריך"
-            value={to}
-            onChange={(event) => {
-              setPreset("custom");
-              resetPageAnd(setTo)(event.target.value);
-            }}
-            className={fieldClass}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">

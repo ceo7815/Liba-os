@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import Link from "next/link";
 import { BarChart3, ChevronDown, ChevronLeft, ChevronUp, Receipt, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -1183,19 +1184,11 @@ export function SourcePnlScreen({
           </span>
         </div>
         {preset === "custom" ? (
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
-            <Input
-              type="date"
-              className="h-11 w-full rounded-xl border-border sm:h-10 sm:w-40"
-              value={custom.from ?? ""}
-              onChange={(e) => setCustom((prev) => ({ ...prev, from: e.target.value || null }))}
-            />
-            <span className="hidden text-xs text-muted-foreground sm:inline">עד</span>
-            <Input
-              type="date"
-              className="h-11 w-full rounded-xl border-border sm:h-10 sm:w-40"
-              value={custom.to ?? ""}
-              onChange={(e) => setCustom((prev) => ({ ...prev, to: e.target.value || null }))}
+          <div className="mt-3">
+            <DateRangeField
+              from={custom.from ?? ""}
+              to={custom.to ?? ""}
+              onChange={(next) => setCustom({ from: next.from || null, to: next.to || null })}
             />
           </div>
         ) : null}

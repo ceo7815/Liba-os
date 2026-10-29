@@ -54,6 +54,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DateField } from "@/components/ui/date-range-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -1010,14 +1011,7 @@ function ExpenseEditorDialog({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="exp-paid-at">תאריך תשלום</Label>
-                <Input
-                  id="exp-paid-at"
-                  type="date"
-                  value={paidAt}
-                  onChange={(e) => setPaidAt(e.target.value)}
-                  required
-                  className="rounded-xl"
-                />
+                <DateField id="exp-paid-at" value={paidAt} onChange={setPaidAt} />
               </div>
               {expenseKind === "fixed" ? (
                 <div className="space-y-1.5">
