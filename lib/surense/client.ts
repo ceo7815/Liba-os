@@ -2,6 +2,7 @@ import { publicErrorText } from "@/lib/sync-log";
 
 const DEFAULT_TOKEN_URL = "https://api.surense.com/oauth/token";
 const DEFAULT_API_BASE = "https://api.surense.com/api/v1";
+const DEFAULT_AUDIENCE = "https://api.surense.com";
 
 type CachedToken = {
   accessToken: string;
@@ -56,6 +57,10 @@ function tokenUrl(): string {
   return process.env.SURENSE_TOKEN_URL?.trim() || DEFAULT_TOKEN_URL;
 }
 
+function tokenAudience(): string {
+  return process.env.SURENSE_AUDIENCE?.trim() || DEFAULT_AUDIENCE;
+}
+
 function apiBase(): string {
   return (process.env.SURENSE_API_BASE?.trim() || DEFAULT_API_BASE).replace(/\/$/, "");
 }
@@ -73,10 +78,12 @@ async function readToken(response: Response): Promise<CachedToken> {
 
 async function requestToken(clientId: string, clientSecret: string): Promise<CachedToken> {
   const url = tokenUrl();
+  const audience = tokenAudience();
   const form = new URLSearchParams({
     grant_type: "client_credentials",
     client_id: clientId,
     client_secret: clientSecret,
+    audience,
   });
   let posted: Response;
   try {
@@ -112,7 +119,10 @@ async function requestToken(clientId: string, clientSecret: string): Promise<Cac
         Authorization: `Basic ${basic}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({ grant_type: "client_credentials" }),
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+        audience,
+      }),
       cache: "no-store",
     });
   } catch (err) {
