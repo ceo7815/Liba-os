@@ -70,6 +70,14 @@ export function canManageAgents(profile: AccessProfile | null | undefined): bool
   return hasPermission(profile, "agents.manage");
 }
 
+export function canViewShemesh(profile: AccessProfile | null | undefined): boolean {
+  return profile?.role === "admin" || hasAnyPermission(profile, ["shemesh.view", "shemesh.manage"]);
+}
+
+export function canManageShemesh(profile: AccessProfile | null | undefined): boolean {
+  return profile?.role === "admin" || hasPermission(profile, "shemesh.manage");
+}
+
 export function canViewVault(profile: AccessProfile | null | undefined): boolean {
   return hasPermission(profile, "vault.view");
 }

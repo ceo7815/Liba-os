@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { runShemeshSync } from "@/app/actions/shemesh-connect";
 import { syncLeadControl } from "@/app/actions/lead-control";
 import { syncEmployeesFromExcel } from "@/app/actions/finance-people";
 import { syncFacebookAds } from "@/app/actions/facebook-ads";
@@ -249,6 +250,14 @@ export function GlobalSyncButton({
           setLeadsStatus("failed");
           toast.error(err instanceof Error ? err.message : "סנכרון שורנס נכשל");
         }
+      }
+
+      try {
+        const shemesh = await runShemeshSync();
+        const detail = shemesh.notes.filter(Boolean).slice(0, 3).join(" · ");
+        if (detail) toast.message(`שמש · ${detail}`);
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "סנכרון שמש נכשל");
       }
 
       notifyGlobalSyncDone();

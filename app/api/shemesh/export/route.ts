@@ -1,0 +1,50 @@
+import { NextResponse } from "next/server";
+import * as XLSX from "xlsx";
+import { getCurrentProfile } from "@/lib/auth";
+import { canViewShemesh } from "@/lib/permissions/access";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isMissingRelation } from "@/lib/shemesh/db";
+
+export const dynamic = "force-dynamic";
+
+const TABLES: Record<string, string> = {
+  cases: "shemesh_cases",
+  ledger: "shemesh_ledger",
+  rules: "shemesh_rules",
+};
+
+export async function GET(request: Request) {
+  const profile = await getCurrentProfile();
+  if (!profile || !canViewShemesh(profile)) {
+    return NextResponse.json({ error: "אין הרשאה" }, { status: 401 });
+  }
+  const kind = new URL(request.url).searchParams.get("kind") ?? "";
+  const [tableKey, filter] = kind.split(":");
+  const table = TABLES[tableKey];
+  if (!table) return NextResponse.json({ error: "סוג לא מוכר" }, { status: 400 });
+  try {
+    const admin = createAdminClient();
+    let query = admin.from(table).select("*").limit(2000);
+    if (tableKey === "rules" && filter) query = query.eq("kind", filter);
+    if (tableKey === "ledger" && filter) query = query.eq("kind", filter);
+    const { data, error } = await query;
+    if (error) {
+      const status = isMissingRelation(error.message) ? 404 : 500;
+      return NextResponse.json({ error: isMissingRelation(error.message) ? "הטבלה עדיין לא הורצה" : error.message }, { status });
+    }
+    const sheet = XLSX.utils.json_to_sheet(data ?? []);
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, "Shemesh");
+    const body = XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer;
+    return new NextResponse(new Uint8Array(body), {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="shemesh-${tableKey}.xlsx"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "הייצוא נכשל";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

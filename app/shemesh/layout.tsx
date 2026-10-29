@@ -9,6 +9,7 @@ import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
 import { ShemeshTheme } from "@/components/shemesh/theme";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
 import { requireProfile } from "@/lib/auth";
+import { canViewShemesh } from "@/lib/permissions/access";
 import { assessShemeshSources } from "@/lib/shemesh/connectors";
 import { loadShemeshPulse } from "@/lib/shemesh/load-pulse";
 
@@ -74,13 +75,13 @@ export default async function ShemeshLayout({
     live.campaigns.some((campaign) => campaign.channel === "google"),
   );
 
-  if (profile.role !== "admin") {
+  if (!canViewShemesh(profile)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
         <div className="max-w-md">
           <h1 className="text-2xl font-semibold">שמש</h1>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            המערכת זמינה למשתמשים עם הרשאת ניהול.
+            המערכת זמינה למי שיש לו הרשאת שמש.
           </p>
           <Link href="/dashboard" className="mt-5 inline-block text-sm font-medium underline">
             חזרה לליבה

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Building2,
+  ClipboardList,
   Cable,
   Calculator,
   FileText,
@@ -35,6 +36,7 @@ const SECTIONS: {
       { href: "/shemesh/gviya", label: "פדיונות", icon: BadgeDollarSign },
       { href: "/shemesh/tax-refunds", label: "החזרי מס", icon: Scale },
       { href: "/shemesh/marketing", label: "שיווק", icon: Megaphone },
+      { href: "/shemesh/cases", label: "תיקים", icon: ClipboardList },
       { href: "/shemesh/leads", label: "לידים", icon: Users },
       { href: "/shemesh/sales", label: "שורות מכירה", icon: Rows3 },
       { href: "/shemesh/portfolio-report", label: "השוואת תיק", icon: FileText },
@@ -52,6 +54,9 @@ const SECTIONS: {
     title: "מערכת",
     items: [
       { href: "/shemesh/costs", label: "הוצאות קבועות", icon: Receipt },
+      { href: "/shemesh/debts", label: "חובות", icon: Landmark },
+      { href: "/shemesh/income", label: "הכנסה", icon: Wallet },
+      { href: "/shemesh/commissions", label: "עמלות", icon: BadgeDollarSign },
       { href: "/shemesh/receipts", label: "קבלות", icon: Landmark },
       { href: "/shemesh/insurance", label: "ביטוח", icon: Shield },
       { href: "/shemesh/settlement", label: "התחשבנות מול ליבה", icon: Wallet },

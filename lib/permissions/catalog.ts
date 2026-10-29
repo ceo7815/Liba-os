@@ -23,6 +23,8 @@ export const PERMISSION_KEYS = [
   "academy.manage",
   "org.users",
   "portals.view",
+  "shemesh.view",
+  "shemesh.manage",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -185,6 +187,23 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       },
     ],
   },
+  {
+    id: "shemesh",
+    label: "שמש",
+    description: "מערכת שמש, בנפרד מליבה",
+    permissions: [
+      {
+        key: "shemesh.view",
+        label: "שמש — צפייה",
+        description: "צפייה בתיקים, כספים וממשקים של שמש",
+      },
+      {
+        key: "shemesh.manage",
+        label: "שמש — ניהול",
+        description: "יצירה, עריכה, סטטוס, שיוך וחיבור מערכות",
+      },
+    ],
+  },
 ];
 
 export type PermissionPresetId =
@@ -248,6 +267,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       "academy.learn",
       "academy.team",
       "portals.view",
+      "shemesh.view",
     ],
   },
   {
