@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function ShemeshPage({
   title,
@@ -40,12 +41,40 @@ export function ShemeshPage({
   );
 }
 
-export function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+export function Stat({
+  label,
+  value,
+  hint,
+  hero,
+  tone = "teal",
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  hero?: boolean;
+  tone?: "sun" | "green" | "violet" | "teal" | "coral";
+}) {
   return (
-    <div className="rounded-2xl bg-[#f4f7fb] px-4 py-3">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
-      {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}
+    <div className={cn("kpi-cube px-4 py-3.5 sm:px-5 sm:py-4", hero && "kpi-hero")} data-accent={hero ? undefined : tone}>
+      <span className="kpi-badge" data-tone={tone} aria-hidden />
+      <p className="mt-2 text-[11px] font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-3xl font-semibold leading-none tracking-tight">{value}</p>
+      {hint ? <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function ShemeshSkeleton() {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <div className="skeleton h-8 w-40 rounded-full" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="skeleton h-28 rounded-[20px]" />
+        <div className="skeleton h-28 rounded-[20px]" />
+        <div className="skeleton h-28 rounded-[20px]" />
+        <div className="skeleton h-28 rounded-[20px]" />
+      </div>
+      <div className="skeleton h-64 rounded-[20px]" />
     </div>
   );
 }

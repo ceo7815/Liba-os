@@ -39,6 +39,24 @@ import { CountUp } from "@/components/ui/count-up";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+function smoothLine(points: { x: number; y: number }[]) {
+  if (points.length < 2) return "";
+  const n = (value: number) => value.toFixed(1);
+  let d = `M${n(points[0].x)} ${n(points[0].y)}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C${n(c1x)} ${n(c1y)}, ${n(c2x)} ${n(c2y)}, ${n(p2.x)} ${n(p2.y)}`;
+  }
+  return d;
+}
+
 function MiniArea({ title, counts, from, to }: { title: string; counts: number[]; from: string; to: string }) {
   if (counts.length < 2) return null;
   const width = 280;
@@ -51,8 +69,9 @@ function MiniArea({ title, counts, from, to }: { title: string; counts: number[]
     const y = height - 8 - ((value - min) / span) * (height - 16);
     return { x, y };
   });
-  const d = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const d = smoothLine(points);
   const area = `${d} L${width} ${height} L0 ${height} Z`;
+  const last = points[points.length - 1];
   const id = title.replace(/\s/g, "");
   return (
     <div className="kpi-cube p-4">
@@ -69,7 +88,8 @@ function MiniArea({ title, counts, from, to }: { title: string; counts: number[]
           </linearGradient>
         </defs>
         <path d={area} fill={`url(#${id}-fill)`} />
-        <path d={d} fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.5" strokeLinecap="round" className="chart-line" pathLength={100} />
+        <path d={d} fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="chart-line" pathLength={100} />
+        <circle cx={last.x} cy={last.y} r="3.2" fill={to} />
       </svg>
     </div>
   );
@@ -87,10 +107,9 @@ function SalesSpark({ counts }: { counts: number[] }) {
     const y = height - 3 - ((value - min) / span) * (height - 6);
     return { x, y };
   });
-  const d = points
-    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-    .join(" ");
+  const d = smoothLine(points);
   const area = `${d} L${width} ${height} L0 ${height} Z`;
+  const last = points[points.length - 1];
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-6 w-[4.75rem]" role="img" aria-label="מגמת המכירות השמורה">
@@ -105,7 +124,8 @@ function SalesSpark({ counts }: { counts: number[] }) {
         </linearGradient>
       </defs>
       <path d={area} fill="url(#sales-spark-fill)" />
-      <path d={d} pathLength={100} fill="none" stroke="url(#sales-spark-line)" strokeWidth="2" strokeLinecap="round" className="chart-line" />
+      <path d={d} pathLength={100} fill="none" stroke="url(#sales-spark-line)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="chart-line" />
+      <circle cx={last.x} cy={last.y} r="1.6" fill="#ff5c7a" />
     </svg>
   );
 }

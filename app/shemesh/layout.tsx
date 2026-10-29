@@ -10,6 +10,8 @@ import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
 import { Aurora } from "@/components/brand/aurora";
 import { ShemeshTheme } from "@/components/shemesh/theme";
 import { ShemeshTopbar } from "@/components/shemesh/topbar";
+import { RouteEnter } from "@/components/layout/route-enter";
+import { ShemeshSkeleton } from "@/components/shemesh/widgets";
 import { requireProfile } from "@/lib/auth";
 import { assessShemeshSources } from "@/lib/shemesh/connectors";
 import { loadShemeshPulse } from "@/lib/shemesh/load-pulse";
@@ -103,11 +105,13 @@ export default async function ShemeshLayout({
             <ShemeshTopbar profile={profile} />
           </div>
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-4 py-6 sm:px-6 lg:py-8 print:block print:h-auto print:overflow-visible print:p-0">
-            <Suspense fallback={<p className="text-sm text-muted-foreground">טוען...</p>}>
-              <ShemeshPulseProvider pulse={live}>
-                <ShemeshSourceProvider sources={sources}>{children}</ShemeshSourceProvider>
-              </ShemeshPulseProvider>
-            </Suspense>
+            <RouteEnter>
+              <Suspense fallback={<ShemeshSkeleton />}>
+                <ShemeshPulseProvider pulse={live}>
+                  <ShemeshSourceProvider sources={sources}>{children}</ShemeshSourceProvider>
+                </ShemeshPulseProvider>
+              </Suspense>
+            </RouteEnter>
           </main>
           <ShemeshMobileDock />
         </div>
