@@ -5,6 +5,34 @@ import { createShemeshRule, setShemeshRuleActive } from "@/app/actions/shemesh-o
 import { formatShemeshMoney } from "@/lib/shemesh/format";
 import { loadMonthView } from "@/lib/shemesh/ops";
 
+export function MonthSheet({
+  month,
+  rows,
+  total,
+}: {
+  month: string;
+  rows: { ruleId: string; title: string; amount: number | null }[];
+  total: number;
+}) {
+  return (
+    <Panel title={`חודש ${month}`}>
+      <p className="text-sm font-medium">נגזר מהכללים הפעילים · {rows.length ? formatShemeshMoney(total) : "—"}</p>
+      <div className="mt-3 overflow-hidden rounded-xl border border-border">
+        <div className="grid grid-cols-2 bg-muted px-3 py-2 text-xs font-medium text-muted-foreground">
+          <span>סעיף</span>
+          <span>סכום</span>
+        </div>
+        {rows.map((row) => (
+          <div key={row.ruleId} className="grid grid-cols-2 border-t border-border px-3 py-2 text-sm">
+            <span>{row.title}</span>
+            <span className="tabular-nums">{row.amount == null ? "—" : formatShemeshMoney(row.amount)}</span>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
 const TITLES: Record<string, { title: string; description: string }> = {
   cost: { title: "הוצאות קבועות", description: "כלל חוזר וסכום שנשמרים במסד. תצוגת החודש נגזרת מהכללים הפעילים." },
   debt: { title: "חובות", description: "חוב או הלוואה כרשומה, עם תשלום חודשי אם הוגדר. אין סכום קבוע בקוד." },
@@ -41,16 +69,7 @@ export async function MoneyDesk({ kind, month }: { kind: string; month: string }
         <input className={field} name="startsOn" type="date" aria-label="מתאריך" />
         <input className={field} name="notes" placeholder="הערה" />
       </ShemeshDesk>
-      {!view.missing && !view.error ? (
-        <Panel title={`חודש ${month}`}>
-          <p className="text-sm">סה״כ {view.monthRows.length ? formatShemeshMoney(total) : "—"}</p>
-          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-            {view.monthRows.map((row) => (
-              <li key={row.ruleId}>{row.title} · {row.amount == null ? "—" : formatShemeshMoney(row.amount)}</li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
+      {!view.missing && !view.error ? <MonthSheet month={month} rows={view.monthRows} total={total} /> : null}
     </div>
   );
 }

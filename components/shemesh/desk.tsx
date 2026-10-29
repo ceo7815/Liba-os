@@ -5,7 +5,8 @@ import { useFormState } from "react-dom";
 import { ClipboardList } from "lucide-react";
 import { ShemeshEmpty } from "@/components/shemesh/empty-state";
 import { Panel, ShemeshPage } from "@/components/shemesh/widgets";
-import { field } from "@/components/shemesh/module-shell";
+import { field } from "@/lib/shemesh/field";
+import { Button } from "@/components/ui/button";
 import { formatShemeshMoney } from "@/lib/shemesh/format";
 import type { DeskRow } from "@/lib/shemesh/ops";
 
@@ -82,12 +83,10 @@ export function ShemeshDesk({
             </a>
           </div>
           <Panel title="רשומה חדשה">
-            <form action={formAction} className="grid gap-2 sm:grid-cols-2">
+            <form action={formAction} className="grid gap-3 rounded-2xl border border-border bg-card p-3 sm:grid-cols-2">
               {children}
               {state.error ? <p className="text-sm text-destructive sm:col-span-2">{state.error}</p> : null}
-              <button type="submit" className="h-9 rounded-xl bg-primary px-3 text-sm text-primary-foreground sm:col-span-2">
-                שמירה
-              </button>
+              <Button type="submit" className="sm:col-span-2 sm:w-fit">שמירה</Button>
             </form>
           </Panel>
           <Panel title={`${visible.length.toLocaleString("he-IL")} רשומות`}>
@@ -97,7 +96,7 @@ export function ShemeshDesk({
                   <div className="min-w-0">
                     <p className="truncate font-medium">
                       {row.title}
-                      {row.overdue ? <span className="ms-2 text-xs text-destructive">חריגת SLA</span> : null}
+                      {row.overdue ? <span className="ms-2 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">חריגת SLA</span> : null}
                     </p>
                     <p className="truncate text-muted-foreground">
                       {row.subtitle}
@@ -147,7 +146,7 @@ function StatusForm({
         <option value="done">הושלם</option>
         <option value="cancelled">בוטל</option>
       </select>
-      <button type="submit" className="h-8 rounded-lg bg-muted px-2 text-xs">עדכון</button>
+      <Button type="submit" variant="secondary" size="sm">עדכון</Button>
       {state.error ? <span className="text-xs text-destructive">{state.error}</span> : null}
     </form>
   );

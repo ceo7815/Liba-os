@@ -90,7 +90,7 @@ export function assertShemeshRowStaysInLibaSalesReport(): void {
   const keptPeer = report.find((row) => row.agent === "ניב קובי");
   if (!kept || !keptPeer) throw new Error("Shemesh sales row missing from Liba sales report");
   if (Object.keys(kept).join(",") !== Object.keys(keptPeer).join(",")) {
-    throw new Error("Shemesh sales row columns differ from another agent");
+    throw new Error("Shemesh must stay in the sales report like any עצמאי, with the same columns");
   }
   if (kept.premium !== 800 || keptPeer.premium !== 1000) {
     throw new Error("Shemesh premium was not kept with the same calculation");

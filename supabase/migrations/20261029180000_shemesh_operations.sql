@@ -1,6 +1,11 @@
 -- Shemesh operations: cases, ledgers, recurring money, connections, audit.
--- Additive. shemesh_ prefix. RLS on. No seed amounts.
--- Review and apply only after approval. The app stays usable if these tables are missing.
+-- Idempotent and additive. Creates only new public.shemesh_* objects.
+-- Does not ALTER or DROP any existing Liba table.
+-- RLS policies call private.is_admin(), which already exists in this project.
+-- No seed rows and no amounts. Apply only after review.
+-- Safe to run again: tables, indexes, grants, and policies are created or replaced in place.
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS public.shemesh_fee_settings (
   id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),

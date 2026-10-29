@@ -446,6 +446,112 @@ export async function addCaseChild(
   return { error: null };
 }
 
+export type CaseFile = {
+  id: string;
+  clientName: string;
+  phone: string;
+  stage: string;
+  stageLabel: string;
+  status: string;
+  handler: string;
+  openedOn: string;
+  deadline: string | null;
+  notes: string;
+  overdue: boolean;
+  tasks: { id: string; title: string; status: string; assignee: string; dueOn: string }[];
+  documents: { id: string; label: string; received: boolean; required: boolean }[];
+  notesList: { id: string; body: string; author: string }[];
+};
+
+export async function loadCaseBoard(): Promise<{
+  missing: boolean;
+  error: string | null;
+  cases: CaseFile[];
+  audit: DeskPayload["audit"];
+  settings: FeeSettings;
+}> {
+  const fees = await loadFeeSettings();
+  const empty = { missing: fees.missing, error: null as string | null, cases: [] as CaseFile[], audit: [] as DeskPayload["audit"], settings: fees.settings };
+  try {
+    const admin = createAdminClient();
+    const [cases, tasks, documents, notes] = await Promise.all([
+      admin.from("shemesh_cases").select("*").order("updated_at", { ascending: false }).limit(200),
+      admin.from("shemesh_case_tasks").select("*").limit(800),
+      admin.from("shemesh_case_documents").select("*").limit(800),
+      admin.from("shemesh_case_notes").select("*").order("created_at", { ascending: false }).limit(800),
+    ]);
+    const firstError = cases.error || tasks.error || documents.error || notes.error;
+    if (firstError) {
+      if (isMissingRelation(firstError.message)) return { ...empty, missing: true };
+      return { ...empty, error: firstError.message };
+    }
+    const today = todayIso();
+    const byCase = <T extends { case_id?: string }>(rows: T[] | null) => {
+      const map = new Map<string, T[]>();
+      for (const row of rows ?? []) {
+        const id = String(row.case_id ?? "");
+        const list = map.get(id) ?? [];
+        list.push(row);
+        map.set(id, list);
+      }
+      return map;
+    };
+    const taskMap = byCase(tasks.data as { case_id?: string }[] | null);
+    const docMap = byCase(documents.data as { case_id?: string }[] | null);
+    const noteMap = byCase(notes.data as { case_id?: string }[] | null);
+    return {
+      missing: false,
+      error: null,
+      settings: fees.settings,
+      audit: await loadAudit(),
+      cases: (cases.data ?? []).map((row) => {
+        const id = String(row.id);
+        const stage = text(row.stage);
+        return {
+          id,
+          clientName: text(row.client_name),
+          phone: text(row.phone),
+          stage,
+          stageLabel: CASE_STAGES.find((item) => item.id === stage)?.label ?? stage,
+          status: text(row.status) || "open",
+          handler: text(row.handler),
+          openedOn: text(row.opened_on),
+          deadline: text(row.deadline) || null,
+          notes: text(row.notes),
+          overdue: slaOverdue(text(row.deadline) || null, text(row.status), today),
+          tasks: (taskMap.get(id) ?? []).map((item) => {
+            const task = item as { id?: string; title?: string; status?: string; assignee?: string; due_on?: string };
+            return {
+              id: String(task.id),
+              title: text(task.title),
+              status: text(task.status),
+              assignee: text(task.assignee),
+              dueOn: text(task.due_on),
+            };
+          }),
+          documents: (docMap.get(id) ?? []).map((item) => {
+            const doc = item as { id?: string; label?: string; received?: boolean; required?: boolean };
+            return {
+              id: String(doc.id),
+              label: text(doc.label),
+              received: Boolean(doc.received),
+              required: doc.required !== false,
+            };
+          }),
+          notesList: (noteMap.get(id) ?? []).map((item) => {
+            const note = item as { id?: string; body?: string; author?: string };
+            return { id: String(note.id), body: text(note.body), author: text(note.author) };
+          }),
+        };
+      }),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "התיקים לא נטענו";
+    if (isMissingRelation(message) || /missing supabase|missing next_public/i.test(message)) return { ...empty, missing: true };
+    return { ...empty, error: message };
+  }
+}
+
 export async function loadCaseDetail(caseId: string) {
   const empty = { missing: false, error: null as string | null, tasks: [] as { id: string; title: string; status: string; assignee: string; dueOn: string }[], documents: [] as { id: string; label: string; received: boolean }[], notes: [] as { id: string; body: string; author: string }[] };
   if (!caseId) return empty;
