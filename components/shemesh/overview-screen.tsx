@@ -2,61 +2,49 @@ import Link from "next/link";
 import { LayoutDashboard } from "lucide-react";
 import { Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
 import { CASE_STAGES, ROADMAP, type CaseStageId } from "@/lib/shemesh/catalog";
-import { formatShemeshCount, formatShemeshMoney } from "@/lib/shemesh/format";
+import { formatShemeshCount, formatShemeshMoney, formatShemeshMonth } from "@/lib/shemesh/format";
+import { SHEMESH_SALES_SOURCE_LABEL } from "@/lib/shemesh/sales-source";
+import type { WorkbookMonthSales } from "@/lib/shemesh/sales-source";
 import type { ShemeshBooks } from "@/lib/shemesh/story";
 
 export function ShemeshOverview({
   stages,
-  sold,
-  collected,
-  deals,
   hasWorkbook,
+  sales,
   books = null,
 }: {
   stages: Record<CaseStageId, number>;
-  sold: number;
-  collected: number;
-  deals: number;
   hasWorkbook: boolean;
+  sales: WorkbookMonthSales;
   books?: ShemeshBooks | null;
 }) {
   const live = books && !books.missing ? books : null;
-  const stageMap = live ? live.stageCounts : stages;
-  const max = Math.max(1, ...CASE_STAGES.map((stage) => stageMap[stage.id]));
+  const max = Math.max(1, ...CASE_STAGES.map((stage) => stages[stage.id]));
   return (
     <ShemeshPage
       title="לוח ניהול"
-      description="מסלול התיק של שמש, בנפרד מליבה. הנגבה הוא הנטו שסומן כנגבה בספר, והוא זהה לכלל ההכנסה החודשי. עמלת הרישיון נשארת אצל ליבה."
+      description={`מכירות שמש נקראות רק מ־${SHEMESH_SALES_SOURCE_LABEL}. לא מדוח המנהלים של ליבה.`}
       icon={LayoutDashboard}
       stats={
-        live ? (
-          <>
-            <Stat label="תיקים פתוחים" value={formatShemeshCount(live.openCases)} hint="כולל ממתינים, בלי תיק שנגבה" />
-            <Stat label="חריגות SLA" value={formatShemeshCount(live.overdueCases)} />
-            <Stat label="נגבה" value={formatShemeshMoney(live.collectedNet)} hint={live.incomeMatchesCollected ? "שווה לכלל ההכנסה החודשי" : "שונה מכלל ההכנסה"} />
-            <Stat label="פדיון פתוח" value={formatShemeshMoney(live.openRedemptionGross)} hint="עדיין לא נכנס לנגבה" />
-          </>
-        ) : (
-          <>
-            <Stat label="עסקאות בדוח" value={hasWorkbook ? formatShemeshCount(deals) : "—"} />
-            <Stat label="נמכר" value={hasWorkbook ? formatShemeshMoney(sold) : "—"} />
-            <Stat label="נגבה" value={hasWorkbook ? formatShemeshMoney(collected) : "—"} />
-            <Stat label="שלבים פעילים" value={formatShemeshCount(CASE_STAGES.filter((stage) => stages[stage.id] > 0).length)} />
-          </>
-        )
+        <>
+          <Stat label={`נמכר ${formatShemeshMonth(sales.month)}`} value={hasWorkbook ? formatShemeshMoney(sales.sold) : "—"} hint="לפי תאריך עסקה בדוח שמש" />
+          <Stat label="נגבה בדוח" value={hasWorkbook ? formatShemeshMoney(sales.collected) : "—"} hint="גיליון הגבייה של שמש" />
+          <Stat label="עסקאות" value={hasWorkbook ? formatShemeshCount(sales.count) : "—"} />
+          <Stat label="עסקה עד חשבונית" value={!hasWorkbook || sales.cycleDays == null ? "—" : `${formatShemeshCount(sales.cycleDays)} ימים`} />
+        </>
       }
     >
       <Panel
-        title="מסלול תיק"
+        title="מסלול בדוח המכירות"
         action={
           <Link href="/shemesh/gviya" className="text-xs font-medium text-muted-foreground hover:text-foreground">
             לדשבורד הפדיונות
           </Link>
         }
       >
-        {!live && !hasWorkbook ? (
+        {!hasWorkbook ? (
           <p className="py-3 text-sm text-muted-foreground">
-            אין עדיין תיקים שמורים ואין דוח מכירות. אחרי המיגרציה, השלבים נספרים מהתיקים.
+            אין עדיין ייבוא של דוח המכירות של שמש. השלבים והסכומים יופיעו רק אחרי שהקובץ נשמר בנפרד מדוח ליבה.
           </p>
         ) : null}
         <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -64,26 +52,23 @@ export function ShemeshOverview({
             <li key={stage.id} className="rounded-2xl border border-border bg-muted px-3 py-3">
               <p className="text-[11px] text-muted-foreground">{index + 1}</p>
               <p className="mt-1 text-sm font-semibold">{stage.label}</p>
-              <p className="mt-2 text-xl font-semibold tabular-nums">{formatShemeshCount(stageMap[stage.id])}</p>
+              <p className="mt-2 text-xl font-semibold tabular-nums">{formatShemeshCount(stages[stage.id])}</p>
               <div className="mt-2 h-1 rounded-full bg-border">
-                <div className="h-1 rounded-full bg-highlight" style={{ width: `${(stageMap[stage.id] / max) * 100}%` }} />
+                <div className="h-1 rounded-full bg-highlight" style={{ width: `${(stages[stage.id] / max) * 100}%` }} />
               </div>
             </li>
           ))}
         </ol>
       </Panel>
       {live ? (
-        <Panel title="אותו חודש, אותם ספרים">
+        <Panel title="תיקים וספר, לא דוח המכירות">
           <ul className="space-y-2 text-sm">
-            <li className="flex justify-between gap-3"><span>נגבה, נטו</span><span className="tabular-nums">{formatShemeshMoney(live.collectedNet)}</span></li>
-            <li className="flex justify-between gap-3"><span>כלל הכנסה חודשי</span><span className="tabular-nums">{formatShemeshMoney(live.monthIncome)}</span></li>
-            <li className="flex justify-between gap-3"><span>החזר מס ממתין, נטו</span><span className="tabular-nums">{formatShemeshMoney(live.waitingTaxNet)}</span></li>
+            <li className="flex justify-between gap-3"><span>תיקים פתוחים</span><span className="tabular-nums">{formatShemeshCount(live.openCases)}</span></li>
+            <li className="flex justify-between gap-3"><span>חריגות SLA</span><span className="tabular-nums">{formatShemeshCount(live.overdueCases)}</span></li>
+            <li className="flex justify-between gap-3"><span>שכר טרחה שנגבה בספר</span><span className="tabular-nums">{formatShemeshMoney(live.collectedNet)}</span></li>
             <li className="flex justify-between gap-3"><span>עמלת רישיון של ליבה</span><span className="tabular-nums">{formatShemeshMoney(live.licenseCommission)}</span></li>
-            <li className="flex justify-between gap-3"><span>נמכרו החודש לפי תאריך עסקה</span><span className="tabular-nums">{formatShemeshCount(live.soldThisMonth)}</span></li>
-            <li className="flex justify-between gap-3"><span>עסקה עד חשבונית</span><span className="tabular-nums">{live.cycleToInvoice == null ? "—" : `${formatShemeshCount(live.cycleToInvoice)} ימים`}</span></li>
-            <li className="flex justify-between gap-3"><span>חשבונית עד גבייה</span><span className="tabular-nums">{live.cycleToCollected == null ? "—" : `${formatShemeshCount(live.cycleToCollected)} ימים`}</span></li>
           </ul>
-          <p className="mt-3 text-xs text-muted-foreground">עמלת הרישיון לא נכנסת לנגבה של שמש ולא לשכר. פדיון שטרם נגבה נשאר מחוץ לשורה.</p>
+          <p className="mt-3 text-xs text-muted-foreground">הספר הוא תפעול. מכירות, גבייה ומחזור נקראים רק מדוח שמש.</p>
         </Panel>
       ) : null}
       <div className="grid gap-3 lg:grid-cols-3">

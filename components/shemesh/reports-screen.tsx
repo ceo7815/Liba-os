@@ -7,6 +7,7 @@ import { useShemeshPulse } from "@/components/shemesh/pulse-context";
 import { useShemeshFilter } from "@/components/shemesh/use-shemesh-view";
 import { Panel, ShemeshPage, Stat } from "@/components/shemesh/widgets";
 import { formatShemeshMoney, formatShemeshMonth } from "@/lib/shemesh/format";
+import { SHEMESH_SALES_SOURCE_LABEL } from "@/lib/shemesh/sales-source";
 import { sliceAds, sliceMoney, type PulseChannel, type PulseRange } from "@/lib/shemesh/pulse";
 import type { ShemeshBooks } from "@/lib/shemesh/story";
 
@@ -24,28 +25,28 @@ export function ShemeshReports({ books = null }: { books?: ShemeshBooks | null }
   const ads = sliceAds(pulse, range);
   const money = sliceMoney(pulse, range);
   const live = books && !books.missing ? books : null;
-  const collected = live ? live.collectedNet : money.collected;
-  const afterOps = live ? live.operatingResult : collected - ads.spend;
+  const collected = money.collected;
+  const afterAds = collected - ads.spend;
 
   return (
     <ShemeshPage
       title="רווח והפסד"
-      description="הנגבה מגיע מהספר, ורק משורות שסומנו כנגבה. עמלת הרישיון של ליבה והחזר החוב לא נכנסים לתוצאה."
+      description={`הנגבה נקרא רק מ־${SHEMESH_SALES_SOURCE_LABEL}. הוצאות קבועות ושכר הם ספר תפעול, לא דוח ליבה.`}
       icon={LineChart}
       filters={<ShemeshFilters showPlatform />}
       stats={
         <>
-          <Stat label="נגבה" value={formatShemeshMoney(collected)} hint={live?.incomeMatchesCollected ? "שווה לכלל ההכנסה" : undefined} />
-          <Stat label="הוצאות קבועות" value={live ? formatShemeshMoney(live.monthCost) : "—"} />
-          <Stat label="שכר ועמלת מטפל" value={live ? formatShemeshMoney(live.monthPayroll + live.monthCommission) : "—"} />
-          <Stat label="אחרי הוצאות" value={formatShemeshMoney(afterOps)} hint="בלי פרסום ובלי החזר חוב" />
+          <Stat label="נגבה" value={formatShemeshMoney(collected)} hint="גיליון הגבייה בדוח שמש" />
+          <Stat label="פרסום" value={formatShemeshMoney(ads.spend)} />
+          <Stat label="אחרי פרסום" value={formatShemeshMoney(afterAds)} />
+          <Stat label="הוצאות קבועות" value={live ? formatShemeshMoney(live.monthCost) : "—"} hint="ספר, לא מכירות" />
         </>
       }
     >
       {live ? (
-        <Panel title={`ספרי ${formatShemeshMonth(live.month)}`}>
+        <Panel title={`ספר תפעול ${formatShemeshMonth(live.month)}`}>
           <ul className="space-y-2 text-sm">
-            <li className="flex justify-between gap-3"><span>נגבה, נטו</span><span className="tabular-nums">{formatShemeshMoney(live.collectedNet)}</span></li>
+            <li className="flex justify-between gap-3"><span>שכר טרחה בספר, לא בדוח</span><span className="tabular-nums">{formatShemeshMoney(live.collectedNet)}</span></li>
             <li className="flex justify-between gap-3"><span>הוצאות קבועות</span><span className="tabular-nums">{formatShemeshMoney(live.monthCost)}</span></li>
             <li className="flex justify-between gap-3"><span>שכר</span><span className="tabular-nums">{formatShemeshMoney(live.monthPayroll)}</span></li>
             <li className="flex justify-between gap-3"><span>עמלת מטפל</span><span className="tabular-nums">{formatShemeshMoney(live.monthCommission)}</span></li>
@@ -58,7 +59,7 @@ export function ShemeshReports({ books = null }: { books?: ShemeshBooks | null }
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel title="לפי חודש">
           {money.byMonth.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">{live ? "אין שורות פרסום בתקופה. הנגבה שלמעלה הוא מהספר." : "אין גבייה או פרסום בתקופה הזו."}</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">אין גבייה או פרסום בתקופה. הגבייה מגיעה רק אחרי ייבוא דוח שמש.</p>
           ) : (
             <table className="w-full text-sm">
               <thead>

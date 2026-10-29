@@ -18,7 +18,7 @@ export function SettlementScreen({ view = EMPTY_VIEW, books = null }: { view?: S
   return (
     <ShemeshPage
       title="התחשבנות מול ליבה"
-      description="שמש וליבה הן עסקים נפרדים עם אותם בעלים. שמש מוכרת ביטוח דרך ליבה כעצמאי. המכירות והסכום שמגיע לשמש נגזרים משורת שמש בדוח המכירות של ליבה, באותו חישוב כמו לכל עצמאי."
+      description="זה דוח המנהלים של ליבה, managers.xlsx. שמש מופיעה כאן רק כשורת עצמאי, כמו כל סוכן. מכירות שמש עצמה, גבייה ורווח והפסד נקראים מדוח שמש ולא מהקובץ הזה."
       icon={Wallet}
       stats={
         hasSales ? (
@@ -81,7 +81,7 @@ export function SettlementScreen({ view = EMPTY_VIEW, books = null }: { view?: S
       {books && !books.missing ? (
         <Panel title="מה לא נכנס לכאן">
           <p className="text-sm">
-            שכר הטרחה שנגבה בספרי שמש החודש הוא {formatShemeshMoney(books.collectedNet)}. עמלת הרישיון {formatShemeshMoney(books.licenseCommission)} שייכת לליבה ולא נספרת כהכנסה של שמש.
+            שכר הטרחה בספר התפעול הוא {formatShemeshMoney(books.collectedNet)}. זה לא דוח המכירות. עמלת הרישיון {formatShemeshMoney(books.licenseCommission)} שייכת לליבה.
           </p>
         </Panel>
       ) : null}

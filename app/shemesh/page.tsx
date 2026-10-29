@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ShemeshOverview } from "@/components/shemesh/overview-screen";
-import { buildGviyaModel, gviyaKpis, stageCounts } from "@/lib/shemesh/gviya";
+import { buildGviyaModel, currentMonthKey, stageCounts } from "@/lib/shemesh/gviya";
+import { monthSalesFromDeals } from "@/lib/shemesh/sales-source";
 import { loadShemeshSalesWorkbook } from "@/lib/shemesh/sales-workbook-store";
 import { loadShemeshBooks } from "@/lib/shemesh/story";
 
@@ -13,15 +14,14 @@ export default async function ShemeshHomePage() {
     loadShemeshBooks(),
   ]);
   const model = buildGviyaModel(stored);
-  const kpis = gviyaKpis(model.deals, null);
+  const hasWorkbook = model.deals.length > 0 || Boolean(stored?.sheets.length);
+  const sales = monthSalesFromDeals(hasWorkbook ? model.deals : [], currentMonthKey());
   return (
     <ShemeshOverview
       books={books}
-      stages={stageCounts(model.deals)}
-      sold={kpis.sold}
-      collected={kpis.collected}
-      deals={kpis.count}
-      hasWorkbook={model.deals.length > 0 || Boolean(stored?.sheets.length)}
+      stages={stageCounts(hasWorkbook ? model.deals : [])}
+      sales={sales}
+      hasWorkbook={hasWorkbook}
     />
   );
 }
