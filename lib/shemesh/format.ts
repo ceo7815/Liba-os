@@ -1,15 +1,11 @@
+import { formatCount, formatMoney } from "@/lib/format/numbers";
+
 export function formatShemeshMoney(value: number | null): string {
-  if (value == null) return "—";
-  return new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
-  }).format(value);
+  return formatMoney(value);
 }
 
 export function formatShemeshCount(value: number | null): string {
-  if (value == null) return "—";
-  return new Intl.NumberFormat("he-IL").format(value);
+  return formatCount(value);
 }
 
 export function formatShemeshRate(value: number | null): string {

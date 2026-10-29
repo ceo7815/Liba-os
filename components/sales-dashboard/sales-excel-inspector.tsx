@@ -21,12 +21,12 @@ import {
 } from "@/lib/sales-dashboard/workbook-grid";
 
 const PILL: Record<CellTone, string> = {
-  none: "",
-  active: "bg-emerald-50 text-emerald-800",
-  cancelled: "bg-rose-50 text-rose-800",
-  pending: "bg-amber-50 text-amber-900",
-  sale: "bg-sky-50 text-sky-900",
-  settled: "bg-violet-50 text-violet-800",
+  none: "status-chip status-chip-muted",
+  active: "status-chip status-chip-ok",
+  cancelled: "status-chip status-chip-bad",
+  pending: "status-chip status-chip-wait",
+  sale: "status-chip status-chip-info",
+  settled: "status-chip status-chip-info",
 };
 
 function copyValue(label: string, value: string) {
@@ -69,7 +69,8 @@ export function SalesExcelInspector({
       <DialogContent className="max-w-3xl gap-0 overflow-hidden p-0 sm:max-w-3xl">
         {row ? (
           <>
-            <header className="border-b border-border px-5 pb-4 pt-5 pe-14 text-start">
+            <header className="relative border-b border-black/[0.06] bg-white/55 px-5 pb-4 pt-5 pe-14 text-start">
+              <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <DialogTitle className="text-lg">{title}</DialogTitle>
                 <p className="text-[12px] tabular-nums text-muted-foreground">שורה {row.excelRow.toLocaleString("he-IL")}</p>
@@ -79,12 +80,12 @@ export function SalesExcelInspector({
               </DialogDescription>
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {statusValue ? (
-                  <span className={cn("rounded-full px-2.5 py-0.5 text-[12px] font-medium", PILL[cellTone(sheet.headers[status] ?? "", statusValue)] || "bg-[#f3f2ee]")}>
+                  <span className={PILL[cellTone(sheet.headers[status] ?? "", statusValue)]}>
                     {statusValue}
                   </span>
                 ) : null}
                 {processValue ? (
-                  <span className={cn("rounded-full px-2.5 py-0.5 text-[12px] font-medium", PILL[cellTone(sheet.headers[process] ?? "", processValue)] || "bg-[#f3f2ee]")}>
+                  <span className={PILL[cellTone(sheet.headers[process] ?? "", processValue)]}>
                     {processValue}
                   </span>
                 ) : null}
@@ -110,7 +111,7 @@ export function SalesExcelInspector({
                     <div
                       key={`${row.id}-${col}`}
                       className={cn(
-                        "grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-3 border-b border-black/[0.05] px-5 py-2.5",
+                        "grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-3 border-b border-black/[0.05] px-5 py-2.5 transition-colors hover:bg-highlight/10",
                         notes && "md:col-span-2 md:grid-cols-1 md:gap-1",
                       )}
                     >

@@ -134,6 +134,7 @@ export function ShemeshDashboard() {
             label="לידים"
             amount={ads.leads}
             text={formatShemeshCount}
+            decimals={0}
             hint={ads.leads ? "נכנסו מהקמפיינים" : "אין לידים בתקופה"}
           />
         </div>
@@ -228,6 +229,7 @@ function HeroCell({
   hero,
   tone = "teal",
   icon: Icon = Wallet,
+  decimals,
 }: {
   href: string;
   kicker: string;
@@ -238,6 +240,7 @@ function HeroCell({
   hero?: boolean;
   tone?: "sun" | "green" | "violet" | "teal";
   icon?: LucideIcon;
+  decimals?: number;
 }) {
   return (
     <Link
@@ -258,7 +261,7 @@ function HeroCell({
       </span>
       <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-4xl">
-        <CountUp value={amount} text={text} />
+        <CountUp value={amount} text={text} decimals={decimals} />
       </p>
       <p className="mt-2 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
         <span className="min-w-0 truncate">{hint}</span>

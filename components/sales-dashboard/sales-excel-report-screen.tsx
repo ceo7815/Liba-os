@@ -6,6 +6,7 @@ import { Database, Rows3, Search, X } from "lucide-react";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { SalesEntryAudit } from "@/components/sales-dashboard/sales-entry-audit";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { SalesExcelGrid, type SortState } from "@/components/sales-dashboard/sales-excel-grid";
 import { SalesExcelInspector } from "@/components/sales-dashboard/sales-excel-inspector";
 import { DateRangeField } from "@/components/ui/date-range-field";
@@ -449,9 +450,9 @@ export function SalesExcelReportScreen({
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
       <header className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-highlight/40">
+        <IconBadge tone={company === "shemesh" ? "shemesh" : "liba"}>
           <Rows3 className="size-5" />
-        </div>
+        </IconBadge>
         <div className="min-w-0 flex-1">
           <h1 className="text-lg font-semibold tracking-tight">
             {company === "shemesh" ? "דוח מכירות" : "שורות מכירה"}

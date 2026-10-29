@@ -6,9 +6,12 @@ import { useEffect, useState } from "react";
 export function CountUp({
   value,
   text,
+  decimals,
 }: {
   value: number;
   text: (value: number) => string;
+  /** Counts pass 0 so the animation never paints a fraction. Omit for money. */
+  decimals?: number;
 }) {
   const [shown, setShown] = useState(value);
 
@@ -24,12 +27,18 @@ export function CountUp({
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / 720);
       const eased = 1 - (1 - t) ** 3;
-      setShown(t === 1 ? value : from + (value - from) * eased);
+      const next = from + (value - from) * eased;
+      if (t === 1 || decimals == null) {
+        setShown(t === 1 ? value : next);
+      } else {
+        const scale = 10 ** decimals;
+        setShown(Math.round(next * scale) / scale);
+      }
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [value]);
+  }, [decimals, value]);
 
   return (
     <span dir="ltr" className="tabular-nums" aria-label={text(value)}>
