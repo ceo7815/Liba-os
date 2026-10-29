@@ -228,7 +228,6 @@ export async function loadCampaignBoard(): Promise<CampaignBoard> {
       sourceName: row.sourceName,
       adAccountId: null,
       adAccountName: null,
-      googleCustomerId: google.connection.customerId,
       inbound: isInboundCampaign(row.googleCampaignName, row.sourceName),
       points: googlePoints.get(row.googleCampaignId) ?? [],
     };

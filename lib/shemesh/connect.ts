@@ -3,7 +3,7 @@ import { DEFAULT_SHEMESH_AD_ACCOUNTS } from "@/lib/finance/brand-accounts";
 import { facebookGraphVersion } from "@/lib/facebook-ads/config";
 import { digitsOnly } from "@/lib/google-ads/config";
 import { listAccessibleCustomerIds, refreshAccessToken, searchGoogleAds } from "@/lib/google-ads/client";
-import { downloadGraphDriveItem } from "@/lib/sales-dashboard/graph";
+import { downloadGraphDriveItem } from "@/lib/shemesh/graph-download";
 import { isMissingRelation, shemeshAdmin } from "@/lib/shemesh/db";
 import { shemeshExcelLocalPath } from "@/lib/shemesh/sales-excel-path";
 import { ingestShemeshSalesBuffer } from "@/lib/shemesh/sales-workbook-store";

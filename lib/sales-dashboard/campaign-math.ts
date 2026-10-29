@@ -431,7 +431,8 @@ export function googleAdsStatusLabel(status: string): string {
 }
 
 function defaultGoogleCubeForCampaignName(campaignName: string): string {
-  void campaignName;
+  const v = normalizeExcelText(campaignName);
+  if (v.includes("פיננס")) return GOOGLE_ADS_SHEMESH_CUBE_SOURCE;
   return GOOGLE_ADS_CUBE_SOURCE;
 }
 

@@ -118,7 +118,6 @@ export async function loadDashboardCampaignPulse(): Promise<DashboardCampaignPul
           sourceName: row.sourceName,
           channel: "facebook",
           adAccountName: row.adAccountName,
-          adAccountId: row.adAccountId,
         },
         "liba",
       ),
