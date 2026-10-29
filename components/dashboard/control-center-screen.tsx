@@ -4,6 +4,7 @@ import { useMemo, useState, Fragment } from "react";
 import {
   Building2,
   ChevronLeft,
+  Inbox,
   Package,
   PhoneIncoming,
   UserRound,
@@ -37,6 +38,28 @@ import {
 import { CountUp } from "@/components/ui/count-up";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+function SalesSpark({ counts }: { counts: number[] }) {
+  if (counts.length < 2) return null;
+  const width = 76;
+  const height = 26;
+  const max = Math.max(...counts, 1);
+  const min = Math.min(...counts);
+  const span = max - min || 1;
+  const d = counts
+    .map((value, index) => {
+      const x = (index / (counts.length - 1)) * width;
+      const y = height - 3 - ((value - min) / span) * (height - 6);
+      return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="chart-draw mt-2 h-6 w-[4.75rem]" role="img" aria-label="מגמת המכירות השמורה">
+      <path d={d} fill="none" stroke="hsl(var(--highlight))" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function formatDay(iso: string): string {
   if (!/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso || "—";
@@ -88,9 +111,10 @@ export function ControlCenterScreen() {
 
   if (!snap) {
     return (
-      <div className="relative overflow-hidden rounded-lg border border-border bg-card px-5 py-8 sm:rounded-[var(--radius)] sm:px-8 sm:py-10">
+      <div className="glass relative overflow-hidden rounded-[1.15rem] border border-border px-5 py-8 sm:px-8 sm:py-10">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-        <p className="text-base font-semibold text-foreground">אין נתונים שמורים עדיין</p>
+        <Inbox className="size-8 text-muted-foreground" aria-hidden />
+        <p className="mt-3 text-base font-semibold text-foreground">אין נתונים שמורים עדיין</p>
         <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
           לחצו על סנכרון בשורה העליונה כדי לטעון את האקסל. אחרי הסנכרון יופיעו כאן
           הפקות, פרמיה ומובילים.
@@ -172,7 +196,7 @@ export function ControlCenterScreen() {
 
   return (
     <div className="space-y-3">
-      <section className="relative overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)]">
+      <section className="glass glass-noise relative overflow-hidden rounded-[1.15rem] border border-border">
         <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
         <div className="grid grid-cols-1 gap-px bg-border min-[480px]:grid-cols-2 lg:grid-cols-4">
           <button
@@ -237,6 +261,7 @@ export function ControlCenterScreen() {
               </span>
               <ChevronLeft className="size-3.5 shrink-0 opacity-40 transition-transform group-hover:-translate-x-0.5" />
             </p>
+            <SalesSpark counts={dashboard?.sales?.counts ?? []} />
           </button>
 
           <button

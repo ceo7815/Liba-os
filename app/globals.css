@@ -524,19 +524,85 @@
   animation: dash-enter 200ms var(--ease-out) both;
 }
 
-.float-bar {
-  border-radius: 1.15rem;
-  background: color-mix(in srgb, hsl(var(--card)) 86%, transparent);
+.tab-key {
+  position: relative;
+}
+
+.tab-key::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0.6rem;
+  bottom: 0.2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: hsl(var(--highlight));
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 200ms var(--ease-out);
+}
+
+.tab-key.bg-foreground::after {
+  transform: scaleX(1);
+  background: hsl(var(--highlight));
+}
+
+.glass {
+  background: hsl(var(--card) / 0.84);
   border: 1px solid hsl(var(--border));
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.65),
+    inset 0 1px 0 hsl(0 0% 100% / 0.7),
     var(--shadow-card);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  backdrop-filter: blur(18px) saturate(1.25);
+}
+
+.dark .glass {
+  background: hsl(var(--card) / 0.78);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.08),
+    var(--shadow-lift);
+}
+
+.glass-noise {
+  position: relative;
+}
+
+.glass-noise::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .float-bar,
+  .mobile-dock,
+  .menu-panel {
+    background: hsl(var(--card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.float-bar {
+  border-radius: 1.15rem;
+  background: hsl(var(--card) / 0.84);
+  border: 1px solid hsl(var(--border));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.7),
+    var(--shadow-card);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
   backdrop-filter: blur(18px) saturate(1.25);
 }
 
 .dark .float-bar {
+  background: hsl(var(--card) / 0.78);
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.06),
+    inset 0 1px 0 hsl(0 0% 100% / 0.08),
     var(--shadow-lift);
 }
 
@@ -556,11 +622,21 @@
 
 .menu-panel {
   border-radius: 1.15rem;
-  background: color-mix(in srgb, hsl(var(--popover)) 92%, transparent);
+  background: hsl(var(--popover) / 0.9);
   color: hsl(var(--popover-foreground));
   border: 1px solid hsl(var(--border));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.65),
+    var(--shadow-pop);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
   backdrop-filter: blur(18px) saturate(1.2);
-  box-shadow: var(--shadow-pop);
+}
+
+.dark .menu-panel {
+  background: hsl(var(--popover) / 0.86);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.08),
+    var(--shadow-pop);
 }
 
 .motion-instant,
@@ -640,10 +716,34 @@ button,
   height: 4rem;
   padding: 0.25rem;
   border-radius: 1.15rem;
-  background: color-mix(in srgb, hsl(var(--card)) 90%, transparent);
+  background: hsl(var(--card) / 0.86);
   border: 1px solid hsl(var(--border));
-  box-shadow: var(--shadow-lift);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.65),
+    var(--shadow-lift);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
   backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.os-mesh {
+  position: relative;
+  isolation: isolate;
+}
+
+.os-mesh::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42rem 26rem at 100% -8%, hsl(var(--highlight) / 0.2), transparent 62%),
+    radial-gradient(28rem 18rem at 0% 110%, hsl(var(--info) / 0.08), transparent 60%);
+}
+
+.os-mesh > * {
+  position: relative;
+  z-index: 1;
 }
 
 .mobile-dock-item {
@@ -805,10 +905,10 @@ button,
     left: auto !important;
     right: auto !important;
     top: 1rem !important;
-    bottom: 1rem !important;
+    bottom: auto !important;
     inset-inline-end: 1rem !important;
     height: auto !important;
-    max-height: none !important;
+    max-height: calc(100dvh - 2rem) !important;
     width: min(72rem, calc(100vw - 18rem)) !important;
     transform: none !important;
     border-radius: var(--radius) !important;

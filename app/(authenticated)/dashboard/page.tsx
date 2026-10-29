@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpLeft, Bot, ChevronLeft } from "lucide-react";
 import { ControlCenterScreen } from "@/components/dashboard/control-center-screen";
+import { DashHero } from "@/components/dashboard/dash-hero";
 import { OperatingBrandProvider } from "@/components/finance/operating-brand-bar";
 import { requireProfile } from "@/lib/auth";
 import { canViewAgents } from "@/lib/permissions/access";
@@ -26,14 +27,7 @@ export default async function DashboardPage() {
 
   return (
     <section className="w-full space-y-4">
-      <header className="dash-enter px-0.5 sm:px-0">
-        <div className="flex items-end justify-between gap-3">
-          <h1 className="text-2xl font-semibold leading-none tracking-tight">
-            שלום, {firstName}
-          </h1>
-          <p className="text-[11px] font-medium tracking-wide text-muted-foreground">{today}</p>
-        </div>
-      </header>
+      <DashHero name={firstName} date={today} />
 
       <div className="dash-enter" style={{ animationDelay: "60ms" }}>
         <OperatingBrandProvider lockedBrand="liba">

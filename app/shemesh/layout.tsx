@@ -94,7 +94,7 @@ export default async function ShemeshLayout({
   return (
     <LiveDashboardProvider>
       <ShemeshTheme />
-      <div className="shemesh-os flex h-dvh min-h-0 overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
+      <div className="shemesh-os os-mesh flex h-dvh min-h-0 overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
         <ShemeshSidebar className="hidden lg:flex print:hidden" />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col print:block print:h-auto print:overflow-visible">
           <div className="print:hidden">

@@ -212,7 +212,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
               type="button"
               onClick={() => { setBoard(item.id); setQueue("all"); setStatus("הכל"); }}
               className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-semibold",
+                "tab-key min-h-11 rounded-lg px-3 py-1.5 text-sm font-semibold",
                 board === item.id ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted",
               )}
             >
