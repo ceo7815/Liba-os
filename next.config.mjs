@@ -7,6 +7,10 @@ const tracedNativePackages = [
   "./node_modules/temporal-polyfill/**/*",
   "./node_modules/xlsx/**/*",
   "./node_modules/pngjs/**/*",
+  "./node_modules/sharp/**/*",
+  "./node_modules/@img/**/*",
+  "./node_modules/detect-libc/**/*",
+  "./node_modules/semver/**/*",
 ];
 
 /** @type {import('next').NextConfig} */
@@ -19,7 +23,19 @@ const nextConfig = {
     // Next 14.2.35 (this project) — serverExternalPackages is ignored here.
     serverComponentsExternalPackages: serverOnlyPackages,
     outputFileTracingIncludes: {
-      "/*": tracedNativePackages,
+      // Inline on purpose: same paths as tracedNativePackages, so this block
+      // stays a plain array and can merge with the Shemesh trace list.
+      "/*": [
+        "./node_modules/@hebcal/**/*",
+        "./node_modules/quick-lru/**/*",
+        "./node_modules/temporal-polyfill/**/*",
+        "./node_modules/xlsx/**/*",
+        "./node_modules/pngjs/**/*",
+        "./node_modules/sharp/**/*",
+        "./node_modules/@img/**/*",
+        "./node_modules/detect-libc/**/*",
+        "./node_modules/semver/**/*",
+      ],
     },
     // These routes never import xlsx or hebcal. The blanket include above
     // otherwise ships ~13MB into their standalone trace and slows cold start.

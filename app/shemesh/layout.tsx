@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { LiveDashboardProvider } from "@/components/layout/live-dashboard-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { LiveDashboardProvider } from "@/components/layout/live-dashboard-provider";
 import { ShemeshSidebar } from "@/components/shemesh/nav";
 import { ShemeshPulseProvider } from "@/components/shemesh/pulse-context";
 import { ShemeshSourceProvider } from "@/components/shemesh/source-context";
@@ -92,7 +92,6 @@ export default async function ShemeshLayout({
 
   return (
     <LiveDashboardProvider>
-      <Toaster dir="rtl" theme="light" position="top-center" />
       <ShemeshTheme />
       <div className="shemesh-os flex h-dvh min-h-0 overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
         <ShemeshSidebar className="hidden lg:flex print:hidden" />
@@ -109,6 +108,7 @@ export default async function ShemeshLayout({
           </main>
         </div>
       </div>
+      <Toaster dir="rtl" theme="light" position="top-center" />
     </LiveDashboardProvider>
   );
 }
