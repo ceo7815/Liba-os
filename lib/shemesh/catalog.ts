@@ -49,5 +49,5 @@ export const ROADMAP: {
   { stage: "11", href: "/shemesh/settlement", title: "הכנסה והתחשבנות", detail: "גבייה, נפרעים, ומעבר מליבה לשמש" },
   { stage: "5", href: "/shemesh/payroll", title: "עובדים ושכר", detail: "מבנה הסכם ומחשבון. בלי סכומי שכר בקוד" },
   { stage: "3", href: "/shemesh/agency", title: "היקף שורנס", detail: "אותה סוכנות או סוכנות נפרדת, לפי הגדרה" },
-  { stage: "7", title: "תור החזרת לידים", detail: "תור ותבניות הודעה. בלי שליחה" },
+  { stage: "7", href: "/shemesh/revival", title: "תור החזרת לידים", detail: "תור ותבניות הודעה. בלי שליחה" },
 ];
