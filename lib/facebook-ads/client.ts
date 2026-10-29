@@ -3,6 +3,7 @@ import {
   facebookAdsOAuthConfigured,
   facebookGraphVersion,
 } from "@/lib/facebook-ads/config";
+import { publicErrorText } from "@/lib/sync-log";
 
 type GraphJson = Record<string, unknown>;
 
@@ -44,12 +45,26 @@ function asNumber(value: unknown): number {
 
 function graphError(json: GraphJson, status: number): string {
   const err = asRecord(json.error);
-  return (
+  const code = asString(err.code);
+  const subcode = asString(err.error_subcode);
+  const type = asString(err.type);
+  const trace = asString(err.fbtrace_id);
+  const message = publicErrorText(
     asString(err.error_user_msg) ||
-    asString(err.message) ||
-    asString(json.message) ||
-    `שגיאת פייסבוק (${status})`
+      asString(err.message) ||
+      asString(json.message) ||
+      `שגיאת פייסבוק (${status})`,
   );
+  console.error("[facebook-sync] graph error", {
+    status,
+    code: code || null,
+    subcode: subcode || null,
+    type: type || null,
+    fbtrace_id: trace || null,
+    message,
+  });
+  const label = code ? `שגיאת פייסבוק (${code})` : `שגיאת פייסבוק (${status})`;
+  return message.startsWith(label) ? message : `${label}: ${message}`;
 }
 
 const GRAPH_FETCH_TIMEOUT_MS = 45_000;
@@ -73,9 +88,12 @@ async function graphFetch(
     res = await fetch(url.toString(), { cache: "no-store", signal });
   } catch (err) {
     if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
-      throw new Error("פייסבוק לא הגיב בזמן — נסו שוב או סנכרנו מאוחר יותר");
+      console.error("[facebook-sync] graph timeout", { path });
+      throw new Error(`פייסבוק לא הגיב בזמן (${path})`);
     }
-    throw err;
+    const message = publicErrorText(err instanceof Error ? err.message : "facebook fetch failed");
+    console.error("[facebook-sync] graph fetch failed", { path, message });
+    throw new Error(message);
   }
   const json = asRecord(await res.json().catch(() => ({})));
   if (!res.ok || json.error) {

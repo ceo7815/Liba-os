@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const tokens = await exchangeFacebookCode(code, facebookAdsRedirectUri());
     await saveFacebookAdsToken(tokens.accessToken, tokens.expiresAt);
     const synced = await syncFacebookAds();
-    if (!synced.ok) return dash("facebook_ads=sync_error");
+    if (!synced.ok || synced.warning) return dash("facebook_ads=sync_error");
     const ok = dash("facebook_ads=connected");
     ok.cookies.delete("facebook_ads_oauth_state");
     return ok;

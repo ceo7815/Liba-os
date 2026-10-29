@@ -1,3 +1,5 @@
+import { publicErrorText } from "@/lib/sync-log";
+
 const DEFAULT_TOKEN_URL = "https://api.surense.com/oauth/token";
 const DEFAULT_API_BASE = "https://api.surense.com/api/v1";
 
@@ -14,8 +16,40 @@ export function surenseConfigured(): boolean {
 
 function requiredEnv(name: string): string {
   const value = process.env[name]?.trim();
-  if (!value) throw new Error("Surense is not configured");
+  if (!value) {
+    console.error("[surense-sync] missing env", { name });
+    throw new Error(`Surense is not configured (missing ${name})`);
+  }
   return value;
+}
+
+async function readErrorDetail(response: Response): Promise<string> {
+  const text = await response.text().catch(() => "");
+  let detail = "";
+  try {
+    const payload = JSON.parse(text) as {
+      error?: unknown;
+      error_description?: unknown;
+      message?: unknown;
+    };
+    const error = typeof payload.error === "string" ? payload.error : "";
+    const description =
+      typeof payload.error_description === "string"
+        ? payload.error_description
+        : typeof payload.message === "string"
+          ? payload.message
+          : "";
+    detail = [error, description].filter(Boolean).join(": ");
+  } catch {
+    detail = text;
+  }
+  return publicErrorText(detail);
+}
+
+function tokenFailureMessage(status: number, detail: string): string {
+  return detail
+    ? `Surense token request failed (${status}): ${detail}`
+    : `Surense token request failed (${status})`;
 }
 
 function tokenUrl(): string {
@@ -44,30 +78,55 @@ async function requestToken(clientId: string, clientSecret: string): Promise<Cac
     client_id: clientId,
     client_secret: clientSecret,
   });
-  const posted = await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: form,
-    cache: "no-store",
-  });
+  let posted: Response;
+  try {
+    posted = await fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: form,
+      cache: "no-store",
+    });
+  } catch (err) {
+    const message = publicErrorText(err instanceof Error ? err.message : "token request failed");
+    console.error("[surense-sync] token request failed", { message });
+    throw new Error(`Surense token request failed: ${message}`);
+  }
   if (posted.ok) return readToken(posted);
 
-  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const authorized = await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Basic ${basic}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ grant_type: "client_credentials" }),
-    cache: "no-store",
+  const postedDetail = await readErrorDetail(posted);
+  console.error("[surense-sync] token form post failed", {
+    status: posted.status,
+    detail: postedDetail || null,
   });
+
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  let authorized: Response;
+  try {
+    authorized = await fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Basic ${basic}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ grant_type: "client_credentials" }),
+      cache: "no-store",
+    });
+  } catch (err) {
+    const message = publicErrorText(err instanceof Error ? err.message : "token request failed");
+    console.error("[surense-sync] token basic auth failed", { message });
+    throw new Error(tokenFailureMessage(posted.status, postedDetail));
+  }
   if (authorized.ok) return readToken(authorized);
-  throw new Error(`Surense token request failed (${posted.status})`);
+  const basicDetail = await readErrorDetail(authorized);
+  console.error("[surense-sync] token basic auth failed", {
+    status: authorized.status,
+    detail: basicDetail || null,
+  });
+  throw new Error(tokenFailureMessage(authorized.status || posted.status, basicDetail || postedDetail));
 }
 
 export async function surenseAccessToken(): Promise<string> {

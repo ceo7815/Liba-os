@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { surenseFetch, surensePost } from "@/lib/surense/client";
+import { publicErrorText } from "@/lib/sync-log";
 import {
   classifyLead,
   classifyWorkflow,
@@ -49,7 +50,7 @@ async function searchAll(
       })),
     });
     if (!response.ok) {
-      throw new Error(`Surense ${path} ${response.status}`);
+      throw new Error(await surenseFailureMessage(path, response));
     }
     const payload = asRows(await response.json());
     const batch = payload.results ?? [];
@@ -62,7 +63,10 @@ async function searchAll(
 
 async function mapSources(): Promise<Map<string, string>> {
   const response = await surenseFetch("/customers/sources");
-  if (!response.ok) return new Map();
+  if (!response.ok) {
+    await surenseFailureMessage("/customers/sources", response);
+    return new Map();
+  }
   const payload = (await response.json()) as { id?: string; name?: string; title?: string }[];
   const map = new Map<string, string>();
   for (const source of payload) {
@@ -73,7 +77,7 @@ async function mapSources(): Promise<Map<string, string>> {
 
 async function statusIds(path: string, titles: Set<string>): Promise<{ id: string; title: string }[]> {
   const response = await surenseFetch(path);
-  if (!response.ok) throw new Error(`Surense ${path} ${response.status}`);
+  if (!response.ok) throw new Error(await surenseFailureMessage(path, response));
   const payload = (await response.json()) as { id?: string; title?: string }[];
   return payload
     .filter((status) => status.id && titles.has(normalizeStatus(status.title ?? "")))
@@ -149,7 +153,11 @@ async function pullLeadControl(): Promise<LeadControlSnapshot> {
         workflowNames.map(async (title) => {
           try {
             return await searchAll("/workflows/search", [{ field: "statusName", value: title }]);
-          } catch {
+          } catch (error) {
+            const message = publicErrorText(
+              error instanceof Error ? error.message : "workflow search failed",
+            );
+            console.error("[surense-sync] workflow search failed", { title, message });
             return { rows: [], truncated: false };
           }
         }),
@@ -186,7 +194,36 @@ async function pullLeadControl(): Promise<LeadControlSnapshot> {
       items,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Surense לא זמין";
-    throw new Error(message.includes("not configured") ? "החיבור ל־Surense עדיין לא מוגדר בשרת הזה" : "לא הצלחנו למשוך את הנתונים מ־Surense");
+    const message = publicErrorText(error instanceof Error ? error.message : "Surense לא זמין");
+    throw new Error(message);
   }
+}
+
+async function surenseFailureMessage(path: string, response: Response): Promise<string> {
+  const text = await response.text().catch(() => "");
+  let detail = "";
+  try {
+    const payload = JSON.parse(text) as {
+      error?: unknown;
+      error_description?: unknown;
+      message?: unknown;
+    };
+    const error = typeof payload.error === "string" ? payload.error : "";
+    const description =
+      typeof payload.error_description === "string"
+        ? payload.error_description
+        : typeof payload.message === "string"
+          ? payload.message
+          : "";
+    detail = [error, description].filter(Boolean).join(": ");
+  } catch {
+    detail = text;
+  }
+  detail = publicErrorText(detail);
+  console.error("[surense-sync] request failed", {
+    path,
+    status: response.status,
+    detail: detail || null,
+  });
+  return detail ? `Surense ${path} ${response.status}: ${detail}` : `Surense ${path} ${response.status}`;
 }
