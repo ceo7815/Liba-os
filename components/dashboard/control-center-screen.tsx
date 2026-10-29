@@ -58,8 +58,18 @@ function SalesSpark({ counts }: { counts: number[] }) {
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-6 w-[4.75rem]" role="img" aria-label="מגמת המכירות השמורה">
-      <path d={area} fill="hsl(var(--highlight) / 0.28)" />
-      <path d={d} pathLength={100} fill="none" stroke="hsl(var(--highlight))" strokeWidth="1.75" strokeLinecap="round" className="chart-line" />
+      <defs>
+        <linearGradient id="sales-spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffb000" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ff5c7a" stopOpacity="0.05" />
+        </linearGradient>
+        <linearGradient id="sales-spark-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ffb000" />
+          <stop offset="100%" stopColor="#ff5c7a" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#sales-spark-fill)" />
+      <path d={d} pathLength={100} fill="none" stroke="url(#sales-spark-line)" strokeWidth="2" strokeLinecap="round" className="chart-line" />
     </svg>
   );
 }
@@ -200,7 +210,7 @@ export function ControlCenterScreen() {
   return (
     <div className="space-y-6">
       <section className="enter space-y-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="kpi-band grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <button
             type="button"
             onClick={() => setOpenKind("upcoming")}
@@ -334,7 +344,7 @@ export function ControlCenterScreen() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+        <div className="leader-grid grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           {leaders.map((item, index) => {
             const Icon = item.icon;
             return (
@@ -346,7 +356,7 @@ export function ControlCenterScreen() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f2f2f4]">
+                    <span className="tone-well inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f2f2f4]">
                       <Icon className="size-3.5 text-foreground sm:size-4" />
                     </span>
                     <span className="size-1.5 shrink-0 rounded-full bg-highlight" aria-hidden />

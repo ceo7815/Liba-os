@@ -6,6 +6,7 @@ import { ShemeshFilters } from "@/components/shemesh/filters";
 import { useShemeshPulse } from "@/components/shemesh/pulse-context";
 import { useShemeshFilter } from "@/components/shemesh/use-shemesh-view";
 import { CountUp } from "@/components/ui/count-up";
+import { cn } from "@/lib/utils";
 import { formatShemeshCount, formatShemeshDay, formatShemeshMoney } from "@/lib/shemesh/format";
 import { readBoard, sliceAds, sliceMoney, type PulseChannel, type PulseRange } from "@/lib/shemesh/pulse";
 
@@ -89,8 +90,9 @@ export function ShemeshDashboard() {
       </header>
 
       <section className="relative">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="kpi-band grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <HeroCell
+            hero
             href="/shemesh/revenue"
             kicker="בתאריכים"
             label="מכרנו"
@@ -214,6 +216,7 @@ function HeroCell({
   amount,
   text,
   hint,
+  hero,
 }: {
   href: string;
   kicker: string;
@@ -221,11 +224,15 @@ function HeroCell({
   amount: number;
   text: (value: number) => string;
   hint: string;
+  hero?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className="kpi-cube group bg-white px-4 py-3 text-start transition-colors hover:bg-[#f7f7f8] sm:px-5 sm:py-4"
+      className={cn(
+        "kpi-cube group px-4 py-3 text-start transition-colors sm:px-5 sm:py-4",
+        hero ? "kpi-hero" : "bg-white hover:bg-[#f7f7f8]",
+      )}
     >
       <span className="tone-chip rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
         {kicker}

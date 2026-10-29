@@ -135,11 +135,11 @@ function ShemeshNavItem({
       className={cn(
         "relative flex items-center gap-2.5 rounded-full px-3 py-2 text-[13px] font-medium transition-colors",
         active
-          ? "bg-[#f2f2f4] text-foreground"
-          : "text-black/55 hover:bg-[#f2f2f4] hover:text-foreground",
+          ? "nav-live"
+          : "text-black/55 hover:bg-white/70 hover:text-foreground",
       )}
     >
-      {active ? <span className="size-1.5 shrink-0 rounded-full bg-highlight" /> : null}
+      {active ? <span className="size-1.5 shrink-0 rounded-full bg-white/80" /> : null}
       <Icon className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-black/35")} />
       <span className="truncate">{label}</span>
     </Link>

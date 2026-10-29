@@ -412,11 +412,11 @@ function ExpandableNav({
           className={cn(
             "relative flex min-w-0 flex-1 items-center gap-2.5 rounded-full px-3 py-2 text-[13px] font-medium transition-colors duration-rise ease-out",
             sectionActive
-              ? "bg-[#f2f2f4] text-foreground"
-              : "text-muted-foreground hover:bg-[#f2f2f4]/80 hover:text-foreground",
+              ? "nav-live"
+              : "text-muted-foreground hover:bg-white/70 hover:text-foreground",
           )}
         >
-          {overviewActive && <span className="size-1.5 shrink-0 rounded-full bg-highlight" />}
+          {overviewActive && <span className="size-1.5 shrink-0 rounded-full bg-white/80" />}
           <Icon
             className={cn(
               "h-4 w-4 shrink-0",
@@ -464,12 +464,12 @@ function SubNavItem({
         href={href}
         className={cn(
           "relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-[12px] font-medium transition-colors duration-rise ease-out",
-          active
-            ? "bg-[#f2f2f4] text-foreground"
-            : "text-muted-foreground hover:bg-[#f2f2f4]/80 hover:text-foreground",
+        active
+          ? "nav-live"
+          : "text-muted-foreground hover:bg-white/70 hover:text-foreground",
         )}
       >
-        {active && <span className="size-1.5 shrink-0 rounded-full bg-highlight" />}
+        {active && <span className="size-1.5 shrink-0 rounded-full bg-white/80" />}
         {label}
       </Link>
     </li>
@@ -515,11 +515,11 @@ function NavItem({
       className={cn(
         "relative flex items-center gap-2.5 rounded-full px-3 py-2 text-[13px] font-medium text-foreground transition-colors duration-rise ease-out",
         active
-          ? "bg-[#f2f2f4]"
-          : "text-muted-foreground hover:bg-[#f2f2f4]/80 hover:text-foreground",
+          ? "nav-live"
+          : "text-muted-foreground hover:bg-white/70 hover:text-foreground",
       )}
     >
-      {active && <span className="size-1.5 shrink-0 rounded-full bg-highlight" />}
+      {active && <span className="size-1.5 shrink-0 rounded-full bg-white/80" />}
       <Icon
         className={cn(
           "h-4 w-4 shrink-0",

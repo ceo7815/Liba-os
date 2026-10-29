@@ -69,7 +69,7 @@ export function DashboardCampaignStrip() {
           <ArrowUpLeft className="size-3.5" />
         </Link>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="pulse-grid mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <PulseCell label="הוצאה" value={money(pulse.spend)} hint="גוגל ופייסבוק של ליבה" onClick={() => setOpen("spend")} />
         <PulseCell label="שיחות גוגל" value={pulse.googleCalls.toLocaleString("he-IL")} hint={callPrice == null ? "אין שיחות" : `${money(callPrice)} לשיחה`} onClick={() => setOpen("calls")} />
         <PulseCell label="טפסי פייסבוק" value={pulse.facebookForms.toLocaleString("he-IL")} hint={formPrice == null ? "אין טפסים" : `${money(formPrice)} לטופס`} onClick={() => setOpen("forms")} />
