@@ -28,7 +28,7 @@ type TabId = "overview" | RevenueLedger["id"];
 const PAGE_SIZE = 40;
 
 const fieldClass =
-  "h-8 rounded-full border border-border bg-card px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring";
+  "h-8 w-full max-w-full min-w-0 rounded-full border border-border bg-card px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring sm:w-auto";
 
 function jerusalemToday(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -277,7 +277,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[90rem] flex-col gap-4">
+    <section className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium text-muted-foreground">שמש · מקור האמת הוא קובץ המכירות</p>
@@ -300,7 +300,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
         </Link>
       </header>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {(
           [
             ["overview", "סקירה"],
@@ -318,7 +318,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
               setSort(null);
             }}
             className={cn(
-              "h-9 rounded-full px-3.5 text-sm transition-colors",
+              "h-9 shrink-0 rounded-full px-3.5 text-sm transition-colors",
               tab === id
                 ? "bg-highlight font-medium text-highlight-foreground"
                 : "border border-border bg-card text-foreground hover:bg-muted",
@@ -330,8 +330,8 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
       </div>
 
       <div className="app-surface space-y-3 px-3 py-3 sm:px-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[14rem] flex-1 sm:max-w-xs">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative min-w-0 w-full flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
@@ -340,39 +340,43 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
               className="h-8 rounded-full border-border bg-card pe-9"
             />
           </div>
-          {(
-            [
-              ["all", "הכל"],
-              ["month", "החודש"],
-              ["prev", "חודש קודם"],
-              ["year", "השנה"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => applyPreset(id)}
-              className={cn(
-                "h-8 rounded-full px-3 text-xs",
-                preset === id
-                  ? "bg-highlight font-medium text-highlight-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-card",
-              )}
-            >
-              {label}
-            </button>
-          ))}
-          <HebrewDateRange
-            from={from}
-            to={to}
-            onChange={(next) => {
-              setPreset("custom");
-              resetPageAnd(setFrom)(next.from);
-              resetPageAnd(setTo)(next.to);
-            }}
-          />
+          <div className="-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {(
+              [
+                ["all", "הכל"],
+                ["month", "החודש"],
+                ["prev", "חודש קודם"],
+                ["year", "השנה"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => applyPreset(id)}
+                className={cn(
+                  "h-8 shrink-0 rounded-full px-3 text-xs",
+                  preset === id
+                    ? "bg-highlight font-medium text-highlight-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-card",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+            <div className="shrink-0">
+              <HebrewDateRange
+                from={from}
+                to={to}
+                onChange={(next) => {
+                  setPreset("custom");
+                  resetPageAnd(setFrom)(next.from);
+                  resetPageAnd(setTo)(next.to);
+                }}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <select
             aria-label="נציג"
             value={agent}

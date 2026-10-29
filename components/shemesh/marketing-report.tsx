@@ -47,10 +47,10 @@ export function ShemeshMarketingReport({
   const forecast = forecastMonth(rows, today);
 
   return (
-    <section className="mx-auto mb-6 max-w-[76rem] space-y-3">
-      <div className="app-surface px-5 py-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+    <section className="mx-auto mb-6 min-w-0 max-w-[76rem] space-y-3">
+      <div className="app-surface min-w-0 px-3 py-4 sm:px-5 sm:py-5">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">שיווק שמש</p>
             <div className="mt-1 flex items-center gap-2">
               <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
@@ -62,13 +62,13 @@ export function ShemeshMarketingReport({
               חשבון Meta <span className="font-mono text-xs" dir="ltr">act_{accountId}</span>. עלות, לידים ועלות לליד לפי קמפיין ולפי מודעה.
             </p>
           </div>
-          <div className="flex rounded-full bg-muted p-1" role="tablist" aria-label="תקופה">
+          <div className="flex max-w-full shrink-0 overflow-x-auto rounded-full bg-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="תקופה">
             {PERIODS.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setPeriod(item.id)}
-                className={`h-8 rounded-full px-3 text-xs ${period === item.id ? "bg-card font-semibold shadow-sm" : "text-muted-foreground"}`}
+                className={`h-8 shrink-0 rounded-full px-3 text-xs ${period === item.id ? "bg-card font-semibold shadow-sm" : "text-muted-foreground"}`}
               >
                 {item.label}
               </button>

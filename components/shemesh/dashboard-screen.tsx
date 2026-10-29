@@ -49,7 +49,7 @@ function Delta({ current, previous, money = false }: { current: number | null; p
   const label = money
     ? `${diff > 0 ? "+" : ""}${formatIls(diff)}`
     : formatDelta(current, previous);
-  return <span className="text-[11px] font-semibold tabular-nums">{label ?? "—"} מול התקופה הקודמת</span>;
+  return <span className="break-words text-[11px] font-semibold tabular-nums">{label ?? "—"} מול התקופה הקודמת</span>;
 }
 
 function Kpi({
@@ -74,7 +74,7 @@ function Kpi({
   pending?: string;
 }) {
   return (
-    <article className={`kpi-cube px-4 py-4 sm:px-5 ${hero ? "kpi-hero" : ""}`} data-accent={hero ? undefined : tone}>
+    <article className={`kpi-cube min-w-0 px-4 py-4 sm:px-5 ${hero ? "kpi-hero" : ""}`} data-accent={hero ? undefined : tone}>
       <div className="flex items-start justify-between gap-2">
         <span className="kpi-badge" data-tone={tone} aria-hidden />
         {spark ? <Spark values={spark} /> : null}
@@ -123,38 +123,42 @@ export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; s
 
   return (
     <div className="mx-auto min-w-0 max-w-[76rem] space-y-4">
-      <header className="glass glass-noise flex flex-col gap-3 px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
+      <header className="glass glass-noise flex min-w-0 flex-col gap-3 px-3 py-4 sm:px-5">
+        <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">שמש</p>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="kpi-badge" data-tone="sun"><LayoutDashboard className="size-4" /></span>
-              <h1 className="text-2xl font-semibold tracking-tight">לוח ניהול</h1>
+            <div className="mt-1 flex min-w-0 items-center gap-2">
+              <span className="kpi-badge shrink-0" data-tone="sun"><LayoutDashboard className="size-4" /></span>
+              <h1 className="min-w-0 text-xl font-semibold tracking-tight sm:text-2xl">לוח ניהול</h1>
             </div>
           </div>
-          <a href={exportHref} className="text-sm font-medium text-[#2f86ea]">ייצוא הלוח לאקסל</a>
+          <a href={exportHref} className="shrink-0 text-sm font-medium text-[#2f86ea]">ייצוא הלוח לאקסל</a>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <DateRangeField from={range.from} to={range.to} onChange={setRange} />
-          <button type="button" className="h-10 rounded-full bg-white/80 px-3 text-xs font-medium" onClick={() => setRange({ from: monthStart(input.today), to: input.today })}>החודש</button>
-          <button type="button" className="h-10 rounded-full bg-white/80 px-3 text-xs font-medium" onClick={() => setRange({ from: shiftIso(input.today, -29), to: input.today })}>30 יום</button>
-          <select aria-label="מקור" value={source} onChange={(event) => setSource(event.target.value)} className="h-10 rounded-full border border-white/80 bg-white/80 px-3 text-xs">
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="shrink-0">
+              <DateRangeField from={range.from} to={range.to} onChange={setRange} />
+            </div>
+            <button type="button" className="h-10 shrink-0 rounded-full bg-white/80 px-3 text-xs font-medium" onClick={() => setRange({ from: monthStart(input.today), to: input.today })}>החודש</button>
+            <button type="button" className="h-10 shrink-0 rounded-full bg-white/80 px-3 text-xs font-medium" onClick={() => setRange({ from: shiftIso(input.today, -29), to: input.today })}>30 יום</button>
+          </div>
+          <select aria-label="מקור" value={source} onChange={(event) => setSource(event.target.value)} className="h-10 w-full max-w-full min-w-0 rounded-full border border-white/80 bg-white/80 px-3 text-xs">
             <option value="all">כל המקורות</option>
             {sourceOptions.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="min-w-0 break-words text-[11px] text-muted-foreground">
           מכירות וגבייה מ־{shemeshSalesSourceLabel(input.salesFileName)}
           {syncedLabel ? ` · סונכרן ${syncedLabel} UTC` : ` · ${SHEMESH_SALES_MAIN_FILE} עדיין לא שמור במסד הזה`}
           . לא מדוח המנהלים של ליבה.
         </p>
         {stale ? (
-          <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950" role="status">
+          <p className="min-w-0 break-words rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950" role="status">
             הסנכרון ישן מיומיים. הקובץ האחרון הוא {input.salesFileName}.
           </p>
         ) : null}
         {view.salesReady ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="min-w-0 break-words text-[11px] text-muted-foreground">
             נמכר = גיליון {columns.sheet} · {columns.deal ?? "סכום עסקה"} לפי {columns.date ?? "תאריך"}.
             נגבה = {columns.collected ?? "סכום שנגבה"}.
             פתוח = {columns.open ?? "סכום עסקה פחות סכום שנגבה"}.
@@ -162,7 +166,7 @@ export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; s
         ) : null}
       </header>
 
-      <section className="kpi-band grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="kpi-band grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Kpi hero tone="sun" label="נמכר בתקופה" value={view.sold} text={formatIls} hint="לפי תאריך עסקה בדוח שמש" pending={view.salesReady ? undefined : `השלב הבא: שמירת ${SHEMESH_SALES_MAIN_FILE} בחיבורים. גם «פדיונות 2» נקרא אם הוא הקובץ השמור.`} delta={<Delta current={view.sold} previous={view.soldPrev} money />} spark={view.sparkSold} />
         <Kpi tone="green" label="נגבה בתקופה" value={view.collected} text={formatIls} hint="גיליון הגבייה בדוח שמש" pending={view.salesReady ? undefined : "ממתין לאותו דוח"} delta={<Delta current={view.collected} previous={view.collectedPrev} money />} spark={view.sparkCollected} />
         <Kpi tone="violet" label="פתוח לגבייה" value={view.openToCollect} text={formatIls} hint="נמכר פחות נגבה, בדוח שמש" pending={view.salesReady ? undefined : "ממתין לאותו דוח"} delta={<Delta current={view.openToCollect} previous={view.openToCollectPrev} money />} />
@@ -330,8 +334,8 @@ export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; s
           <ul className="mt-3 divide-y divide-white/70">
             {view.activity.map((row) => (
               <li key={row.id}>
-                <Link href="/shemesh/access" className="flex items-center justify-between gap-3 rounded-xl px-2 py-2 text-sm transition-colors hover:bg-white/80">
-                  <span>{row.summary}</span>
+                <Link href="/shemesh/access" className="flex min-w-0 items-center justify-between gap-3 rounded-xl px-2 py-2 text-sm transition-colors hover:bg-white/80">
+                  <span className="min-w-0 break-words">{row.summary}</span>
                   <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">{row.createdAt.slice(0, 16).replace("T", " ")}</span>
                 </Link>
               </li>

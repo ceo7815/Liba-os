@@ -108,7 +108,7 @@ export default async function ShemeshLayout({
           <div className="print:hidden">
             <ShemeshTopbar profile={profile} />
           </div>
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-4 py-6 sm:px-6 lg:py-8 print:block print:h-auto print:overflow-visible print:p-0">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip overflow-y-auto px-3 py-4 pb-5 sm:px-6 sm:py-6 lg:py-8 print:block print:h-auto print:overflow-visible print:p-0">
             <ShemeshBreadcrumbs />
             <RouteEnter>
               <Suspense fallback={<ShemeshSkeleton />}>

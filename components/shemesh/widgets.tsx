@@ -46,23 +46,23 @@ export function ShemeshPage({
 }) {
   return (
     <section className="mx-auto min-w-0 max-w-[72rem] space-y-6">
-      <div className="glass glass-noise px-5 py-5 sm:px-7 sm:py-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="glass glass-noise px-3 py-4 sm:px-7 sm:py-6">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">שמש</p>
-            <div className="mt-1 flex items-center gap-2.5">
-              <span className="kpi-badge" data-tone="sun" aria-hidden>
+            <div className="mt-1 flex min-w-0 items-center gap-2.5">
+              <span className="kpi-badge shrink-0" data-tone="sun" aria-hidden>
                 <Icon className="size-4" />
               </span>
-              <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+              <h1 className="min-w-0 break-words text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
             </div>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+            <p className="mt-2 max-w-2xl break-words text-sm leading-relaxed text-muted-foreground">{description}</p>
           </div>
         </div>
-        {filters ? <div className="mt-5 border-t border-white/70 pt-4">{filters}</div> : null}
-        {stats ? <div className="kpi-band mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{paintStats(stats)}</div> : null}
+        {filters ? <div className="mt-5 min-w-0 border-t border-white/70 pt-4">{filters}</div> : null}
+        {stats ? <div className="kpi-band mt-5 grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">{paintStats(stats)}</div> : null}
       </div>
-      {children}
+      <div className="min-w-0 space-y-6">{children}</div>
     </section>
   );
 }
@@ -81,10 +81,10 @@ export function Stat({
   tone?: (typeof TONES)[number];
 }) {
   return (
-    <div className={cn("kpi-cube px-4 py-3.5 sm:px-5 sm:py-4", hero && "kpi-hero")} data-accent={hero ? undefined : tone}>
+    <div className={cn("kpi-cube min-w-0 px-4 py-3.5 sm:px-5 sm:py-4", hero && "kpi-hero")} data-accent={hero ? undefined : tone}>
       <span className="kpi-badge" data-tone={tone} aria-hidden />
       <p className="mt-2 text-[11px] font-medium text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-semibold leading-none tracking-tight">{value}</p>
+      <p className="mt-1 break-words text-2xl font-semibold leading-none tracking-tight sm:text-3xl">{value}</p>
       {hint ? <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{hint}</p> : null}
     </div>
   );
@@ -116,11 +116,11 @@ export function Panel({
 }) {
   return (
     <section className="glass">
-      <div className="flex items-center justify-between gap-3 border-b border-white/70 px-5 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
+      <div className="flex min-w-0 items-center justify-between gap-3 border-b border-white/70 px-3 py-3 sm:px-5">
+        <h2 className="min-w-0 break-words text-sm font-semibold">{title}</h2>
         {action}
       </div>
-      <div className="px-5 py-3">{children}</div>
+      <div className="min-w-0 px-3 py-3 sm:px-5">{children}</div>
     </section>
   );
 }

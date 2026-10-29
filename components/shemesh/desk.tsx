@@ -64,7 +64,7 @@ export function ShemeshDesk({
         />
       ) : (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <input className={`${field} max-w-xs`} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש" aria-label="חיפוש" />
             <select className={field} value={status} onChange={(event) => setStatus(event.target.value)} aria-label="סטטוס">
               <option value="">כל הסטטוסים</option>

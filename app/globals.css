@@ -1631,6 +1631,61 @@ button,
   }
 }
 
+
+/* Shemesh mobile containment — layout only, no data/KPI changes */
+@media (max-width: 430px) {
+  .shemesh-os,
+  .shemesh-os body,
+  .shemesh-os .os-mesh {
+    overflow-x: clip;
+  }
+
+  .shemesh-os main,
+  .shemesh-os .glass,
+  .shemesh-os .app-surface,
+  .shemesh-os .kpi-cube,
+  .shemesh-os .kpi-hero,
+  .shemesh-os section {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .shemesh-os select {
+    max-width: 100%;
+  }
+
+  .shemesh-os .kpi-hero :is(.text-3xl, .text-2xl) {
+    font-size: 1.65rem;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .shemesh-os p,
+  .shemesh-os h1,
+  .shemesh-os h2,
+  .shemesh-os h3,
+  .shemesh-os li,
+  .shemesh-os td,
+  .shemesh-os th {
+    overflow-wrap: anywhere;
+  }
+
+  .shemesh-os .float-bar {
+    max-width: 100%;
+  }
+
+  /* Date range trigger stays on one line but can shrink inside a scroller */
+  .shemesh-os button:has(> svg + span[dir="ltr"]) {
+    max-width: min(100%, 18rem);
+  }
+
+  .shemesh-os button:has(> svg + span[dir="ltr"]) > span[dir="ltr"] {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-auth-rise,
   .dash-enter,
