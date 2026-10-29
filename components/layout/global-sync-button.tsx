@@ -12,6 +12,7 @@ import { publishLiveDashboard } from "@/lib/sales-dashboard/client-snapshot";
 import {
   excelHttpSyncFailure,
   salesExcelSyncProblem,
+  shemeshExcelStoredCopyWarning,
   shemeshExcelSyncFailure,
 } from "@/lib/sales-dashboard/excel-sync-guard";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
@@ -108,13 +109,19 @@ export function GlobalSyncButton({
           const excelBody = (await excelRes.json().catch(() => null)) as {
             error?: string;
             skipped?: boolean;
+            warning?: string;
             rowCount?: number;
           } | null;
           const failure = shemeshExcelSyncFailure(excelRes.status, excelBody);
+          const storedCopy = shemeshExcelStoredCopyWarning(excelRes.status, excelBody);
           if (failure) {
             excelFailed = true;
             setExcelStatus("failed");
             toast.error(failure);
+          } else if (storedCopy) {
+            excelFailed = true;
+            setExcelStatus("failed");
+            toast.warning(storedCopy);
           } else {
             setExcelStatus("done");
             if (!excelBody?.skipped && typeof excelBody?.rowCount === "number") {

@@ -7,6 +7,7 @@ import { HebrewDateRange } from "@/components/shemesh/hebrew-date";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
+import { shemeshWorkbookStaleWarning } from "@/lib/shemesh/sales-excel-source";
 import {
   cellTone,
   formatWorkbookDateDisplay,
@@ -254,6 +255,7 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
   const commission = finance ? sumColumn(financeRows, finance.commission) : 0;
   const settled = finance ? sumColumn(financeRows, finance.settled) : 0;
   const syncedLabel = formatLastUpdatedAt(book.syncedAt);
+  const staleWarning = shemeshWorkbookStaleWarning(book.syncedAt, Date.now());
   const statusGroups = collection ? groupColumn(collectionRows, collection.status, collection.collected) : [];
   const agentGroups = collection ? groupColumn(collectionRows, collection.agent, collection.collected).slice(0, 8) : [];
   const maxStatus = statusGroups[0]?.amount || 1;
@@ -284,6 +286,11 @@ export function ShemeshRevenue({ workbook }: { workbook: SalesWorkbookPayload | 
             גבייה, חשבוניות ופיננסים כמו שנרשמו בקובץ. אין כאן נוסחת עמלה.
             {syncedLabel ? ` עודכן ${syncedLabel}.` : ""}
           </p>
+          {staleWarning ? (
+            <p role="status" className="mt-2 text-sm font-medium text-amber-800">
+              {staleWarning}
+            </p>
+          ) : null}
         </div>
         <Link
           href="/shemesh/sales"

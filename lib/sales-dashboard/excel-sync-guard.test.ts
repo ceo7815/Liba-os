@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   excelHttpSyncFailure,
   salesExcelSyncProblem,
+  shemeshExcelStoredCopyWarning,
   shemeshExcelSyncFailure,
 } from "./excel-sync-guard";
 
@@ -30,4 +31,17 @@ test("Shemesh Excel HTTP failure is only that source", () => {
   assert.equal(shemeshExcelSyncFailure(500, null), "סנכרון אקסל נכשל");
   assert.equal(excelHttpSyncFailure(401), "אין הרשאה לסנכרון אקסל");
   assert.equal(excelHttpSyncFailure(200), null);
+});
+
+test("a skipped Shemesh sync that kept the stored file is not a success", () => {
+  assert.equal(shemeshExcelStoredCopyWarning(200, { skipped: false }), null);
+  assert.equal(shemeshExcelStoredCopyWarning(404, { skipped: true }), null);
+  assert.match(
+    shemeshExcelStoredCopyWarning(200, { skipped: true }) ?? "",
+    /עותק השמור/,
+  );
+  assert.equal(
+    shemeshExcelStoredCopyWarning(200, { skipped: true, warning: "הקובץ חסר" }),
+    "הקובץ חסר",
+  );
 });
