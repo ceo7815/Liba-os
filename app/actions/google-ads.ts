@@ -227,11 +227,13 @@ function isTransientSyncError(message: string): boolean {
 }
 
 async function writeSettingsError(message: string) {
-  if (isTransientSyncError(message)) return;
+  const text = isTransientSyncError(message)
+    ? "גוגל לא הגיב בסנכרון. החיבור נשאר, נסו שוב."
+    : message.slice(0, 2000);
   const admin = createAdminClient();
   await admin.from("google_ads_settings").upsert({
     id: 1,
-    last_error: message,
+    last_error: text,
     updated_at: new Date().toISOString(),
   });
 }
@@ -393,7 +395,6 @@ export async function refreshGoogleAdsWindow(from: string, to: string): Promise<
   );
   if (metrics.length === 0) return;
   const admin = createAdminClient();
-  const now = new Date().toISOString();
   const statRows = metrics.map((row) => ({
     google_campaign_id: row.campaignId,
     day: row.day,
@@ -406,12 +407,6 @@ export async function refreshGoogleAdsWindow(from: string, to: string): Promise<
     .from("google_ads_daily_stats")
     .upsert(statRows, { onConflict: "google_campaign_id,day" });
   if (error) throw new Error(error.message);
-  await admin.from("google_ads_settings").upsert({
-    id: 1,
-    last_synced_at: now,
-    last_error: null,
-    updated_at: now,
-  });
 }
 
 export async function syncGoogleAds(): Promise<{

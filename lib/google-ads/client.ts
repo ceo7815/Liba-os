@@ -3,6 +3,7 @@ import {
   resolveGoogleOAuthClient,
 } from "@/lib/google-ads/credentials";
 import { digitsOnly, googleAdsApiVersion } from "@/lib/google-ads/config";
+import { isRetryableHttpStatus, RetryableError, withRetry } from "@/lib/sync-retry";
 
 export type GoogleAdsCampaign = {
   id: string;
@@ -122,28 +123,38 @@ async function adsFetch(
   const loginId = digitsOnly(init.loginCustomerId);
   if (loginId) headers["login-customer-id"] = loginId;
 
-  const res = await fetch(
-    `https://googleads.googleapis.com/${googleAdsApiVersion()}${path}`,
-    {
-      method: init.method ?? "POST",
-      headers,
-      body: init.body ? JSON.stringify(init.body) : undefined,
-      cache: "no-store",
-    },
-  );
-  const json = asRecord(await res.json().catch(() => ({})));
-  if (!res.ok) {
-    const err = asRecord(json.error);
-    const details = Array.isArray(err.details) ? err.details : [];
-    const first = asRecord(details[0]);
-    const message =
-      asString(first.message) ||
-      asString(err.message) ||
-      asString(json.message) ||
-      `שגיאת Google Ads (${res.status})`;
-    throw new Error(message);
-  }
-  return json;
+  return withRetry(async () => {
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://googleads.googleapis.com/${googleAdsApiVersion()}${path}`,
+        {
+          method: init.method ?? "POST",
+          headers,
+          body: init.body ? JSON.stringify(init.body) : undefined,
+          cache: "no-store",
+          signal: AbortSignal.timeout(30_000),
+        },
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "google ads fetch failed";
+      throw new RetryableError(message);
+    }
+    const json = asRecord(await res.json().catch(() => ({})));
+    if (!res.ok) {
+      const err = asRecord(json.error);
+      const details = Array.isArray(err.details) ? err.details : [];
+      const first = asRecord(details[0]);
+      const message =
+        asString(first.message) ||
+        asString(err.message) ||
+        asString(json.message) ||
+        `שגיאת Google Ads (${res.status})`;
+      if (isRetryableHttpStatus(res.status)) throw new RetryableError(message);
+      throw new Error(message);
+    }
+    return json;
+  });
 }
 
 export async function listAccessibleCustomerIds(

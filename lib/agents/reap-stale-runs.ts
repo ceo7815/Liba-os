@@ -3,8 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** Runs left in `running` longer than this are failed by the reaper. */
 export const STALE_RUN_AFTER_MS = 60 * 60 * 1000;
 
-export const STALE_RUN_REASON =
-  "stale: running for more than 1 hour without finishing";
+export const STALE_RUN_REASON = "ההרצה נתקעה יותר משעה בלי לסיים.";
+
+const STALE_STATUSES = ["running", "claimed"] as const;
 
 const BATCH = 400;
 const MAX_BATCHES = 40;
@@ -27,7 +28,7 @@ export async function reapStaleAgentRuns(
       const { data, error } = await admin
         .from("agent_runs")
         .select("id, agent_id")
-        .eq("status", "running")
+        .in("status", [...STALE_STATUSES])
         .lt("started_at", cutoff)
         .limit(BATCH);
       if (error) {
@@ -50,7 +51,7 @@ export async function reapStaleAgentRuns(
           error_message: STALE_RUN_REASON,
         })
         .in("id", ids)
-        .eq("status", "running");
+        .in("status", [...STALE_STATUSES]);
       if (updateError) {
         console.error("[agent-runs] stale reaper update failed", updateError.message);
         break;
@@ -64,14 +65,14 @@ export async function reapStaleAgentRuns(
         .from("agent_runs")
         .select("id")
         .eq("agent_id", agentId)
-        .eq("status", "running")
+        .in("status", ["queued", "claimed", "running"])
         .limit(1);
       if (stillRunning && stillRunning.length > 0) continue;
       await admin
         .from("agents")
         .update({ last_run_status: "failed", last_run_at: finishedAt })
         .eq("id", agentId)
-        .eq("last_run_status", "running");
+        .in("last_run_status", ["running", "claimed"]);
     }
   } catch (err) {
     console.error(

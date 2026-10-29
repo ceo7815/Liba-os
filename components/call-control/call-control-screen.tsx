@@ -299,6 +299,9 @@ export function CallControlScreen({
           CDR אחרון מ־Voicenter: {formatSeen(management.cdrLastReceivedAt)}
           {management.cdrLastStage ? ` · שלב ${management.cdrLastStage}` : ""}
         </p>
+        {management.agentRunError ? (
+          <p className="mt-1 font-semibold">{management.agentRunError}</p>
+        ) : null}
         {management.cdrStale ? (
           <p className="mt-1 font-semibold">
             no CDR from Voicenter since {cdrSinceLabel(management.cdrLastReceivedAt)}

@@ -232,7 +232,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
         ? supabase
             .from("agent_runs")
             .select(
-              "id, trigger, started_at, finished_at, status, items_processed, items_failed, cost_usd, input_tokens, output_tokens",
+              "id, trigger, started_at, finished_at, status, items_processed, items_failed, cost_usd, input_tokens, output_tokens, error_message",
             )
             .eq("agent_id", agentId)
             .order("started_at", { ascending: false })

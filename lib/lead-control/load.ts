@@ -192,6 +192,16 @@ export async function loadLeadControl(): Promise<LeadControlSnapshot> {
   };
 }
 
+/** Keep the last good list, but show the failure on the lead-control screen. */
+export async function recordLeadControlSyncError(message: string): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin.from("lead_control_snapshots").upsert(
+    { id: 1, error: message },
+    { onConflict: "id" },
+  );
+  if (error) console.error("[surense-sync] could not store sync error", error.message);
+}
+
 export async function syncLeadControlSnapshot(): Promise<LeadControlSnapshot> {
   const stored = await readStoredRow();
   const snapshot = await pullLeadControl(stored.row);
