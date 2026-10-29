@@ -23,6 +23,7 @@ import { formatIls } from "@/lib/sales-dashboard/campaign-math";
 import { formatLastUpdatedAt } from "@/lib/sales-dashboard/marketing-copy";
 import { presentShemeshWorkbook, shemeshSheetHint } from "@/lib/shemesh/sales-excel-view";
 import {
+  cellTone,
   findHeaderIndex,
   formatWorkbookDateDisplay,
   isDateHeader,
@@ -677,7 +678,33 @@ export function SalesExcelReportScreen({
               : "אין נתונים — סנכרנו את דוח המנהלים"}
         </div>
       ) : (
-        <div className="mx-3 mb-2 flex min-h-[28rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-5">
+        <>
+        <ul className="mx-3 mb-2 space-y-2 sm:hidden">
+          {pageRows.map((row) => {
+            const clientCol = sheet.headers.findIndex((header) => header.includes("לקוח") || header === "שם מלא" || header === "שם");
+            const client = clientCol >= 0 ? row.cells[clientCol] : row.cells[0];
+            const status = statusCol >= 0 ? row.cells[statusCol] ?? "" : "";
+            const premium = premiumCol >= 0 ? parsePremiumCell(row.cells[premiumCol] ?? "") : 0;
+            const tone = status ? cellTone(sheet.headers[statusCol] ?? "", status) : "none";
+            const chip = tone === "active" || tone === "sale" ? "status-chip-ok" : tone === "cancelled" ? "status-chip-bad" : tone === "pending" ? "status-chip-wait" : "status-chip-muted";
+            return (
+              <li key={row.id}>
+                <button
+                  type="button"
+                  onClick={() => selectRow(row)}
+                  className="w-full rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-start"
+                >
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 truncate text-sm font-semibold">{client || "שורה"}</span>
+                    {premium > 0 ? <span className="shrink-0 text-sm font-semibold tabular-nums">{formatIls(premium)}</span> : null}
+                  </span>
+                  {status ? <span className={cn("status-chip mt-2", chip)}>{status}</span> : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mx-3 mb-2 hidden min-h-[28rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:mx-5 sm:flex">
           <SalesExcelGrid
             sheet={sheet}
             rows={pageRows}
@@ -690,6 +717,7 @@ export function SalesExcelReportScreen({
             onFilter={setColumnFilter}
           />
         </div>
+        </>
       )}
       {sheet ? (
         <SalesExcelInspector sheet={sheet} row={selected} onClose={() => setSelectedId(null)} />

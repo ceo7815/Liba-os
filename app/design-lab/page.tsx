@@ -13,6 +13,7 @@ import { ExpensesScreen } from "@/components/finance/expenses-screen";
 import { FinancePanel } from "@/components/finance/finance-panel";
 import { GeneralPlScreen } from "@/components/finance/general-pl-screen";
 import { InsuranceAgreementsScreen } from "@/components/finance/insurance-agreements-screen";
+import { CallControlScreen } from "@/components/call-control/call-control-screen";
 import { CampaignsScreen } from "@/components/campaigns/campaigns-screen";
 import { InterfacesScreen } from "@/components/interfaces/interfaces-screen";
 import { LeadControlScreen } from "@/components/lead-control/screen";
@@ -36,6 +37,7 @@ import { UsersAccessScreen } from "@/components/users/users-access-screen";
 import { IconBadge } from "@/components/ui/icon-badge";
 import {
   designLabAcademy,
+  designLabCalls,
   designLabCampaignPulse,
   designLabCampaigns,
   designLabDashboard,
@@ -73,7 +75,7 @@ function moduleFor(view?: string): OsModule {
   if (view === "finance" || view === "pl" || view === "expenses" || view === "insurance") return "finance";
   if (view === "employees" || view === "payroll") return "people";
   if (view === "academy") return "academy";
-  if (view === "agents" || view === "users" || view === "settings") return "system";
+  if (view === "agents" || view === "calls" || view === "users" || view === "settings") return "system";
   return "dashboard";
 }
 
@@ -268,6 +270,14 @@ export default function DesignLabPage({
         <AcademyDashboardScreen data={designLabAcademy()} />
       ) : view === "agents" ? (
         <AgentsPage />
+      ) : view === "calls" ? (
+        <CallControlScreen
+          preview
+          initialRows={designLabCalls(now).rows}
+          initialManagement={designLabCalls(now).management}
+          isAdmin
+          keys={[]}
+        />
       ) : view === "users" ? (
         <UsersAccessScreen users={designLabUsers(now)} currentUserId={previewProfile.id} />
       ) : view === "settings" ? (

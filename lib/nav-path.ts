@@ -22,7 +22,7 @@ export function activePath(pathname: string, view: string | null): string {
   if (view === "employees") return "/employees";
   if (view === "payroll") return EMPLOYEE_PAYROLL_PATH;
   if (view === "academy") return ACADEMY_PATH;
-  if (view === "agents") return "/agents";
+  if (view === "agents" || view === "calls") return view === "calls" ? "/agents/call-control" : "/agents";
   if (view === "users") return "/dashboard/users";
   if (view === "settings") return INTERFACES_PATH;
   if (view === "shemesh") return "/shemesh";

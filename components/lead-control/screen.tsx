@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
 import { type ControlItem, type ControlLane, type ControlState } from "@/lib/lead-control/rules";
 import type { LeadControlSnapshot } from "@/lib/lead-control/load";
+import { ListChecks } from "lucide-react";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 
@@ -148,7 +150,12 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold tracking-wide text-muted-foreground">עבודה</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">בקרת לידים</h1>
+          <div className="mt-1 flex items-center gap-2.5">
+            <IconBadge>
+              <ListChecks className="size-5" />
+            </IconBadge>
+            <h1 className="text-2xl font-semibold tracking-tight">בקרת לידים</h1>
+          </div>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             לידים ותהליכים בנפרד, לפי שעון הסטטוס ב־Surense. תהליך הוא ליד שכבר נסגר ומתופעל עד הפקה.
           </p>
@@ -269,8 +276,25 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
 
         <p className="px-4 pt-3 text-xs text-muted-foreground">{rows.length.toLocaleString("he-IL")} רשומות</p>
 
-        <div key={board} className="view-swap overflow-x-auto">
-          <table className="w-full min-w-[760px] text-sm">
+        <div key={board} className="view-swap">
+          <ul className="space-y-2 px-3 py-3 sm:hidden">
+            {rows.slice(0, 200).map((item) => (
+              <li key={`${item.kind}-${item.id}`} className="rounded-2xl border border-black/[0.06] bg-white px-3 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate text-sm font-semibold">{item.name}</p>
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{item.number ?? "—"}</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{item.status} · {item.assignee || "בלי מטפל"}</p>
+                <p className="mt-2">
+                  <span className={cn("status-chip", stateChip(item.state))}>
+                    {STATE_LABEL[item.state]} · {formatGap(item, snapshot.fetchedAt)}
+                  </span>
+                </p>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto sm:block">
+          <table className="data-sheet w-full min-w-[760px] text-sm">
             <thead>
               <tr className="text-xs text-muted-foreground">
                 <th className="px-4 py-2 text-start font-medium">מספר</th>
@@ -292,15 +316,7 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
                   <td className="max-w-40 truncate px-3 py-2.5 text-muted-foreground">{item.source || "—"}</td>
                   <td className="px-3 py-2.5 tabular-nums text-muted-foreground">{formatWhen(item.openedAt)}</td>
                   <td className="px-3 py-2.5">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f4] px-2.5 py-1 text-xs font-medium text-foreground">
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full bg-neutral-400",
-                          item.state === "overdue" && "bg-amber-500",
-                          (item.state === "blocked" || item.state === "unassigned") && "bg-red-500",
-                          item.state === "on_time" && "bg-emerald-500",
-                        )}
-                      />
+                    <span className={cn("status-chip", stateChip(item.state))}>
                       {STATE_LABEL[item.state]} · {formatGap(item, snapshot.fetchedAt)}
                     </span>
                   </td>
@@ -308,12 +324,16 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
               ))}
             </tbody>
           </table>
+          </div>
         </div>
         {rows.length > 200 ? (
           <p className="px-4 py-3 text-xs text-muted-foreground">מוצגות 200 הרשומות הדחופות. צמצמו לפי סטטוס או מטפל.</p>
         ) : null}
         {rows.length === 0 ? (
-          <p className="px-4 py-8 text-sm text-muted-foreground">אין רשומות בסינון הזה.</p>
+          <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+            <span className="size-2 rounded-full bg-highlight" aria-hidden />
+            <p className="text-sm text-muted-foreground">אין רשומות בסינון הזה.</p>
+          </div>
         ) : null}
       </div>
 
@@ -322,6 +342,13 @@ export function LeadControlScreen({ snapshot }: { snapshot: LeadControlSnapshot 
       </p>
     </section>
   );
+}
+
+function stateChip(state: ControlState): string {
+  if (state === "on_time") return "status-chip-ok";
+  if (state === "overdue") return "status-chip-wait";
+  if (state === "blocked" || state === "unassigned") return "status-chip-bad";
+  return "status-chip-muted";
 }
 
 function Metric({
@@ -339,7 +366,7 @@ function Metric({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-border bg-card px-4 py-4 text-start hover:border-black/15"
+      className="kpi-cube rounded-[20px] px-4 py-4 text-start"
     >
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">{value.toLocaleString("he-IL")}</p>

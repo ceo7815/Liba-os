@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { GraduationCap } from "lucide-react";
 import { AcademyPath } from "@/components/academy/academy-path";
+import { IconBadge } from "@/components/ui/icon-badge";
 import type { AcademyDashboard } from "@/lib/academy/types";
 
 export function AcademyDashboardScreen({ data }: { data: AcademyDashboard }) {
@@ -16,9 +18,14 @@ export function AcademyDashboardScreen({ data }: { data: AcademyDashboard }) {
         <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
           הדרכה · משמרת
         </p>
-        <h1 className="mt-2 text-[2rem] font-semibold leading-none tracking-tight">
-          {data.firstName}
-        </h1>
+        <div className="mt-2 flex items-center gap-2.5">
+          <IconBadge>
+            <GraduationCap className="size-5" />
+          </IconBadge>
+          <h1 className="text-[2rem] font-semibold leading-none tracking-tight">
+            {data.firstName}
+          </h1>
+        </div>
       </header>
 
       <div className="dash-enter">

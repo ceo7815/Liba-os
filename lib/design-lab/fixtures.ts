@@ -1,6 +1,9 @@
 import type { DashboardCampaignPulse } from "@/app/actions/dashboard-pulse";
 import type { GeneralPlSnapshot } from "@/app/actions/finance-general-pl";
+import type { CallControlManagement } from "@/app/actions/call-control";
 import type { ManagedUser } from "@/app/actions/users";
+import type { CallControlRow } from "@/lib/call-control/view";
+import { emptyOutcomeTimes } from "@/lib/voicenter/receipt";
 import type { AcademyDashboard } from "@/lib/academy/types";
 import type { CampaignBoard, CampaignPoint, GoogleCallLine } from "@/lib/campaigns/board";
 import { emptyPayContract, type EmployeePayContract } from "@/lib/employees/contract";
@@ -957,4 +960,46 @@ export function designLabShemeshSources(now = new Date()): ShemeshSourceStatus[]
     { id: "grow", label: "Grow", pulls: "סליקה ותשלומים", connection: "credentials_present", lastSyncedAt: synced, message: "מחובר ומסונכרן." },
     { id: "shared_folder", label: "דוח מכירות", pulls: "גבייה, חשבוניות ופיננסים", connection: "awaiting_access", lastSyncedAt: null, message: "ממתין לגישה. אין כאן שדה מפתח." },
   ];
+}
+
+export function designLabCalls(now = new Date()): { rows: CallControlRow[]; management: CallControlManagement } {
+  const today = jerusalemYmd(now);
+  const stamp = now.toISOString();
+  const rows: CallControlRow[] = [
+    ["דנה מזרחי", "ניב קובי", "ready", 86, false],
+    ["יוסי דהן", "סימונה", "processing", null, false],
+    ["תקווה פרץ", "בן ביטון", "failed", 41, true],
+  ].map(([customer, agent, status, score, critical], index) => ({
+    id: `call-${index}`,
+    externalId: `vc-${index}`,
+    voicenterCallId: `VC-24${index}`,
+    source: "voicenter",
+    callDate: `${today}T0${9 + index}:15:00.000Z`,
+    durationSec: 420 + index * 80,
+    customerName: String(customer),
+    agentName: String(agent),
+    callKind: "reflection",
+    callTypeLabel: "שיקוף",
+    processingStatus: status as CallControlRow["processingStatus"],
+    rawStatus: String(status),
+    overallScore: score as number | null,
+    hasCritical: Boolean(critical),
+    analysisIncomplete: false,
+    incompleteInsurers: [],
+    audioPath: null,
+    isDemo: true,
+  }));
+  return {
+    rows,
+    management: {
+      hermesStatus: "online",
+      hermesLastSeenAt: stamp,
+      tools: [],
+      cdrLastReceivedAt: stamp,
+      cdrStale: false,
+      cdrLastStage: "hangup",
+      cdrLastByOutcome: { ...emptyOutcomeTimes(), stored: stamp },
+      agentRunError: null,
+    },
+  };
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Calculator, ChevronLeft, Download, ExternalLink, FileText, HelpCircle, Scale } from "lucide-react";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { cn } from "@/lib/utils";
 import { COMMISSION_TYPE_LABELS, type CommissionSplitType } from "@/lib/finance/categories";
 import { SOURCE_PNL_PATH } from "@/lib/finance/access";
@@ -175,9 +176,9 @@ export function InsuranceAgreementsScreen() {
       <header className="app-surface px-5 py-5 sm:px-7 sm:py-6">
         <p className="text-xs font-medium text-muted-foreground">חשבונות ליבה</p>
         <div className="mt-1 flex items-center gap-2.5">
-          <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-highlight/35">
+          <IconBadge>
             <Scale className="size-5" />
-          </span>
+          </IconBadge>
           <h1 className="text-2xl font-semibold tracking-tight">הסכמי ביטוח</h1>
         </div>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
