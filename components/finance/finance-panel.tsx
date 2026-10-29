@@ -656,7 +656,7 @@ function OverviewSection({
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <div className="app-surface border-2 border-black p-4 sm:p-5">
+        <div className="app-surface p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">הכנסות לפי חברת ביטוח</h3>
             <button
@@ -686,7 +686,7 @@ function OverviewSection({
           )}
         </div>
 
-        <div className="app-surface border-2 border-black p-4 sm:p-5">
+        <div className="app-surface p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">הוצאות לפי קבוצה</h3>
             <button
@@ -717,7 +717,7 @@ function OverviewSection({
         </div>
       </div>
 
-      <div className="app-surface border-2 border-black p-4 sm:p-5">
+      <div className="app-surface p-4 sm:p-5">
         <h3 className="mb-3 text-sm font-semibold">רשומות אחרונות</h3>
         {data.recent.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -985,7 +985,7 @@ function MetricCard({
     <div
       className={cn(
         "app-surface px-4 py-4",
-        emphasize ? "border-2 border-black" : "border border-border",
+        emphasize ? "ring-1 ring-foreground/15" : "border border-border",
       )}
     >
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -1071,7 +1071,7 @@ function EntryCard({
       : null;
 
   return (
-    <article className="app-surface overflow-hidden border-2 border-black">
+    <article className="app-surface overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 sm:px-5">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -2059,7 +2059,7 @@ function PlSection({
         </Button>
       </div>
 
-      <div className="app-surface space-y-4 border-2 border-black p-5">
+      <div className="app-surface space-y-4 p-5">
         <h3 className="text-base font-semibold">
           רווח והפסד · {report.from} – {report.to}
         </h3>
@@ -2114,7 +2114,7 @@ function PlSection({
           ))}
         </PlBlock>
 
-        <div className="flex items-center justify-between rounded-xl border-2 border-black px-3 py-3 text-base font-semibold">
+        <div className="flex items-center justify-between rounded-xl px-3 py-3 text-base font-semibold">
           <span>רווח / הפסד תפעולי</span>
           <span
             className={cn(

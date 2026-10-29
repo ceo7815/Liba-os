@@ -286,7 +286,7 @@ function VaultCard({
   }
 
   return (
-    <article className="app-surface overflow-hidden border-2 border-black">
+    <article className="app-surface overflow-hidden">
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
         <div className="min-w-0 space-y-2">
