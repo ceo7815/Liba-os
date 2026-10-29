@@ -224,10 +224,9 @@ export async function createShemeshCaseChild(_state: { error: string | null }, f
 
 export async function createShemeshSettlementDraft(state: { error: string | null }, formData: FormData): Promise<{ error: string | null }> {
   void state;
-  void formData;
   const name = await actor();
   if (!name) return { error: "אין הרשאה" };
-  const result = await createSettlementDraft(name);
+  const result = await createSettlementDraft(name, String(formData.get("sourceRef") ?? ""));
   if (!result.error) refresh();
   return result;
 }

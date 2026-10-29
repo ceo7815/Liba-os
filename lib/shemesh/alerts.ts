@@ -29,6 +29,15 @@ export async function loadShemeshAlerts(): Promise<{ missing: boolean; alerts: S
   if (!board || board.missing) return { missing: true, alerts: [] };
 
   for (const item of board.cases) {
+    if (item.stage === "lead" && item.status !== "done" && item.status !== "cancelled") {
+      alerts.push({
+        id: `lead-${item.id}`,
+        tone: "sun",
+        title: `ליד חדש · ${item.clientName}`,
+        detail: `${item.handler || "בלי מטפל"}${item.openedOn ? ` · נפתח ${item.openedOn}` : ""}`,
+        href: `/shemesh/cases?open=${item.id}`,
+      });
+    }
     if (item.overdue) {
       alerts.push({
         id: `sla-${item.id}`,
@@ -59,16 +68,21 @@ export async function loadShemeshAlerts(): Promise<{ missing: boolean; alerts: S
   }
 
   const queue = await loadSheetQueue().catch(() => ({ missing: false, rows: [] }));
+  const slaDays = board.settings.slaDays;
   for (const row of queue.rows) {
-    if (!row.openedCaseId && row.excelRowId) {
-      alerts.push({
-        id: `sheet6-${row.id}`,
-        tone: "teal",
-        title: `Sheet-6 בלי תיק · ${row.clientName || "בלי שם"}`,
-        detail: "השורה ממתינה לפתיחת ליד. אין כאן תאריך איחור אם לא נשמר.",
-        href: "/shemesh/gviya",
-      });
-    }
+    if (row.openedCaseId || !row.excelRowId) continue;
+    const late = slaDays != null && row.createdAt ? addDays(row.createdAt, slaDays) < today : false;
+    alerts.push({
+      id: `sheet6-${row.id}`,
+      tone: late ? "coral" : "teal",
+      title: `${late ? "Sheet-6 באיחור" : "Sheet-6 בלי תיק"} · ${row.clientName || "בלי שם"}`,
+      detail: late
+        ? `נפתחה ב־${row.createdAt} ועברו ימי ה-SLA השמורים בלי תיק.`
+        : slaDays == null
+          ? "השורה ממתינה לפתיחת ליד. ימי SLA לא אומתו, ולכן אין כאן סימון איחור."
+          : "השורה ממתינה לפתיחת ליד ועדיין בתוך ימי ה-SLA.",
+      href: "/shemesh/gviya",
+    });
   }
 
   try {
@@ -103,6 +117,27 @@ export async function loadShemeshAlerts(): Promise<{ missing: boolean; alerts: S
         title: "שורנס עדיין לא סונכרן",
         detail: "אין חותמת סנכרון שמורה.",
         href: "/shemesh/agency",
+      });
+    } else if (surenseRow?.last_synced_at) {
+      const synced = String(surenseRow.last_synced_at).slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(synced) && addDays(synced, 7) < today) {
+        alerts.push({
+          id: "surense-old",
+          tone: "coral",
+          title: "סנכרון שורנס התיישן",
+          detail: `הסנכרון האחרון ${synced} ישן משבוע.`,
+          href: "/shemesh/agency",
+        });
+      }
+    }
+    const costs = await admin.from("shemesh_rules").select("id").eq("kind", "cost").eq("active", true).limit(20);
+    if (!costs.error && asRows(costs.data).length) {
+      alerts.push({
+        id: "costs-unpaid",
+        tone: "violet",
+        title: "הוצאה קבועה בלי רישום תשלום",
+        detail: "יש כללי קטלוג פעילים. אין טבלת תשלום בפועל, ולכן אי אפשר לסמן אותן כשולמו.",
+        href: "/shemesh/costs",
       });
     }
   } catch (error) {

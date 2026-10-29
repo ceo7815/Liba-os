@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { loadCampaignBoard, loadGoogleCallLines } from "@/app/actions/campaigns-board";
 import { syncFacebookAds } from "@/app/actions/facebook-ads";
 import { syncGoogleAds } from "@/app/actions/google-ads";
+import { DateRangeField } from "@/components/ui/date-range-field";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -347,29 +348,14 @@ export function CampaignsScreen({
               {label}
             </button>
           ))}
-          <input
-            type="date"
-            value={preset === "custom" ? customFrom : from}
-            max={to}
-            aria-label="מתאריך"
-            onChange={(event) => {
+          <DateRangeField
+            from={from}
+            to={to}
+            onChange={({ from: nextFrom, to: nextTo }) => {
               setPreset("custom");
-              setCustomFrom(event.target.value);
+              setCustomFrom(nextFrom);
+              setCustomTo(nextTo);
             }}
-            className="h-8 rounded-full border border-black/[0.08] bg-white px-2 text-xs"
-          />
-          <span className="text-xs text-muted-foreground">עד</span>
-          <input
-            type="date"
-            value={preset === "custom" ? customTo : to}
-            min={from}
-            max={board.today}
-            aria-label="עד תאריך"
-            onChange={(event) => {
-              setPreset("custom");
-              setCustomTo(event.target.value);
-            }}
-            className="h-8 rounded-full border border-black/[0.08] bg-white px-2 text-xs"
           />
         </div>
       </div>

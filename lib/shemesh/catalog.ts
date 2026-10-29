@@ -37,6 +37,18 @@ export const CASE_STAGES = [
 
 export type CaseStageId = (typeof CASE_STAGES)[number]["id"];
 
+export const CASE_STATUS_LABEL: Record<string, string> = {
+  open: "פתוח",
+  waiting: "ממתין",
+  done: "הושלם",
+  cancelled: "בוטל",
+  on_hold: "מושהה",
+};
+
+export function caseStatusLabel(status: string): string {
+  return CASE_STATUS_LABEL[status] ?? status;
+}
+
 export const ROADMAP: {
   stage: string;
   title: string;

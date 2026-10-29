@@ -1,251 +1,285 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Megaphone, UserRound, type LucideIcon } from "lucide-react";
-import { ShemeshFilters } from "@/components/shemesh/filters";
-import { useShemeshPulse } from "@/components/shemesh/pulse-context";
-import { useShemeshFilter } from "@/components/shemesh/use-shemesh-view";
-import { formatShemeshCount, formatShemeshDay, formatShemeshMoney } from "@/lib/shemesh/format";
-import { readBoard, sliceAds, sliceMoney, type PulseChannel, type PulseRange } from "@/lib/shemesh/pulse";
+import { LayoutDashboard } from "lucide-react";
+import { CountUp } from "@/components/ui/count-up";
+import { DateRangeField } from "@/components/ui/date-range-field";
+import { formatCount, formatDelta, formatIls } from "@/lib/format/numbers";
+import { formatShemeshMonth } from "@/lib/shemesh/format";
+import { SHEMESH_SALES_SOURCE_LABEL } from "@/lib/shemesh/sales-source";
+import {
+  buildDashboard,
+  shiftIso,
+  type DashInput,
+  type DashRange,
+  type DashView,
+} from "@/lib/shemesh/dashboard-model";
 
-const CHANNEL_LABEL: Record<PulseChannel, string> = {
-  facebook: "פייסבוק",
-  google: "גוגל",
-};
+const STATUS_HE = { draft: "טיוטה", approved: "אושר", paid: "שולם" } as const;
 
-export function ShemeshDashboard() {
-  const pulse = useShemeshPulse();
-  const { filter } = useShemeshFilter();
-  const channel: PulseRange["channel"] =
-    filter.adPlatform === "facebook" || filter.adPlatform === "google" ? filter.adPlatform : "all";
-  const range: PulseRange = { from: filter.from, to: filter.to, channel };
-  const ads = sliceAds(pulse, range);
-  const money = sliceMoney(pulse, range);
-  const board = readBoard(pulse, range, ads);
-  const facebook = ads.byChannel.find((row) => row.channel === "facebook");
-  const google = ads.byChannel.find((row) => row.channel === "google");
-  const channels = [
-    { channel: "facebook" as const, spend: facebook?.spend ?? 0, leads: facebook?.leads ?? 0, cpl: facebook?.cpl ?? null },
-    { channel: "google" as const, spend: google?.spend ?? 0, leads: google?.leads ?? 0, cpl: google?.cpl ?? null },
-  ].sort((a, b) => b.leads - a.leads || b.spend - a.spend);
-  const leadingChannel = channels[0]?.leads || channels[0]?.spend ? channels[0] : null;
-  const otherChannel = channels[1];
-  const campaigns = [...ads.byCampaign].sort((a, b) => b.leads - a.leads || b.spend - a.spend).slice(0, 4);
+function monthStart(today: string): string {
+  return `${today.slice(0, 7)}-01`;
+}
 
-  const leaders: {
-    href: string;
-    label: string;
-    icon: LucideIcon;
-    name: string;
-    detail: string;
-  }[] = [
-    {
-      href: "/shemesh/revenue",
-      label: "עובד מוביל",
-      icon: UserRound,
-      name: board.leader?.name ?? "—",
-      detail: board.leader
-        ? `${formatShemeshCount(board.leader.count)} עסקאות · ${formatShemeshMoney(board.leader.sold)}`
-        : "אין סגירות בתקופה",
-    },
-    {
-      href: "/shemesh/marketing",
-      label: "קמפיין מוביל",
-      icon: Megaphone,
-      name: board.campaign?.name ?? "—",
-      detail: board.campaign
-        ? `${formatShemeshCount(board.campaign.leads)} לידים בקמפיין אחד · ${CHANNEL_LABEL[board.campaign.channel]}`
-        : "אין קמפיין בתקופה",
-    },
-    {
-      href: "/shemesh/marketing",
-      label: "ערוץ מוביל",
-      icon: Megaphone,
-      name: leadingChannel ? CHANNEL_LABEL[leadingChannel.channel] : "—",
-      detail: leadingChannel
-        ? `${formatShemeshCount(leadingChannel.leads)} לידים${otherChannel ? ` · ${CHANNEL_LABEL[otherChannel.channel]} ${formatShemeshCount(otherChannel.leads)}` : ""}`
-        : "אין לידים בתקופה",
-    },
-    {
-      href: "/shemesh/marketing",
-      label: "עלות לליד",
-      icon: Megaphone,
-      name: ads.cpl != null ? formatShemeshMoney(ads.cpl) : "—",
-      detail: ads.leads ? `${formatShemeshCount(ads.leads)} לידים · ${formatShemeshMoney(ads.spend)}` : "אין לידים בתקופה",
-    },
-  ];
-
+function Spark({ values }: { values: number[] }) {
+  if (values.length < 2) {
+    return <span className="text-[11px] text-current/70">אין מגמה עדיין</span>;
+  }
+  const max = Math.max(...values, 1);
+  const width = 92;
+  const height = 28;
+  const points = values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * width;
+      const y = height - (value / max) * (height - 2) - 1;
+      return `${x},${y}`;
+    })
+    .join(" ");
   return (
-    <div className="space-y-3">
-      <header className="flex flex-wrap items-end justify-between gap-3 px-0.5">
-        <div>
-          <h1 className="text-2xl font-semibold leading-none tracking-tight">לוח בקרה</h1>
-          <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">
-            {formatShemeshDay(filter.from)} עד {formatShemeshDay(filter.to)}
-          </p>
-        </div>
-        <ShemeshFilters showPlatform />
-      </header>
-
-      <section className="relative overflow-hidden rounded-[1.25rem] border border-border bg-card shadow-sm sm:rounded-[var(--radius)]">
-        <span className="absolute inset-x-0 top-0 h-1 bg-highlight" />
-        <div className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
-          <HeroCell
-            href="/shemesh/revenue"
-            kicker="בתאריכים"
-            label="מכרנו"
-            value={formatShemeshMoney(board.sold)}
-            hint={board.soldCount ? `${formatShemeshCount(board.soldCount)} עסקאות` : "אין עסקאות בתאריכים האלה"}
-            tint
-          />
-          <HeroCell
-            href="/shemesh/revenue"
-            kicker="כל הקובץ"
-            label="פתוח לגבייה"
-            value={formatShemeshMoney(board.openBalance)}
-            hint={board.openCount ? `${formatShemeshCount(board.openCount)} עסקאות שעדיין לא נגבו` : "אין יתרה פתוחה"}
-          />
-          <HeroCell
-            href="/shemesh/marketing"
-            kicker="בתאריכים"
-            label="עלות קמפיינים"
-            value={formatShemeshMoney(ads.spend)}
-            hint={
-              ads.byCampaign.length
-                ? `${formatShemeshCount(ads.byCampaign.length)} קמפיינים${ads.cpl != null ? ` · ${formatShemeshMoney(ads.cpl)} לליד` : ""}`
-                : "אין הוצאת פרסום"
-            }
-          />
-          <HeroCell
-            href="/shemesh/leads"
-            kicker="בתאריכים"
-            label="לידים"
-            value={formatShemeshCount(ads.leads)}
-            hint={ads.leads ? "נכנסו מהקמפיינים" : "אין לידים בתקופה"}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[11px] sm:px-5">
-          <QuietLink href="/shemesh/revenue" label="נגבה" value={formatShemeshMoney(board.collectedInRange)} />
-          <QuietLink href="/shemesh/expenses" label="תגמול עובדים" value={formatShemeshMoney(money.reward)} />
-          <QuietLink
-            href="/shemesh/revenue"
-            label="נפרע · כל הקובץ"
-            value={formatShemeshMoney(pulse.finance.settled)}
-          />
-        </div>
-      </section>
-
-      {campaigns.length > 0 ? (
-        <section className="overflow-hidden rounded-[1.25rem] border border-border bg-card sm:rounded-[var(--radius)]">
-          <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2 sm:px-5">
-            <h2 className="text-sm font-semibold tracking-tight">קמפיינים בתקופה</h2>
-            <Link href="/shemesh/marketing" className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
-              לשיווק
-              <ChevronLeft className="size-3.5" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
-            {campaigns.map((row) => (
-              <Link
-                key={row.id}
-                href="/shemesh/marketing"
-                className="group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/10 sm:px-5"
-              >
-                <p className="truncate text-[11px] font-medium text-muted-foreground" title={row.name}>
-                  {CHANNEL_LABEL[row.channel]}
-                </p>
-                <p className="mt-1 truncate text-base font-semibold tracking-tight" title={row.name}>
-                  {row.name}
-                </p>
-                <p className="mt-1 flex items-center gap-1 text-[11px] tabular-nums text-muted-foreground">
-                  <span className="min-w-0 truncate">
-                    {formatShemeshMoney(row.spend)} · {formatShemeshCount(row.leads)} לידים
-                  </span>
-                  <ChevronLeft className="size-3.5 shrink-0 opacity-40 transition-transform group-hover:-translate-x-0.5" />
-                </p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="space-y-2">
-        <div className="flex items-baseline justify-between gap-3 px-0.5">
-          <h2 className="text-sm font-semibold tracking-tight">מובילים בתקופה</h2>
-          <p className="text-[11px] text-muted-foreground">לחצו על קובייה לפירוט</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-          {leaders.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="group relative min-w-0 overflow-hidden rounded-[1.25rem] border border-border bg-card px-3 py-2.5 text-start transition-[background-color,border-color] hover:border-border hover:bg-highlight/10 sm:rounded-[var(--radius)] sm:px-4 sm:py-3"
-              >
-                <span className="absolute inset-y-0 start-0 w-1 bg-highlight" />
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-highlight/35">
-                      <Icon className="size-4" />
-                    </span>
-                    <p className="truncate text-[11px] font-medium text-muted-foreground">{item.label}</p>
-                  </div>
-                  <ChevronLeft className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5" />
-                </div>
-                <p className="mt-2 truncate text-base font-semibold tracking-tight">{item.name}</p>
-                <p className="mt-1 truncate text-[11px] tabular-nums text-muted-foreground">{item.detail}</p>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-    </div>
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-7 w-24" aria-hidden>
+      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
+    </svg>
   );
 }
 
-function HeroCell({
-  href,
-  kicker,
+function Delta({ current, previous, money = false }: { current: number | null; previous: number | null; money?: boolean }) {
+  if (current == null || previous == null) return <span className="text-[11px] text-current/70">ממתין לתקופה קודמת</span>;
+  const diff = current - previous;
+  const label = money
+    ? `${diff > 0 ? "+" : ""}${formatIls(diff)}`
+    : formatDelta(current, previous);
+  return <span className="text-[11px] font-semibold tabular-nums">{label ?? "—"} מול התקופה הקודמת</span>;
+}
+
+function Kpi({
+  hero,
+  tone,
   label,
   value,
+  text,
   hint,
-  tint,
+  delta,
+  spark,
+  pending,
 }: {
-  href: string;
-  kicker: string;
+  hero?: boolean;
+  tone: "sun" | "green" | "violet" | "teal" | "coral";
   label: string;
-  value: string;
+  value: number | null;
+  text: (value: number) => string;
   hint: string;
-  tint?: boolean;
+  delta: React.ReactNode;
+  spark?: number[];
+  pending?: string;
 }) {
   return (
-    <Link
-      href={href}
-      className={
-        tint
-          ? "group bg-highlight/15 px-4 py-3 text-start transition-colors hover:bg-highlight/25 sm:px-5 sm:py-4"
-          : "group bg-card px-4 py-3 text-start transition-colors hover:bg-highlight/10 sm:px-5 sm:py-4"
-      }
-    >
-      <span className={tint ? "rounded-full bg-highlight px-2.5 py-0.5 text-[11px] font-semibold text-highlight-foreground" : "rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold"}>
-        {kicker}
-      </span>
-      <p className="mt-2 text-[11px] font-medium tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl">{value}</p>
-      <p className="mt-2 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
-        <span className="min-w-0 truncate">{hint}</span>
-        <ChevronLeft className="size-3.5 shrink-0 opacity-40 transition-transform group-hover:-translate-x-0.5" />
+    <article className={`kpi-cube px-4 py-4 sm:px-5 ${hero ? "kpi-hero" : ""}`} data-accent={hero ? undefined : tone}>
+      <div className="flex items-start justify-between gap-2">
+        <span className="kpi-badge" data-tone={tone} aria-hidden />
+        {spark ? <Spark values={spark} /> : null}
+      </div>
+      <p className="mt-3 text-[11px] font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-3xl font-semibold leading-none tracking-tight">
+        {value == null ? "ממתין" : <CountUp value={value} text={text} />}
       </p>
-    </Link>
+      <p className="mt-2 text-[11px] text-muted-foreground">{pending ?? hint}</p>
+      <div className="mt-1">{delta}</div>
+    </article>
   );
 }
 
-function QuietLink({ href, label, value }: { href: string; label: string; value: string }) {
+function Attention({ title, items, empty, href }: { title: string; items: DashView["attention"]["sla"]; empty: string; href: string }) {
   return (
-    <Link href={href} className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-highlight/10">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold tabular-nums">{value}</span>
-    </Link>
+    <section className="glass px-4 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <Link href={href} className="text-[11px] font-medium text-[#2f86ea]">לרשימה</Link>
+      </div>
+      {items.length === 0 ? <p className="mt-2 text-xs text-muted-foreground">{empty}</p> : (
+        <ul className="mt-2 space-y-1">
+          {items.map((item) => (
+            <li key={item.id}>
+              <Link href={item.href} className="flex items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-sm hover:bg-white/80">
+                <span className="truncate font-medium">{item.title}</span>
+                <span className="shrink-0 text-[11px] text-muted-foreground">{item.detail}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export function ShemeshDashboard({ input, sourceOptions }: { input: DashInput; sourceOptions: string[] }) {
+  const [range, setRange] = useState<DashRange>({ from: monthStart(input.today), to: input.today });
+  const [source, setSource] = useState("all");
+  const view = useMemo(() => buildDashboard(input, range, source), [input, range, source]);
+  const exportHref = `/api/shemesh/export?kind=dashboard&from=${range.from}&to=${range.to}&source=${encodeURIComponent(source)}`;
+
+  return (
+    <div className="mx-auto min-w-0 max-w-[76rem] space-y-4">
+      <header className="glass glass-noise flex flex-col gap-3 px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">שמש</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="kpi-badge" data-tone="sun"><LayoutDashboard className="size-4" /></span>
+              <h1 className="text-2xl font-semibold tracking-tight">לוח ניהול</h1>
+            </div>
+          </div>
+          <a href={exportHref} className="text-sm font-medium text-[#2f86ea]">ייצוא הלוח לאקסל</a>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <DateRangeField from={range.from} to={range.to} onChange={setRange} />
+          <button type="button" className="h-10 rounded-full bg-white/80 px-3 text-xs font-medium" onClick={() => setRange({ from: monthStart(input.today), to: input.today })}>החודש</button>
+          <button type="button" className="h-10 rounded-full bg-white/80 px-3 text-xs font-medium" onClick={() => setRange({ from: shiftIso(input.today, -29), to: input.today })}>30 יום</button>
+          <select aria-label="מקור" value={source} onChange={(event) => setSource(event.target.value)} className="h-10 rounded-full border border-white/80 bg-white/80 px-3 text-xs">
+            <option value="all">כל המקורות</option>
+            {sourceOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </div>
+        <p className="text-[11px] text-muted-foreground">מכירות וגבייה רק מ־{SHEMESH_SALES_SOURCE_LABEL}. תיקים וספר הם תפעול.</p>
+      </header>
+
+      <section className="kpi-band grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <Kpi hero tone="sun" label="נמכר בתקופה" value={view.sold} text={formatIls} hint="לפי תאריך עסקה בדוח שמש" pending={view.salesReady ? undefined : "השלב הבא: ייבוא דוח המכירות בחיבורים"} delta={<Delta current={view.sold} previous={view.soldPrev} money />} spark={view.sparkSold} />
+        <Kpi tone="green" label="נגבה בתקופה" value={view.collected} text={formatIls} hint="גיליון הגבייה בדוח שמש" pending={view.salesReady ? undefined : "ממתין לאותו דוח"} delta={<Delta current={view.collected} previous={view.collectedPrev} money />} spark={view.sparkCollected} />
+        <Kpi tone="violet" label="פתוח לגבייה" value={view.openToCollect} text={formatIls} hint="נמכר פחות נגבה, בדוח שמש" pending={view.salesReady ? undefined : "ממתין לאותו דוח"} delta={<Delta current={view.openToCollect} previous={view.openToCollectPrev} money />} />
+        <Kpi tone="teal" label="תיקים פעילים" value={view.activeCases} text={formatCount} hint="נפתחו בתקופה ועדיין פתוחים" delta={<Delta current={view.activeCases} previous={view.activeCasesPrev} />} />
+        <Kpi tone="coral" label="חריגות SLA" value={view.slaBreaches} text={formatCount} hint="יעד שעבר והתיק עדיין פתוח" delta={<span className="text-[11px] text-current/70">מצב נוכחי, בלי היסטוריה שמורה</span>} />
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold">דורש טיפול היום</h2>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <Attention title="חריגות SLA" items={view.attention.sla} empty="אין חריגה בתקופה." href="/shemesh/cases?focus=sla" />
+          <Attention title="מסמכים חסרים" items={view.attention.docs} empty="אין מסמך חובה חסר בתיקים הפתוחים." href="/shemesh/cases?focus=docs" />
+          <Attention title="יעדים בתקופה" items={view.attention.deadlines} empty="אין יעד שנשמר בתוך התאריכים." href="/shemesh/cases?focus=week" />
+          <Attention title="בלי מטפל" items={view.attention.unassigned} empty="כל תיק שנפתח בתקופה משויך." href="/shemesh/cases?focus=unassigned" />
+          <Attention title="לידים שנתקעו" items={view.attention.stale} empty={view.attention.stalePending ? "ימי SLA לא אומתו בהגדרות, ולכן אין סימון ליד תקוע." : "אין ליד שעבר את ימי ה-SLA."} href="/shemesh/cases?focus=stale" />
+        </div>
+      </section>
+
+      <section className="glass px-4 py-4">
+        <h2 className="text-sm font-semibold">משפך התיקים</h2>
+        <p className="mt-1 text-[11px] text-muted-foreground">ספירה של תיקים שנפתחו בתקופה. אחוז המעבר הוא מול השלב הקודם. הימים הם מאז הפתיחה, אין חותמת כניסה לכל שלב.</p>
+        <ol className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {view.funnel.map((stage, index) => {
+            const max = Math.max(1, ...view.funnel.map((item) => item.count));
+            return (
+            <li key={stage.id} className="rounded-2xl border border-white/80 bg-white/70 px-3 py-3">
+              <p className="text-[11px] text-muted-foreground">{formatCount(index + 1)}</p>
+              <p className="mt-1 text-sm font-semibold">{stage.label}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{formatCount(stage.count)}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                מעבר {stage.conversion == null ? "—" : `${formatCount(stage.conversion)}%`}
+                {" · "}
+                ימים {stage.avgDays == null ? "—" : formatCount(stage.avgDays)}
+              </p>
+              <div className="mt-2 h-1.5 rounded-full bg-white">
+                <div className="h-1.5 rounded-full" style={{ width: `${(stage.count / max) * 100}%`, background: "linear-gradient(90deg, #9fd0ff, #2f86ea)" }} />
+              </div>
+            </li>
+          );
+          })}
+        </ol>
+      </section>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <section className="glass px-4 py-4">
+          <h2 className="text-sm font-semibold">גבייה בדוח שמש</h2>
+          {view.trend.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">אין עמודת גבייה. השלב הבא: ייבוא «דוח מכירות שמש פדיונות 2» במסך החיבורים.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {view.trend.map((row) => {
+                const max = Math.max(...view.trend.map((item) => item.collected), 1);
+                return (
+                  <li key={row.month}>
+                    <div className="mb-1 flex justify-between text-xs">
+                      <span>{formatShemeshMonth(row.month)}</span>
+                      <span className="tabular-nums">{formatIls(row.collected)}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/80">
+                      <div className="h-2 rounded-full" style={{ width: `${(row.collected / max) * 100}%`, background: "linear-gradient(90deg, #fff1a8, #ff9f0a)" }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+        <section className="glass px-4 py-4">
+          <h2 className="text-sm font-semibold">שכר טרחה והתחשבנות</h2>
+          <p className="mt-2 text-sm">
+            שורות פתוחות בספר: {formatCount(view.openFeeRows)}. סכום שכר טרחה: {view.feesPending ? "ממתין לאימות השיעור" : formatIls(view.openFeeKnown)}.
+          </p>
+          <p className="mt-2 text-sm">
+            {view.settlement
+              ? `התחשבנות ${view.settlement.period}: ${STATUS_HE[view.settlement.status]}. עמלות ליבה ${formatIls(view.settlement.liba)}, ביטוח ${formatIls(view.settlement.insurance)}, חשבון ליבה ${formatIls(view.settlement.redemption)}.`
+              : "אין טיוטת התחשבנות. השלב הבא: שמירה במסך ההתחשבנות."}
+          </p>
+          <Link href="/shemesh/settlement" className="mt-3 inline-block text-xs font-medium text-[#2f86ea]">להתחשבנות</Link>
+        </section>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <section className="glass px-4 py-4">
+          <h2 className="text-sm font-semibold">שיווק</h2>
+          {view.sources.length === 0 && view.cpl == null ? (
+            <p className="mt-3 text-sm text-muted-foreground">אין מקורות בדוח ואין לידים מקמפיין. השלב הבא: ייבוא הדוח וסנכרון חשבון המודעות.</p>
+          ) : (
+            <>
+              <p className="mt-2 text-xs text-muted-foreground">
+                עלות לליד {view.cpl == null ? "ממתין לסנכרון פרסום" : formatIls(view.cpl)}
+                {" · "}
+                ליד לתיק {view.leadToCase == null ? "ממתין ללידים" : `${formatCount(view.leadToCase)}%`}
+              </p>
+              <ul className="mt-3 space-y-1 text-sm">
+                {view.sources.map((row) => (
+                  <li key={row.name} className="flex justify-between gap-3">
+                    <span>{row.name}</span>
+                    <span className="tabular-nums">{formatCount(row.deals)} עסקאות בדוח</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+        <section className="glass px-4 py-4">
+          <h2 className="text-sm font-semibold">צוות</h2>
+          {view.team.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">אין תיקים שנפתחו בתקופה. תיק חדש נפתח ממסך התיקים.</p>
+          ) : (
+            <ul className="mt-3 space-y-1 text-sm">
+              {view.team.map((row) => (
+                <li key={row.handler} className="flex justify-between gap-3">
+                  <span>{row.handler}</span>
+                  <span className="tabular-nums">{formatCount(row.cases)} תיקים · {formatCount(row.sla)} חריגות</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <section className="glass px-4 py-4">
+        <h2 className="text-sm font-semibold">פעילות אחרונה</h2>
+        {view.activity.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">אין שורות יומן בתקופה. פעולה על תיק או על ספר נרשמת כאן.</p>
+        ) : (
+          <ul className="mt-3 space-y-2 text-sm">
+            {view.activity.map((row) => (
+              <li key={row.id} className="flex justify-between gap-3">
+                <span>{row.summary}</span>
+                <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">{row.createdAt.slice(0, 16).replace("T", " ")}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

@@ -674,6 +674,7 @@ export type QueueLead = {
   excelRowId: string;
   surenseId: string;
   openedCaseId: string | null;
+  createdAt: string;
 };
 
 export async function loadSheetQueue(): Promise<{ missing: boolean; rows: QueueLead[] }> {
@@ -690,6 +691,7 @@ export async function loadSheetQueue(): Promise<{ missing: boolean; rows: QueueL
         excelRowId: text(row.excel_row_id),
         surenseId: text(row.surense_id),
         openedCaseId: row.opened_case_id ? String(row.opened_case_id) : null,
+        createdAt: text(row.created_at)?.slice(0, 10) ?? "",
       })),
     };
   } catch (error) {

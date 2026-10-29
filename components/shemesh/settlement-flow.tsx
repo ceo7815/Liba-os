@@ -4,7 +4,7 @@ import { useFormState } from "react-dom";
 import { advanceShemeshSettlement, createShemeshSettlementDraft } from "@/app/actions/shemesh-ops";
 import { Panel } from "@/components/shemesh/widgets";
 import { Button } from "@/components/ui/button";
-import { formatShemeshMoney } from "@/lib/shemesh/format";
+import { formatShemeshCount, formatShemeshMoney } from "@/lib/shemesh/format";
 import type { SettlementDraft, SettlementStream } from "@/lib/shemesh/settlement-flow";
 
 const STATUS_LABEL = { draft: "טיוטה", approved: "אושר", paid: "שולם" } as const;
@@ -35,15 +35,19 @@ export function SettlementFlow({
               <span className="font-medium">{stream.label}</span>
               <span className="tabular-nums">{formatShemeshMoney(stream.amount)}</span>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">{stream.note}{stream.rows ? ` · ${stream.rows} שורות` : ""}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{stream.note}{stream.rows ? ` · ${formatShemeshCount(stream.rows)} שורות` : ""}</p>
           </li>
         ))}
       </ul>
       {missing ? (
         <p className="pt-3 text-sm text-muted-foreground">טבלת הטיוטות עדיין לא הורצה במסד הזה.</p>
       ) : (
-        <form action={createAction} className="pt-3">
-          <Button type="submit">שמירת טיוטה מהזרמים</Button>
+        <form action={createAction} className="grid gap-2 pt-3 sm:max-w-md">
+          <label className="grid gap-1 text-xs text-muted-foreground">
+            אסמכתא
+            <input name="sourceRef" className="h-10 rounded-xl border border-white/80 bg-white/80 px-3 text-sm" placeholder="שם מסמך או קישור, בלי להעלות קובץ" />
+          </label>
+          <Button type="submit" className="w-fit">שמירת טיוטה מהזרמים</Button>
           {created.error ? <p className="pt-2 text-sm text-destructive">{created.error}</p> : null}
         </form>
       )}
@@ -51,8 +55,9 @@ export function SettlementFlow({
         <ul className="mt-4 divide-y divide-white/70 text-sm">
           {drafts.map((draft) => (
             <li key={draft.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span>
-                {draft.period} · {STATUS_LABEL[draft.status]}
+              <span className="min-w-0">
+                <span className="block">{draft.period} · {STATUS_LABEL[draft.status]}</span>
+                {draft.note ? <span className="block text-xs text-muted-foreground">{draft.note}</span> : null}
               </span>
               {draft.status !== "paid" ? (
                 <form action={moveAction}>

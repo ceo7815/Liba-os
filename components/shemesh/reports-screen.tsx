@@ -11,12 +11,28 @@ import { SHEMESH_SALES_SOURCE_LABEL } from "@/lib/shemesh/sales-source";
 import { sliceAds, sliceMoney, type PulseChannel, type PulseRange } from "@/lib/shemesh/pulse";
 import type { ShemeshBooks } from "@/lib/shemesh/story";
 
+export type SettlementLine = {
+  id: string;
+  period: string;
+  status: string;
+  liba: number | null;
+  insurance: number | null;
+  redemption: number | null;
+  note: string;
+};
+
 const CHANNEL_LABEL: Record<PulseChannel, string> = {
   facebook: "פייסבוק",
   google: "גוגל",
 };
 
-export function ShemeshReports({ books = null }: { books?: ShemeshBooks | null }) {
+export function ShemeshReports({
+  books = null,
+  settlements = [],
+}: {
+  books?: ShemeshBooks | null;
+  settlements?: SettlementLine[];
+}) {
   const pulse = useShemeshPulse();
   const { filter } = useShemeshFilter();
   const channel: PulseRange["channel"] =
@@ -61,6 +77,22 @@ export function ShemeshReports({ books = null }: { books?: ShemeshBooks | null }
           <p className="mt-3 text-xs text-muted-foreground">פרסום החשבונות מוצג בנפרד למטה ואינו משנה את הנגבה. עמלת הרישיון שייכת לליבה.</p>
         </Panel>
       ) : null}
+      <Panel title="התחשבנות ברווח והפסד" action={<Link href="/shemesh/settlement" className="text-xs font-medium text-muted-foreground hover:text-foreground">לטיוטה</Link>}>
+        {settlements.length === 0 ? (
+          <p className="py-3 text-sm text-muted-foreground">אין טיוטת התחשבנות שמורה. שורה ששולמה תופיע כאן עם הסכומים שנשמרו, בלי למלא גבייה בחשבון ליבה.</p>
+        ) : (
+          <ul className="space-y-2 text-sm">
+            {settlements.map((row) => (
+              <li key={row.id} className="flex flex-wrap justify-between gap-2">
+                <span>{row.period} · {row.status}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  עמלות ליבה {formatShemeshMoney(row.liba)} · ביטוח {formatShemeshMoney(row.insurance)} · חשבון ליבה {formatShemeshMoney(row.redemption)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel title="לפי חודש">
           {money.byMonth.length === 0 ? (

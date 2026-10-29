@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ShemeshHub } from "@/components/shemesh/hub";
 import { Panel } from "@/components/shemesh/widgets";
+import { formatShemeshCount } from "@/lib/shemesh/format";
 import { loadHubNumbers } from "@/lib/shemesh/hub-counts";
 import { loadDesk, loadCaseBoard } from "@/lib/shemesh/ops";
 
@@ -39,7 +40,7 @@ export default async function Page() {
               <li key={name}>
                 <Link href={`/shemesh/clients/card?name=${encodeURIComponent(name)}`} className="flex items-center justify-between gap-3 py-2 hover:text-[#2f86ea]">
                   <span className="font-medium">{name}</span>
-                  <span className="text-xs text-muted-foreground">{counts.cases} תיקים · {counts.payments} שורות ספר</span>
+                  <span className="text-xs text-muted-foreground">{formatShemeshCount(counts.cases)} תיקים · {formatShemeshCount(counts.payments)} שורות ספר</span>
                 </Link>
               </li>
             ))}

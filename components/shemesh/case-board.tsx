@@ -22,6 +22,7 @@ export function CaseBoard({
   error,
   audit,
   initialOpenId,
+  focus,
   createAction,
   childAction,
   updateAction,
@@ -33,6 +34,7 @@ export function CaseBoard({
   error: string | null;
   audit: { id: string; summary: string; createdAt: string }[];
   initialOpenId?: string | null;
+  focus?: string | null;
   canManage: boolean;
   createAction: (state: { error: string | null }, formData: FormData) => Promise<{ error: string | null }>;
   updateAction: (state: { error: string | null }, formData: FormData) => Promise<{ error: string | null }>;
@@ -44,6 +46,7 @@ export function CaseBoard({
   const [state, formAction] = useFormState(createAction, idle);
   const selected = cases.find((item) => item.id === openId) ?? null;
   const visible = cases.filter((item) => {
+    if (!matchesFocus(item, focus)) return false;
     const needle = query.trim().toLowerCase();
     if (!needle) return true;
     return `${item.clientName} ${item.handler} ${item.phone}`.toLowerCase().includes(needle);
@@ -63,7 +66,8 @@ export function CaseBoard({
         />
       ) : (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-3">
+            {focus && FOCUS_LABEL[focus] ? <p className="text-sm">מסונן: {FOCUS_LABEL[focus]} · <a className="font-medium text-[#2f86ea]" href="/shemesh/cases">הצגת הכל</a></p> : <span />}
             <a className="text-sm font-medium text-highlight" href="/api/shemesh/export?kind=cases">ייצוא לאקסל</a>
           </div>
           {canManage ? <Panel title="תיק חדש">
@@ -286,6 +290,24 @@ function CaseDetail({
       </form> : null}
     </div>
   );
+}
+
+const FOCUS_LABEL: Record<string, string> = {
+  sla: "חריגות SLA",
+  docs: "מסמכים חסרים",
+  week: "יעדים",
+  unassigned: "בלי מטפל",
+  stale: "לידים שנתקעו",
+};
+
+function matchesFocus(item: CaseFile, focus?: string | null): boolean {
+  if (!focus) return true;
+  if (focus === "sla") return item.overdue;
+  if (focus === "docs") return item.documents.some((doc) => doc.required && doc.state !== "received" && !doc.received);
+  if (focus === "week") return Boolean(item.deadline) && item.status !== "done" && item.status !== "cancelled";
+  if (focus === "unassigned") return !item.handler.trim() && item.status !== "done" && item.status !== "cancelled";
+  if (focus === "stale") return item.stage === "lead" && item.status !== "done" && item.status !== "cancelled";
+  return true;
 }
 
 function SlaBadge({ overdue, deadline }: { overdue: boolean; deadline: string | null }) {

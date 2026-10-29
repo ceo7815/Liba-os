@@ -130,7 +130,7 @@ export async function loadSettlementDrafts(): Promise<{ missing: boolean; error:
   }
 }
 
-export async function createSettlementDraft(actor: string): Promise<{ error: string | null }> {
+export async function createSettlementDraft(actor: string, sourceRef = ""): Promise<{ error: string | null }> {
   const streams = await loadSettlementStreams();
   const byId = Object.fromEntries(streams.map((stream) => [stream.id, stream]));
   try {
@@ -144,7 +144,9 @@ export async function createSettlementDraft(actor: string): Promise<{ error: str
       liba_rows: byId.liba_commission.rows,
       insurance_rows: byId.insurance_sales.rows,
       redemption_rows: byId.redemption_in_liba.rows,
-      note: `נשמר על ידי ${actor}. סכום ריק נשאר ריק.`,
+      note: [sourceRef.trim() ? `אסמכתא: ${sourceRef.trim()}` : "", `נשמר על ידי ${actor}. סכום ריק נשאר ריק.`]
+        .filter(Boolean)
+        .join(" · "),
     });
     if (error) return { error: isMissingRelation(error.message) ? "טבלת הטיוטות עדיין לא הורצה" : error.message };
     return { error: null };

@@ -11,7 +11,7 @@ import { ensureStoredChecklists, loadCaseBoard, writeAudit } from "@/lib/shemesh
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "תיקים · שמש" };
 
-export default async function Page({ searchParams }: { searchParams: { open?: string } }) {
+export default async function Page({ searchParams }: { searchParams: { open?: string; focus?: string } }) {
   const profile = await shemeshProfile();
   await ensureStoredChecklists();
   if (searchParams.open && profile) {
@@ -27,6 +27,7 @@ export default async function Page({ searchParams }: { searchParams: { open?: st
         error={board.error}
         audit={board.audit}
         initialOpenId={searchParams.open}
+        focus={searchParams.focus}
         canManage={canManage}
         createAction={createShemeshCase}
         updateAction={updateShemeshCase}
