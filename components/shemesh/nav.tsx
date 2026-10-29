@@ -53,6 +53,7 @@ const SECTIONS: {
       { href: "/shemesh/receipts", label: "קבלות", icon: Landmark },
       { href: "/shemesh/insurance", label: "ביטוח", icon: Shield },
       { href: "/shemesh/settlement", label: "התחשבנות", icon: Wallet },
+      { href: "/shemesh/payroll", label: "שכר", icon: Users },
       { href: "/shemesh/sources", label: "מקורות", icon: Cable },
       { href: "/shemesh/formulas", label: "נוסחאות שמש", icon: Calculator },
     ],

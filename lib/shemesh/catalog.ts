@@ -47,7 +47,7 @@ export const ROADMAP: {
   { stage: "4", href: "/shemesh/receipts", title: "קבלות ותיקייה", detail: "העלאת קבלות גוגל ופייסבוק והוצאות מהתיקייה" },
   { stage: "9", href: "/shemesh/insurance", title: "ביטוח ונפרעים", detail: "התאמה מול חברות, בלי נוסחת עמלה עד אישור" },
   { stage: "11", href: "/shemesh/settlement", title: "הכנסה והתחשבנות", detail: "גבייה, נפרעים, ומעבר מליבה לשמש" },
-  { stage: "5", title: "עובדים ושכר", detail: "מבנה הסכם ומחשבון. בלי סכומי שכר בקוד" },
+  { stage: "5", href: "/shemesh/payroll", title: "עובדים ושכר", detail: "מבנה הסכם ומחשבון. בלי סכומי שכר בקוד" },
   { stage: "3", title: "היקף שורנס", detail: "אותה סוכנות או סוכנות נפרדת, לפי הגדרה" },
   { stage: "7", title: "תור החזרת לידים", detail: "תור ותבניות הודעה. בלי שליחה" },
 ];
