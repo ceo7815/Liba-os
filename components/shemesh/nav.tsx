@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { activePath } from "@/lib/nav-path";
 import {
   BadgeDollarSign,
   Bell,
@@ -75,7 +76,7 @@ function activeHref(pathname: string, href: string, exact?: boolean) {
 }
 
 export function ShemeshSidebar({ className }: { className?: string }) {
-  const pathname = usePathname();
+  const pathname = activePath(usePathname(), useSearchParams().get("view"));
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -105,13 +106,13 @@ export function ShemeshSidebar({ className }: { className?: string }) {
   }
 
   return (
-    <aside className={cn("side-glass m-3 me-2 flex w-[16.5rem] shrink-0 flex-col overflow-hidden rounded-[28px] shadow-card backdrop-blur-xl", className)}>
+    <aside className={cn("side-glass m-3 me-2 flex w-[16.5rem] shrink-0 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] shadow-card backdrop-blur-xl", className)}>
       <div className="flex flex-col items-center px-6 pb-3 pt-5">
         <Link href="/shemesh" className="logo-plate block rounded-lg px-3 py-2">
           <Image src="/brand/shemesh-logo.png" alt="שמש מימוש זכויות" width={605} height={782} priority className="h-24 w-auto object-contain" />
         </Link>
-        <div className="mt-3 h-px w-full bg-white/80">
-          <div className="mx-auto h-px w-10 bg-[#2f86ea]/40" />
+        <div className="mt-3 h-px w-full bg-black/[0.06]">
+          <div className="mx-auto h-px w-10 bg-[hsl(var(--highlight))]" />
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4">
@@ -127,7 +128,7 @@ export function ShemeshSidebar({ className }: { className?: string }) {
             <div key={group.id}>
               <div className="flex items-center gap-0.5">
                 <Link href={group.href} className={cn("flex min-w-0 flex-1 items-center gap-2 rounded-full px-3 py-2 text-[13px] font-semibold", groupActive && !childActive && "nav-live")}>
-                  <Icon className={cn("nav-icon h-4 w-4 shrink-0", groupActive && !childActive ? "text-inherit" : "text-[#2f86ea]")} />
+                  <Icon className={cn("nav-icon h-4 w-4 shrink-0", groupActive && !childActive ? "text-inherit" : "text-[hsl(var(--highlight))]")} />
                   <span className="truncate">{group.label}</span>
                 </Link>
                 <button type="button" aria-expanded={expanded} aria-label={expanded ? "סגירה" : "פתיחה"} onClick={() => toggle(group.id)} className="me-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted">
@@ -169,7 +170,7 @@ function NavLink({ href, label, icon: Icon, active, nested }: { href: string; la
       )}
     >
       {active ? <span className="size-1.5 shrink-0 rounded-full bg-white/80" /> : null}
-      <Icon className={cn("nav-icon h-4 w-4 shrink-0", active ? "text-inherit" : "text-[#0e8f9c]")} />
+      <Icon className={cn("nav-icon h-4 w-4 shrink-0", active ? "text-inherit" : "text-[hsl(var(--highlight))]")} />
       <span className="truncate">{label}</span>
     </Link>
   );

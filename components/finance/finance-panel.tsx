@@ -52,6 +52,7 @@ import {
   type PlReport,
 } from "@/lib/finance/categories";
 import { cn } from "@/lib/utils";
+import { DateField, DateRangeField } from "@/components/ui/date-range-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -354,24 +355,14 @@ export function FinancePanel({
       <div className="app-surface p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">מתאריך</Label>
-              <Input
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                className="h-10 w-40 rounded-xl"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">עד תאריך</Label>
-              <Input
-                type="date"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                className="h-10 w-40 rounded-xl"
-              />
-            </div>
+            <DateRangeField
+              from={from}
+              to={to}
+              onChange={(next) => {
+                setFrom(next.from);
+                setTo(next.to);
+              }}
+            />
             <Button
               type="button"
               variant="outline"
@@ -416,7 +407,7 @@ export function FinancePanel({
       </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-1 border-b border-black/[0.08] pb-px">
+      <div className="flex flex-wrap gap-1 border-b border-border pb-px">
         {TABS.map((item) => (
           <button
             key={item.id}
@@ -665,7 +656,7 @@ function OverviewSection({
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <div className="app-surface border-2 border-black p-4 sm:p-5">
+        <div className="app-surface p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">הכנסות לפי חברת ביטוח</h3>
             <button
@@ -695,7 +686,7 @@ function OverviewSection({
           )}
         </div>
 
-        <div className="app-surface border-2 border-black p-4 sm:p-5">
+        <div className="app-surface p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">הוצאות לפי קבוצה</h3>
             <button
@@ -726,7 +717,7 @@ function OverviewSection({
         </div>
       </div>
 
-      <div className="app-surface border-2 border-black p-4 sm:p-5">
+      <div className="app-surface p-4 sm:p-5">
         <h3 className="mb-3 text-sm font-semibold">רשומות אחרונות</h3>
         {data.recent.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -994,7 +985,7 @@ function MetricCard({
     <div
       className={cn(
         "app-surface px-4 py-4",
-        emphasize ? "border-2 border-black" : "border border-black/[0.08]",
+        emphasize ? "ring-1 ring-foreground/15" : "border border-border",
       )}
     >
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -1080,7 +1071,7 @@ function EntryCard({
       : null;
 
   return (
-    <article className="app-surface overflow-hidden border-2 border-black">
+    <article className="app-surface overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 sm:px-5">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -1574,14 +1565,9 @@ function EntryDialog({
             ) : (
               <div className="space-y-1.5">
                 <Label className="block text-start">תאריך</Label>
-                <Input
-                  type="date"
-                  required
+                <DateField
                   value={form.occurred_at}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, occurred_at: e.target.value }))
-                  }
-                  className="rounded-xl text-start"
+                  onChange={(iso) => setForm((f) => ({ ...f, occurred_at: iso }))}
                 />
               </div>
             )}
@@ -1603,7 +1589,7 @@ function EntryDialog({
           </div>
 
           {paymentSplitMode ? (
-            <div className="space-y-2 rounded-2xl border border-black/[0.08] bg-background/70 px-3 py-3">
+            <div className="space-y-2 rounded-2xl border border-border bg-background/70 px-3 py-3">
               <div>
                 <Label className="block text-start">סעיפי עמלה (לפני מע״מ)</Label>
                 <p className="mt-1 text-[11px] text-muted-foreground">
@@ -2073,7 +2059,7 @@ function PlSection({
         </Button>
       </div>
 
-      <div className="app-surface space-y-4 border-2 border-black p-5">
+      <div className="app-surface space-y-4 p-5">
         <h3 className="text-base font-semibold">
           רווח והפסד · {report.from} – {report.to}
         </h3>
@@ -2083,7 +2069,7 @@ function PlSection({
             <PlRow key={l.category} label={l.label} amount={l.amount} />
           ))}
           {report.incomeByPortal.length > 0 ? (
-            <div className="mt-3 border-t border-black/[0.06] pt-3">
+            <div className="mt-3 border-t border-border pt-3">
               <p className="mb-2 text-[11px] font-medium text-muted-foreground">
                 לפי חברת ביטוח
               </p>
@@ -2128,7 +2114,7 @@ function PlSection({
           ))}
         </PlBlock>
 
-        <div className="flex items-center justify-between rounded-xl border-2 border-black px-3 py-3 text-base font-semibold">
+        <div className="flex items-center justify-between rounded-xl px-3 py-3 text-base font-semibold">
           <span>רווח / הפסד תפעולי</span>
           <span
             className={cn(

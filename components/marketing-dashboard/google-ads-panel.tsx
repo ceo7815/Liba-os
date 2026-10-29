@@ -53,7 +53,7 @@ export function GoogleAdsPanel({
 
   if (!connection.connected && (!connection.developerTokenReady || !connection.oauthReady)) {
     return (
-      <div className="rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
+      <div className="rounded-xl border border-border bg-background p-4 text-sm">
         <p className="font-semibold">גוגל אדס</p>
         <p className="mt-1 text-muted-foreground">
           כל הוצאות גוגל נספרות בקוביה «{GOOGLE_ADS_CUBE_SOURCE}». בשרת חסרים Developer
@@ -65,7 +65,7 @@ export function GoogleAdsPanel({
 
   if (!connection.connected) {
     return (
-      <div className="rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
+      <div className="rounded-xl border border-border bg-background p-4 text-sm">
         <p className="font-semibold">גוגל אדס</p>
         <p className="mt-1 text-muted-foreground">
           אחרי החיבור, כל קמפייני גוגל (שם + ID + הוצאה) ייכנסו ל«{GOOGLE_ADS_CUBE_SOURCE}».
@@ -125,7 +125,7 @@ export function GoogleAdsPanel({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/[0.06] text-[11px] text-muted-foreground">
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
                 <th className="py-2 text-start font-semibold">שם קמפיין</th>
                 <th className="py-2 text-start font-semibold">ID</th>
                 <th className="py-2 text-start font-semibold">סטטוס</th>
@@ -153,7 +153,7 @@ export function GoogleAdsPanel({
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-black/[0.12] text-sm font-semibold">
+              <tr className="border-t border-border text-sm font-semibold">
                 <td className="py-3" colSpan={3}>
                   סה״כ {mapped.length} קמפיינים
                 </td>
@@ -189,7 +189,7 @@ export function GoogleAdsAccountPicker({ onChanged }: { onChanged: () => void })
   }
 
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-background p-4 text-sm">
+    <div className="rounded-xl border border-border bg-background p-4 text-sm">
       <p className="font-semibold">בחירת חשבון גוגל אדס</p>
       <p className="mt-1 text-muted-foreground">יש כמה חשבונות בגישה. בחרו את חשבון ליבה.</p>
       {accounts == null ? (
@@ -205,7 +205,7 @@ export function GoogleAdsAccountPicker({ onChanged }: { onChanged: () => void })
               <button
                 type="button"
                 disabled={pending}
-                className="w-full rounded-lg border border-black/[0.08] px-3 py-2 text-start font-mono text-sm hover:bg-black/[0.03]"
+                className="w-full rounded-lg border border-border px-3 py-2 text-start font-mono text-sm hover:bg-muted"
                 onClick={() => {
                   startTransition(() => {
                     void saveGoogleAdsCustomerId(id).then((saved) => {

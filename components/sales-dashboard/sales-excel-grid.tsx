@@ -87,7 +87,7 @@ const ExcelRow = memo(function ExcelRow({
   onSelect: (row: WorkbookRow) => void;
 }) {
   const zebra = index % 2 === 1;
-  const surface = selected ? "bg-highlight/20" : zebra ? "bg-[#fafaf8]" : "bg-white";
+  const surface = selected ? "bg-highlight/20" : zebra ? "bg-[#fafaf8]" : "bg-card";
 
   return (
     <div
@@ -239,11 +239,11 @@ const GridHeader = memo(function GridHeader({
     <>
       <div
         role="row"
-        className="sticky top-0 z-20 flex border-b border-black/[0.06] bg-white text-[12px] font-medium text-[#6d6d66]"
+        className="sticky top-0 z-20 flex border-b border-border bg-card text-[12px] font-medium text-[#6d6d66]"
         style={{ height: HEADER_H, width: totalWidth }}
       >
         <div
-          className="pin sticky right-0 z-30 flex items-center justify-center border-b border-black/[0.06] bg-white text-[11px] font-medium text-[#9a9a94]"
+          className="pin sticky right-0 z-30 flex items-center justify-center border-b border-border bg-card text-[11px] font-medium text-[#9a9a94]"
           style={{ width: GUTTER, minWidth: GUTTER }}
         >
           #
@@ -255,7 +255,7 @@ const GridHeader = memo(function GridHeader({
               key={`${header}-${col}`}
               role="columnheader"
               className={cn(
-                "relative flex items-center gap-0.5 border-b border-black/[0.06] bg-white px-2",
+                "relative flex items-center gap-0.5 border-b border-border bg-card px-2",
                 col === 0 && "pin-edge sticky z-30",
               )}
               style={{
@@ -284,7 +284,7 @@ const GridHeader = memo(function GridHeader({
                 <button
                   type="button"
                   className={cn(
-                    "rounded-full p-1 text-[#8a8a84] hover:bg-black/[0.04]",
+                    "rounded-full p-1 text-[#8a8a84] hover:bg-muted",
                     filtered && "bg-highlight text-[#1a1a1a] hover:bg-highlight",
                   )}
                   aria-label={`סינון ${header}`}
@@ -375,10 +375,10 @@ function FilterPanel({
   return (
     <div
       ref={panelRef}
-      className="fixed z-[80] flex max-h-[min(24rem,70vh)] w-[248px] flex-col overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_16px_40px_-24px_rgba(0,0,0,0.45)]"
+      className="fixed z-[80] flex max-h-[min(24rem,70vh)] w-[248px] flex-col overflow-hidden rounded-xl border border-black/10 bg-card shadow-[0_16px_40px_-24px_rgba(0,0,0,0.45)]"
       style={{ top, left }}
     >
-      <div className="border-b border-black/[0.06] px-3 py-2">
+      <div className="border-b border-border px-3 py-2">
         <p className="mb-1.5 truncate text-[12px] font-medium">{header}</p>
         <Input
           autoFocus
@@ -565,7 +565,7 @@ export const SalesExcelGrid = memo(function SalesExcelGrid({
       role="grid"
       tabIndex={0}
       onKeyDown={onKeyDown}
-      className="excel-scroller min-h-0 min-w-0 flex-1 overflow-auto bg-white outline-none [overflow-anchor:none] [scrollbar-color:rgba(23,23,23,0.35)_transparent] [scrollbar-width:thin] [&[data-x=1]_.pin-edge]:shadow-[-12px_0_16px_-14px_rgba(17,17,17,0.35)] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/30 [&::-webkit-scrollbar-track]:bg-transparent"
+      className="excel-scroller min-h-0 min-w-0 flex-1 overflow-auto bg-card outline-none [overflow-anchor:none] [scrollbar-color:rgba(23,23,23,0.35)_transparent] [scrollbar-width:thin] [&[data-x=1]_.pin-edge]:shadow-[-12px_0_16px_-14px_rgba(17,17,17,0.35)] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/30 [&::-webkit-scrollbar-track]:bg-transparent"
     >
       <div style={{ width: totalWidth }}>
         <GridHeader

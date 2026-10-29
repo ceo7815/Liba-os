@@ -236,21 +236,21 @@ export function EmployeeHoursPanel({
         </p>
       ) : mine.length > 0 ? (
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="rounded-2xl border border-black/[0.06] bg-muted/20 px-4 py-3">
+          <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
             <p className="text-[11px] text-muted-foreground">שעות משולמות</p>
             <p className="mt-1 text-xl font-semibold tabular-nums">
               {totalHours.toLocaleString("he-IL", { maximumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="rounded-2xl border border-black/[0.06] bg-muted/20 px-4 py-3">
+          <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
             <p className="text-[11px] text-muted-foreground">ימי נוכחות</p>
             <p className="mt-1 text-xl font-semibold tabular-nums">{workDays || "—"}</p>
           </div>
-          <div className="rounded-2xl border border-black/[0.06] bg-muted/20 px-4 py-3">
+          <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
             <p className="text-[11px] text-muted-foreground">ימי חופשה</p>
             <p className="mt-1 text-xl font-semibold tabular-nums">{vacationDays || "—"}</p>
           </div>
-          <div className="rounded-2xl border border-black/[0.06] bg-muted/20 px-4 py-3">
+          <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
             <p className="text-[11px] text-muted-foreground">חודשים</p>
             <p className="mt-1 text-xl font-semibold tabular-nums">{mine.length}</p>
           </div>
@@ -262,7 +262,7 @@ export function EmployeeHoursPanel({
         </p>
       )}
       {mine.map((row) => (
-        <section key={`${row.employeeId}-${row.month}`} className="overflow-hidden rounded-2xl border border-black/[0.06]">
+        <section key={`${row.employeeId}-${row.month}`} className="overflow-hidden rounded-2xl border border-border">
           <header className="flex flex-wrap items-baseline justify-between gap-2 bg-muted/40 px-4 py-3">
             <div>
               <p className="font-semibold">{monthLabel(row.month)}</p>
@@ -311,7 +311,7 @@ export function EmployeeHoursPanel({
           )}
         </section>
       ))}
-      <section className="rounded-2xl border border-black/[0.06] p-4">
+      <section className="rounded-2xl border border-border p-4">
         <p className="text-sm font-medium">תיקון ידני לחודש</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-[10rem_8rem_auto]">
           <label className="space-y-1.5">

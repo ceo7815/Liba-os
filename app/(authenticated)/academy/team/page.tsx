@@ -16,10 +16,10 @@ export default async function AcademyTeamPage() {
         <p className="text-[11px] text-muted-foreground">הדרכה</p>
         <h1 className="mt-1 text-2xl font-semibold">התקדמות צוות</h1>
       </header>
-      <div className="overflow-x-auto rounded-2xl border border-black/[0.06] bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card">
         <table className="w-full min-w-[36rem] text-sm">
           <thead>
-            <tr className="border-b border-black/[0.06] text-right text-[11px] text-muted-foreground">
+            <tr className="border-b border-border text-right text-[11px] text-muted-foreground">
               <th className="px-3 py-2 font-medium">עובד</th>
               <th className="px-3 py-2 font-medium">התקדמות</th>
               <th className="px-3 py-2 font-medium">ציון אחרון</th>

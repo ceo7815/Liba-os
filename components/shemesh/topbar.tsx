@@ -25,7 +25,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
               type="button"
               variant="ghost"
               size="icon"
-              className="size-10 shrink-0 rounded-xl active:scale-95 lg:hidden"
+              className="size-11 shrink-0 rounded-xl active:scale-95 lg:hidden"
               aria-label="תפריט ניווט"
             >
               <Menu className="size-4" />
@@ -61,7 +61,7 @@ export function ShemeshTopbar({ profile }: { profile: Profile }) {
           <div className="hidden items-center gap-2.5 sm:flex">
             <div
               aria-hidden
-              className="kpi-badge !size-8 text-[10px] font-bold" data-tone="sun"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f2f2f4] text-[10px] font-semibold text-foreground"
             >
               {initials}
             </div>

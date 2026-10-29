@@ -28,7 +28,7 @@ export default async function FinancePage() {
   ]);
 
   return (
-    <section className="mx-auto max-w-[72rem] space-y-6">
+    <section className="w-full space-y-6">
       <div className="app-surface px-5 py-5 sm:px-7 sm:py-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
