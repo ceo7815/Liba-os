@@ -16,7 +16,7 @@ import {
   shemeshExcelSyncFailure,
 } from "@/lib/sales-dashboard/excel-sync-guard";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
-import { missingPremiumColumnWarnings } from "@/lib/sales-dashboard/workbook-grid";
+import { premiumHeaderNotices } from "@/lib/sales-dashboard/workbook-grid";
 import { cn } from "@/lib/utils";
 
 export const GLOBAL_SYNC_EVENT = "liba-global-sync-done";
@@ -94,7 +94,7 @@ export function GlobalSyncButton({
     setLeadsStatus(excelTarget === "liba" ? "pending" : "done");
 
     let excelFailed = false;
-    let premiumWarnings: string[] = [];
+    let premiumNotices: { kind: "fallback" | "missing"; message: string }[] = [];
     try {
       if (includeExcel && excelTarget === "shemesh") {
         toast.message("מסנכרן אקסל שמש…");
@@ -161,8 +161,8 @@ export function GlobalSyncButton({
             } else {
               publishLiveDashboard(excelData);
               setExcelStatus("done");
-              premiumWarnings = missingPremiumColumnWarnings(excelData.workbook);
-              for (const warning of premiumWarnings) toast.warning(warning);
+              premiumNotices = premiumHeaderNotices(excelData.workbook);
+              for (const notice of premiumNotices) toast.warning(notice.message);
               const people = await syncEmployeesFromExcel();
               if (people.error) {
                 toast.error(people.error);
@@ -265,8 +265,10 @@ export function GlobalSyncButton({
       notifyGlobalSyncDone();
       if (excelFailed || adsFailed || leadsFailed) {
         toast.error("הסנכרון הסתיים חלקית. בדקו את ההודעות למעלה.");
-      } else if (premiumWarnings.length > 0) {
+      } else if (premiumNotices.some((notice) => notice.kind === "missing")) {
         toast.warning("הסנכרון הסתיים, אבל חסרה עמודת פרמיה בדוח.");
+      } else if (premiumNotices.length > 0) {
+        toast.warning("הסנכרון הסתיים. כותרת הפרמיה בדוח אינה «פרמיה», והערכים נקראו לפי מיקום העמודה.");
       } else {
         toast.success("הסנכרון הסתיים — מוצג העדכון האחרון");
       }
@@ -283,10 +285,15 @@ export function GlobalSyncButton({
   }, [busy, canSyncAds, includeExcel, excelTarget]);
 
   const syncedStamp = formatSyncStamp(dashboard?.syncedAt);
-  const premiumWarnings =
-    excelTarget === "liba" ? missingPremiumColumnWarnings(dashboard?.workbook) : [];
-  const statusLine = premiumWarnings.length
+  const premiumNotices =
+    excelTarget === "liba" ? premiumHeaderNotices(dashboard?.workbook) : [];
+  const premiumStatus = premiumNotices.some((notice) => notice.kind === "missing")
     ? "חסרה עמודת פרמיה"
+    : premiumNotices.length
+      ? "כותרת פרמיה שגויה"
+      : "";
+  const statusLine = premiumStatus
+    ? premiumStatus
     : !includeExcel
       ? "גוגל ופייסבוק"
       : excelTarget === "shemesh"
@@ -299,14 +306,14 @@ export function GlobalSyncButton({
         type="button"
         disabled={busy}
         onClick={() => void syncAll()}
-        aria-label={`סנכרון מערכת. ${statusLine}${premiumWarnings.length ? `. ${premiumWarnings.join(" ")}` : ""}`}
-        title={premiumWarnings.join("\n") || undefined}
+        aria-label={`סנכרון מערכת. ${statusLine}${premiumNotices.length ? `. ${premiumNotices.map((notice) => notice.message).join(" ")}` : ""}`}
+        title={premiumNotices.map((notice) => notice.message).join("\n") || undefined}
         className="sync-live inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/70 px-3 text-[#1a1204] active:scale-[0.98] disabled:opacity-80"
       >
         <span
           className={cn(
             "size-1.5 shrink-0 rounded-full",
-            premiumWarnings.length ? "bg-amber-500" : "bg-emerald-500",
+            premiumNotices.length ? "bg-amber-500" : "bg-emerald-500",
           )}
           aria-hidden
         />

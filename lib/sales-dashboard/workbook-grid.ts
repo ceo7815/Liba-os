@@ -1,4 +1,5 @@
 import { COL, normalizeExcelText } from "@/lib/sales-dashboard/columns";
+import { fallbackPremiumHeaderIndex } from "@/lib/sales-dashboard/premium-column";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
 
 export type WorkbookSheetKind = "report" | "helper";
@@ -42,27 +43,53 @@ export function isReportHeader(raw: string): boolean {
 }
 
 export function premiumColumnIndex(headers: string[]): number {
-  return headers.findIndex((header) => normalizeExcelText(header) === COL.premium);
+  const exact = headers.findIndex((header) => normalizeExcelText(header) === COL.premium);
+  if (exact >= 0) return exact;
+  return fallbackPremiumHeaderIndex(headers);
 }
 
+export type PremiumHeaderNotice = {
+  kind: "fallback" | "missing";
+  message: string;
+};
+
 /**
- * A sales sheet with rows but no «פרמיה» header. Premium stays 0; this only describes that.
- * A workbook whose premium header is already «פרמיה» produces no warning.
+ * Non-blocking notes for a report sheet whose premium header is not «פרמיה».
+ * A fallback note means the values were read from the product/start slot.
+ * A missing note means that slot was not confident, so premium stays 0.
+ * A workbook with a real «פרמיה» header produces no notes.
  */
+export function premiumHeaderNotices(
+  workbook: SalesWorkbook | null | undefined,
+): PremiumHeaderNotice[] {
+  if (!workbook?.sheets.length) return [];
+  const notices: PremiumHeaderNotice[] = [];
+  for (const sheet of workbook.sheets) {
+    if (sheet.kind !== "report" || sheet.rows.length === 0) continue;
+    const exact = sheet.headers.findIndex((header) => normalizeExcelText(header) === COL.premium);
+    if (exact >= 0) continue;
+    const fallback = fallbackPremiumHeaderIndex(sheet.headers);
+    if (fallback >= 0) {
+      const shown = normalizeExcelText(sheet.headers[fallback]) || "ריקה";
+      notices.push({
+        kind: "fallback",
+        message: `בגיליון «${sheet.name}» כותרת עמודת הפרמיה היא «${shown}» ולא «פרמיה». הערכים נקראים מהעמודה שבין «סוג המוצר» ל«תחילת ביטוח».`,
+      });
+      continue;
+    }
+    const count = sheet.rows.length.toLocaleString("he-IL");
+    notices.push({
+      kind: "missing",
+      message: `בגיליון «${sheet.name}» יש ${count} שורות, ואין עמודת «פרמיה» מזוהה. הפרמיה נספרת 0 עד שכותרת העמודה תהיה «פרמיה».`,
+    });
+  }
+  return notices;
+}
+
 export function missingPremiumColumnWarnings(
   workbook: SalesWorkbook | null | undefined,
 ): string[] {
-  if (!workbook?.sheets.length) return [];
-  const warnings: string[] = [];
-  for (const sheet of workbook.sheets) {
-    if (sheet.kind !== "report" || sheet.rows.length === 0) continue;
-    if (premiumColumnIndex(sheet.headers) >= 0) continue;
-    const count = sheet.rows.length.toLocaleString("he-IL");
-    warnings.push(
-      `בגיליון «${sheet.name}» יש ${count} שורות, ואין עמודת «פרמיה» מזוהה. הפרמיה נספרת 0 עד שכותרת העמודה תהיה «פרמיה».`,
-    );
-  }
-  return warnings;
+  return premiumHeaderNotices(workbook).map((notice) => notice.message);
 }
 
 export function headerMatches(header: string, ...needles: string[]): boolean {
