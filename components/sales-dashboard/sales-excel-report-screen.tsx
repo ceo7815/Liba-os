@@ -6,6 +6,7 @@ import { Database, Rows3, Search, X } from "lucide-react";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { SalesEntryAudit } from "@/components/sales-dashboard/sales-entry-audit";
+import { PremiumColumnNotice } from "@/components/sales-dashboard/premium-column-notice";
 import { SalesExcelGrid, type SortState } from "@/components/sales-dashboard/sales-excel-grid";
 import { SalesExcelInspector } from "@/components/sales-dashboard/sales-excel-inspector";
 import { Button } from "@/components/ui/button";
@@ -462,6 +463,7 @@ export function SalesExcelReportScreen({
       </header>
 
       <div className="mx-3 mb-3 space-y-2 sm:mx-5">
+        {company === "liba" ? <PremiumColumnNotice workbook={workbook} /> : null}
         {workbook.sheets.length ? (
           <div className="flex flex-wrap items-center gap-2">
             {workbook.sheets.map((item, index) => {

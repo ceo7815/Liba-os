@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { OperatingBrandProvider } from "@/components/finance/operating-brand-bar";
+import {
+  OperatingBrandBar,
+  OperatingBrandProvider,
+} from "@/components/finance/operating-brand-bar";
 import { SalesBySourceScreen } from "@/components/sales-dashboard/sales-by-source-screen";
 import { requireSalesDashboardAccess } from "@/lib/auth";
 
@@ -13,7 +16,10 @@ export default async function SalesBySourcePage() {
   await requireSalesDashboardAccess();
 
   return (
-    <OperatingBrandProvider lockedBrand="liba">
+    <OperatingBrandProvider>
+      <div className="mb-4 sm:mb-6">
+        <OperatingBrandBar />
+      </div>
       <SalesBySourceScreen />
     </OperatingBrandProvider>
   );

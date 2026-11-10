@@ -1,5 +1,5 @@
 import { normalizeExcelText, sourcePnlKindForProcess } from "@/lib/sales-dashboard/columns";
-import { parseWorkbookDate, type WorkbookSheet } from "@/lib/sales-dashboard/workbook-grid";
+import { parseWorkbookDate, premiumColumnIndex, type WorkbookSheet } from "@/lib/sales-dashboard/workbook-grid";
 
 export type RequiredEntryField = {
   id: string;
@@ -124,6 +124,7 @@ function columnIndex(headers: string[], field: RequiredEntryField): number {
     if (withClient >= 0) return withClient;
     return normalized.findIndex((header) => header.includes("ת.ז") && !header.includes("משווק"));
   }
+  if (field.id === "premium") return premiumColumnIndex(headers);
   return normalized.findIndex((header) => field.match(header));
 }
 

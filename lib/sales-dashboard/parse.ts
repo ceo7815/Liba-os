@@ -27,6 +27,7 @@ import type {
   SaleAlert,
   TrendSeries,
 } from "@/lib/sales-dashboard/types";
+import { fallbackPremiumHeaderIndex } from "@/lib/sales-dashboard/premium-column";
 import { parseSalesWorkbookGrid } from "@/lib/sales-dashboard/workbook-parse";
 import * as XLSX from "xlsx";
 import { inflateRawSync } from "node:zlib";
@@ -660,17 +661,43 @@ function headerRowIndex(sheet: XLSX.WorkSheet): number {
   return bestHits >= 3 ? best : range.s.r;
 }
 
+function headerLabels(sheet: XLSX.WorkSheet, headerRow: number): string[] {
+  const ref = sheet["!ref"];
+  if (!ref) return [];
+  const range = XLSX.utils.decode_range(ref);
+  const headers: string[] = [];
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const cell = sheet[XLSX.utils.encode_cell({ r: headerRow, c })] as XLSX.CellObject | undefined;
+    headers.push(cell?.v == null || cell.v === "" ? "" : String(cell.v));
+  }
+  return headers;
+}
+
 function mapSheetRows(sheet: XLSX.WorkSheet): ExcelRow[] {
   expandSheetRef(sheet);
   const headerRow = headerRowIndex(sheet);
+  const headers = headerLabels(sheet, headerRow);
+  const premiumFallback = fallbackPremiumHeaderIndex(headers);
+  const premiumKey = premiumFallback >= 0 ? headers[premiumFallback] : "";
   const raw = XLSX.utils.sheet_to_json<ExcelRow>(sheet, {
     defval: null,
     range: headerRow,
   });
   return raw.map((row) => {
     const next: ExcelRow = {};
+    const used = new Set<string>();
+    headers.forEach((label, index) => {
+      if (!label || !Object.prototype.hasOwnProperty.call(row, label)) return;
+      const header = index === premiumFallback ? COL.premium : resolveHeader(label);
+      if (!header) return;
+      next[header] = row[label];
+      used.add(label);
+    });
     for (const key of Object.keys(row)) {
-      next[resolveHeader(key)] = row[key];
+      if (used.has(key)) continue;
+      const header = premiumKey && key === premiumKey ? COL.premium : resolveHeader(key);
+      if (!header || Object.prototype.hasOwnProperty.call(next, header)) continue;
+      next[header] = row[key];
     }
     return next;
   });

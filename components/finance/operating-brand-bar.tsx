@@ -98,13 +98,13 @@ export function OperatingBrandBar() {
   const { brand, setBrand } = useOperatingBrand();
 
   return (
-    <div className="mb-0 flex flex-col gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:rounded-[var(--radius)] sm:px-5">
+    <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:flex-row sm:items-center sm:justify-between sm:px-4">
       <div className="min-w-0">
         <p className="text-[11px] font-medium text-muted-foreground">מותג תצוגה</p>
-        <p className="mt-0.5 text-sm font-semibold tracking-tight">ליבה · שמש</p>
+        <p className="text-sm font-semibold tracking-tight">הכל · ליבה · שמש</p>
       </div>
       <div
-        className="-mx-1 flex gap-1.5 overflow-x-auto px-1 hide-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        className="flex items-center gap-1 self-start rounded-full bg-[#f6f5f1] p-1 sm:self-auto"
         role="tablist"
         aria-label="בחירת מותג"
       >
@@ -118,11 +118,11 @@ export function OperatingBrandBar() {
               aria-selected={selected}
               onClick={() => setBrand(id)}
               className={cn(
-                "shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors active:scale-95 sm:py-1.5",
+                "h-8 rounded-full px-3.5 text-xs font-semibold transition-colors",
                 selected && id === "shemesh" && "bg-amber-700 text-white",
-                selected && id === "liba" && "bg-black text-white",
-                selected && id === "all" && "bg-zinc-700 text-white",
-                !selected && "bg-background text-muted-foreground hover:bg-muted",
+                selected && id === "liba" && "bg-[#1a1a1a] text-white",
+                selected && id === "all" && "bg-highlight text-highlight-foreground",
+                !selected && "text-muted-foreground hover:bg-card",
               )}
             >
               {OPERATING_BRAND_LABEL[id]}

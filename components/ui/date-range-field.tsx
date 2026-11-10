@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const WEEK = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
@@ -47,14 +47,36 @@ export function formatHebrewDay(iso: string): string {
   return `${day}.${month}.${year}`;
 }
 
-function presets(today: string) {
+export type DateRangeValue = { from: string; to: string };
+
+/** Same calendar days the old `<input type="date">` pair posted: `YYYY-MM-DD`, or empty when cleared. */
+export function dateRangePresets(today: string): { id: string; label: string; from: string; to: string }[] {
   const month = today.slice(0, 7);
   const prev = shiftMonth(month, -1);
+  const year = today.slice(0, 4);
   return [
     { id: "month", label: "החודש", from: `${month}-01`, to: today },
     { id: "prev", label: "חודש קודם", from: `${prev}-01`, to: monthEnd(prev) },
     { id: "d30", label: "30 יום", from: addDays(today, -29), to: today },
+    { id: "year", label: "השנה", from: `${year}-01-01`, to: today },
+    { id: "all", label: "כל הזמן", from: "", to: "" },
   ];
+}
+
+/** First click only anchors. The next click commits, including a second click on the same day. */
+export function commitDateRange(anchor: string | null, iso: string): DateRangeValue | null {
+  if (!anchor) return null;
+  return {
+    from: iso < anchor ? iso : anchor,
+    to: iso < anchor ? anchor : iso,
+  };
+}
+
+export function dateRangeButtonLabel(from: string, to: string): string {
+  if (!from && !to) return "כל הזמן";
+  if (from && to) return `${formatHebrewDay(from)} – ${formatHebrewDay(to)}`;
+  if (from) return `${formatHebrewDay(from)} –`;
+  return `– ${formatHebrewDay(to)}`;
 }
 
 function monthCells(monthKey: string): { iso: string; day: number; outside: boolean }[] {
@@ -98,13 +120,24 @@ export function DateRangeField({
   const [cursor, setCursor] = useState(from.slice(0, 7) || today.slice(0, 7));
   const [anchor, setAnchor] = useState<string | null>(null);
 
+  function close() {
+    setAnchor(null);
+    setOpen(false);
+  }
+
   useEffect(() => {
     if (!open) return;
     const onPointer = (event: MouseEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+      if (!root.current?.contains(event.target as Node)) {
+        setAnchor(null);
+        setOpen(false);
+      }
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setAnchor(null);
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", onPointer);
     document.addEventListener("keydown", onKey);
@@ -115,14 +148,12 @@ export function DateRangeField({
   }, [open]);
 
   function pick(iso: string) {
-    if (!anchor) {
+    const committed = commitDateRange(anchor, iso);
+    if (!committed) {
       setAnchor(iso);
-      onChange({ from: iso, to: iso });
       return;
     }
-    const nextFrom = iso < anchor ? iso : anchor;
-    const nextTo = iso < anchor ? anchor : iso;
-    onChange({ from: nextFrom, to: nextTo });
+    onChange(committed);
     setAnchor(null);
     setOpen(false);
   }
@@ -136,12 +167,15 @@ export function DateRangeField({
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (open) close();
+          else setOpen(true);
+        }}
         className="inline-flex h-9 items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 text-xs font-semibold text-foreground shadow-card backdrop-blur-xl"
       >
         <Calendar className="size-3.5 text-[#c2410c]" />
-        <span dir="ltr" className="tabular-nums">
-          {formatHebrewDay(from)} – {formatHebrewDay(to)}
+        <span dir={from && to ? "ltr" : undefined} className="tabular-nums">
+          {dateRangeButtonLabel(from, to)}
         </span>
       </button>
       {open ? (
@@ -150,14 +184,14 @@ export function DateRangeField({
           className="absolute end-0 z-50 mt-2 w-[18.5rem] rounded-[20px] border border-white/80 bg-white/80 p-3 text-foreground shadow-pop backdrop-blur-2xl"
         >
           <div className="mb-2 flex flex-wrap gap-1">
-            {presets(today).map((preset) => (
+            {dateRangePresets(today).map((preset) => (
               <button
                 key={preset.id}
                 type="button"
                 className="rounded-full bg-[#fff4cc] px-2.5 py-1 text-[11px] font-semibold text-[#6a4b00]"
                 onClick={() => {
                   onChange({ from: preset.from, to: preset.to });
-                  setCursor(preset.from.slice(0, 7));
+                  if (preset.from) setCursor(preset.from.slice(0, 7));
                   setAnchor(null);
                   setOpen(false);
                 }}
@@ -166,11 +200,12 @@ export function DateRangeField({
               </button>
             ))}
           </div>
-          <div className="mb-2 flex items-center justify-between">
-            <button type="button" className="size-7 rounded-full hover:bg-black/5" onClick={() => setCursor(shiftMonth(cursor, 1))} aria-label="חודש הבא">‹</button>
-            <p className="text-sm font-semibold">{monthLabel}</p>
-            <button type="button" className="size-7 rounded-full hover:bg-black/5" onClick={() => setCursor(shiftMonth(cursor, -1))} aria-label="חודש קודם">›</button>
-          </div>
+          <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
+            {anchor
+              ? "בחרו תאריך סיום. לחיצה נוספת על אותו יום קובעת יום בודד."
+              : "הטווח חל רק אחרי תאריך הסיום. «כל הזמן» מנקה את הסינון."}
+          </p>
+          <MonthNav cursor={cursor} monthLabel={monthLabel} onCursor={setCursor} />
           <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted-foreground">
             {WEEK.map((day) => (
               <span key={day}>{day}</span>
@@ -178,7 +213,8 @@ export function DateRangeField({
           </div>
           <div className="mt-1 grid grid-cols-7 gap-1">
             {cells.map((cell) => {
-              const selected = cell.iso >= from && cell.iso <= to;
+              const selected = !anchor && Boolean(from && to && cell.iso >= from && cell.iso <= to);
+              const isAnchor = anchor === cell.iso;
               return (
                 <button
                   key={cell.iso}
@@ -187,7 +223,9 @@ export function DateRangeField({
                   className={cn(
                     "h-8 rounded-full text-xs tabular-nums",
                     cell.outside && "text-muted-foreground/50",
-                    selected ? "bg-[#ffd60a] font-semibold text-[#1a1204]" : "hover:bg-black/5",
+                    selected && "bg-[#ffd60a] font-semibold text-[#1a1204]",
+                    isAnchor && "bg-[#1a1a1a] font-semibold text-white",
+                    !selected && !isAnchor && "hover:bg-black/5",
                   )}
                 >
                   {cell.day}
@@ -197,6 +235,38 @@ export function DateRangeField({
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function MonthNav({
+  cursor,
+  monthLabel,
+  onCursor,
+}: {
+  cursor: string;
+  monthLabel: string;
+  onCursor: (next: string) => void;
+}) {
+  return (
+    <div className="mb-2 flex items-center justify-between" dir="rtl">
+      <button
+        type="button"
+        className="inline-flex size-7 items-center justify-center rounded-full hover:bg-black/5"
+        onClick={() => onCursor(shiftMonth(cursor, -1))}
+        aria-label="חודש קודם"
+      >
+        <ChevronRight className="size-4" />
+      </button>
+      <p className="text-sm font-semibold">{monthLabel}</p>
+      <button
+        type="button"
+        className="inline-flex size-7 items-center justify-center rounded-full hover:bg-black/5"
+        onClick={() => onCursor(shiftMonth(cursor, 1))}
+        aria-label="חודש הבא"
+      >
+        <ChevronLeft className="size-4" />
+      </button>
     </div>
   );
 }
@@ -244,11 +314,7 @@ export function DateField({
       </button>
       {open ? (
         <div id={panelId} className="absolute end-0 z-50 mt-2 w-[18.5rem] rounded-[20px] border border-white/80 bg-white/90 p-3 shadow-pop backdrop-blur-2xl">
-          <div className="mb-2 flex items-center justify-between">
-            <button type="button" className="size-7 rounded-full hover:bg-black/5" onClick={() => setCursor(shiftMonth(cursor, 1))} aria-label="חודש הבא">‹</button>
-            <p className="text-sm font-semibold">{monthLabel}</p>
-            <button type="button" className="size-7 rounded-full hover:bg-black/5" onClick={() => setCursor(shiftMonth(cursor, -1))} aria-label="חודש קודם">›</button>
-          </div>
+          <MonthNav cursor={cursor} monthLabel={monthLabel} onCursor={setCursor} />
           <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-[#3a3a3c]">
             {WEEK.map((day) => <span key={day}>{day}</span>)}
           </div>
