@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import type { FacebookAdsConnection } from "@/app/actions/facebook-ads";
 import type { GoogleAdsConnection } from "@/app/actions/google-ads";
 import { GLOBAL_SYNC_EVENT } from "@/components/layout/global-sync-button";
+import { PremiumColumnNotice } from "@/components/sales-dashboard/premium-column-notice";
 import { DateRangeField } from "@/components/ui/date-range-field";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
@@ -668,6 +669,8 @@ export function SalesBySourceScreen() {
           />
         </div>
       </header>
+
+      <PremiumColumnNotice workbook={data?.workbook} />
 
       <div
         className="dash-enter relative overflow-hidden rounded-lg border border-border bg-card p-3.5 shadow-[0_1px_0_rgba(17,17,17,0.03)] sm:rounded-[var(--radius)] sm:p-5"

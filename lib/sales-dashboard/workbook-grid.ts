@@ -45,6 +45,26 @@ export function premiumColumnIndex(headers: string[]): number {
   return headers.findIndex((header) => normalizeExcelText(header) === COL.premium);
 }
 
+/**
+ * A sales sheet with rows but no «פרמיה» header. Premium stays 0; this only describes that.
+ * A workbook whose premium header is already «פרמיה» produces no warning.
+ */
+export function missingPremiumColumnWarnings(
+  workbook: SalesWorkbook | null | undefined,
+): string[] {
+  if (!workbook?.sheets.length) return [];
+  const warnings: string[] = [];
+  for (const sheet of workbook.sheets) {
+    if (sheet.kind !== "report" || sheet.rows.length === 0) continue;
+    if (premiumColumnIndex(sheet.headers) >= 0) continue;
+    const count = sheet.rows.length.toLocaleString("he-IL");
+    warnings.push(
+      `בגיליון «${sheet.name}» יש ${count} שורות, ואין עמודת «פרמיה» מזוהה. הפרמיה נספרת 0 עד שכותרת העמודה תהיה «פרמיה».`,
+    );
+  }
+  return warnings;
+}
+
 export function headerMatches(header: string, ...needles: string[]): boolean {
   const h = normalizeExcelText(header);
   return needles.some((needle) => h === needle || h.includes(needle));

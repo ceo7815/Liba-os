@@ -16,6 +16,7 @@ import {
   shemeshExcelSyncFailure,
 } from "@/lib/sales-dashboard/excel-sync-guard";
 import type { DashboardData } from "@/lib/sales-dashboard/types";
+import { missingPremiumColumnWarnings } from "@/lib/sales-dashboard/workbook-grid";
 import { cn } from "@/lib/utils";
 
 export const GLOBAL_SYNC_EVENT = "liba-global-sync-done";
@@ -93,6 +94,7 @@ export function GlobalSyncButton({
     setLeadsStatus(excelTarget === "liba" ? "pending" : "done");
 
     let excelFailed = false;
+    let premiumWarnings: string[] = [];
     try {
       if (includeExcel && excelTarget === "shemesh") {
         toast.message("מסנכרן אקסל שמש…");
@@ -159,6 +161,8 @@ export function GlobalSyncButton({
             } else {
               publishLiveDashboard(excelData);
               setExcelStatus("done");
+              premiumWarnings = missingPremiumColumnWarnings(excelData.workbook);
+              for (const warning of premiumWarnings) toast.warning(warning);
               const people = await syncEmployeesFromExcel();
               if (people.error) {
                 toast.error(people.error);
@@ -261,6 +265,8 @@ export function GlobalSyncButton({
       notifyGlobalSyncDone();
       if (excelFailed || adsFailed || leadsFailed) {
         toast.error("הסנכרון הסתיים חלקית. בדקו את ההודעות למעלה.");
+      } else if (premiumWarnings.length > 0) {
+        toast.warning("הסנכרון הסתיים, אבל חסרה עמודת פרמיה בדוח.");
       } else {
         toast.success("הסנכרון הסתיים — מוצג העדכון האחרון");
       }
@@ -277,11 +283,15 @@ export function GlobalSyncButton({
   }, [busy, canSyncAds, includeExcel, excelTarget]);
 
   const syncedStamp = formatSyncStamp(dashboard?.syncedAt);
-  const statusLine = !includeExcel
-    ? "גוגל ופייסבוק"
-    : excelTarget === "shemesh"
-      ? "אקסל, גוגל ופייסבוק"
-      : `סנכרון אחרון · ${syncedStamp}`;
+  const premiumWarnings =
+    excelTarget === "liba" ? missingPremiumColumnWarnings(dashboard?.workbook) : [];
+  const statusLine = premiumWarnings.length
+    ? "חסרה עמודת פרמיה"
+    : !includeExcel
+      ? "גוגל ופייסבוק"
+      : excelTarget === "shemesh"
+        ? "אקסל, גוגל ופייסבוק"
+        : `סנכרון אחרון · ${syncedStamp}`;
 
   return (
     <div className="relative flex items-center">
@@ -289,10 +299,17 @@ export function GlobalSyncButton({
         type="button"
         disabled={busy}
         onClick={() => void syncAll()}
-        aria-label={`סנכרון מערכת. ${statusLine}`}
+        aria-label={`סנכרון מערכת. ${statusLine}${premiumWarnings.length ? `. ${premiumWarnings.join(" ")}` : ""}`}
+        title={premiumWarnings.join("\n") || undefined}
         className="sync-live inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/70 px-3 text-[#1a1204] active:scale-[0.98] disabled:opacity-80"
       >
-        <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+        <span
+          className={cn(
+            "size-1.5 shrink-0 rounded-full",
+            premiumWarnings.length ? "bg-amber-500" : "bg-emerald-500",
+          )}
+          aria-hidden
+        />
         <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
         <span className="hidden min-w-0 flex-col items-start text-start leading-none sm:flex">
           <span className="text-[12px] font-medium tracking-tight">סנכרון</span>

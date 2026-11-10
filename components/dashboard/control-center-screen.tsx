@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DashboardCampaignStrip } from "@/components/dashboard/dashboard-campaign-strip";
+import { PremiumColumnNotice } from "@/components/sales-dashboard/premium-column-notice";
 import { useOperatingBrand } from "@/components/finance/operating-brand-bar";
 import { useLiveDashboard } from "@/components/layout/live-dashboard-provider";
 import {
@@ -265,6 +266,7 @@ export function ControlCenterScreen() {
 
   return (
     <div className="space-y-6">
+      <PremiumColumnNotice workbook={dashboard?.workbook} />
       <section className="enter space-y-3">
         <div className="kpi-band grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <button

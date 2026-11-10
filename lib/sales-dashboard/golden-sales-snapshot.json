@@ -1,0 +1,594 @@
+{
+  "parsed": {
+    "active": 2,
+    "premium": 2000,
+    "pending": 1,
+    "issues": 1,
+    "agents": [
+      {
+        "name": "ניב קובי",
+        "count": 1,
+        "sum": 1200
+      },
+      {
+        "name": "שמש",
+        "count": 1,
+        "sum": 800
+      }
+    ],
+    "monthAgents": [
+      {
+        "name": "ניב קובי",
+        "count": 1,
+        "sum": 1200
+      },
+      {
+        "name": "שמש",
+        "count": 1,
+        "sum": 800
+      }
+    ],
+    "companies": [
+      {
+        "name": "מגדל",
+        "count": 2
+      },
+      {
+        "name": "הראל",
+        "count": 1
+      },
+      {
+        "name": "כלל",
+        "count": 1
+      }
+    ],
+    "sources": [
+      {
+        "name": "שיחות נכנסות",
+        "count": 2
+      },
+      {
+        "name": "קמפיין שמש",
+        "count": 1
+      },
+      {
+        "name": "לידים קרים",
+        "count": 1
+      }
+    ],
+    "sales": {
+      "labels": [
+        "פבר 2026",
+        "מרץ 2026"
+      ],
+      "counts": [
+        1,
+        2
+      ],
+      "sums": [
+        300,
+        2000
+      ]
+    },
+    "appointments": {
+      "labels": [
+        "פבר 2026",
+        "מרץ 2026"
+      ],
+      "counts": [
+        0,
+        1
+      ],
+      "sums": [
+        0,
+        450
+      ]
+    },
+    "currentMonth": {
+      "label": "פבר 2026",
+      "totalCount": 2,
+      "totalSum": 2000,
+      "activeCount": 2,
+      "activeSum": 2000
+    },
+    "pendingRows": [
+      {
+        "name": "לקוח ג",
+        "agent": "ניב - שמש",
+        "product": "משכנתא",
+        "premium": 450,
+        "date": "2026-03-08"
+      }
+    ],
+    "activePolicies": [
+      {
+        "key": "לקוח א|בריאות|ניב קובי|2026-03-02",
+        "client": "לקוח א",
+        "product": "בריאות",
+        "company": "מגדל",
+        "premium": 1200,
+        "agent": "ניב קובי"
+      },
+      {
+        "key": "לקוח ב|חיים|שמש|2026-03-05",
+        "client": "לקוח ב",
+        "product": "חיים",
+        "company": "הראל",
+        "premium": 800,
+        "agent": "שמש"
+      }
+    ],
+    "marketing": {
+      "activeCount": 2,
+      "activePremium": 2000,
+      "pendingCount": 1,
+      "pendingPremium": 450,
+      "cancelledCount": 1,
+      "cancelledPremium": 300,
+      "sources": [
+        {
+          "name": "שיחות נכנסות",
+          "activeCount": 1,
+          "activePremium": 1200,
+          "pendingCount": 0,
+          "pendingPremium": 0,
+          "agents": [
+            {
+              "name": "ניב קובי",
+              "count": 1,
+              "sum": 1200
+            }
+          ],
+          "months": [
+            {
+              "name": "03/2026",
+              "count": 1,
+              "sum": 1200
+            }
+          ],
+          "products": [
+            {
+              "name": "בריאות",
+              "count": 1,
+              "sum": 1200
+            }
+          ],
+          "companies": [
+            {
+              "name": "מגדל",
+              "count": 1,
+              "sum": 1200
+            }
+          ]
+        },
+        {
+          "name": "קמפיין שמש",
+          "activeCount": 1,
+          "activePremium": 800,
+          "pendingCount": 0,
+          "pendingPremium": 0,
+          "agents": [
+            {
+              "name": "שמש",
+              "count": 1,
+              "sum": 800
+            }
+          ],
+          "months": [
+            {
+              "name": "03/2026",
+              "count": 1,
+              "sum": 800
+            }
+          ],
+          "products": [
+            {
+              "name": "חיים",
+              "count": 1,
+              "sum": 800
+            }
+          ],
+          "companies": [
+            {
+              "name": "הראל",
+              "count": 1,
+              "sum": 800
+            }
+          ]
+        },
+        {
+          "name": "לידים קרים",
+          "activeCount": 0,
+          "activePremium": 0,
+          "pendingCount": 1,
+          "pendingPremium": 450,
+          "agents": [],
+          "months": [],
+          "products": [],
+          "companies": []
+        },
+        {
+          "name": "התפתחות מגדל",
+          "activeCount": 0,
+          "activePremium": 0,
+          "pendingCount": 0,
+          "pendingPremium": 0,
+          "agents": [],
+          "months": [],
+          "products": [],
+          "companies": []
+        }
+      ],
+      "sourceCatalog": [
+        "התפתחות מגדל",
+        "לידים קרים",
+        "קמפיין שמש",
+        "שיחות נכנסות"
+      ],
+      "sellerCatalog": [
+        "בן סגל",
+        "ניב - שמש",
+        "ניב קובי",
+        "שמש"
+      ],
+      "excelHeaders": [
+        "סטאטוס פוליסה",
+        "פרמיה",
+        "סוג תהליך",
+        "תאריך העברה ליצרן",
+        "תאריך תחילת ביטוח",
+        "שם לקוח",
+        "משווק",
+        "סוג המוצר",
+        "חברת הביטוח",
+        "מקור הפנייה"
+      ],
+      "productions": [
+        {
+          "key": "לקוח א|בריאות|ניב קובי|2026-03-02|0",
+          "source": "שיחות נכנסות",
+          "client": "לקוח א",
+          "agent": "ניב קובי",
+          "product": "בריאות",
+          "company": "מגדל",
+          "premium": 1200,
+          "status": "active",
+          "statusRaw": "פעילה",
+          "process": "מכירה",
+          "startDate": "2026-03-01",
+          "transferDate": "2026-03-02",
+          "fields": {
+            "סטאטוס פוליסה": "פעילה",
+            "פרמיה": "1200",
+            "סוג תהליך": "מכירה",
+            "תאריך העברה ליצרן": "2026-03-02",
+            "תאריך תחילת ביטוח": "2026-03-01",
+            "שם לקוח": "לקוח א",
+            "משווק": "ניב קובי",
+            "סוג המוצר": "בריאות",
+            "חברת הביטוח": "מגדל",
+            "מקור הפנייה": "שיחות נכנסות"
+          }
+        },
+        {
+          "key": "לקוח ב|חיים|שמש|2026-03-05|1",
+          "source": "קמפיין שמש",
+          "client": "לקוח ב",
+          "agent": "שמש",
+          "product": "חיים",
+          "company": "הראל",
+          "premium": 800,
+          "status": "active",
+          "statusRaw": "פעילה",
+          "process": "מכירה",
+          "startDate": "2026-03-04",
+          "transferDate": "2026-03-05",
+          "fields": {
+            "סטאטוס פוליסה": "פעילה",
+            "פרמיה": "800",
+            "סוג תהליך": "מכירה",
+            "תאריך העברה ליצרן": "2026-03-05",
+            "תאריך תחילת ביטוח": "2026-03-04",
+            "שם לקוח": "לקוח ב",
+            "משווק": "שמש",
+            "סוג המוצר": "חיים",
+            "חברת הביטוח": "הראל",
+            "מקור הפנייה": "קמפיין שמש"
+          }
+        },
+        {
+          "key": "לקוח ג|משכנתא|ניב - שמש|2026-03-08|2",
+          "source": "לידים קרים",
+          "client": "לקוח ג",
+          "agent": "ניב - שמש",
+          "product": "משכנתא",
+          "company": "כלל",
+          "premium": 450,
+          "status": "pending",
+          "statusRaw": "ממתינה למינוי",
+          "process": "מינוי",
+          "startDate": "2026-03-10",
+          "transferDate": "2026-03-08",
+          "fields": {
+            "סטאטוס פוליסה": "ממתינה למינוי",
+            "פרמיה": "450",
+            "סוג תהליך": "מינוי",
+            "תאריך העברה ליצרן": "2026-03-08",
+            "תאריך תחילת ביטוח": "2026-03-10",
+            "שם לקוח": "לקוח ג",
+            "משווק": "ניב - שמש",
+            "סוג המוצר": "משכנתא",
+            "חברת הביטוח": "כלל",
+            "מקור הפנייה": "לידים קרים"
+          }
+        },
+        {
+          "key": "לקוח ד|תאונות|בן סגל|2026-02-11|3",
+          "source": "שיחות נכנסות",
+          "client": "לקוח ד",
+          "agent": "בן סגל",
+          "product": "תאונות",
+          "company": "מגדל",
+          "premium": 300,
+          "status": "cancelled",
+          "statusRaw": "בוטלה",
+          "process": "מכירה",
+          "startDate": "2026-02-01",
+          "transferDate": "2026-02-11",
+          "fields": {
+            "סטאטוס פוליסה": "בוטלה",
+            "פרמיה": "300",
+            "סוג תהליך": "מכירה",
+            "תאריך העברה ליצרן": "2026-02-11",
+            "תאריך תחילת ביטוח": "2026-02-01",
+            "שם לקוח": "לקוח ד",
+            "משווק": "בן סגל",
+            "סוג המוצר": "תאונות",
+            "חברת הביטוח": "מגדל",
+            "מקור הפנייה": "שיחות נכנסות"
+          }
+        }
+      ],
+      "agents": [
+        {
+          "name": "ניב קובי",
+          "count": 1,
+          "sum": 1200
+        },
+        {
+          "name": "שמש",
+          "count": 1,
+          "sum": 800
+        }
+      ],
+      "months": [
+        {
+          "name": "03/2026",
+          "count": 2,
+          "sum": 2000
+        }
+      ],
+      "products": [
+        {
+          "name": "בריאות",
+          "count": 1,
+          "sum": 1200
+        },
+        {
+          "name": "חיים",
+          "count": 1,
+          "sum": 800
+        }
+      ],
+      "companies": [
+        {
+          "name": "מגדל",
+          "count": 1,
+          "sum": 1200
+        },
+        {
+          "name": "הראל",
+          "count": 1,
+          "sum": 800
+        }
+      ]
+    },
+    "workbook": {
+      "fileName": "דוח-מנהלים-סינתטי.xlsx",
+      "sheets": [
+        {
+          "name": "2026",
+          "kind": "report",
+          "headers": [
+            "סטאטוס פוליסה",
+            "פרמיה",
+            "סוג תהליך",
+            "תאריך העברה ליצרן",
+            "תאריך תחילת ביטוח",
+            "שם לקוח",
+            "משווק",
+            "סוג המוצר",
+            "חברת הביטוח",
+            "מקור הפנייה"
+          ],
+          "rows": [
+            {
+              "id": "2026:1",
+              "excelRow": 2,
+              "cells": [
+                "פעילה",
+                "1200",
+                "מכירה",
+                "2026-03-02",
+                "2026-03-01",
+                "לקוח א",
+                "ניב קובי",
+                "בריאות",
+                "מגדל",
+                "שיחות נכנסות"
+              ]
+            },
+            {
+              "id": "2026:2",
+              "excelRow": 3,
+              "cells": [
+                "פעילה",
+                "800",
+                "מכירה",
+                "2026-03-05",
+                "2026-03-04",
+                "לקוח ב",
+                "שמש",
+                "חיים",
+                "הראל",
+                "קמפיין שמש"
+              ]
+            },
+            {
+              "id": "2026:3",
+              "excelRow": 4,
+              "cells": [
+                "ממתינה למינוי",
+                "450",
+                "מינוי",
+                "2026-03-08",
+                "2026-03-10",
+                "לקוח ג",
+                "ניב - שמש",
+                "משכנתא",
+                "כלל",
+                "לידים קרים"
+              ]
+            },
+            {
+              "id": "2026:4",
+              "excelRow": 5,
+              "cells": [
+                "בוטלה",
+                "300",
+                "מכירה",
+                "2026-02-11",
+                "2026-02-01",
+                "לקוח ד",
+                "בן סגל",
+                "תאונות",
+                "מגדל",
+                "שיחות נכנסות"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "טבלת עזר",
+          "kind": "helper",
+          "headers": [
+            "A",
+            "B",
+            "C"
+          ],
+          "rows": [
+            {
+              "id": "טבלת עזר:0",
+              "excelRow": 1,
+              "cells": [
+                "מכירה",
+                "שיחות נכנסות",
+                "ניב קובי"
+              ]
+            },
+            {
+              "id": "טבלת עזר:1",
+              "excelRow": 2,
+              "cells": [
+                "מינוי",
+                "קמפיין שמש",
+                "שמש"
+              ]
+            },
+            {
+              "id": "טבלת עזר:2",
+              "excelRow": 3,
+              "cells": [
+                "",
+                "לידים קרים",
+                "ניב - שמש"
+              ]
+            },
+            {
+              "id": "טבלת עזר:3",
+              "excelRow": 4,
+              "cells": [
+                "",
+                "התפתחות מגדל",
+                "בן סגל"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "fileName": "דוח-מנהלים-סינתטי.xlsx",
+    "syncedAt": "2026-03-20T08:00:00.000Z",
+    "source": "live"
+  },
+  "snapshot": {
+    "monthKey": "2026-03",
+    "monthLabel": "מרץ 2026",
+    "productions": 2,
+    "premium": 2000,
+    "premiumLabel": "₪2,000",
+    "productionAll": 2,
+    "productionAllPremiumLabel": "₪2,000",
+    "pending": 1,
+    "cancelled": 0,
+    "monthRows": 3,
+    "monthPremium": 2450,
+    "salesMonthCount": 2,
+    "salesMonthPremium": 2000,
+    "salesCarriedCount": 0,
+    "salesCarriedPremium": 0,
+    "salesCarriedRangeLabel": "דצ–פבר 2026",
+    "salesCount": 2,
+    "salesPremium": 2000,
+    "agentAppointmentCount": 1,
+    "agentAppointmentPremium": 450,
+    "agentAppointmentPremiumLabel": "₪450",
+    "salesRangeLabel": "מרץ 2026",
+    "pendingInMonth": 0,
+    "otherInMonth": 0,
+    "pendingPremium": 0,
+    "upcomingDate": "2026-04-01",
+    "upcomingDateLabel": "1.4.2026",
+    "upcomingCount": 0,
+    "upcomingPremium": 0,
+    "upcomingPremiumLabel": "₪0",
+    "upcomingMonthCount": 0,
+    "upcomingMonthPremium": 0,
+    "upcomingMonthPremiumLabel": "₪0",
+    "carriedCount": 0,
+    "carriedPremium": 0,
+    "carriedPremiumLabel": "₪0",
+    "carriedRangeLabel": "דצ–פבר 2026",
+    "topAgent": {
+      "name": "ניב קובי",
+      "count": 1,
+      "premium": 1200
+    },
+    "topProduct": {
+      "name": "בריאות",
+      "count": 1,
+      "premium": 1200
+    },
+    "topSource": {
+      "name": "שיחות נכנסות",
+      "count": 1,
+      "premium": 1200
+    },
+    "topCompany": {
+      "name": "מגדל",
+      "count": 1,
+      "premium": 1200
+    },
+    "syncedAt": "2026-03-20T08:00:00.000Z"
+  }
+}
