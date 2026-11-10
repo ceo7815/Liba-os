@@ -102,7 +102,8 @@ function liveLayoutWorkbook(premiumHeader: string | number): Uint8Array {
 }
 
 function withoutWorkbook(data: ReturnType<typeof parseSalesWorkbook>) {
-  const { workbook: _workbook, ...rest } = data;
+  const rest = { ...data };
+  delete rest.workbook;
   return rest;
 }
 
